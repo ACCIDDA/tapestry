@@ -12,33 +12,35 @@ finalized, non-vintaged evaluation truth. They are not registered as versioned
 library challenges. Source/data hashes record reproducibility, not challenge versions.
 Emily’s challenge ground truth is not used.
 
-The default evaluation runs the complete sibling EpiBench command:
+The default evaluation runs the complete installed EpiBenchmark command:
 `python -m epibench score --config-path score.yaml`, once per target/season.
 EpiBench loads and validates forecasts, loads truth, calls R scoringutils, computes
 relative WIS, and writes `EpiBenchmark_scores.csv` and `summary.md`. All candidates
 and the official ensemble are freshly scored together. The local R bridge is
 retained only for reproducing the historical frozen-support comparison.
 
-Install the sibling package in the same environment if necessary:
+Sync the research environment (including current EpiBenchmark from GitHub `main`):
 
 ```bash
-.venv/bin/python -m pip install -e ../epibench
+uv sync --upgrade-package epibenchmark
 ```
 
-R packages `scoringutils` and `purrr` are also required. Reproduce the current report:
+R packages `scoringutils` and `purrr` are also required; see
+[environment setup](../getting-started.md#r-for-epibenchmark-scoring).
+Reproduce the current report:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.sweep \
+uv run python -m tapestry.evaluation.sweep \
   --runs data/experiments/b0_full_20260914/*_s4? \
          data/experiments/b0_season_cv_20260913 \
   --csv --output data/evaluation/b0_epibench_five_quantiles
-PYTHONPATH=src .venv/bin/python scripts/validate_epibench_evaluation.py
-.venv/bin/python scripts/publish_evaluation_docs.py
-.venv/bin/python -m mkdocs build --strict
+uv run python scripts/validate_epibench_evaluation.py
+uv run python scripts/publish_evaluation_docs.py
+uv run --extra docs python -m mkdocs build --strict
 ```
 
-Use `--epibench /path/to/epibench` and `--mirrors /path/to/mirrors` if the local
-checkouts move. Add completed saved runs with `--runs` and choose a new output
+Use `--epibench /path/to/epibench` only to override the installed package with a
+development checkout; use `--mirrors /path/to/mirrors` for another hub mirror location. Add completed saved runs with `--runs` and choose a new output
 directory when inputs change. Resuming identical inputs reuses EpiBench output
 only after matching forecast/truth content, adapter and EpiBench source hashes,
 hub schemas, and R/package versions. Two independent cases run concurrently by default; `--score-workers 1` runs serially.

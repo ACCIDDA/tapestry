@@ -1,6 +1,8 @@
 # Local environment, caches, and credentials
 .DS_Store
 .venv/
+# Local resolution cache; EpiBenchmark follows upstream main during setup/update.
+uv.lock
 __pycache__/
 *.py[cod]
 .pytest_cache/

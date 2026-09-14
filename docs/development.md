@@ -26,14 +26,14 @@ are intentionally excluded from version control.
 Tests use local fixtures. A few integration checks require R/EpiBench:
 
 ```bash
-python -m pip install -e '.[model,explorer,evaluation]' pytest
-PYTHONPATH=src python -m pytest -q
+uv sync --upgrade-package epibenchmark
+uv run pytest -q
 ```
 
 Syntax-only checks used during development:
 
 ```bash
-PYTHONPATH=src python -m compileall -q src scripts experiments analysis
+uv run python -m compileall -q src scripts experiments analysis
 node --check src/tapestry/explorer/static/app.js
 ```
 
@@ -48,8 +48,7 @@ Use pytest to collect both unittest classes and pytest functions. See the
 Documentation dependencies are isolated in the `docs` extra:
 
 ```bash
-.venv/bin/python -m pip install -e '.[docs]'
-mkdocs serve
+uv run --no-dev --extra docs mkdocs serve
 ```
 
 The documentation configuration is intentionally independent of the data tree;

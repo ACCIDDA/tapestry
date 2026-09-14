@@ -15,13 +15,22 @@ dependencies = ["epidatpy>=0.6.0,<0.7"]
 [project.optional-dependencies]
 model-data = ["numpy>=1.24"]
 model = ["numpy>=1.24", "torch>=2.1"]
-evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "reportlab>=4", "pypdf>=4"]
+evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "reportlab>=4", "pypdf>=4", "PyYAML>=6"]
 explorer = ["pyarrow>=10"]
 docs = [
   "mkdocs>=1.6,<2",
   "mkdocs-material>=9.6,<10",
   "mkdocstrings[python]>=0.29,<1",
 ]
+
+[dependency-groups]
+# The default checkout environment covers training, evaluation, exploration and tests.
+dev = ["tapestry[model,explorer,evaluation]", "pytest>=8", "EpiBenchmark"]
+
+[tool.uv.sources]
+# Follow upstream main: uv sync --upgrade-package epibenchmark.
+# uv's generated lockfile is local, not a committed experiment constraint.
+EpiBenchmark = { git = "https://github.com/ACCIDDA/epibench", branch = "main" }
 
 [project.scripts]
 tapestry-model-data = "tapestry.model_data.cli:main"

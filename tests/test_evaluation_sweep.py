@@ -61,14 +61,14 @@ def test_missing_units_and_changed_truth_rejected():
 
 def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
     from datetime import date, timedelta
-    from pathlib import Path
+    import importlib.util
     import shutil
     from tapestry.evaluation.hubs import export_b0, SEASONS
     from tapestry.evaluation.compare import score_with_r
     from tapestry.evaluation.sweep import main
     from tapestry.models.season_cv import LEVELS
-    if not shutil.which('Rscript') or not Path('../epibench/src/epibench/build_plots.py').exists():
-        pytest.skip('Integration requires local R and sibling epibench')
+    if not shutil.which('Rscript') or importlib.util.find_spec('epibench') is None:
+        pytest.skip('Integration requires local R and installed EpiBenchmark')
     run = tmp_path / 'run'
     run.mkdir()
     (run / 'manifest.json').write_text(json.dumps(dict(config=dict(seed=42), dataset_sha256='test', code_sha256={})))

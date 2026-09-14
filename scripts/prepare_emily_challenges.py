@@ -5,7 +5,6 @@ remain Emily's; failures are recorded rather than silently changing the protocol
 """
 import hashlib
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,7 +33,6 @@ def main():
                     subprocess.run(['git', f'--git-dir={mirror}', 'show', f"{info['commit']}:{name}"], stdout=stream, check=True)
         snapshots[hub] = output
     results = []
-    env = dict(os.environ, PYTHONPATH=str(Path('../epibench/src').resolve()) + os.pathsep + os.environ.get('PYTHONPATH', ''))
     for source in sorted(SOURCES.glob('*.yaml')):
         config = yaml.safe_load(source.read_text())
         hub = 'flusight' if 'flu ' in config['target'] else ('covid' if 'covid' in config['target'] else 'rsv')
@@ -46,7 +44,7 @@ def main():
         command = [sys.executable, '-m', 'epibench', 'create', '--config-path', str(path)]
         log = ROOT / f'{source.stem}.log'
         with log.open('w') as stream:
-            result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
+            result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT)
         tasks = list(Path(config['output_path']).glob('*/task_list.csv'))
         row = dict(source=str(source), source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
                    config=str(path), command=command, target=config['target'],

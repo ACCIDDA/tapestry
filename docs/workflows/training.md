@@ -2,13 +2,13 @@
 
 This is a working, small PyTorch model for the accepted finalized six-channel
 dataset. It trains and predicts; it does not yet run a model-selection backtest.
-Use the repository root as the working directory. The existing `.venv` already
-has NumPy and PyTorch; a fresh environment can install `pip install -e '.[model]'`.
+Use the repository root as the working directory and run `uv sync --upgrade-package epibenchmark`
+first; see [environment setup](../getting-started.md).
 
 Train with an explicit last permitted training-label date:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m tapestry.models train \
+uv run python -m tapestry.models train \
   --train-end 2024-07-27 --epochs 50 \
   --output data/processed/b0.pt
 ```
@@ -16,7 +16,7 @@ PYTHONPATH=src .venv/bin/python -m tapestry.models train \
 Generate samples and quantiles after fitting:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m tapestry.models predict \
+uv run python -m tapestry.models predict \
   --checkpoint data/processed/b0.pt --context-end 2024-08-03 \
   --members 256 --output data/processed/b0_predictions.npz
 ```
@@ -139,7 +139,7 @@ missing observations, not release latency in this finalized-data panel.
 Example three-season experiment (choose a fresh output directory):
 
 ```bash
-.venv/bin/python -m tapestry.models.season_cv \
+uv run python -m tapestry.models.season_cv \
   --count-transform sqrt --geography --lookback 8 \
   --output data/experiments/b0_sqrt_geo_8
 ```

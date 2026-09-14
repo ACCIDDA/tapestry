@@ -3,6 +3,7 @@
 Assumption: retain the existing ensemble-supported task set and full-release truth.
 The snapshot adapts those inputs to EpiBench; it does not replace its scorer.
 """
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,14 +19,26 @@ from .hubs import KEY, QCOLS, location_codes
 from .scoring import match_forecasts, matched_scores
 
 
-def score_case(wide, units, case, folder, *, epibench=Path('../epibench'),
+def package_source(checkout=None):
+    """Locate installed EpiBenchmark, or an explicitly selected development checkout."""
+    if checkout is not None:
+        source = Path(checkout).resolve() / 'src' / 'epibench'
+    else:
+        spec = importlib.util.find_spec('epibench')
+        if spec is None or spec.origin is None:
+            raise ModuleNotFoundError('EpiBenchmark is not installed; run uv sync --upgrade-package epibenchmark')
+        source = Path(spec.origin).resolve().parent
+    if not (source / 'score.py').is_file():
+        raise FileNotFoundError(f'EpiBenchmark scoring package missing at {source}')
+    return source
+
+
+def score_case(wide, units, case, folder, *, epibench=None,
                mirrors=Path('data/mirrors'), commit='HEAD'):
     """Score all candidates AND the reference through `python -m epibench score`."""
     folder = Path(folder).resolve()
     folder.mkdir(parents=True, exist_ok=True)
-    source = Path(epibench).resolve() / 'src' / 'epibench'
-    if not (source / 'score.py').exists():
-        raise FileNotFoundError(f'EpiBench checkout missing at {source.parent.parent}')
+    source = package_source(epibench)
     code = {p.name: digest(p.read_text()) for p in source.glob('*.py')}
     schemas = {}
     mirror = Path(mirrors) / f"hub_{case['hub']}_current.git"

@@ -1,7 +1,7 @@
 # Tapestry
 
 Tapestry is a research project for multi-disease epidemic forecasting. The Python
-package and commands are named `tapestry`; the checkout folder remains `influpaintX`.
+package and commands are named `tapestry`.
 
 The working pipeline downloads surveillance data, builds a canonical six-channel
 weekly dataset, trains the stochastic B0 model, runs season cross-validation,
@@ -26,18 +26,36 @@ data/ raw snapshots → shared selection ──→ explorer
 Documentation: [accidda.github.io/tapestry](https://accidda.github.io/tapestry/).
 GitHub Actions builds and deploys the MkDocs site from an uploaded Pages artifact.
 
+## Environment
+
+From the repository root:
+
+```bash
+uv sync --upgrade-package epibenchmark
+uv run python -m tapestry.models --help
+uv run pytest -q
+```
+
+`uv` manages the Python 3.11 `.venv` and Python dependencies, including
+EpiBenchmark from GitHub `main`, training, evaluation, explorer and tests.
+The sync command above checks for EpiBenchmark updates; `uv.lock` stays local.
+R is separate: scoring requires `Rscript` on `PATH`. After installing R, run
+`Rscript scripts/setup_r.R` to install missing `scoringutils` and `purrr` packages.
+See [environment setup](docs/getting-started.md) for fresh-machine R installation,
+migrating the old Anaconda-backed `.venv`, and lighter Python installs.
+
 ## Start with the canonical training dataset
 
 Run from the repository root:
 
 ```bash
-python -m pip install -e '.[model,explorer,evaluation]'
+uv sync --upgrade-package epibenchmark
 # Needed only when acquiring or refreshing the two training sources:
-python -m tapestry.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
-python -m tapestry.model_data build --data-root data \
+uv run python -m tapestry.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
+uv run python -m tapestry.model_data build --data-root data \
   --output data/processed/build_b_finalized.npz
-python -m tapestry.model_data inspect
-python -m tapestry.models.season_cv --output data/experiments/my_b0_cv
+uv run python -m tapestry.model_data inspect
+uv run python -m tapestry.models.season_cv --output data/experiments/my_b0_cv
 ```
 
 The dataset contains weekly NHSN admissions and NSSP ED proportions for
@@ -56,7 +74,7 @@ add historical release information where the source provides it.
 ## Explore and compare
 
 ```bash
-python -m tapestry.explorer --data-root data serve
+uv run python -m tapestry.explorer --data-root data serve
 ```
 
 The explorer builds a disposable SQLite index and Parquet revision ledger.
@@ -67,7 +85,7 @@ optional; they are not required to train the current six-channel model.
 Delphi requires an API key; Git is needed for Hubverse sources.
 
 Saved CV forecasts can be evaluated without refitting. Hub scoring uses R
-`scoringutils`; configuration plots also use the sibling EpiBench checkout.
+`scoringutils`; configuration plots use the installed EpiBenchmark package.
 Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 [configuration comparison](docs/workflows/configuration-evaluation.md).
 
@@ -96,14 +114,14 @@ explains the dated runner and reports. See [development](docs/development.md) an
 ## Tests
 
 ```bash
-python -m pip install -e '.[model,explorer,evaluation]' pytest
-PYTHONPATH=src python -m pytest -q
+uv sync --upgrade-package epibenchmark
+uv run pytest -q
 ```
 
 Use pytest: it runs both the original unittest classes and newer pytest functions.
 The old `unittest discover` command omits the latter. Tests use fixtures and
-local temporary files; three integration tests exercise local R scoring and/or
-EpiBench and skip when their prerequisite executable/checkouts are absent.
+local temporary files; integration tests exercise local R scoring and/or
+EpiBench and skip when their prerequisite executable/packages are absent.
 See [which tests to run](docs/maintenance.md#what-the-tests-do).
 
 ## Files kept locally

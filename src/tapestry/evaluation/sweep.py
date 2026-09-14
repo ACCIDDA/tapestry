@@ -12,7 +12,7 @@ import pandas as pd
 
 from .configurations import identify, digest
 from .hubs import HUBS, KEY, QCOLS, export_b0
-from .epibench import score_case
+from .epibench import package_source, score_case
 from .scoring import METRICS, validate, match_forecasts, matched_scores, rank, objective as score_objective
 
 
@@ -80,7 +80,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--family', default='B0')
     parser.add_argument('--csv', action='store_true', help='Also save uncompressed Hubverse CSV files for the EpiBench CLI')
-    parser.add_argument('--epibench', type=Path, default=Path('../epibench'))
+    parser.add_argument('--epibench', type=Path, help='Optional development checkout; defaults to installed EpiBenchmark')
     parser.add_argument('--score-workers', type=int, default=2, choices=(1, 2), help='Concurrent independent EpiBench cases')
     parser.add_argument('--mirrors', type=Path, default=Path('data/mirrors'))
     parser.add_argument('--locations', nargs='+', default=['US', '37'], help='Hub FIPS codes; default US and NC')
@@ -146,7 +146,7 @@ def main():
     configs['flu_rank'] = configs.flu_mean.rank(method='min')
     configs['admissions_rank'] = configs.admissions_mean.rank(method='min')
     configs.sort_values('flu_rank').to_csv(args.output / 'configuration_ranking.csv')
-    module_path = args.epibench / 'src/epibench/build_plots.py'
+    module_path = package_source(args.epibench) / 'build_plots.py'
     spec = importlib.util.spec_from_file_location('epibench_plots', module_path)
     plots = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(plots)
