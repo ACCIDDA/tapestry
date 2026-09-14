@@ -1,0 +1,34 @@
+/* Assumption: serif headings only, keeping Material's body font and plain
+   background; underline content links, keeping navigation uncluttered.
+   Use system fonts so no additional font downloads are needed. */
+:root {
+  --md-primary-fg-color: #10264d;
+  --md-primary-fg-color--light: #263e65;
+  --md-primary-fg-color--dark: #091830;
+  --md-accent-fg-color: #981e32;
+  --md-typeset-a-color: #10264d;
+}
+
+.md-header {
+  border-bottom: 4px solid var(--md-accent-fg-color);
+}
+
+.md-typeset :is(h1, h2, h3, h4, h5, h6) {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset :is(h1, h2) {
+  text-decoration-line: underline;
+  text-decoration-color: var(--md-accent-fg-color);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.md-typeset a:not(.headerlink):not(.md-button) {
+  color: var(--md-typeset-a-color);
+  text-decoration-line: underline;
+  text-decoration-color: var(--md-accent-fg-color);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
