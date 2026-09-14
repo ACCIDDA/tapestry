@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore indexed InfluPaintX surveillance covariates">
+  <title>InfluPaintX data explorer</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <aside class="controls" aria-label="Data signals">
+      <div class="series-heading">
+        <div>
+          <span>Data signals</span>
+          <small id="series-count"></small>
+        </div>
+        <button id="clear-button" type="button">Clear</button>
+      </div>
+      <label class="search-field">
+        <span class="sr-only">Search signals</span>
+        <input id="series-search" type="search" placeholder="Search signals or sources…" autocomplete="off">
+      </label>
+      <details class="filter-panel" open>
+        <summary>Signal filters <span id="filter-count"></span></summary>
+        <div id="signal-filters" class="filter-grid">
+          <label>Cadence
+            <select id="cadence-filter">
+              <option value="">Any cadence</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="sample">Sample-based</option>
+            </select>
+          </label>
+          <label>Revision history
+            <select id="vintage-filter">
+              <option value="">Either</option>
+              <option value="versioned">Vintaged/versioned</option>
+              <option value="unversioned">Not versioned</option>
+            </select>
+          </label>
+          <label>Spatial support
+            <select id="support-filter">
+              <option value="">Any support</option>
+              <option value="native_state" selected>Native state</option>
+              <option value="national">National broadcast</option>
+            </select>
+          </label>
+          <label>Data currency
+            <select id="freshness-filter">
+              <option value="">Any currency</option>
+              <option value="current">Current/recent</option>
+              <option value="lagging">Lagging</option>
+            </select>
+          </label>
+          <button id="reset-filters" type="button">Reset filters</button>
+        </div>
+      </details>
+      <div id="series-list" class="series-list" aria-live="polite"></div>
+    </aside>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">InfluPaintX</p>
+      <h1>Surveillance data explorer</h1>
+    </div>
+    <p id="index-summary" class="index-summary" aria-live="polite">Loading index…</p>
+  </header>
+
+  <div class="plot-toolbar" aria-label="Plot controls">
+      <label class="field">
+        <span>Location</span>
+        <select id="state-select" disabled></select>
+      </label>
+
+      <label class="scale-control">
+        <input id="scale-toggle" type="checkbox">
+        <span>
+          <strong>Divide each series by its max</strong>
+          <small>Useful when units or magnitudes differ.</small>
+        </span>
+      </label>
+
+    <div class="version-control">
+      <label for="version-date">Data available as of</label>
+      <div class="version-navigation">
+        <button id="version-prev" type="button" aria-label="Previous data version" disabled>←</button>
+        <input id="version-date" type="date" aria-label="Data version date">
+        <button id="version-next" type="button" aria-label="Next data version" disabled>→</button>
+        <button id="version-latest" type="button">Latest</button>
+        <button id="version-keep" type="button" disabled>Keep for comparison</button>
+      </div>
+      <small id="version-status" aria-live="polite">Latest available values</small>
+    </div>
+  </div>
+  <main>
+
+
+    <section class="plot-panel">
+      <div class="plot-heading">
+        <div>
+          <p class="eyebrow">Time series</p>
+          <h2 id="plot-title">Choose a location and one or more columns</h2>
+        </div>
+        <p id="plot-status" class="plot-status" aria-live="polite"></p>
+      </div>
+      <div id="comparisons" class="comparisons" aria-label="Comparison versions"></div>
+      <div id="legend" class="legend" aria-label="Selected series"></div>
+      <div id="chart" class="chart" role="img" aria-label="Selected surveillance time series">
+        <div class="empty-state">
+          <strong>No series selected</strong>
+          <span>Select signals on the left to overlay them here.</span>
+        </div>
+      </div>
+      <section id="range-control" class="range-control" aria-label="Visible date range" hidden>
+        <div class="range-fields">
+          <strong>View dates</strong>
+          <label>From <input id="range-start" type="date" required></label>
+          <label>To <input id="range-end" type="date" required></label>
+          <button id="range-reset" type="button">All dates</button>
+        </div>
+        <div id="range-overview" class="range-overview" aria-label="Date range overview"></div>
+        <small>Drag the handles to resize, the selected window to pan, or outside it to select a new range.</small>
+      </section>
+      <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+    </section>
+  </main>
+
+  <footer>
+    <details id="warnings-panel">
+      <summary>Index details</summary>
+      <div id="index-details"></div>
+    </details>
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>

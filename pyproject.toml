@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "influpaintx"
+version = "0.1.0"
+description = "Surveillance data, B0 forecasting experiments, evaluation, and exploration"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "ACCIDDA" }]
+dependencies = ["epidatpy>=0.6.0,<0.7"]
+
+[project.optional-dependencies]
+model-data = ["numpy>=1.24"]
+model = ["numpy>=1.24", "torch>=2.1"]
+evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "reportlab>=4", "pypdf>=4"]
+explorer = ["pyarrow>=10"]
+docs = [
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.6,<10",
+  "mkdocstrings[python]>=0.29,<1",
+]
+
+[project.scripts]
+influpaintx-model-data = "influpaintx.model_data.cli:main"
+influpaintx-data = "influpaintx.data.cli:main"
+influpaintx-select = "influpaintx.data.selection:main"
+influpaintx-explore = "influpaintx.explorer:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/influpaintx"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

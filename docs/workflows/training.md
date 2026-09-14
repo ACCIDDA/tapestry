@@ -1,0 +1,160 @@
+# Run the Build B0 pilot
+
+This is a working, small PyTorch model for the accepted finalized six-channel
+dataset. It trains and predicts; it does not yet run a model-selection backtest.
+Use the repository root as the working directory. The existing `.venv` already
+has NumPy and PyTorch; a fresh environment can install `pip install -e '.[model]'`.
+
+Train with an explicit last permitted training-label date:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m influpaintx.models train \
+  --train-end 2024-07-27 --epochs 50 \
+  --output data/processed/b0.pt
+```
+
+Generate samples and quantiles after fitting:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m influpaintx.models predict \
+  --checkpoint data/processed/b0.pt --context-end 2024-08-03 \
+  --members 256 --output data/processed/b0_predictions.npz
+```
+
+Defaults are eight history weeks, four future weeks, all six channels, 52 native
+locations, CPU, and seed 42. `--lookback 12` changes the training history length;
+`--horizons 1 2 3 4 5 6 7 8` trains eight future weeks. Prediction reads those
+settings from the checkpoint. `--locations NY NJ` restricts prediction locations.
+`--device mps` or `--device cuda` is optional; the verified smoke run used CPU.
+There is no implied train/test assignment: choose training dates explicitly.
+Avoid comparing in-sample predictions as evidence of generalization.
+
+Inspect the output:
+
+```python
+import numpy as np
+p = np.load('data/processed/b0_predictions.npz', allow_pickle=False)
+print(p['samples'].shape)    # (256, 4, 6, 52): member, horizon, channel, location
+print(p['quantiles'].shape)  # (23, 4, 6, 52)
+print(p['target_dates'], p['channels'], p['locations'])
+```
+
+Samples retain their member identity across channels, locations, and horizons.
+Quantiles are in native units: nonnegative real-valued admission counts and ED
+proportions between zero and one. This is a research NPZ, not a Hub submission;
+admission quantiles have not been rounded to integers or exported to Hub schema.
+
+## Implemented model and deliberate shortcuts
+
+B0 uses one shared context MLP and one shared focal-history MLP across locations
+and channels, source embeddings, horizon offsets, and sine/cosine calendar
+features. A single 16-dimensional Gaussian draw per member/episode modulates
+its shared decoder through an affine scale and shift. The decoder predicts a
+residual around the latest valid focal observation, using softplus for admissions
+and sigmoid for ED proportions. Missing anchors use a small fixed starting prior.
+Default width is 64, totaling 22,785 parameters. No spatial attention or location
+embedding is included in this first B0 implementation. Cross-channel context is
+included; cross-location information exchange is deferred to B1.
+
+In the original baseline, values are divided by each channel's training-only
+95th percentile. Population transforms and geographic/dynamics features are now
+optional experiment switches (below); the default reproduces the baseline. No
+learned zero-history prior or separate observation-noise layer is added. The loss is
+masked fair CRPS in native units divided by each channel's fixed training scale,
+with weights `[1,.1,.1,.1,.1,.1]` so influenza admissions are primary. Dividing the
+primary count score by its fixed scale changes its numerical magnitude, not its
+single-target optimum. These are explicit pilot choices, not tuned findings.
+Eight independent training members are the default. Masks exclude missing labels
+before arithmetic and retain observed zeros. Samples are sorted to compute fair
+CRPS without a quadratic pairwise member tensor.
+
+Training uses September 2023 onward by default. Context origins, training labels,
+and scaling statistics stop at `--train-end`; labels beyond it are masked even
+for windows that start earlier. Earlier history may be used if a later
+`--train-start` is selected. The checkpoint includes the model, fitted scales,
+training dates, seed, dataset hash, channel/location registry, and loss history.
+This remains a finalized-data retrospective experiment, with the previously
+accepted NSSP finality and geography assumptions.
+
+There is no scheduler, early stopping, calibration, ensemble, experiment manager,
+training resume, or performance claim. Training minibatches are shuffled within
+the explicitly bounded fitting period; there is no random train/test split.
+
+## Verified local smoke run
+
+An eight-epoch CPU fit through July 27, 2024 reduced training loss from 0.20585 to
+0.13748. The saved `data/processed/b0_smoke.pt` checkpoint loaded successfully and
+generated `data/processed/b0_smoke_predictions.npz` at context end August 3, 2024:
+256 members × 4 horizons × 6 channels × 52 locations, with nonzero sample spread.
+This is a functionality check, not a generalization result.
+
+Six focused model/data tests pass. Model tests cover fair CRPS against the
+explicit pairwise formula, exclusion of missing/NaN targets and masked inputs,
+nonnegative/bounded outputs, nonzero latent gradients and spread, and preservation
+of location ordering under the local shared model.
+
+## First three experiments: implemented switches
+
+Scope: the requested update implements experiments 1–3. Decoder and spatial
+attention experiments 4–5 remain proposals. Existing defaults and old checkpoints
+retain the original B0 behavior. Completed comparisons are in the
+[staged experiment results](../results/b0-full-experiments.md); defaults remain unchanged.
+
+| Switch | Values / behavior |
+|---|---|
+| `--count-transform` | `raw` (baseline), `sqrt`, `fourth_root` |
+| `--geography` | Log(population / 100000) and native-US indicator |
+| `--lookback` | Compare `8`, `12`, `26`; same MLP architecture and width |
+| `--dynamics` | Recent slope, change in slope, observation age, validity flags, Christmas timing |
+| `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]` |
+| `--population-file` | Default frozen `data/metadata/b0_locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
+
+All modes retain all six input channels and six output heads. Flu-only supervision
+zeros the auxiliary loss contributions, so auxiliary forecasts from that mode are
+unsupervised and should not be interpreted as trained forecasts.
+
+For the population variants, admissions become rates per 100,000, then receive the
+selected power transform and training-context Q95 scaling. The decoder inverts
+both operations to admission counts **before** fair CRPS. ED remains proportional
+with a bounded sigmoid decoder. Native-unit loss Q95 scales are fitted separately
+and stay identical across representation and loss-weight variants on a given fold.
+No centering is used, preserving a simple nonnegative transformed residual anchor.
+Input scale fitting excludes held-out observations; direct training also excludes
+pre-training context dates from scale fitting. Scales are saved in model buffers.
+
+Assumptions: population denominators are fixed across retrospective seasons from
+the frozen local FluSight table; source path, repository revision, and file hash are
+in `data/metadata/b0_locations.provenance.json`. The actual population mapping is
+saved in the checkpoint, so prediction does not reread the CSV. Native US stays
+separate from states. Geography and transform switches are independent.
+
+Dynamics use adjacent observations in the final three calendar weeks in transformed,
+scaled input units. Gaps invalidate the corresponding slope or acceleration and
+are exposed through flags. Observation age is elapsed weeks since the latest valid
+input divided by lookback; no observed history uses one. Christmas timing is signed
+weeks relative to December 25 in the July–June winter containing the origin,
+divided by 26. These features use only the context. Observation age describes
+missing observations, not release latency in this finalized-data panel.
+
+Example three-season experiment (choose a fresh output directory):
+
+```bash
+.venv/bin/python -m influpaintx.models.season_cv \
+  --count-transform sqrt --geography --lookback 8 \
+  --output data/experiments/b0_sqrt_geo_8
+```
+
+Compare this with `fourth_root` and the unchanged raw baseline. Next vary only
+lookback across 8/12/26, then toggle `--dynamics`. Finally vary `--loss-weights`
+while keeping the selected representation and history fixed. Use the same seeds,
+fit/evaluation dates, and existing ensemble-supported scoring sets. These same
+switches are accepted by `python -m influpaintx.models train`; prediction reads
+all feature settings from its checkpoint and supports reordered location subsets.
+The CV runner continues to report states/DC and native US separately.
+
+Validation: 15 focused model/data/CV tests, one-epoch three-fold smoke execution
+(sqrt, geography, dynamics, 12 weeks, flu-only), and a fourth-root 26-week balanced
+training/prediction smoke. Smoke runs test execution only; they do not establish
+forecast improvements. Full staged training and ensemble rescoring are now complete; see
+[the experiment report](../results/b0-full-experiments.md) for 14 runs / 42 fits and three-seed
+finalists. The report records state/US tradeoffs and does not change defaults.

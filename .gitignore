@@ -1,0 +1,31 @@
+# Local environment, caches, and credentials
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.benchmarks/
+.coverage
+htmlcov/
+.env
+.env.*
+DELPHI_API_KEY
+
+# Build products
+dist/
+build/
+site/
+*.egg-info/
+
+# Local data, model artifacts, and generated outputs
+/data/
+/data-backup-*/
+/output/
+/tmp/
+/analysis/*/evidence/
+
+# Downloaded papers, extracted text, and local data audits
+/references/*.pdf
+/references/text/
+/references/local-data-coverage-*.json
+/references/selection-audit-*.json

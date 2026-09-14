@@ -1,0 +1,67 @@
+site_name: Tapestry
+site_description: Vintage-aware surveillance data repository and local explorer
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Data repository:
+      - Overview: data/index.md
+      - Source catalog: data/sources.md
+      - Shared selection: data/selection.md
+      - Storage and provenance: data/storage.md
+      - Vintages and geography: data/vintages-and-geography.md
+  - Explorer:
+      - Overview: explorer/index.md
+      - Filters and interpretation: explorer/filters.md
+      - Local API: explorer/api.md
+  - Reference:
+      - Command line: reference/cli.md
+      - Python API: reference/python-api.md
+  - Development: development.md
+  - Mac and Longleaf: development-longleaf.md
+  - Current workflows:
+      - Canonical dataset: data/build-b-finalized.md
+      - Training and prediction: workflows/training.md
+      - Hub scoring and PDF: workflows/hub-evaluation.md
+      - Configuration comparison: workflows/configuration-evaluation.md
+  - Experiment results:
+      - Three-season B0: results/b0-season-cv.md
+      - Staged B0 experiments: results/b0-full-experiments.md
+  - Design proposals:
+      - Architecture candidates: design/old LLM things/architecture-candidates.md
+      - Solution B detailed plan: design/solution-b-plan.md
+      - Solution B references: design/solution-b-references.md
+      - Further experiments: design/b0-next-experiments.md
+  - Code and tests review: maintenance.md
