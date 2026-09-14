@@ -30,7 +30,7 @@ def test_actual_scoringutils_matches_full_grid_pinball(tmp_path):
     import shutil
     if not shutil.which('Rscript'):
         pytest.skip('Rscript unavailable')
-    values = np.linspace(0, 100, 23)
+    values = np.linspace(0, 100, 5)
     rows = []
     for model in ['ours', 'ensemble']:
         row = dict(model=model, reference_date='2025-01-04', target_end_date='2025-01-04', location='01', horizon=0, observed=70)
@@ -82,7 +82,7 @@ def test_export_maps_leads_and_channel_order(tmp_path):
         folder.mkdir()
         context = [date(2023, 10, 7), date(2024, 10, 5), date(2025, 10, 4)][i]
         targets = [(context + timedelta(weeks=h)).isoformat() for h in range(1, 5)]
-        q = np.broadcast_to(np.arange(6)[None, None, None, :, None], (23, 1, 4, 6, 1)).copy()
+        q = np.broadcast_to(np.arange(6)[None, None, None, :, None], (5, 1, 4, 6, 1)).copy()
         np.savez(folder / 'forecasts.npz', quantile_levels=LEVELS, quantiles=q,
                  context_end=[context.isoformat()], target_dates=[targets], locations=['NC'],
                  truth=np.zeros((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), dtype=bool))

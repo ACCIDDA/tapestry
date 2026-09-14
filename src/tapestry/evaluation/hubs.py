@@ -13,7 +13,8 @@ import pandas as pd
 
 from tapestry.data.geography import STATE_FIPS
 from tapestry.model_data.finalized import season
-from tapestry.models.season_cv import LEVELS, SEASONS
+from tapestry.models.season_cv import SEASONS
+from tapestry.models.quantiles import LEVELS, select_quantiles
 
 B0_NAME = 'Tapestry-B0-finalized-CV'
 KEY = ['reference_date', 'target_end_date', 'location', 'horizon']
@@ -42,11 +43,10 @@ def export_b0(run):
     frames = {}
     for held in SEASONS:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
-            if not np.allclose(data['quantile_levels'], LEVELS):
-                raise ValueError('Expected the full 23-level quantile grid')
+            selected = select_quantiles(data['quantiles'], data['quantile_levels'])
             for spec in HUBS.values():
                 for target, c in spec['targets'].items():
-                    q = data['quantiles'][:, :, :, c, :]
+                    q = selected[:, :, :, c, :]
                     n, h, l = q.shape[1:]
                     reference = [(date.fromisoformat(d) + timedelta(weeks=1)).isoformat() for d in data['context_end']]
                     frame = pd.DataFrame({
@@ -57,7 +57,7 @@ def export_b0(run):
                         'b0_original_truth': data['truth'][:, :, c, :].reshape(-1),
                         'b0_original_mask': data['mask'][:, :, c, :].reshape(-1),
                     })
-                    frame[QCOLS] = q.reshape(23, -1).T
+                    frame[QCOLS] = q.reshape(len(LEVELS), -1).T
                     # Retain only held-out target dates, regardless of a revised truth's missingness.
                     keep = frame.target_end_date.map(lambda d: season(date.fromisoformat(d))) == held
                     frames[(held, target)] = frame[keep].copy()

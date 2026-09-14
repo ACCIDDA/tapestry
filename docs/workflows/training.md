@@ -35,7 +35,7 @@ Inspect the output:
 import numpy as np
 p = np.load('data/processed/b0_predictions.npz', allow_pickle=False)
 print(p['samples'].shape)    # (256, 4, 6, 52): member, horizon, channel, location
-print(p['quantiles'].shape)  # (23, 4, 6, 52)
+print(p['quantiles'].shape)  # (5, 4, 6, 52)
 print(p['target_dates'], p['channels'], p['locations'])
 ```
 
@@ -158,3 +158,23 @@ training/prediction smoke. Smoke runs test execution only; they do not establish
 forecast improvements. Full staged training and ensemble rescoring are now complete; see
 [the experiment report](../results/b0-full-experiments.md) for 14 runs / 42 fits and three-seed
 finalists. The report records state/US tradeoffs and does not change defaults.
+
+## Saved three-season CV forecasts and evaluation
+
+Season folds are 2023–24, 2024–25 and 2025–26 (CDC epiweeks 31–30).
+Every fold excludes the held-out season from fitting contexts, labels and scales.
+Evaluation conditions on already observed past context, including within that
+season, and scores only target weeks in the held-out season. Weekly origins use
+four future leads; the default history is eight weeks. New forecast files retain five
+quantiles (0.025, 0.25, 0.5, 0.75, 0.975) from 2,048 draws and 100 complete sample members per origin. Admissions
+are rounded half-up for the CV export; ED values remain proportions.
+
+Only training on 2023–24 and 2024–25 to evaluate 2025–26 is chronological. The
+other folds train on later seasons. All inputs are finalized and all folds have
+been examined during exploratory selection; none is an untouched final test set.
+
+The old season-CV persistence report and its generator have been removed. Raw
+checkpoints, forecasts, training manifests and historical diagnostic `scores.csv`
+files are preserved for reproducibility. Those Python diagnostics are not used
+in the current report or configuration ranking. Use the
+[full EpiBench evaluation](configuration-evaluation.md) on the saved forecasts.

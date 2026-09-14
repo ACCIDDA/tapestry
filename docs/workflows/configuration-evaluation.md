@@ -7,47 +7,72 @@ confirmed that “B-10” meant B0. All 14 runs in the completed September 14 sw
 and the original September 13 CV run are included. Smoke tests under `tmp/` are
 intentionally excluded.
 
-The local source review covered `../influpaint/evaluation/README.md`,
-`../influpaint/docs/workflows/evaluation.md`, its `plot_evaluation_results.py`,
-and `../epibench/src/epibench/{scoring_bridge,build_plots,plot}.py`.
-InfluPaint prepares saved quantiles, scores them through R scoringutils, then
-plots components, relative WIS, and time series and produces rankings. EpiBench
-uses the same engine. This implementation retains our existing external R
-bridge (same EpiBench metrics, preserving string FIPS codes) and imports
-EpiBench's actual `build_summary_figures` to produce the three diagnostic plots.
-No new dependency or hub download is necessary in the existing environment.
-EpiBench’s model-data CLI currently accepts CSV only; `--csv` writes CSV
-companions alongside the compact Parquet archives. The delivered comparison
-contains both. Its per-hub model directories can be passed directly as
-EpiBench model-data paths. To add CSV companions to a Parquet-only export:
+Our challenges remain **unversioned custom scoring configs**, with the existing
+finalized, non-vintaged evaluation truth. They are not registered as versioned
+library challenges. Source/data hashes record reproducibility, not challenge versions.
+Emily’s challenge ground truth is not used.
+
+The default evaluation runs the complete sibling EpiBench command:
+`python -m epibench score --config-path score.yaml`, once per target/season.
+EpiBench loads and validates forecasts, loads truth, calls R scoringutils, computes
+relative WIS, and writes `EpiBenchmark_scores.csv` and `summary.md`. All candidates
+and the official ensemble are freshly scored together. The local R bridge is
+retained only for reproducing the historical frozen-support comparison.
+
+Install the sibling package in the same environment if necessary:
 
 ```bash
-.venv/bin/python scripts/export_hubverse_csv.py data/evaluation/b0_configuration_comparison/hubverse
+.venv/bin/python -m pip install -e ../epibench
 ```
+
+R packages `scoringutils` and `purrr` are also required. Reproduce the current report:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.sweep \
   --runs data/experiments/b0_full_20260914/*_s4? \
          data/experiments/b0_season_cv_20260913 \
-  --csv --output data/evaluation/b0_configuration_comparison
-```
-
-Use `--epibench /path/to/epibench` if the sibling checkout moves. The command
-accepts any list of saved three-season CV runs. Add a future completed run to
-`--runs` and use a new output directory to regenerate a comparison including it.
-Resuming the same run set reuses scoring only when its quantiles, truth and R
-script match the saved content fingerprint. Exporting or scoring never refits.
-
-Refresh the documentation snapshot from completed results, then check the site:
-
-```bash
+  --csv --output data/evaluation/b0_epibench_five_quantiles
+PYTHONPATH=src .venv/bin/python scripts/validate_epibench_evaluation.py
 .venv/bin/python scripts/publish_evaluation_docs.py
 .venv/bin/python -m mkdocs build --strict
 ```
 
-This copies the ranking tables and 72 SVG figures into `docs/assets/` and generates
-the overview and nine target/season figure pages. The full forecast archive stays
-in `data/`; documentation links use portable relative paths.
+Use `--epibench /path/to/epibench` and `--mirrors /path/to/mirrors` if the local
+checkouts move. Add completed saved runs with `--runs` and choose a new output
+directory when inputs change. Resuming identical inputs reuses EpiBench output
+only after matching forecast/truth content, adapter and EpiBench source hashes,
+hub schemas, and R/package versions. Two independent cases run concurrently by default; `--score-workers 1` runs serially.
+No scoring step retrains the model.
+
+Each `epibench/<target-season>/` directory contains the runnable `score.yaml`,
+model CSV inputs, a local `hub/` snapshot, EpiBench output and log, and provenance.
+The snapshot contains the exact frozen tasks and one frozen truth release; it
+has no `.git` directory, so EpiBench cannot pull newer hub data. Hub schemas are
+read from the original pinned mirror commit. Tapestry checks complete support
+before scoring and checks returned task keys, finite metrics and relative WIS
+afterwards. This preparation preserves the existing experiment definition.
+
+The publisher copies rankings and 72 SVG figures into the documentation. Full
+Hubverse exports stay in `data/`. CSV companions are supported because EpiBench's
+submitted-model loader currently accepts CSV only.
+
+## Five-quantile output policy
+
+Scoring and all new saved predictions use `[0.025, 0.25, 0.5, 0.75, 0.975]`:
+median plus the bounds of the central 50% and 95% intervals. The CV and prediction
+NPZ writers, Hubverse CSV/Parquet exports, and EpiBench inputs all use this grid.
+Historical training archives retain their original 23 quantiles for provenance;
+the exporter selects the exact five stored values, with no interpolation or
+resampling. The current archive contains only five quantiles per forecast unit.
+
+WIS is recomputed for candidates and reference ensembles. Five-quantile WIS is
+not numerically interchangeable with the former 23-quantile WIS. The audit now
+checks every score against an independent five-quantile pinball calculation;
+median AE and 50/95% coverage must remain unchanged on the same tasks.
+
+[Emily’s configs](emily-configs.md) define vintage inputs and origin calendars.
+They are tested separately; this report still uses the nine existing frozen
+evaluation task sets and the already-fitted finalized-data B0 models.
 
 ## Identifiers
 
@@ -72,7 +97,7 @@ contains Hubverse long-form columns:
 reference_date,target,horizon,target_end_date,location,output_type,output_type_id,value
 ```
 
-All 23 saved quantiles and available held-out target weeks are retained, including
+Only the five levels **0.025, 0.25, 0.5, 0.75, 0.975** and available held-out target weeks are exported, including
 origins with no corresponding ensemble submission. These are retrospective
 forecast archives, not operational submissions. Files are partitioned by hub,
 model, and reference date, with no truth columns mixed into submissions. Native
@@ -83,9 +108,9 @@ Malformed/crossing quantiles, duplicate units, invalid target dates, and missing
 scoring tasks raise errors. Season-boundary targets outside their held-out fold
 remain excluded according to the existing CV protocol.
 
-All candidate runs are freshly scored using R scoringutils on the exact frozen
-`units.parquet` from the original comparison. The already-scored official
-ensemble is reused, with its unit coverage and truth checked. No arbitrary
+All candidate runs and the official ensemble are freshly scored through the full
+EpiBench config pipeline on the exact frozen `units.parquet` from the original
+comparison. No previously computed ensemble scores are reused. No arbitrary
 missing-date allowance is used: each candidate must cover every scoring task.
 New runs with narrower support stop explicitly rather than receiving an easier
 ranking. The frozen hub commits, truth releases and unavailable target/seasons
@@ -129,3 +154,30 @@ NC are a prespecified illustration, not selected for performance. Use
 Finalized-data retrospective leave-one-season-out CV retains its information
 advantage over operational submissions, including later-season training in the
 first two folds. These rankings are exploratory, not untouched validation.
+
+## What EpiBench still needs for a direct frozen benchmark
+
+The interpretation of “full EpiBench” here is the complete **custom-config scoring
+pipeline**, using the requested five quantiles and retaining the official-ensemble reference,
+and frozen dates. The four bundled library challenges cover influenza admissions
+for three seasons and RSV admissions for 2025–26. They use the same five quantiles,
+but the hub baseline as reference and their own dates. Switching to those challenges
+would change the experiment and still leave COVID and ED targets uncovered.
+
+These are observations of the local checkout, not missing scoring metrics:
+
+| Capability | Current EpiBench behavior | Adaptation here / useful upstream change |
+|---|---|---|
+| Exact evaluation task list | Config mode uses submitted-facet unions and warns about missing support; library mode requires a Cartesian grid | Accept an explicit task manifest and require identical support, including irregular season-boundary tasks |
+| Frozen truth release | Scoring selects the latest `as_of` separately for each row | Accept a truth file or full-release cutoff policy; the snapshot contains only the chosen release |
+| Pinned local hub | A local Git clone is automatically pulled | Add a no-update option and explicit commit pin; use a non-Git snapshot here |
+| Challenge coverage | Four built-in scoring challenges; Emily supplies ten create configs covering more targets | Create configs supply vintage inputs, but still need scoring definitions to become library scorecards |
+| Custom scorecard | Config mode writes scores and summary; scorecards are available only through library challenges | Allow a scorecard definition in custom configs, including grouped aggregation |
+| Multiple targets/seasons and seed summaries | One target per scoring config, no B0 configuration/seed registry | Run nine configs; Tapestry aggregates the resulting EpiBench scores |
+| Submitted Parquet forecasts | Submitted-model paths must be CSV files/directories | Export CSV; add Parquet support upstream for smaller inputs |
+| Stable location codes | CSV truth loading and R/Python bridge reads infer numeric codes in state-only data | Explicit location schemas/string dtypes upstream; use Parquet truth and restore output FIPS here |
+| Reproducibility manifest | Output does not include all code/data hashes and R package versions | Save these alongside each invocation |
+
+Nothing above prevents using the full scoring command today with prepared local
+inputs. No EpiBench source changes are required for this report. The B0 exploratory
+objectives remain Tapestry aggregations, not an EpiBench library-challenge scorecard.

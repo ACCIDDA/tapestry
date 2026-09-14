@@ -56,10 +56,10 @@ nav:
   - Current workflows:
       - Canonical dataset: data/build-b-finalized.md
       - Training and prediction: workflows/training.md
-      - Hub scoring and PDF: workflows/hub-evaluation.md
-      - Configuration comparison: workflows/configuration-evaluation.md
+      - Frozen hub support: workflows/hub-evaluation.md
+      - EpiBench scoring and reports: workflows/configuration-evaluation.md
+      - Emily’s challenge configs: workflows/emily-configs.md
   - Experiment results:
-      - Three-season B0: results/b0-season-cv.md
       - Staged B0 experiments: results/b0-full-experiments.md
       - Configuration evaluation:
           - Report and rankings: results/b0-configuration-comparison.md

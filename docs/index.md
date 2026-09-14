@@ -16,8 +16,9 @@ the current model uses finalized retrospective data.
 
 Start with [Getting started](getting-started.md) and the
 [canonical dataset](data/build-b-finalized.md). Current commands are in
-[training](workflows/training.md), [hub evaluation](workflows/hub-evaluation.md),
-and [configuration comparison](workflows/configuration-evaluation.md).
+[training](workflows/training.md) and [full EpiBench evaluation](workflows/configuration-evaluation.md).
+The [frozen hub support](workflows/hub-evaluation.md) page records the original
+comparison protocol.
 
 For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can

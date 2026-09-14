@@ -1,4 +1,12 @@
 {
+  "quantile_levels": [
+    0.025,
+    0.25,
+    0.5,
+    0.75,
+    0.975
+  ],
+  "scoring_engine": "epibench score --config-path",
   "runs": [
     {
       "config_id": "B0-323fbd9b1c6f",
@@ -37,9 +45,9 @@
         },
         "populations": null
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/baseline_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/baseline_s42",
       "label": "baseline_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-323fbd9b1c6f",
@@ -78,9 +86,9 @@
         },
         "populations": null
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/baseline_s43",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/baseline_s43",
       "label": "baseline_s43",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-323fbd9b1c6f",
@@ -119,9 +127,9 @@
         },
         "populations": null
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/baseline_s44",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/baseline_s44",
       "label": "baseline_s44",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-c20800f1557e",
@@ -213,9 +221,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_balanced_admissions_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_balanced_admissions_s42",
       "label": "fourth_root_geo_h12_balanced_admissions_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-fa4e4645314c",
@@ -307,9 +315,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s42",
       "label": "fourth_root_geo_h12_dynamics_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-fa4e4645314c",
@@ -401,9 +409,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s43",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s43",
       "label": "fourth_root_geo_h12_dynamics_s43",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-fa4e4645314c",
@@ -495,9 +503,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s44",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_dynamics_s44",
       "label": "fourth_root_geo_h12_dynamics_s44",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-4d0946a0dfcf",
@@ -589,9 +597,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_flu_only_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_flu_only_s42",
       "label": "fourth_root_geo_h12_flu_only_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-96f18bffffa1",
@@ -683,9 +691,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_s42",
       "label": "fourth_root_geo_h12_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-96f18bffffa1",
@@ -777,9 +785,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_s43",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_s43",
       "label": "fourth_root_geo_h12_s43",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-96f18bffffa1",
@@ -871,9 +879,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h12_s44",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h12_s44",
       "label": "fourth_root_geo_h12_s44",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-8afe05f2b10e",
@@ -965,9 +973,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_h26_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_h26_s42",
       "label": "fourth_root_geo_h26_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-b1e265a36c11",
@@ -1059,9 +1067,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/fourth_root_geo_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/fourth_root_geo_s42",
       "label": "fourth_root_geo_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-41878487e0fd",
@@ -1153,9 +1161,9 @@
           "US": 340110988.0
         }
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_full_20260914/sqrt_geo_s42",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_full_20260914/sqrt_geo_s42",
       "label": "sqrt_geo_s42",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     },
     {
       "config_id": "B0-2a157841d7e4",
@@ -1189,12 +1197,12 @@
         },
         "populations": null
       },
-      "run": "/Users/chadi/Research/influpaintX/data/experiments/b0_season_cv_20260913",
+      "run": "/Users/chadi/Research/Tapestry/data/experiments/b0_season_cv_20260913",
       "label": "b0_season_cv_20260913",
-      "hubverse_rows": 4176432
+      "hubverse_rows": 907920
     }
   ],
-  "frozen": "/Users/chadi/Research/influpaintX/data/evaluation/b0_hub_comparison",
+  "frozen": "/Users/chadi/Research/Tapestry/data/evaluation/b0_hub_comparison",
   "frozen_manifest_sha256": "0758e153aff1d09ba6901ebe743eb1016d14bea5c4610a6b3ed5f5df9f045e77",
   "epibench_plot_sha256": "f488f8688c95b2b8de8780a449439ec5265bedf72cda3c17540ef13574fe7600",
   "cases": [
@@ -1792,12 +1800,14 @@
   "evaluation_code_sha256": {
     "score_quantiles.R": "0e8143e48e6c4f67917ae4eb06fc3ad7621807e160c174765e61122831e4e853",
     "configurations.py": "19d1fd1916e8623e13b9d60f3d13ac57c429f9b80b1da070b321ffa2bc41a5c3",
+    "scoring.py": "65cad663162b1b631275c53d595564107a6d50b9e6c4bcf355408ab91d824729",
     "__init__.py": "e7ac8107c52c812b41f9d8aff54ba711a1b7b947b66e14105c792c7145e5ebc6",
-    "pdf_report.py": "c030988bde8a29829033a01d71a482498f45793e0ca21b068d524e27f1c01f06",
-    "hubs.py": "2036690957ec737b71a2443846b1d328aaa75921c82c1a1738de189a49af46d9",
+    "epibench.py": "8d6404c049db221a5a1a2f9414d79bd7b499581c215e9976836627a95fbdb4ac",
+    "pdf_report.py": "dd08fce4fa7021953e4d87649c26bd829053c63016436eea8b590001ba0144ae",
+    "hubs.py": "e143ebe23774314858df6abe448c1fc3bffcfc1a81115d6643a044715bf303b2",
     "summary.py": "d8bc26711aeb0247001201bcf27a6f7dfdbad64bff1a66a908ec2390451369ea",
-    "sweep.py": "66843ab6e56deeee74a57f925bf344de597c5e18a5a0a6227517b6672f120fa9",
-    "compare.py": "11daba0635f2c018228e6498754b8833ed145d1dda59bbb42d47064bfe21c9dc"
+    "sweep.py": "fcf4e0cbb03eecdcdef2dfd8ada2d0a1f422f12021954dd6961fabb2e618da44",
+    "compare.py": "5cd93211e00c11c8c41b592b070ae074c268c7d006b93052413f27e45ed648f6"
   },
   "assumptions": [
     "Finalized retrospective CV; exploratory ranking, not prospective validation.",
@@ -1806,29 +1816,5 @@
     "Relative WIS uses official ensemble; mean per-unit ratios differs from ratio of means.",
     "Seed counts differ; configuration means and sample SD are descriptive.",
     "Fans show every fourth origin; all origins exported and scored."
-  ],
-  "forecast_formats": [
-    "parquet",
-    "csv"
-  ],
-  "validation": {
-    "parquet_files": 6750,
-    "csv_files": 6750,
-    "quantile_rows_per_format": 62646480,
-    "model_directories_checked": 45,
-    "scored_forecasts": 906592,
-    "svg_figures": 72,
-    "sweep_rescore_max_wis_difference": 0.0,
-    "epibench_csv_loader_checked": true
-  },
-  "final_evaluation_file_sha256": {
-    "score_quantiles.R": "6f79dd372b31ef6d2e43ad144f71afee4de75e554504ba7dfcc2356e07383e42",
-    "configurations.py": "eed63e42c07be9df8d00050f6be01eb7e5b3530bc921d63ebeb1a5fa19a83d88",
-    "__init__.py": "5781004bbec9237809f4638680990ec7afdfb02c681108ae5df0912a5ac18eab",
-    "pdf_report.py": "4d42fa8f33eb5b9c923cd07b4ce50aa0bef00e6f1b93f616f82ce96f3eb81bd1",
-    "hubs.py": "b640e352bce74e998c5ca6f4cc561087080e51750f24547f9c07e212dfdb70ba",
-    "summary.py": "fd1d4409a2b7600b8f3d4557ffcf4eb8ecd097df37833772c9132678b657a453",
-    "sweep.py": "5ab9cfda0885cc02f385a1ed1f4ff23989131931ea1f2132d4c87095353f1769",
-    "compare.py": "e2bb68a45b51660b6d0d529332c3bbb9101184fb5663cdc6b2109dd70c9fc541"
-  }
+  ]
 }

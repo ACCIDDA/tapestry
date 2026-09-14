@@ -1,0 +1,21 @@
+---
+
+hub_path: "https://github.com/CDCgov/rsv-forecast-hub.git" 
+
+target: "wk inc rsv hosp" 
+
+challenge_name: "RSV_inchosp_2024-2025"
+
+dates: ["2024-12-07", "2024-12-14", "2024-12-21", "2024-12-28", "2025-01-04", "2025-01-11", "2025-01-18", "2025-01-25", "2025-02-01", "2025-02-08", "2025-02-15", "2025-02-22", "2025-03-01", "2025-03-08", "2025-03-15", "2025-03-22", "2025-03-29", "2025-04-05", "2025-04-12", "2025-04-19", "2025-04-26", "2025-05-03", "2025-05-10", "2025-05-17", "2025-05-24", "2025-05-31"]
+
+ground_truth_file: "target-data/time-series.parquet"
+observed_column_name: "observation"
+location_column_name: "location"
+date_column_name: "target_end_date"
+
+
+vintaging: TRUE
+vintaging_method: "as_of"
+vintaging_offset: -3
+
+output_path: "../rsv/inc-hosp"

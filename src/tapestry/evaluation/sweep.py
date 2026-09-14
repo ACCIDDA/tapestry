@@ -1,5 +1,6 @@
 """Export saved runs, score frozen tasks, and rank/plot configurations without refitting."""
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import importlib.util
 import json
 from pathlib import Path
@@ -11,7 +12,7 @@ import pandas as pd
 
 from .configurations import identify, digest
 from .hubs import HUBS, KEY, QCOLS, export_b0
-from .compare import score_with_r
+from .epibench import score_case
 from .scoring import METRICS, validate, match_forecasts, matched_scores, rank, objective as score_objective
 
 
@@ -80,6 +81,8 @@ def main():
     parser.add_argument('--family', default='B0')
     parser.add_argument('--csv', action='store_true', help='Also save uncompressed Hubverse CSV files for the EpiBench CLI')
     parser.add_argument('--epibench', type=Path, default=Path('../epibench'))
+    parser.add_argument('--score-workers', type=int, default=2, choices=(1, 2), help='Concurrent independent EpiBench cases')
+    parser.add_argument('--mirrors', type=Path, default=Path('data/mirrors'))
     parser.add_argument('--locations', nargs='+', default=['US', '37'], help='Hub FIPS codes; default US and NC')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -102,48 +105,30 @@ def main():
         print(f'Exporting and scoring {run.name} as {model}', flush=True)
         frames = export_b0(run)
         record['hubverse_rows'] = hubverse(frames, model, args.output, csv=args.csv)
-        score_dir = args.output / 'runs' / model
-        score_dir.mkdir(parents=True, exist_ok=True)
-        pending = []
         for case in cases:
             units = pd.read_parquet(args.frozen / case['directory'] / 'units.parquet')
-            predictions = frames[(case['season'], case['target'])]
-            wide = match_forecasts(predictions, units, case['target'])
+            wide = match_forecasts(frames[(case['season'], case['target'])], units, case['target'])
             by_case[case['directory']].append(wide.assign(model=model))
-            pending.append(wide.assign(model=case['directory']))
-        payload = pd.concat(pending, ignore_index=True)
-        # Content-addressed cache is tied to actual scored quantiles AND frozen truth.
-        fingerprint = digest(dict(payload=pd.util.hash_pandas_object(payload, index=False).astype(str).tolist(),
-                                  scorer=Path(__file__).with_name('score_quantiles.R').read_text()))
-        stamp = score_dir / 'fingerprint.txt'
-        if stamp.exists() and stamp.read_text() == fingerprint and (score_dir / 'scores.csv').exists():
-            scores = pd.read_csv(score_dir / 'scores.csv', dtype={'location': str})
-        else:
-            scores = score_with_r(payload, score_dir)
-            stamp.write_text(fingerprint)
-        # scoringutils returns scores without the input observation column.
-        scores = scores.merge(payload[['model', *KEY, 'observed']], on=['model', *KEY], validate='one_to_one')
-        for case in cases:
-            folder = args.frozen / case['directory']
-            units = pd.read_parquet(folder / 'units.parquet')
-            s = matched_scores(scores[scores.model == case['directory']], units)
-            all_scores.append(s.assign(model=model, target=case['target'], season=case['season']))
-    # Reuse already-scored official ensemble on exactly the same frozen tasks.
-    for case in cases:
+    # Two independent subprocesses keep memory bounded on the 32 GiB research machine.
+    # EpiBench freshly scores the ensemble together with every candidate.
+    def evaluate_case(case):
+        print(f"EpiBench scoring {case['directory']}", flush=True)
         source = args.frozen / case['directory']
         units = pd.read_parquet(source / 'units.parquet')
-        s = pd.read_csv(source / 'scores.csv', dtype={'location': str})
         q = pd.read_parquet(source / 'quantiles.parquet')
-        s = s[s.model == case['ensemble']].merge(
-            q[q.model == case['ensemble']][KEY + ['observed']], on=KEY, validate='one_to_one')
-        s = matched_scores(s, units)
-        all_scores.append(s.assign(target=case['target'], season=case['season']))
-        by_case[case['directory']].append(q[q.model == case['ensemble']])
+        by_case[case['directory']].append(q.loc[q.model == case['ensemble'], ['model', *KEY, 'observed', *QCOLS]])
+        hub_info = frozen['hubs'][case['hub']]
+        scoring_case = dict(case, truth_release=hub_info['truth_vintages'][case['target']])
+        scored = score_case(pd.concat(by_case[case['directory']], ignore_index=True), units,
+                            scoring_case, args.output / 'epibench' / case['directory'],
+                            epibench=args.epibench, mirrors=args.mirrors, commit=hub_info['commit'])
+        print(f"EpiBench complete {case['directory']} ({len(scored):,} scores)", flush=True)
+        return scored.assign(target=case['target'], season=case['season'])
+    with ThreadPoolExecutor(max_workers=args.score_workers) as pool:
+        futures = [pool.submit(evaluate_case, case) for case in cases]
+        for future in as_completed(futures):
+            all_scores.append(future.result())
     scores = pd.concat(all_scores, ignore_index=True)
-    join = ['target', 'season', *KEY]
-    ensemble = scores[~scores.model.isin([r['model_id'] for r in records])][join + ['wis']].rename(columns={'wis':'ensemble_wis'})
-    scores = scores.merge(ensemble, on=join, validate='many_to_one')
-    scores['rwis'] = scores.wis.div(scores.ensemble_wis).where(scores.ensemble_wis.ne(0))
     scores.to_parquet(args.output / 'scores.parquet', index=False)
     leaderboard = rank(scores)
     leaderboard.to_csv(args.output / 'leaderboard.csv', index=False)
@@ -182,7 +167,7 @@ def main():
                 plt.close(fig)
         units = pd.read_parquet(args.frozen / case['directory'] / 'units.parquet')
         fans(pd.concat(by_case[case['directory']], ignore_index=True), units, case, folder, args.locations)
-    manifest = dict(runs=records, frozen=str(args.frozen.resolve()), frozen_manifest_sha256=digest(frozen),
+    manifest = dict(quantile_levels=[float(q[1:]) for q in QCOLS], scoring_engine='epibench score --config-path', runs=records, frozen=str(args.frozen.resolve()), frozen_manifest_sha256=digest(frozen),
                     epibench_plot_sha256=digest(module_path.read_text()), cases=cases,
                     evaluation_code_sha256={p.name: digest(p.read_text()) for p in Path(__file__).parent.glob('*') if p.suffix in {'.py', '.R'}},
                     assumptions=['Finalized retrospective CV; exploratory ranking, not prospective validation.',
@@ -203,7 +188,8 @@ def write_report(output, records, cases, objective, configs):
     lines = ['# B0 configuration evaluation', '',
              f'{len(records)} saved runs; {len(configs)} configurations; {len(cases)} target/season comparisons.', '',
              'All runs use the same frozen ensemble-supported forecast tasks and truth. '
-             'Scores come from R scoringutils; the diagnostic plots call the sibling EpiBench plotting code. '
+             'Scores come from the full EpiBench config pipeline (including R scoringutils and relative WIS); '
+             'the diagnostic plots call EpiBench plotting code. '
              'These are finalized retrospective CV results and exploratory selections, not prospective rankings.', '',
              'Lower is better. The influenza objective is the geometric mean of WIS/ensemble-WIS '
              'ratios, equally weighting each season and US versus states/DC. The admissions objective '
@@ -220,7 +206,7 @@ def write_report(output, records, cases, objective, configs):
               '', link('Detailed target/season/geography/horizon leaderboard', Path('leaderboard.csv')),
               '', link('Configuration definitions and provenance', Path('configurations.json')),
               '', 'Hubverse forecasts are stored under `hubverse/<hub>/model-output/<model_id>/`, '
-              'one Parquet file per reference date with all 23 quantiles and horizons 0–3. '
+              'one Parquet file per reference date with five quantiles and horizons 0–3. '
               'Use `--csv` for CSV companions accepted directly by the EpiBench CLI. '
               'ED values are proportions. Every available origin is exported; fans display every fourth origin '
               'for readability, with median, 50% and 95% intervals. NC uses FIPS 37.', '',

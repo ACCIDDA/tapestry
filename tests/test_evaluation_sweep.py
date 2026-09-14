@@ -29,10 +29,10 @@ def test_hubverse_roundtrip_and_bad_dates(tmp_path):
     frame = pd.DataFrame(dict(reference_date=['2025-01-04'] * 4,
         target_end_date=['2025-01-04', '2025-01-11', '2025-01-18', '2025-01-25'],
         location=['01'] * 4, horizon=range(4)))
-    frame[QCOLS] = np.arange(23)
+    frame[QCOLS] = np.arange(5)
     # Supply all hubs because the submission writer creates a complete repository.
     frames = {('2024-2025', f'wk inc {d} hosp'): frame for d in ('flu', 'covid', 'rsv')}
-    assert hubverse(frames, 'B0-test-s42', tmp_path, csv=True) == 3 * 4 * 23
+    assert hubverse(frames, 'B0-test-s42', tmp_path, csv=True) == 3 * 4 * 5
     path = next((tmp_path / 'hubverse/flusight').rglob('*.parquet'))
     long = pd.read_parquet(path)
     csv = pd.read_csv(path.with_suffix('.csv'), dtype={'location': str, 'output_type_id': str})
@@ -76,7 +76,7 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
         folder = run / f'eval_{held}'
         folder.mkdir()
         context = date(year, 10, 7)
-        q = np.broadcast_to(np.linspace(.01, .23, 23)[:, None, None, None, None], (23, 1, 4, 6, 2))
+        q = np.broadcast_to(np.linspace(.01, .23, 5)[:, None, None, None, None], (5, 1, 4, 6, 2))
         np.savez(folder / 'forecasts.npz', quantile_levels=LEVELS, quantiles=q,
                  context_end=[context.isoformat()],
                  target_dates=[[(context + timedelta(weeks=h)).isoformat() for h in range(1, 5)]],
@@ -84,8 +84,8 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
     frozen = tmp_path / 'frozen'
     folder = frozen / 'flu-test'
     folder.mkdir(parents=True)
-    case = dict(status='scored', directory='flu-test', target='wk inc flu hosp', season='2023-2024', ensemble='FluSight-ensemble')
-    (frozen / 'manifest.json').write_text(json.dumps(dict(cases=[case])))
+    case = dict(hub='flusight', status='scored', directory='flu-test', target='wk inc flu hosp', season='2023-2024', ensemble='FluSight-ensemble')
+    (frozen / 'manifest.json').write_text(json.dumps(dict(cases=[case], hubs={'flusight': {'commit':'HEAD', 'truth_vintages': {'wk inc flu hosp':'2023-12-01'}}})))
     forecast = export_b0(run)[('2023-2024', 'wk inc flu hosp')]
     units = forecast[KEY].assign(observed=.1)
     units.to_parquet(folder / 'units.parquet', index=False)
@@ -103,6 +103,9 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
     assert len(list((output / 'plots').rglob('*.svg'))) == 8
     assert (output / 'REPORT.md').exists()
     assert (output / 'manifest.json').exists()
+    assert (output / 'epibench/flu-test/output/EpiBenchmark_scores.csv').exists()
+    assert (output / 'epibench/flu-test/output/summary.md').exists()
+    assert json.loads((output / 'manifest.json').read_text())['scoring_engine'] == 'epibench score --config-path'
 
 
 def test_shared_forecast_matching_rejects_missing_and_duplicate_tasks():
@@ -110,7 +113,7 @@ def test_shared_forecast_matching_rejects_missing_and_duplicate_tasks():
     units = pd.DataFrame(dict(reference_date=['2025-01-04'] * 2,
         target_end_date=['2025-01-04'] * 2, location=['01', 'US'], horizon=[0, 0], observed=[1., 2.]))
     predictions = units[KEY].copy()
-    predictions[QCOLS] = np.arange(23)
+    predictions[QCOLS] = np.arange(5)
     matched = match_forecasts(predictions.iloc[::-1], units, 'wk inc flu hosp')
     assert matched.location.tolist() == ['01', 'US']
     with pytest.raises(ValueError, match='Missing frozen tasks'):
@@ -130,26 +133,30 @@ def test_staged_runner_and_sweep_share_geographic_objective(tmp_path, monkeypatc
     runner = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runner)
     frozen = tmp_path / 'frozen'
-    case = dict(status='scored', directory='flu', target='wk inc flu hosp',
+    case = dict(hub='flusight', status='scored', directory='flu', target='wk inc flu hosp',
                 season='2024-2025', ensemble='official', n_units=3)
     folder = frozen / 'flu'
     folder.mkdir(parents=True)
-    (frozen / 'manifest.json').write_text(json.dumps(dict(cases=[case])))
+    (frozen / 'manifest.json').write_text(json.dumps(dict(cases=[case], hubs={'flusight': {'commit':'HEAD', 'truth_vintages': {'wk inc flu hosp':'2023-12-01'}}})))
     units = pd.DataFrame(dict(reference_date=['2025-01-04'] * 3,
         target_end_date=['2025-01-04'] * 3, location=['01', '02', 'US'], horizon=[0] * 3,
         observed=[1., 2., 3.]))
     units.to_parquet(folder / 'units.parquet', index=False)
     predictions = units[KEY].copy()
-    predictions[QCOLS] = np.arange(23)
+    predictions[QCOLS] = np.arange(5)
     ensemble = units[KEY].assign(model='official')
     ensemble[runner.METRICS] = 1.
     ensemble.to_csv(folder / 'scores.csv', index=False)
+    ensemble[QCOLS] = np.arange(5)
+    ensemble.to_parquet(folder / 'quantiles.parquet', index=False)
     scores = units[KEY].assign(model='flu')
     scores[runner.METRICS] = 1.
     scores['wis'] = [2., 4., 8.]
     monkeypatch.setattr(runner, 'FROZEN', frozen)
     monkeypatch.setattr(runner, 'export_b0', lambda _: {(case['season'], case['target']): predictions})
-    monkeypatch.setattr(runner, 'score_with_r', lambda *_: scores.copy())
+    monkeypatch.setattr(runner, 'score_case', lambda *_, **__: pd.concat([
+        scores.assign(model='candidate', observed=units.observed),
+        scores.assign(model='official', wis=1., observed=units.observed)], ignore_index=True).assign(ensemble_wis=1.))
     run = tmp_path / 'run'
     run.mkdir()
     summary = runner.score_run(run)
@@ -158,6 +165,7 @@ def test_staged_runner_and_sweep_share_geographic_objective(tmp_path, monkeypatc
     assert pooled.loc['US', 'n'] == 1
     assert pooled.loc['states_dc', 'wis_ratio'] == 3.
     assert pooled.loc['US', 'wis_ratio'] == 8.
+    assert pooled.loc['US', 'ensemble_interval_coverage_95'] == 1.
     assert objective(summary) == pytest.approx(np.sqrt(3 * 8))
     comparable = aggregate_scores(scores.assign(target=case['target'], season=case['season'],
         ensemble_wis=1.), runner.METRICS)

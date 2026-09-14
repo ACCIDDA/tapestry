@@ -1,10 +1,184 @@
 {
-  "parquet_files": 6750,
-  "csv_files": 6750,
-  "quantile_rows_per_format": 62646480,
-  "model_directories_checked": 45,
-  "scored_forecasts": 906592,
-  "svg_figures": 72,
-  "sweep_rescore_max_wis_difference": 0.0,
-  "epibench_csv_loader_checked": true
+  "epibench_code_sha256": {
+    "fetch.py": "ae0445bf04e7bf8f91223c0433601c70c0a6bf26f07369c4008fb90e5223005b",
+    "scoring_bridge.py": "8adb98a3bc85d4a4627e0c679cb8ab8067f2bd041fcb80553737da00a0968f9e",
+    "plot.py": "7cba885f83b31e94d9eb14ced13f54ea3d77f375eb419c596ac1a49b14e8c570",
+    "config.py": "5880e691b83da07075dff5ce09fe7c9221b88f9dca1ff33e0cc825bc0aeb7601",
+    "library.py": "c75c1be531b443da308b13dbb2e6e714855596fcdbc085fdfa751d31e4040ce0",
+    "create.py": "935c0ab4b51a4a2e45932114ee91711391087bfaa3ad71a8e3085fb6474d94ec",
+    "load_library_challenge.py": "a4fb083afb164e2e962630b001045164ee284f2b636749585344107174144169",
+    "__init__.py": "33f4cbf2cfdee7c0fa45227fb779664e232e5e4ef48150aea2a72b471b234bca",
+    "scoring_summary.py": "4f828b5241a7e1f1602f5d15b41f253eab3e3fd856481aa9a2abb84a3472770f",
+    "scoring_ground_truth.py": "2fd90879c8769479900cb2857c0b8efbf7cbf12a0125b94ad601921c997f7ed5",
+    "prep_complete_models_for_plotting.py": "c2f009ab08613edd092453c628e5aaf95b5b35eb2da6ed9415e08f8dff57dfc4",
+    "cli.py": "9eb11f60be94ad45aaf8320ed6b0532da5cd083164a814088a2f2efc4eb58fbe",
+    "hub_date_utils.py": "928c8b5a60e877d1ba6b532687984068d88d069baf6c91f361f9efc33bd1b815",
+    "scorecard_functions.py": "1fbfee0496032ff37655750d4a6b6dbc1fb35c7c750f07361cefb452fd017b72",
+    "build_plots.py": "f488f8688c95b2b8de8780a449439ec5265bedf72cda3c17540ef13574fe7600",
+    "quantile_validation.py": "685366e3cb57bcae6f932df8cb13e1cb1f0562c11a2aac0d60a60006fb0dca82",
+    "extract_model_data_details.py": "94710ebb080d2874db7b106a7fe76e224a4a9f45725e29c511386fff3cdf58bd",
+    "horizon_utils.py": "1958045b970c5ff86e9d6c54f427c9dcb73562daaf4607d719bec100e52d3b02",
+    "__main__.py": "71e2ff9ea51bcd0f6b695f3c1288b1bdbcca51f68308f3b582947d3a273606de",
+    "path_utils.py": "8eeea2726866dd438c700534be59fb94fb7b1cea914fc52fce20033bad7e1240",
+    "score.py": "73037bc43a0031b8d430be0d4d7564862d820f42eb967694fad50fc5ec910c63",
+    "create_ground_truth.py": "23fdda61898c359bad0c77e777bb501a86e97a87f0874c8a3f1a7a6c1ff05c90"
+  },
+  "r_versions": "R 4.5.0\nscoringutils 2.1.1\npurrr 1.1.0\n",
+  "quantile_levels": [
+    0.025,
+    0.25,
+    0.5,
+    0.75,
+    0.975
+  ],
+  "scoring_commands": [
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/flusight_flu_hosp_2023-2024/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/flusight_flu_hosp_2024-2025/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/flusight_flu_hosp_2025-2026/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/flusight_flu_prop_ed_visits_2025-2026/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/covid_covid_hosp_2024-2025/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/covid_covid_hosp_2025-2026/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/covid_covid_prop_ed_visits_2025-2026/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/rsv_rsv_hosp_2025-2026/score.yaml"
+    ],
+    [
+      "/Users/chadi/Research/Tapestry/.venv/bin/python",
+      "-m",
+      "epibench",
+      "score",
+      "--config-path",
+      "/Users/chadi/Research/Tapestry/data/evaluation/b0_epibench_five_quantiles/epibench/rsv_rsv_prop_ed_visits_2025-2026/score.yaml"
+    ]
+  ],
+  "scoring_engine": "epibench score --config-path",
+  "n_scores": 906592,
+  "n_runs": 15,
+  "cases": [
+    {
+      "case": "flusight_flu_hosp_2023-2024",
+      "n_units": 6234,
+      "n_scores": 99744,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "flusight_flu_hosp_2024-2025",
+      "n_units": 5616,
+      "n_scores": 89856,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "flusight_flu_hosp_2025-2026",
+      "n_units": 5824,
+      "n_scores": 93184,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "flusight_flu_prop_ed_visits_2025-2026",
+      "n_units": 5768,
+      "n_scores": 92288,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "covid_covid_hosp_2024-2025",
+      "n_units": 6968,
+      "n_scores": 111488,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "covid_covid_hosp_2025-2026",
+      "n_units": 9048,
+      "n_scores": 144768,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "covid_covid_prop_ed_visits_2025-2026",
+      "n_units": 5586,
+      "n_scores": 89376,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "rsv_rsv_hosp_2025-2026",
+      "n_units": 6032,
+      "n_scores": 96512,
+      "undefined_rwis": 0
+    },
+    {
+      "case": "rsv_rsv_prop_ed_visits_2025-2026",
+      "n_units": 5586,
+      "n_scores": 89376,
+      "undefined_rwis": 0
+    }
+  ],
+  "previous": "data/evaluation/b0_epibench_comparison",
+  "max_abs_wis_error": 7.275957614183426e-12,
+  "previous_wis_difference": 2958.7295652174,
+  "changed_flu_rank_configurations": [],
+  "n_figures": 72,
+  "n_exported_quantile_rows": 13618800,
+  "n_parquet_exports": 6750,
+  "n_csv_exports": 6750,
+  "checks": [
+    "Exact frozen support and finite metrics for every model",
+    "Full EpiBench outputs exist for every case",
+    "Every score matches an independent five-quantile pinball calculation",
+    "EpiBench relative WIS matches paired ensemble scores",
+    "Median AE and 50/95 coverage unchanged from the 23-quantile evaluation",
+    "Every current Parquet export contains only the five requested levels",
+    "All generated SVG figures parse successfully"
+  ]
 }

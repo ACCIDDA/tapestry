@@ -106,8 +106,8 @@ def predict(args):
     with torch.no_grad():
         samples = torch.cat([model(x, cal, min(args.sample_batch, args.members - i), locations=q['locations']).cpu()
                              for i in range(0, args.members, args.sample_batch)], dim=0).numpy()[:, 0]
-    levels = np.array([.01, .025, .05, .10, .15, .20, .25, .30, .35, .40, .45,
-                       .50, .55, .60, .65, .70, .75, .80, .85, .90, .95, .975, .99])
+    from .quantiles import LEVELS
+    levels = LEVELS
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('wb') as stream:

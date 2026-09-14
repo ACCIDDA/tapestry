@@ -1,6 +1,13 @@
-# Reusable hub comparison through scoringutils
+# Frozen hub support and historical comparison
 
-This evaluates already saved Build B quantiles, with no retraining. It implements
+The current report uses the [full EpiBench scoring workflow](configuration-evaluation.md)
+and [configuration evaluation report](../results/b0-configuration-comparison.md).
+The commands below document how the original frozen task set was established;
+they document the historical 23-quantile result, not the current scoring entrypoint.
+Current code and new exports use five quantiles; exact historical reproduction
+requires its recorded source revision. The original frozen task/truth files remain unchanged.
+
+This historical comparison evaluates already saved Build B quantiles, with no retraining. It implements
 the same external `Rscript` -> `as_forecast_quantile()` -> `score()` pattern and
 metrics as `../epibench/src/epibench/scoring_bridge.py`. It calls **R scoringutils**;
 it does not substitute the earlier Python WIS calculation. The pipeline is in

@@ -8,6 +8,9 @@ from pathlib import Path
 
 def publish(comparison, docs):
     manifest = json.loads((comparison / 'manifest.json').read_text())
+    validation = json.loads((comparison / 'validation.json').read_text())
+    if manifest.get('scoring_engine') != 'epibench score --config-path':
+        raise ValueError('Publish only completed full EpiBench evaluations')
     assets = docs / 'assets' / 'b0_configuration_comparison'
     pages = docs / 'results' / 'b0-comparison'
     assets.mkdir(parents=True, exist_ok=True)
@@ -17,7 +20,9 @@ def publish(comparison, docs):
         destination = assets / case['directory']
         destination.mkdir(exist_ok=True)
         for figure in source.glob('*.svg'):
-            shutil.copy2(figure, destination / figure.name)
+            # Matplotlib's SVG path lines end in spaces; normalize for clean source diffs.
+            (destination / figure.name).write_text(
+                '\n'.join(line.rstrip() for line in figure.read_text().splitlines()) + '\n')
     downloads = ['configuration_ranking.csv', 'run_ranking.csv', 'leaderboard.csv',
                  'configurations.csv', 'configurations.json', 'manifest.json', 'validation.json']
     for name in downloads:
@@ -30,11 +35,21 @@ def publish(comparison, docs):
              'wk inc covid hosp': 'COVID-19 admissions', 'wk inc covid prop ed visits': 'COVID-19 ED visits',
              'wk inc rsv hosp': 'RSV admissions', 'wk inc rsv prop ed visits': 'RSV ED visits'}
     prefix = '../assets/b0_configuration_comparison'
-    lines = ['# B0 configuration comparison', '',
+    lines = ['# B0 evaluation with EpiBenchmark', '',
              '**15 runs, nine configurations, and nine target/season comparisons.** '
              'This report includes all 14 completed sweep runs and the original B0 CV run. '
-             'R scoringutils evaluated 906,592 forecasts on identical frozen hub tasks; '
-             'EpiBench generated the diagnostics. Each target/season page below embeds its eight figures.', '',
+             f"The full `epibench score --config-path` pipeline evaluated {validation['n_scores']:,} forecasts "
+             'on identical frozen hub tasks, including freshly rescored official ensembles. '
+             'EpiBench also generated the diagnostics. Each target/season page below embeds its eight figures.', '',
+             'The original Python season-CV/persistence report has been removed. Its saved forecasts '
+             'are included here under the original configuration identity. '
+             'See [EpiBench integration and remaining gaps](../workflows/configuration-evaluation.md#what-epibench-still-needs-for-a-direct-frozen-benchmark).', '',
+             'Emily’s ten configs provide forecast dates and vintage inputs; '
+             'see the [config review](../workflows/emily-configs.md). '
+             'Our challenges remain unversioned custom scoring configs. '
+             'This report retains the existing nine frozen task sets, finalized truth and finalized-data fits; '
+             'Emily’s challenge ground truth is not used. '
+             'Historical source archives are preserved; current exports and all new predictions save only five quantiles.', '',
              '## Interpretation', '',
              'These are finalized-data retrospective cross-validation results. '
              'The first two folds train on later seasons; all folds were used for exploratory selection. '
@@ -45,6 +60,10 @@ def publish(comparison, docs):
              'The admissions objective additionally weights the three admission targets equally. '
              'Configuration scores average individual seed objectives. '
              'The relative-WIS figures instead average per-forecast ratios; these statistics need not agree.', '',
+             'Scores below use five quantiles: **0.025, 0.25, 0.5, 0.75, 0.975**, and the official ensemble on the frozen tasks. '
+             'The geometric-mean objectives are Tapestry aggregations of EpiBench scores. '
+             'They are not the bundled EpiBench challenge scorecards, which use different dates, '
+             'hub baselines, and challenge-specific task sets.', '',
              '## Configuration ranking', '',
              '| Configuration | Example run | Seeds | Flu objective | Flu seed SD | Admissions objective | Admissions seed SD |',
              '|---|---|---:|---:|---:|---:|---:|']
@@ -53,11 +72,13 @@ def publish(comparison, docs):
             return f'{float(row[field]):.4f}' if row[field] else '—'
         lines.append(f"| `{row['config_id']}` | {labels[row['config_id']]} | {row['seeds']} | " +
                      ' | '.join(number(k) for k in ('flu_mean','flu_sd','admissions_mean','admissions_sd')) + ' |')
-    lines += ['', 'A dash denotes an undefined sample SD for a single seed. '
-              'The fourth-root/geography configuration has the lowest mean influenza objective, '
-              'but was tested at one seed. Among configurations repeated at three seeds, '
-              'the twelve-week dynamics configuration has the lowest mean influenza objective. '
-              'See the individual-run ranking to distinguish a strong seed from a stable formulation.', '',
+    best = ranking[0]
+    repeated = next((r for r in ranking if int(r['seeds']) > 1), None)
+    finding = f"Lowest mean influenza objective: `{best['config_id']}` ({int(best['seeds'])} seed(s)). "
+    if repeated:
+        finding += f"Best configuration tested at multiple seeds: `{repeated['config_id']}`. "
+    lines += ['', 'A dash denotes an undefined sample SD for a single seed. ' + finding +
+              'These are five-quantile scores; WIS values from earlier 23-quantile reports are not interchangeable.', '',
               f'[Download configuration rankings]({prefix}/configuration_ranking.csv) · '
               f'[Individual runs]({prefix}/run_ranking.csv) · '
               f'[Detailed leaderboard]({prefix}/leaderboard.csv)', '',
@@ -112,24 +133,27 @@ def publish(comparison, docs):
               f'[Evaluation provenance]({prefix}/manifest.json) · '
               f'[Validation summary]({prefix}/validation.json)', '',
               'Four-week projections are retained locally in '
-              '`data/evaluation/b0_configuration_comparison/hubverse/<hub>/model-output/<model_id>/`, '
-              'with 6,750 CSV files and 6,750 Parquet companions containing the same 62,646,480 quantile rows. '
+              '`data/evaluation/b0_epibench_five_quantiles/hubverse/<hub>/model-output/<model_id>/`, '
+              f"with {validation['n_csv_exports']:,} CSV files and {validation['n_parquet_exports']:,} Parquet companions "
+              f"containing the same {validation['n_exported_quantile_rows']:,} quantile rows, exactly five per forecast. "
               'These large forecast archives are not copied into the documentation. '
               'The portable figures and ranking downloads above are included in the documentation build.', '',
               'See the [configuration evaluation workflow](../workflows/configuration-evaluation.md) '
               'to score future runs and refresh this report.', '',
               '## Validation', '',
-              'Nine tests passed, including export–score–rank–plot integration and CSV/Parquet agreement. '
-              'All 14 sweep rescores exactly match the earlier WIS values. The comparison has 906,592 '
-              'unique scored forecasts, identical support in all nine cases, and 72 valid SVG figures. '
-              'EpiBench’s own forecast loader accepted an exported CSV and preserved zero-padded FIPS codes.', '']
+              f"All {validation['n_scores']:,} unique per-forecast scores passed the frozen-support audit. "
+              'Every candidate and ensemble was processed by the full EpiBench scoring command. '
+              f"Maximum WIS error against an independent five-quantile calculation: {validation['max_abs_wis_error']:.3g}. "
+              'Relative WIS was checked against matched ensemble scores, including undefined zero denominators. '
+              'Median AE and 50/95% coverage match the previous evaluation; WIS was recomputed on the new grid. '
+              'The report includes 72 regenerated SVG figures. See the validation download for the exact audit results.', '']
     (docs / 'results' / 'b0-configuration-comparison.md').write_text('\n'.join(lines))
     print(f'Published report, {len(manifest["cases"])} figure pages and 72 figures under {docs}')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--comparison', type=Path, default=Path('data/evaluation/b0_configuration_comparison'))
+    parser.add_argument('--comparison', type=Path, default=Path('data/evaluation/b0_epibench_five_quantiles'))
     parser.add_argument('--docs', type=Path, default=Path('docs'))
     args = parser.parse_args()
     publish(args.comparison, args.docs)

@@ -58,7 +58,7 @@ def compare_case(ours, hub, held_out, target, cache, output, model_name, rscript
             frames.append(candidate.assign(model=file.stem))
     wide = pd.concat(frames, ignore_index=True)
     wide.to_parquet(folder / 'quantiles.parquet', index=False)
-    print(json.dumps({'case': folder.name, 'units': len(base), 'models': wide.model.nunique(), 'quantile_rows': len(wide) * 23}), flush=True)
+    print(json.dumps({'case': folder.name, 'units': len(base), 'models': wide.model.nunique(), 'quantile_rows': len(wide) * len(QCOLS)}), flush=True)
     scores = score_with_r(wide, folder, rscript)
     metrics = ['wis', 'ae_median', 'interval_coverage_50', 'interval_coverage_95',
                'overprediction', 'underprediction', 'dispersion', 'bias']

@@ -19,8 +19,7 @@ from .run import calendar, fit
 from .experiments import add_experiment_args, LOSS_WEIGHTS
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
-LEVELS = np.array([.01, .025, .05, .10, .15, .20, .25, .30, .35, .40,
-                   .45, .50, .55, .60, .65, .70, .75, .80, .85, .90, .95, .975, .99])
+from .quantiles import LEVELS
 
 
 def fold_data(ds, held_out, lookback=8):
@@ -61,13 +60,12 @@ def fold_data(ds, held_out, lookback=8):
 
 
 def wis(quantiles, truth):
-    """23-quantile WIS, quantile axis first; returns scores for every task."""
-    score = .5 * np.abs(truth - quantiles[11])
-    for i, lower_level in enumerate(LEVELS[:11]):
-        alpha = 2 * lower_level
-        lower, upper = quantiles[i], quantiles[-i - 1]
-        score += alpha / 2 * (upper - lower) + np.maximum(lower - truth, 0) + np.maximum(truth - upper, 0)
-    return score / 11.5
+    """Five-quantile WIS diagnostic; official evaluation runs through EpiBench."""
+    if quantiles.shape[0] != len(LEVELS):
+        raise ValueError('WIS expects the five saved quantiles')
+    levels = LEVELS.reshape((-1,) + (1,) * (quantiles.ndim - 1))
+    error = truth - quantiles
+    return 2 * np.maximum(levels * error, (levels - 1) * error).mean(axis=0)
 
 
 def persistence(x):
@@ -117,10 +115,10 @@ def evaluate(model, episodes, args, output):
                                              'member_identity': 'shared across horizon/channel/location within each origin',
                                              'count_quantiles': 'round-half-up', 'baseline': 'deterministic last observation'}))
     metrics = {
-        'wis': wis(q, y), 'mae': np.abs(q[11] - y),
-        'coverage80': ((y >= q[3]) & (y <= q[-4])).astype(float),
-        'coverage95': ((y >= q[1]) & (y <= q[-2])).astype(float),
-        'width80': q[-4] - q[3],
+        'wis': wis(q, y), 'mae': np.abs(q[2] - y),
+        'coverage50': ((y >= q[1]) & (y <= q[3])).astype(float),
+        'coverage95': ((y >= q[0]) & (y <= q[4])).astype(float),
+        'width50': q[3] - q[1],
         'baseline_wis': wis(np.broadcast_to(baseline, q.shape), y),
     }
     common = mask & baseline_mask
@@ -155,7 +153,7 @@ def run(args):
     output.mkdir(parents=True, exist_ok=False)
     ds = FinalizedDataset.load(args.dataset)
     started = time.perf_counter()
-    code_paths = [Path(__file__), Path(__file__).with_name('b0.py'), Path(__file__).with_name('run.py'), Path(__file__).with_name('experiments.py'),
+    code_paths = [Path(__file__), Path(__file__).with_name('b0.py'), Path(__file__).with_name('run.py'), Path(__file__).with_name('experiments.py'), Path(__file__).with_name('quantiles.py'),
                   Path(__file__).parents[1] / 'model_data' / 'finalized.py']
     manifest = {'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
@@ -165,7 +163,7 @@ def run(args):
                 'stride_weeks': 1, 'horizons': [1, 2, 3, 4],
                 'holdout_rule': 'excluded from fit context, targets, and scalers; evaluation labels stay within held-out season',
                 'prior_exposure': 'Season 1 already used for skeleton smoke fitting; all seasons now used for requested CV, none reserved as untouched holdout.',
-                'folds': []}
+                'quantile_levels': LEVELS.tolist(), 'folds': []}
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     all_scores = []
     for held_out in SEASONS:

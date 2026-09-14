@@ -7,9 +7,11 @@ rankings, and inline projection fans and scoring diagnostics for every target/se
 Completed 14 full runs / 42 season fits. Each fit uses 50 epochs,
 width 64, latent dimension 16, eight independent training draws, and 2,048 evaluation
 draws per origin. Sum of fit/evaluation run times: 31.0 minutes, excluding
-hub rescoring. All 23 quantiles, fixed truth, and original ensemble-supported tasks
-are retained. R scoringutils scores each new forecast; existing ensemble scores
-are reused on exactly matching keys. Admission quantiles retain half-up rounding.
+hub rescoring. The historical staged-search results below used 23 quantiles.
+The linked current report now scores and exports only five quantiles on the same
+frozen truth and original ensemble-supported tasks; consult it for current rankings. The current linked report freshly rescores all candidates and ensembles through
+the full EpiBench command on exactly matching keys. The original staged search
+used the earlier direct R bridge; its selection history is retained here. Admission quantiles retain half-up rounding.
 
 ## Findings
 

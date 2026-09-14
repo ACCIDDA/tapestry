@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from tapestry.evaluation.hubs import export_b0, KEY, QCOLS
-from tapestry.evaluation.compare import score_with_r
-from tapestry.evaluation.scoring import match_forecasts, matched_scores, aggregate_scores, objective
+from tapestry.evaluation.hubs import export_b0, KEY
+from tapestry.evaluation.epibench import score_case
+from tapestry.evaluation.scoring import match_forecasts, aggregate_scores, objective
 
 ROOT = Path('data/experiments/b0_full_20260914')
 FROZEN = Path('data/evaluation/b0_hub_comparison')
@@ -22,41 +22,29 @@ def save(name, obj):
 
 def score_run(folder):
     out = folder / 'hub_scores'
-    if (out / 'summary.csv').exists():
-        return pd.read_csv(out / 'summary.csv')
     out.mkdir(exist_ok=True)
     exported = export_b0(folder)
     manifest = json.loads((FROZEN / 'manifest.json').read_text())
-    frames, ensembles, cases = [], [], []
+    records, cases = [], []
     for case in manifest['cases']:
         if case['status'] != 'scored':
             continue
-        name = case['directory']
-        source = FROZEN / name
+        source = FROZEN / case['directory']
         units = pd.read_parquet(source / 'units.parquet')[KEY + ['observed']]
-        ours = exported[(case['season'], case['target'])][KEY + QCOLS]
-        wide = match_forecasts(ours, units, case['target'])
-        # Unique model key keeps simultaneous target/season tasks distinct in R.
-        frames.append(wide.assign(model=name))
-        ens = pd.read_csv(source / 'scores.csv', dtype={'location': str})
-        ens = ens[ens.model == case['ensemble']].copy()
-        ens = ens.merge(units[KEY + ['observed']], on=KEY, validate='one_to_one')
-        matched = matched_scores(ens, units, METRICS)
-        ensembles.append(matched.assign(model=name))
+        ours = match_forecasts(exported[(case['season'], case['target'])], units, case['target'])
+        ensemble = pd.read_parquet(source / 'quantiles.parquet')
+        ensemble = ensemble[ensemble.model == case['ensemble']]
+        hub = manifest['hubs'][case['hub']]
+        scoring_case = dict(case, truth_release=hub['truth_vintages'][case['target']])
+        scored = score_case(pd.concat([ours.assign(model='candidate'), ensemble], ignore_index=True),
+                            units, scoring_case, out / 'epibench' / case['directory'], commit=hub['commit'])
+        candidate = scored[scored.model == 'candidate'].assign(target=case['target'], season=case['season'])
+        reference_metrics = [m for m in METRICS if m != 'wis']
+        reference = scored[scored.model == case['ensemble']][KEY + reference_metrics].rename(
+            columns={m: 'ensemble_' + m for m in reference_metrics})
+        candidate = candidate.merge(reference, on=KEY, validate='one_to_one')
+        records.append(aggregate_scores(candidate, METRICS + ['ensemble_' + m for m in METRICS]))
         cases.append({k: case[k] for k in ('directory', 'season', 'target', 'ensemble', 'n_units')})
-    scores = score_with_r(pd.concat(frames, ignore_index=True), out)
-    ens = pd.concat(ensembles, ignore_index=True)
-    records = []
-    for case in cases:
-        units = pd.read_parquet(FROZEN / case['directory'] / 'units.parquet')
-        s = scores[scores.model == case['directory']].merge(
-            units[KEY + ['observed']], on=KEY, validate='one_to_one')
-        s = matched_scores(s, units, METRICS)
-        e = ens[ens.model == case['directory']][KEY + METRICS].rename(
-            columns={metric: 'ensemble_' + metric for metric in METRICS})
-        paired = s.merge(e, on=KEY, validate='one_to_one').assign(
-            target=case['target'], season=case['season'])
-        records.append(aggregate_scores(paired, METRICS + ['ensemble_' + m for m in METRICS]))
     summary = pd.concat(records, ignore_index=True).drop(columns='model')
     summary.to_csv(out / 'summary.csv', index=False)
     (out / 'support.json').write_text(json.dumps(cases, indent=2) + '\n')
