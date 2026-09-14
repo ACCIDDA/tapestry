@@ -1,7 +1,8 @@
-/* Assumption: serif headings only, keeping Material's body font and plain
-   background; underline content links, keeping navigation uncluttered.
+/* Assumption: serif headings only, keeping Material's body font and a plain
+   light cream background; underline content links, keeping navigation uncluttered.
    Use system fonts so no additional font downloads are needed. */
 :root {
+  --md-default-bg-color: #fdfbf6;
   --md-primary-fg-color: #10264d;
   --md-primary-fg-color--light: #263e65;
   --md-primary-fg-color--dark: #091830;
