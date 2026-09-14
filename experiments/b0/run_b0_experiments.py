@@ -7,9 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from influpaintx.evaluation.hubs import export_b0, KEY, QCOLS
-from influpaintx.evaluation.compare import score_with_r
-from influpaintx.evaluation.scoring import match_forecasts, matched_scores, aggregate_scores, objective
+from tapestry.evaluation.hubs import export_b0, KEY, QCOLS
+from tapestry.evaluation.compare import score_with_r
+from tapestry.evaluation.scoring import match_forecasts, matched_scores, aggregate_scores, objective
 
 ROOT = Path('data/experiments/b0_full_20260914')
 FROZEN = Path('data/evaluation/b0_hub_comparison')
@@ -66,7 +66,7 @@ def score_run(folder):
 def execute(name, flags, seed=42):
     key = f'{name}_s{seed}'
     folder = ROOT / key
-    command = [sys.executable, '-m', 'influpaintx.models.season_cv', '--epochs', '50',
+    command = [sys.executable, '-m', 'tapestry.models.season_cv', '--epochs', '50',
                '--eval-members', '2048', '--seed', str(seed), '--output', str(folder), *flags]
     if not (folder / 'scores.csv').exists():
         print(json.dumps({'started': key, 'command': command}), flush=True)

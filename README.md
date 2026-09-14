@@ -1,7 +1,7 @@
 # Tapestry
 
 Tapestry is a research project for multi-disease epidemic forecasting. The Python
-package and commands retain `influpaintx`; the checkout is named `influpaintX`.
+package and commands are named `tapestry`; the checkout folder remains `influpaintX`.
 
 The working pipeline downloads surveillance data, builds a canonical six-channel
 weekly dataset, trains the stochastic B0 model, runs season cross-validation,
@@ -23,6 +23,9 @@ data/ raw snapshots → shared selection ──→ explorer
                  frozen tasks → scores / reports
 ```
 
+Documentation: [accidda.github.io/tapestry](https://accidda.github.io/tapestry/).
+GitHub Actions builds and deploys the MkDocs site from an uploaded Pages artifact.
+
 ## Start with the canonical training dataset
 
 Run from the repository root:
@@ -30,11 +33,11 @@ Run from the repository root:
 ```bash
 python -m pip install -e '.[model,explorer,evaluation]'
 # Needed only when acquiring or refreshing the two training sources:
-python -m influpaintx.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
-python -m influpaintx.model_data build --data-root data \
+python -m tapestry.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
+python -m tapestry.model_data build --data-root data \
   --output data/processed/build_b_finalized.npz
-python -m influpaintx.model_data inspect
-python -m influpaintx.models.season_cv --output data/experiments/my_b0_cv
+python -m tapestry.model_data inspect
+python -m tapestry.models.season_cv --output data/experiments/my_b0_cv
 ```
 
 The dataset contains weekly NHSN admissions and NSSP ED proportions for
@@ -53,7 +56,7 @@ add historical release information where the source provides it.
 ## Explore and compare
 
 ```bash
-python -m influpaintx.explorer --data-root data serve
+python -m tapestry.explorer --data-root data serve
 ```
 
 The explorer builds a disposable SQLite index and Parquet revision ledger.
@@ -72,11 +75,11 @@ Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 
 | Directory | Purpose |
 |---|---|
-| `src/influpaintx/data/` | Acquisition, snapshots, source readers, geography, selection |
-| `src/influpaintx/model_data/` | Canonical dataset, windows, masks |
-| `src/influpaintx/models/` | Model and reusable training/CV code |
-| `src/influpaintx/evaluation/` | Shared scoring, hub comparison, exports and reports |
-| `src/influpaintx/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
+| `src/tapestry/data/` | Acquisition, snapshots, source readers, geography, selection |
+| `src/tapestry/model_data/` | Canonical dataset, windows, masks |
+| `src/tapestry/models/` | Model and reusable training/CV code |
+| `src/tapestry/evaluation/` | Shared scoring, hub comparison, exports and reports |
+| `src/tapestry/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
 | `experiments/b0/` | Staged B0 runner, holdout audit and experiment reports |
 | `analysis/wval/` | Standalone wastewater analysis and evidence |
 | `scripts/` | Small checkout launchers and CSV conversion utility |
@@ -107,6 +110,6 @@ See [which tests to run](docs/maintenance.md#what-the-tests-do).
 
 Git excludes surveillance data, processed panels, checkpoints, generated output
 folders, downloaded analysis evidence, reference PDFs/extracted text, and credentials.
-The source catalog remains in `src/influpaintx/data/catalog.py`; all acquisition
+The source catalog remains in `src/tapestry/data/catalog.py`; all acquisition
 sources are retained. Download/build the data separately using the commands above.
-The supported dataset command is `python -m influpaintx.model_data build`.
+The supported dataset command is `python -m tapestry.model_data build`.

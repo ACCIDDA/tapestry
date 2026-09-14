@@ -14,8 +14,8 @@ from .sources import DelphiV5Fetcher, HubverseFetcher, SocrataFetcher
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="influpaintx-data",
-        description="Build and inspect the InfluPaintX raw covariate repository.",
+        prog="tapestry-data",
+        description="Build and inspect the Tapestry raw covariate repository.",
     )
     parser.add_argument(
         "--data-root", type=Path, default=Path("data"), help="Repository root (default: data)"

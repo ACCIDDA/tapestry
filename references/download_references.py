@@ -47,7 +47,7 @@ def download(paper):
     path = ROOT / f"{paper['key']}.pdf"
     try:
         if not path.exists() or not path.read_bytes().startswith(b"%PDF-"):
-            request = urllib.request.Request(paper["pdf_url"], headers={"User-Agent": "InfluPaintX-reference-archive/1.0"})
+            request = urllib.request.Request(paper["pdf_url"], headers={"User-Agent": "Tapestry-reference-archive/1.0"})
             with urllib.request.urlopen(request, timeout=50) as response:
                 payload = response.read()
                 record["resolved_url"] = response.url

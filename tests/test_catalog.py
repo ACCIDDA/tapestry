@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import unittest
 
-from influpaintx.data.catalog import CATALOG, specs_in_group
-from influpaintx.data.models import RevisionMode
+from tapestry.data.catalog import CATALOG, specs_in_group
+from tapestry.data.models import RevisionMode
 
 
 class CatalogTests(unittest.TestCase):

@@ -40,7 +40,7 @@ class HttpClient:
     ):
         request_headers = {
             "Accept": "application/json, text/csv;q=0.9, */*;q=0.1",
-            "User-Agent": "influpaintx-data/0.1",
+            "User-Agent": "tapestry-data/0.1",
             **(headers or {}),
         }
         request = urllib.request.Request(

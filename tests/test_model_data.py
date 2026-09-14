@@ -3,8 +3,8 @@ from datetime import date
 import numpy as np
 import pytest
 
-from influpaintx.model_data import FinalizedDataset, build_dataset
-from influpaintx.model_data.finalized import season
+from tapestry.model_data import FinalizedDataset, build_dataset
+from tapestry.model_data.finalized import season
 
 
 def test_windows_masks_alignment_and_roundtrip(tmp_path):
@@ -38,7 +38,7 @@ def test_season_boundary_and_53_week_year():
 def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
     import json
     from types import SimpleNamespace
-    from influpaintx.model_data import finalized as module
+    from tapestry.model_data import finalized as module
 
     rows = {
         'cdc_nhsn_final': [{'week': '2023-09-02', 'jurisdiction': 'AL',
@@ -67,7 +67,7 @@ def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
     assert ds.panel[0, 3, 0, al] == pytest.approx(.02)
     assert not ds.panel[0, 4, :, al].any()
     # The single supported build CLI must save the same panel and provenance.
-    from influpaintx.model_data.cli import main
+    from tapestry.model_data.cli import main
     output = tmp_path / 'processed' / 'canonical.npz'
     main(['build', '--data-root', str(tmp_path), '--output', str(output)])
     saved = FinalizedDataset.load(output)
@@ -79,7 +79,7 @@ def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
 
 
 def test_cli_exports_query_and_season_batch(tmp_path, capsys):
-    from influpaintx.model_data.cli import main
+    from tapestry.model_data.cli import main
 
     panel = np.ones((3, 6, 2, 2), dtype=np.float32)
     dataset = tmp_path / 'dataset.npz'

@@ -1,6 +1,6 @@
 # Shared post-intake selection
 
-The selection layer lives in `influpaintx.data.selection`, between immutable raw
+The selection layer lives in `tapestry.data.selection`, between immutable raw
 intake and consumers. The explorer uses it directly. Downstream analysis uses the
 same table decisions, measure allowlists, and canonical signal descriptions.
 The first selection step admits only native **state and national** observations.
@@ -155,7 +155,7 @@ retrieve their payloads before those choices can be plotted.
 ## Downstream API
 
 ```python
-from influpaintx.data.selection import SelectedData, describe
+from tapestry.data.selection import SelectedData, describe
 
 selected = SelectedData("data")
 print(selected.summary())
@@ -195,13 +195,13 @@ explorer's aggregated state-point cache.
 
 ```bash
 # Policy counts, grouping, and missing downloads; no raw or index writes.
-PYTHONPATH=src python -m influpaintx.data.selection --data-root data
+PYTHONPATH=src python -m tapestry.data.selection --data-root data
 
 # Rebuild selected explorer data; reads raw snapshots without changing them.
 python scripts/explore_covariates.py --data-root data index --force
 ```
 
-The installed summary command is `influpaintx-select --data-root data`.
+The installed summary command is `tapestry-select --data-root data`.
 `/api/catalog` includes the selection version, logical and indexed source counts,
 canonical signal count, variant count, and unavailable source warnings.
 `SelectedData.audit` records excluded hub files and missing canonical files after

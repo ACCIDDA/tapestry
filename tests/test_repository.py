@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from influpaintx.data.catalog import CATALOG
-from influpaintx.data.repository import RawDataRepository
+from tapestry.data.catalog import CATALOG
+from tapestry.data.repository import RawDataRepository
 
 
 class RepositoryTests(unittest.TestCase):

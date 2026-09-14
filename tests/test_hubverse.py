@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from influpaintx.data.sources.hubverse import HubMirror
+from tapestry.data.sources.hubverse import HubMirror
 
 
 def _git(directory: Path, *arguments: str) -> str:

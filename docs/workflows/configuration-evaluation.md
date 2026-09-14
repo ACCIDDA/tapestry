@@ -24,7 +24,7 @@ EpiBench model-data paths. To add CSV companions to a Parquet-only export:
 ```
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.evaluation.sweep \
+PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.sweep \
   --runs data/experiments/b0_full_20260914/*_s4? \
          data/experiments/b0_season_cv_20260913 \
   --csv --output data/evaluation/b0_configuration_comparison

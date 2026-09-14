@@ -1,4 +1,4 @@
-"""Run the local explorer with ``python -m influpaintx.explorer``."""
+"""Run the local explorer with ``python -m tapestry.explorer``."""
 
 from . import main
 

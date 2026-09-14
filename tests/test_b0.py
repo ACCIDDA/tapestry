@@ -1,7 +1,7 @@
 import pytest
 
 torch = pytest.importorskip('torch')
-from influpaintx.models import B0, fair_crps
+from tapestry.models import B0, fair_crps
 
 
 def test_fair_crps_matches_pairwise_and_excludes_nan_labels():
@@ -64,8 +64,8 @@ def test_rate_inversion_population_order_and_checkpoint(transform):
 
 
 def test_dynamics_gaps_and_calendar():
-    from influpaintx.models.b0 import recent_dynamics
-    from influpaintx.models.run import calendar
+    from tapestry.models.b0 import recent_dynamics
+    from tapestry.models.run import calendar
     values = torch.tensor([1., 2., 4.]).reshape(1, 3, 1, 1)
     mask = torch.ones_like(values)
     assert torch.allclose(recent_dynamics(values, mask).flatten(), torch.tensor([2., 1., 0., 1., 1.]))
@@ -97,7 +97,7 @@ def test_experiment_training_and_masked_input(lookback):
 def test_input_scalers_ignore_masked_values_and_weights_are_independent(tmp_path):
     import numpy as np
     from types import SimpleNamespace
-    from influpaintx.models.experiments import model_options, LOSS_WEIGHTS
+    from tapestry.models.experiments import model_options, LOSS_WEIGHTS
     population = tmp_path / 'population.csv'
     population.write_text('location,population\nUS,1000000\n')
     x = np.ones((3, 6, 2, 1), dtype='float32')

@@ -151,11 +151,11 @@ Marked `[NEW]` throughout. The substantive ones, so they can be defended or drop
 
 ## 3. Repository and module layout
 
-Building on what exists (`src/influpaintx/data`, `scripts/pull_covariates.py`, `tests/`). Raw
+Building on what exists (`src/tapestry/data`, `scripts/pull_covariates.py`, `tests/`). Raw
 acquisition is done; everything below `vintage/` is new.
 
 ```
-src/influpaintx/
+src/tapestry/
   data/            # EXISTS. Raw acquisition, snapshots, checksums, native geography.
   vintage/
     schema.py      # canonical long-format record + validators

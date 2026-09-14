@@ -9,8 +9,8 @@ from pathlib import Path
 
 import numpy as np
 
-from influpaintx.data.geography import STATE_NAMES, observation_geography
-from influpaintx.data.selection import SelectedData
+from tapestry.data.geography import STATE_NAMES, observation_geography
+from tapestry.data.selection import SelectedData
 
 CHANNELS = (
     "nhsn_flu_admissions", "nhsn_covid_admissions", "nhsn_rsv_admissions",

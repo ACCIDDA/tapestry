@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from influpaintx.evaluation.configurations import identify
-from influpaintx.evaluation.hubs import KEY, QCOLS, wide_quantiles
-from influpaintx.evaluation.sweep import hubverse, matched_scores, METRICS, validate
+from tapestry.evaluation.configurations import identify
+from tapestry.evaluation.hubs import KEY, QCOLS, wide_quantiles
+from tapestry.evaluation.sweep import hubverse, matched_scores, METRICS, validate
 
 
 def test_identity_stable_and_future_fields_change_id(tmp_path):
@@ -63,10 +63,10 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
     from datetime import date, timedelta
     from pathlib import Path
     import shutil
-    from influpaintx.evaluation.hubs import export_b0, SEASONS
-    from influpaintx.evaluation.compare import score_with_r
-    from influpaintx.evaluation.sweep import main
-    from influpaintx.models.season_cv import LEVELS
+    from tapestry.evaluation.hubs import export_b0, SEASONS
+    from tapestry.evaluation.compare import score_with_r
+    from tapestry.evaluation.sweep import main
+    from tapestry.models.season_cv import LEVELS
     if not shutil.which('Rscript') or not Path('../epibench/src/epibench/build_plots.py').exists():
         pytest.skip('Integration requires local R and sibling epibench')
     run = tmp_path / 'run'
@@ -106,7 +106,7 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
 
 
 def test_shared_forecast_matching_rejects_missing_and_duplicate_tasks():
-    from influpaintx.evaluation.scoring import match_forecasts
+    from tapestry.evaluation.scoring import match_forecasts
     units = pd.DataFrame(dict(reference_date=['2025-01-04'] * 2,
         target_end_date=['2025-01-04'] * 2, location=['01', 'US'], horizon=[0, 0], observed=[1., 2.]))
     predictions = units[KEY].copy()
@@ -123,7 +123,7 @@ def test_staged_runner_and_sweep_share_geographic_objective(tmp_path, monkeypatc
     """Unequal state/US task counts must not change equal-geography weighting."""
     import importlib.util
     from pathlib import Path
-    from influpaintx.evaluation.scoring import aggregate_scores, objective
+    from tapestry.evaluation.scoring import aggregate_scores, objective
 
     path = Path(__file__).resolve().parents[1] / 'experiments/b0/run_b0_experiments.py'
     spec = importlib.util.spec_from_file_location('b0_recipe', path)

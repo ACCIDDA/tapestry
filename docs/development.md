@@ -3,7 +3,7 @@
 ## Repository layout
 
 ```text
-src/influpaintx/
+src/tapestry/
   data/          Acquisition, snapshots, readers and selection
   model_data/    Canonical weekly dataset and windows
   models/        B0, training and season CV
@@ -34,7 +34,7 @@ Syntax-only checks used during development:
 
 ```bash
 PYTHONPATH=src python -m compileall -q src scripts experiments analysis
-node --check src/influpaintx/explorer/static/app.js
+node --check src/tapestry/explorer/static/app.js
 ```
 
 Live publisher contract tests should remain separate because schemas and row
@@ -67,3 +67,17 @@ building documentation must not require downloaded surveillance data.
 Selection regression tests cover patient-count allowlists, canonical hub files,
 LFS unavailability, native geography, release cutoffs, and grouped signal identity.
 Change the shared policy in `data/selection.py`, not only the explorer UI.
+
+## GitHub Pages
+
+The `Documentation` workflow builds MkDocs with `--strict` on pull requests and
+pushes to `main`; it can also be started manually. The build installs only the
+package's `docs` extra and needs no local datasets, model training, or credentials.
+On `main`, it uploads the generated `site/` directory as a Pages artifact and a
+separate deployment job submits that artifact to GitHub Pages. Pull requests
+only validate the build. Generated HTML is never committed to a publishing branch.
+
+Repository Settings → Pages must use **GitHub Actions** as its publishing source.
+The deployment uses the `github-pages` environment, with `pages: write` and
+`id-token: write` permissions scoped to its deployment job. This follows
+[GitHub's custom workflow deployment](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).

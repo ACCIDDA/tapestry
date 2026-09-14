@@ -3,10 +3,10 @@ from pathlib import Path
 from datetime import date
 from types import SimpleNamespace
 import numpy as np
-from influpaintx.model_data import FinalizedDataset
-from influpaintx.model_data.finalized import season
-from influpaintx.models.season_cv import fold_data, SEASONS
-from influpaintx.models.experiments import model_options
+from tapestry.model_data import FinalizedDataset
+from tapestry.model_data.finalized import season
+from tapestry.models.season_cv import fold_data, SEASONS
+from tapestry.models.experiments import model_options
 
 root=Path('data/experiments/b0_full_20260914')
 ds=FinalizedDataset.load('data/processed/build_b_finalized.npz')

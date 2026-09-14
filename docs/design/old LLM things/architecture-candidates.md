@@ -136,7 +136,7 @@ per-horizon quantile heads.
 All three consume the same tensor; build it once.
 
 Implementation status (2026-09-11): the shape-independent raw acquisition repository is now
-implemented under `src/influpaintx/data`, with the reproducible entry point
+implemented under `src/tapestry/data`, with the reproducible entry point
 `scripts/pull_covariates.py`. It preserves direct CDC snapshots, Delphi V5 report-time
 archives, Hubverse row and Git vintages, checksums, and native geographic support. Tensor
 assembly and binary-mask policy remain deliberately deferred to the later `Dataset` class.

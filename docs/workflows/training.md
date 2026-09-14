@@ -8,7 +8,7 @@ has NumPy and PyTorch; a fresh environment can install `pip install -e '.[model]
 Train with an explicit last permitted training-label date:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.models train \
+PYTHONPATH=src .venv/bin/python -m tapestry.models train \
   --train-end 2024-07-27 --epochs 50 \
   --output data/processed/b0.pt
 ```
@@ -16,7 +16,7 @@ PYTHONPATH=src .venv/bin/python -m influpaintx.models train \
 Generate samples and quantiles after fitting:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.models predict \
+PYTHONPATH=src .venv/bin/python -m tapestry.models predict \
   --checkpoint data/processed/b0.pt --context-end 2024-08-03 \
   --members 256 --output data/processed/b0_predictions.npz
 ```
@@ -139,7 +139,7 @@ missing observations, not release latency in this finalized-data panel.
 Example three-season experiment (choose a fresh output directory):
 
 ```bash
-.venv/bin/python -m influpaintx.models.season_cv \
+.venv/bin/python -m tapestry.models.season_cv \
   --count-transform sqrt --geography --lookback 8 \
   --output data/experiments/b0_sqrt_geo_8
 ```
@@ -148,7 +148,7 @@ Compare this with `fourth_root` and the unchanged raw baseline. Next vary only
 lookback across 8/12/26, then toggle `--dynamics`. Finally vary `--loss-weights`
 while keeping the selected representation and history fixed. Use the same seeds,
 fit/evaluation dates, and existing ensemble-supported scoring sets. These same
-switches are accepted by `python -m influpaintx.models train`; prediction reads
+switches are accepted by `python -m tapestry.models train`; prediction reads
 all feature settings from its checkpoint and supports reordered location subsets.
 The CV runner continues to report states/DC and native US separately.
 

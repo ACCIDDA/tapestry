@@ -56,12 +56,12 @@ validation fold needs revisiting now that training starts in September 2023.
 
 ```bash
 pip install -e '.[model-data]'
-python -m influpaintx.model_data --data-root data \
+python -m tapestry.model_data --data-root data \
   --start 2023-09-01 --output data/processed/build_b_finalized.npz
 ```
 
 ```python
-from influpaintx.model_data import FinalizedDataset
+from tapestry.model_data import FinalizedDataset
 
 ds = FinalizedDataset.load('data/processed/build_b_finalized.npz')
 q = ds.query('2023-10-21', lookback=8)

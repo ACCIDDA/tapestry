@@ -3,7 +3,7 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "influpaintx"
+name = "tapestry"
 version = "0.1.0"
 description = "Surveillance data, B0 forecasting experiments, evaluation, and exploration"
 readme = "README.md"
@@ -24,13 +24,13 @@ docs = [
 ]
 
 [project.scripts]
-influpaintx-model-data = "influpaintx.model_data.cli:main"
-influpaintx-data = "influpaintx.data.cli:main"
-influpaintx-select = "influpaintx.data.selection:main"
-influpaintx-explore = "influpaintx.explorer:main"
+tapestry-model-data = "tapestry.model_data.cli:main"
+tapestry-data = "tapestry.data.cli:main"
+tapestry-select = "tapestry.data.selection:main"
+tapestry-explore = "tapestry.explorer:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/influpaintx"]
+packages = ["src/tapestry"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

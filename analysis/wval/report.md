@@ -202,7 +202,7 @@ Forecast the numeric state series directly, beginning with persistence and a sma
 
 ## 4. Project-specific next steps and limitations
 
-The existing [catalog](../src/influpaintx/data/catalog.py) already has `cdc_nwss_wval` (`atcp-73re`) and `delphi_nwss`. The CDC catalog's measure labels are generic `wval`/`wval_category`; the actual downloaded fields are **`site_wval`/`site_wval_category`**. Check that distinction in any new transform.
+The existing [catalog](../../src/tapestry/data/catalog.py) already has `cdc_nwss_wval` (`atcp-73re`) and `delphi_nwss`. The CDC catalog's measure labels are generic `wval`/`wval_category`; the actual downloaded fields are **`site_wval`/`site_wval_category`**. Check that distinction in any new transform.
 
 The smallest next implementation would be a state-feed snapshot source plus a state-week WVAL feature table. Keep the existing site data for diagnostics. Add the custom Delphi aggregation only as the next controlled experiment, including its auxiliary metadata acquisition.
 

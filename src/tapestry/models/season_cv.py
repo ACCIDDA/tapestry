@@ -13,8 +13,8 @@ import time
 import numpy as np
 import torch
 
-from influpaintx.model_data import CHANNELS, FinalizedDataset
-from influpaintx.model_data.finalized import season
+from tapestry.model_data import CHANNELS, FinalizedDataset
+from tapestry.model_data.finalized import season
 from .run import calendar, fit
 from .experiments import add_experiment_args, LOSS_WEIGHTS
 

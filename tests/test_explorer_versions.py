@@ -8,9 +8,9 @@ import unittest
 from contextlib import closing
 from pathlib import Path
 
-from influpaintx.explorer import ExplorerIndex
-from influpaintx.data.catalog import CATALOG
-from influpaintx.data.lineage import series_lineage
+from tapestry.explorer import ExplorerIndex
+from tapestry.data.catalog import CATALOG
+from tapestry.data.lineage import series_lineage
 
 
 class VersionTest(unittest.TestCase):

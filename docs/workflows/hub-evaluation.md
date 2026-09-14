@@ -4,19 +4,19 @@ This evaluates already saved Build B quantiles, with no retraining. It implement
 the same external `Rscript` -> `as_forecast_quantile()` -> `score()` pattern and
 metrics as `../epibench/src/epibench/scoring_bridge.py`. It calls **R scoringutils**;
 it does not substitute the earlier Python WIS calculation. The pipeline is in
-`src/influpaintx/evaluation/`.
+`src/tapestry/evaluation/`.
 
 ## Run
 
 From the repository root, with the existing environment:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.evaluation.compare \
+PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.compare \
   --run data/experiments/b0_season_cv_20260913 \
   --mirrors data/mirrors --cache data/evaluation/hub_cache \
   --output data/evaluation/b0_hub_comparison
 
-PYTHONPATH=src .venv/bin/python -m influpaintx.evaluation.pdf_report \
+PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.pdf_report \
   --comparison data/evaluation/b0_hub_comparison \
   --output output/pdf/b0_hub_comparison.pdf --locations US NC
 ```
@@ -129,7 +129,7 @@ To regenerate only selection/summary tables from existing R scores (no refit or
 rescoring):
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.evaluation.summary data/evaluation/b0_hub_comparison
+PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.summary data/evaluation/b0_hub_comparison
 ```
 
 ## Completed comparison

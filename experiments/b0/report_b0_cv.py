@@ -138,7 +138,7 @@ The manifest records source/code hashes, exact origins, fitted scales, seeds,
 configuration and elapsed time. Raw forecasts are saved before scoring.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.models.season_cv \\
+PYTHONPATH=src .venv/bin/python -m tapestry.models.season_cv \\
   --device cpu --epochs 50 --eval-members 2048 \\
   --output data/experiments/b0_season_cv_repeat
 PYTHONPATH=src .venv/bin/python experiments/b0/report_b0_cv.py \\

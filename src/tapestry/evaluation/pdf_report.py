@@ -25,7 +25,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 
-from influpaintx.data.geography import STATE_FIPS
+from tapestry.data.geography import STATE_FIPS
 from .hubs import KEY
 
 TITLES = {'wk inc flu hosp': 'Influenza admissions', 'wk inc flu prop ed visits': 'Influenza ED proportion',
@@ -44,7 +44,7 @@ def cover(manifest, path, locations):
     styles.add(ParagraphStyle(name='SmallReport', fontName='Helvetica', fontSize=10, leading=13, spaceAfter=6))
     body, small = styles['BodyReport'], styles['SmallReport']
     doc = SimpleDocTemplate(str(path), pagesize=landscape(A3), rightMargin=42, leftMargin=42, topMargin=38, bottomMargin=38)
-    story = [Paragraph('InfluPaintX B0 | Hub forecast comparisons', styles['Title']), Spacer(1, 12),
+    story = [Paragraph('Tapestry B0 | Hub forecast comparisons', styles['Title']), Spacer(1, 12),
              Paragraph('Pinned local archives - R scoringutils - finalized-data retrospective cross-validation', body),
              Paragraph('All available ensemble-supported units are scored. This report plots ' + ', '.join(locations) +
                        ' with all four horizons, using only the median, 50% and 95% intervals. The model, best eligible submitted competitor, and official ensemble have separate columns with matching axes.', body)]
@@ -87,7 +87,7 @@ def cover(manifest, path, locations):
     def footer(canvas, doc):
         canvas.setFont('Helvetica', 9)
         canvas.setFillColor(colors.HexColor('#58646a'))
-        canvas.drawString(42, 20, 'InfluPaintX research pilot | matched tasks, finalized data | full scores and provenance accompany this PDF')
+        canvas.drawString(42, 20, 'Tapestry research pilot | matched tasks, finalized data | full scores and provenance accompany this PDF')
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
 
 

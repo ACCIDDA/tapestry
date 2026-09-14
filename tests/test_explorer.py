@@ -13,8 +13,8 @@ from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
-from influpaintx.explorer import ExplorerIndex, make_server, normalize_state
-from influpaintx.explorer.index import _BuildError
+from tapestry.explorer import ExplorerIndex, make_server, normalize_state
+from tapestry.explorer.index import _BuildError
 
 
 class ExplorerTest(unittest.TestCase):

@@ -73,7 +73,7 @@ allocated node:
 /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python -c \
   'import numpy, torch; print(torch.__version__, torch.cuda.is_available())'
 PYTHONPATH=src /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python \
-  -m influpaintx.models.season_cv --device cuda \
+  -m tapestry.models.season_cv --device cuda \
   --output data/experiments/b0_season_cv_longleaf
 ```
 
@@ -94,7 +94,7 @@ rsync -av chadi@longleaf.unc.edu:~/influpaintX/data/experiments/b0_season_cv_lon
 From `/Users/chadi/Research/influpaintX`:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m influpaintx.models.season_cv \
+PYTHONPATH=src .venv/bin/python -m tapestry.models.season_cv \
   --device cpu --epochs 50 --eval-members 2048 \
   --output data/experiments/b0_season_cv_repeat
 ```

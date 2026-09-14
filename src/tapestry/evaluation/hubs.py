@@ -11,11 +11,11 @@ import subprocess
 import numpy as np
 import pandas as pd
 
-from influpaintx.data.geography import STATE_FIPS
-from influpaintx.model_data.finalized import season
-from influpaintx.models.season_cv import LEVELS, SEASONS
+from tapestry.data.geography import STATE_FIPS
+from tapestry.model_data.finalized import season
+from tapestry.models.season_cv import LEVELS, SEASONS
 
-B0_NAME = 'InfluPaintX-B0-finalized-CV'
+B0_NAME = 'Tapestry-B0-finalized-CV'
 KEY = ['reference_date', 'target_end_date', 'location', 'horizon']
 QCOLS = [f'q{q:g}' for q in LEVELS]
 HUBS = {

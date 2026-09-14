@@ -13,7 +13,7 @@ from .server import DEFAULT_PORT, make_server
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Index and explore downloaded InfluPaintX data")
+    parser = argparse.ArgumentParser(description="Index and explore downloaded Tapestry data")
     parser.add_argument("--data-root", default="data", help="Raw data repository root (default: data)")
     parser.add_argument("--index-path", help="Override the disposable SQLite index location")
     parser.add_argument("--ledger-path", help="Override the Parquet ledger location")
@@ -67,7 +67,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise FileNotFoundError(f"No explorer index exists at {index.index_path}")
     server = make_server(index, arguments.host, arguments.port)
     url = f"http://{arguments.host}:{server.server_address[1]}/"
-    print(f"InfluPaintX explorer: {url}")
+    print(f"Tapestry explorer: {url}")
     if not arguments.no_browser:
         threading.Timer(0.25, lambda: webbrowser.open(url)).start()
     try:

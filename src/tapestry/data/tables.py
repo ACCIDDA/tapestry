@@ -125,7 +125,7 @@ class RawTables:
                     continue
                 suffix = "".join(Path(member.name).suffixes) or ".table"
                 temporary = tempfile.NamedTemporaryFile(
-                    prefix="influpaintx-table-", suffix=suffix, delete=False
+                    prefix="tapestry-table-", suffix=suffix, delete=False
                 )
                 temporary_path = Path(temporary.name)
                 try:
@@ -200,7 +200,7 @@ class RawTables:
             except ImportError as error:
                 raise RuntimeError(
                     "Parquet table found; install the optional explorer dependency: "
-                    "pip install 'influpaintx[explorer]'"
+                    "pip install 'tapestry[explorer]'"
                 ) from error
             table = parquet.ParquetFile(path)
             for batch in table.iter_batches(batch_size=50_000):

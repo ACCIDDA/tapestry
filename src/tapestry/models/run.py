@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from influpaintx.model_data import CHANNELS, FinalizedDataset
+from tapestry.model_data import CHANNELS, FinalizedDataset
 from .b0 import B0, fair_crps
 from .experiments import LOSS_WEIGHTS, add_experiment_args, model_options
 

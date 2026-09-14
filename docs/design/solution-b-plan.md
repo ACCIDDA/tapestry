@@ -482,10 +482,10 @@ All paths below are **proposed** additions. Existing acquisition files remain th
 | Milestone | Concrete deliverables | Acceptance gate | Planning estimate |
 |---|---|---|---|
 | M0: experiment contract | `configs/b/data.yaml`, `splits.yaml`, target/date registry, source exposure log | Explicit target units, horizons, geographic support, and holdout rules | 1–2 working days |
-| M1: model data | `src/influpaintx/model_data/{normalize,vintages,features,windows,splits}.py`; normalized columnar store; coverage and leakage report | Fixed-cutoff invariance and valid source-query episodes; counts by season/source/support | 4–7 days, longer if archive gaps emerge |
-| M2: baselines | `src/influpaintx/baselines/`; vintage-aware baseline/GBQR forecasts | Exported baseline WIS reproduces an independent scorer; same tasks and covariates documented | 2–4 days |
-| M3: stochastic B0/B1 | `src/influpaintx/models/{encoders,spatial,stochastic,decoder}.py`; `losses/`; train/predict scripts | Gradients through scores; correct masks/units; nonzero spread; finite samples; measured runtime | 3–5 days |
-| M4: controlled evaluation | `src/influpaintx/evaluation/`; D1/D2 forecasts and ablation report | Leakage audit passes; same-data comparisons, calibration, dependence, and outage results | 4–7 days plus measured compute |
+| M1: model data | `src/tapestry/model_data/{normalize,vintages,features,windows,splits}.py`; normalized columnar store; coverage and leakage report | Fixed-cutoff invariance and valid source-query episodes; counts by season/source/support | 4–7 days, longer if archive gaps emerge |
+| M2: baselines | `src/tapestry/baselines/`; vintage-aware baseline/GBQR forecasts | Exported baseline WIS reproduces an independent scorer; same tasks and covariates documented | 2–4 days |
+| M3: stochastic B0/B1 | `src/tapestry/models/{encoders,spatial,stochastic,decoder}.py`; `losses/`; train/predict scripts | Gradients through scores; correct masks/units; nonzero spread; finite samples; measured runtime | 3–5 days |
+| M4: controlled evaluation | `src/tapestry/evaluation/`; D1/D2 forecasts and ablation report | Leakage audit passes; same-data comparisons, calibration, dependence, and outage results | 4–7 days plus measured compute |
 | M5: freeze and holdout | Frozen manifest; complete 2025–26 forecast/score artifact | No model selection on holdout; full failure/coverage accounting | 2–3 days plus compute |
 | M6: operating path | Versioned inference bundle; exporter; retry/fallback policy; dry-run report | Reproducible issuance from pinned inputs; valid schema, member identity, and deadline margin | 2–3 days |
 

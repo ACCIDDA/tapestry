@@ -321,7 +321,7 @@ class SelectedData(RawTables):
                     self.audit.append({"dataset_key": artifact.dataset["key"], "source_path": member.name,
                                        "status": "excluded", "message": reason})
                     continue
-                with tempfile.TemporaryDirectory(prefix="influpaintx-selected-") as directory:
+                with tempfile.TemporaryDirectory(prefix="tapestry-selected-") as directory:
                     path = Path(directory) / Path(member.name).name
                     with archive.extractfile(member) as source, path.open("wb") as out:
                         shutil.copyfileobj(source, out)
@@ -340,7 +340,7 @@ class SelectedData(RawTables):
         def rows():
             nonlocal offsets, conflicts
             if offsets is None:
-                with tempfile.TemporaryDirectory(prefix="influpaintx-truth-check-") as directory:
+                with tempfile.TemporaryDirectory(prefix="tapestry-truth-check-") as directory:
                     db = sqlite3.connect(Path(directory) / "keys.sqlite3")
                     try:
                         db.execute("CREATE TABLE keys (identity TEXT PRIMARY KEY, value TEXT, row_number INTEGER, conflict INTEGER DEFAULT 0)")

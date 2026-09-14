@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from influpaintx.evaluation.hubs import KEY, QCOLS, wide_quantiles
-from influpaintx.evaluation.compare import score_with_r
-from influpaintx.models.season_cv import LEVELS
+from tapestry.evaluation.hubs import KEY, QCOLS, wide_quantiles
+from tapestry.evaluation.compare import score_with_r
+from tapestry.models.season_cv import LEVELS
 
 
 def test_invalid_whole_quantile_tasks_are_excluded():
@@ -48,7 +48,7 @@ def test_ensemble_support_and_complete_best_rule(tmp_path):
     import shutil
     if not shutil.which('Rscript'):
         pytest.skip('Rscript unavailable')
-    from influpaintx.evaluation.compare import compare_case
+    from tapestry.evaluation.compare import compare_case
     target = 'wk inc flu hosp'
     cache = tmp_path / 'cache'
     folder = cache / 'flusight' / 'flu_hosp'
@@ -75,7 +75,7 @@ def test_ensemble_support_and_complete_best_rule(tmp_path):
 
 
 def test_export_maps_leads_and_channel_order(tmp_path):
-    from influpaintx.evaluation.hubs import export_b0, SEASONS
+    from tapestry.evaluation.hubs import export_b0, SEASONS
     from datetime import date, timedelta
     for i, label in enumerate(SEASONS):
         folder = tmp_path / f'eval_{label}'
@@ -95,7 +95,7 @@ def test_export_maps_leads_and_channel_order(tmp_path):
 
 
 def test_fallback_ranks_on_identical_tasks():
-    from influpaintx.evaluation.summary import select_best, METRICS
+    from tapestry.evaluation.summary import select_best, METRICS
     rows = []
     for model, omitted in [('ours', None), ('ensemble', None), ('a', 0), ('b', 9)]:
         for i in range(10):

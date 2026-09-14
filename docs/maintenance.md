@@ -49,7 +49,7 @@ revision archives are present.
 | Candidate | Observed use | Recommendation |
 |---|---|---|
 | HHS membership and parent-broadcast helpers in `data/geography.py` | Referenced by their two tests, but no other current source-code callers; current selection excludes HHS observations | Removed in the follow-up cleanup, along with the membership CSV and two helper tests. State normalization and native-support checks remain. |
-| Second builder CLI at the bottom of `model_data/finalized.py` | Repeats the build/save command in `model_data/cli.py`; the supported package command uses the latter | Removed in the follow-up cleanup. Use `python -m influpaintx.model_data build` or `influpaintx-model-data build`; both use `model_data/cli.py`. |
+| Second builder CLI at the bottom of `model_data/finalized.py` | Repeats the build/save command in `model_data/cli.py`; the supported package command uses the latter | Removed in the follow-up cleanup. Use `python -m tapestry.model_data build` or `tapestry-model-data build`; both use `model_data/cli.py`. |
 | All-source catalog and broad downloads | 25 catalog entries versus two sources used by this model; other sources support comparison and exploration | Default research instructions to the two needed sources, as now documented. Retain adapters until those research questions are retired. Most catalog code is declarations. |
 | Explorer schema discovery, filters, revision ledger and as-of queries | Useful for multi-source inspection; absent from the training path | Optional application. Skip building/running it for model-only work. Replacing it with a panel viewer would sacrifice source/revision comparison. |
 | Snapshot checksums, staging, atomic publication | Prevent incomplete downloads becoming training inputs and record exact provenance | Keep. These protect reproducibility even with one canonical training dataset. |
@@ -138,3 +138,21 @@ analysis evidence and reference PDFs/text, environments, caches, and credentials
 These files remain local. All 25 acquisition sources and snapshot behavior remain.
 The HHS helper removal reduces the suite from 88 to 86 tests; the existing builder
 test now also exercises the canonical CLI's saved panel and metadata.
+
+## Package rename
+
+The Python distribution/import package is now `tapestry`, with installed commands
+`tapestry-data`, `tapestry-model-data`, `tapestry-select`, and `tapestry-explore`.
+Module commands use `python -m tapestry...`. The checkout folder stays named
+`influpaintX`. This is a direct rename without an old-package compatibility alias.
+Existing saved datasets, checkpoints, scores, and their historical metadata remain
+unchanged; stored checkpoints contain configuration and state dictionaries rather
+than pickled model classes. New source hashes and new default report/model labels
+reflect the rename.
+
+To update an existing environment:
+
+```bash
+python -m pip uninstall -y influpaintx
+python -m pip install -e '.[model,explorer,evaluation]'
+```

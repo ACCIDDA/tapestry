@@ -10,12 +10,12 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
-from influpaintx.data.catalog import CATALOG
-from influpaintx.data.selection import (
+from tapestry.data.catalog import CATALOG
+from tapestry.data.selection import (
     SelectedData, NHSN_DELPHI, NHSN_MEASURES, describe, family, measure_columns,
 )
-from influpaintx.explorer import ExplorerIndex
-from influpaintx.data.tables import RawTables
+from tapestry.explorer import ExplorerIndex
+from tapestry.data.tables import RawTables
 
 
 class SelectionTest(unittest.TestCase):

@@ -1,6 +1,7 @@
 # Command-line reference
 
-The installed commands are `influpaintx-data` and `influpaintx-explore`. The
+The installed commands are `tapestry-data`, `tapestry-model-data`,
+`tapestry-select`, and `tapestry-explore`. The
 checkout scripts shown below are equivalent.
 
 ## Data repository
@@ -96,9 +97,9 @@ python scripts/explore_covariates.py --data-root data serve \
 ## Shared selection inventory
 
 ```bash
-PYTHONPATH=src python -m influpaintx.data.selection --data-root data
+PYTHONPATH=src python -m tapestry.data.selection --data-root data
 # After installing the package:
-influpaintx-select --data-root data
+tapestry-select --data-root data
 ```
 
 This read-only command reports policy version, the 25-to-15 grouping, the

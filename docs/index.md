@@ -1,7 +1,7 @@
 # Tapestry
 
 Tapestry is a research pipeline for multi-disease epidemic forecasting. The
-package and commands retain the name `influpaintx`.
+Python package and commands are named `tapestry`; the checkout folder remains `influpaintX`.
 
 ```text
 Raw snapshots → shared selection → canonical weekly dataset → B0 → evaluation

@@ -1,10 +1,10 @@
 # Data repository
 
-The `influpaintx.data` package is the durable acquisition layer. It separates
+The `tapestry.data` package is the durable acquisition layer. It separates
 source-specific retrieval from a shared snapshot repository:
 
 ```text
-influpaintx.data
+tapestry.data
 ├── catalog.py          Dataset specifications and groups
 ├── cli.py              Reproducible command-line entry point
 ├── geography.py        Native state/national geography
@@ -34,7 +34,7 @@ influpaintx.data
 Applications normally use `RawDataRepository`, `DatasetSpec`, and `CATALOG`:
 
 ```python
-from influpaintx.data import CATALOG, RawDataRepository
+from tapestry.data import CATALOG, RawDataRepository
 
 repository = RawDataRepository("data")
 repository.initialize(CATALOG)
@@ -42,7 +42,7 @@ manifest = repository.latest("cdc_nhsn_final")
 repository.verify_snapshot(manifest)
 ```
 
-Fetcher classes are kept under `influpaintx.data.sources`; downstream modeling
+Fetcher classes are kept under `tapestry.data.sources`; downstream modeling
 code should consume repository snapshots rather than call publishers directly.
 
 ## Shared consumer selection

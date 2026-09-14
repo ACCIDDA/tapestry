@@ -68,9 +68,9 @@ resume behavior, historical Hub commits, and verification commands.
 ## Build the dataset and run B0
 
 ```bash
-python -m influpaintx.model_data build --data-root data
-python -m influpaintx.model_data inspect
-python -m influpaintx.models.season_cv --output data/experiments/my_b0_cv
+python -m tapestry.model_data build --data-root data
+python -m tapestry.model_data inspect
+python -m tapestry.models.season_cv --output data/experiments/my_b0_cv
 ```
 
 See the [dataset contract](data/build-b-finalized.md),

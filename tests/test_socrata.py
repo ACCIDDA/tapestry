@@ -6,9 +6,9 @@ import tempfile
 import unittest
 import urllib.parse
 
-from influpaintx.data.catalog import CATALOG
-from influpaintx.data.repository import RawDataRepository
-from influpaintx.data.sources.socrata import SocrataFetcher
+from tapestry.data.catalog import CATALOG
+from tapestry.data.repository import RawDataRepository
+from tapestry.data.sources.socrata import SocrataFetcher
 
 
 class FakeSocrataClient:

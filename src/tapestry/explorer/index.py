@@ -206,7 +206,7 @@ class _RevisionLedgerWriter:
         except ImportError as error:
             raise RuntimeError(
                 "Building the revision ledger requires PyArrow; install "
-                "'influpaintx[explorer]' before building the explorer index"
+                "'tapestry[explorer]' before building the explorer index"
             ) from error
         self.pa = pa
         self.batch_rows = batch_rows
@@ -1024,7 +1024,7 @@ class ExplorerIndex(SelectedData):
         except ImportError as error:
             raise RuntimeError(
                 "Reading the revision ledger requires PyArrow; install "
-                "'influpaintx[explorer]'"
+                "'tapestry[explorer]'"
             ) from error
         source = dataset.dataset(self.revision_ledger_path, format="parquet")
         with closing(self.connect()) as connection:

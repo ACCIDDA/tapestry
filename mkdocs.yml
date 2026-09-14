@@ -1,4 +1,6 @@
 site_name: Tapestry
+site_url: https://accidda.github.io/tapestry/
+repo_url: https://github.com/ACCIDDA/tapestry
 site_description: Vintage-aware surveillance data repository and local explorer
 docs_dir: docs
 

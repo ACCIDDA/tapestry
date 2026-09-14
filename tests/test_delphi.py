@@ -13,9 +13,9 @@ from urllib.parse import parse_qs, urlparse
 
 from epidatpy import EpiDataContext
 
-from influpaintx.data.catalog import CATALOG
-from influpaintx.data.repository import RawDataRepository
-from influpaintx.data.sources.delphi import (
+from tapestry.data.catalog import CATALOG
+from tapestry.data.repository import RawDataRepository
+from tapestry.data.sources.delphi import (
     DelphiV5Fetcher,
     _api_key,
     _copy_csv_response_to_gzip,
@@ -160,7 +160,7 @@ class DelphiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "rows.csv.gz"
             client = _RetryClient()
-            with patch("influpaintx.data.sources.delphi.time.sleep"):
+            with patch("tapestry.data.sources.delphi.time.sleep"):
                 rows = _copy_csv_response_to_gzip(client, "https://example.test/", path)
             self.assertEqual(rows, 1)
             self.assertEqual(client.calls, 2)
@@ -179,7 +179,7 @@ class DelphiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "rows.csv.gz"
             client = _TruncatedGzipRetryClient()
-            with patch("influpaintx.data.sources.delphi.time.sleep"):
+            with patch("tapestry.data.sources.delphi.time.sleep"):
                 rows = _copy_csv_response_to_gzip(client, "https://example.test/", path)
             self.assertEqual(rows, 1)
             self.assertEqual(client.calls, 2)
@@ -190,7 +190,7 @@ class DelphiTests(unittest.TestCase):
             repository = RawDataRepository(Path(temporary) / "data")
             repository.initialize(CATALOG)
             client = _PartlyFailingClient()
-            with patch("influpaintx.data.sources.delphi.time.sleep"):
+            with patch("tapestry.data.sources.delphi.time.sleep"):
                 with self.assertRaisesRegex(RuntimeError, "--resume-from") as raised:
                     DelphiV5Fetcher(client).fetch(
                         repository,
@@ -281,7 +281,7 @@ class DelphiTests(unittest.TestCase):
             repository.initialize(CATALOG)
             spec = CATALOG["delphi_nssp"]
             options = dict(signals=("first", "second"), geo_types=("state",), workers=1)
-            with patch("influpaintx.data.sources.delphi.time.sleep"):
+            with patch("tapestry.data.sources.delphi.time.sleep"):
                 with self.assertRaises(RuntimeError):
                     DelphiV5Fetcher(_PartlyFailingClient()).fetch(repository, spec, **options)
             staging = next((repository.root / ".staging" / spec.key).iterdir())

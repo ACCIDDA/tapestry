@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 pytest.importorskip('torch')
 
-from influpaintx.model_data import FinalizedDataset
-from influpaintx.model_data.finalized import season
-from influpaintx.models.season_cv import LEVELS, SEASONS, fold_data, wis
+from tapestry.model_data import FinalizedDataset
+from tapestry.model_data.finalized import season
+from tapestry.models.season_cv import LEVELS, SEASONS, fold_data, wis
 
 
 def test_holdout_cannot_change_fit_data_or_scales():

@@ -1,4 +1,4 @@
-"""Run the acquisition CLI with ``python -m influpaintx.data``."""
+"""Run the acquisition CLI with ``python -m tapestry.data``."""
 
 from .cli import main
 
