@@ -12,6 +12,9 @@ PyArrow is an optional explorer dependency for Parquet tables.
 
 ## Install from a checkout
 
+For the cluster module and workspace commands used on Longleaf, see
+[Longleaf setup](longleaf-setup.md).
+
 On a fresh Mac with Homebrew, install the tools once:
 
 ```bash
