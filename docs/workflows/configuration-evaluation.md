@@ -44,7 +44,8 @@ read from the original pinned mirror commit. Tapestry checks complete support
 before scoring and checks returned task keys, finite metrics and relative WIS
 afterwards. This preparation preserves the existing experiment definition.
 
-The publisher copies rankings and 72 SVG figures into the documentation. Full
+The publisher copies rankings and diagnostic figures and regenerates projection
+fans from the saved EpiBench forecast inputs (72 SVG figures in total). Full
 Hubverse exports stay in `data/`. CSV companions are supported because EpiBench's
 submitted-model loader currently accepts CSV only.
 
@@ -136,8 +137,18 @@ scores average individual seed objectives and report their spread; three seeds a
 significance claim.
 
 Projection fans connect the four horizons **from the same forecast origin**;
-these are not horizon-specific quantile ribbons connected across different
-origins. Every fourth available origin is shown to reduce overlap; all origins
+only the **top three individual seeded runs across all six targets** are shown,
+plus the official ensemble in **light blue** and the best run for the displayed
+target/season in **light red**. A season winner already in the top three appears
+once, highlighted red. Selection uses geometric mean WIS ratios: each target gets
+equal weight, with equal weight for available season/geography cells within a
+target. The target/season winner equally weights US and states/DC. All four
+horizons contribute through the leaderboard's `all` rows. This fan selection
+includes ED targets and is separate from the report's influenza/admissions rankings.
+
+Panel labels show variant names and seed numbers; the report's
+[model differences table](../results/b0-configuration-comparison.md#model-differences)
+explains each variant's settings. Every fourth available origin is shown to reduce overlap; all origins
 are exported and scored. Median and 50/95% intervals overlay frozen truth. US and
 NC are a prespecified illustration, not selected for performance. Use
 `--locations US 37 06 36` for other native hub location codes.

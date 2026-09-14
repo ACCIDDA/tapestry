@@ -9,6 +9,26 @@ from tapestry.evaluation.hubs import KEY, QCOLS, wide_quantiles
 from tapestry.evaluation.sweep import hubverse, matched_scores, METRICS, validate
 
 
+def test_fan_selection_weights_targets_and_selects_local_winner():
+    from tapestry.evaluation.sweep import fan_selection
+
+    rows = []
+    # Three admission seasons must not outweigh the single ED season.
+    for model, admission, ed in [('a', .5, 4), ('b', 1, 1), ('c', 1.1, 1.1), ('d', 1.2, 1.2)]:
+        for target, seasons, ratio in [('hosp', ['s1', 's2', 's3'], admission), ('ed', ['s3'], ed)]:
+            for season in seasons:
+                for geography in ['US', 'states_dc']:
+                    rows.append(dict(model=model, target=target, season=season,
+                                     geography=geography, horizon='all', wis_ratio=ratio))
+    frame = pd.DataFrame(rows)
+    # Ensemble and individual horizon rows do not enter model selection.
+    frame = pd.concat([frame, frame.assign(model='ensemble', wis_ratio=.01),
+                       frame.assign(horizon='0', wis_ratio=.01)])
+    top, best = fan_selection(frame, ['a', 'b', 'c', 'd'], dict(target='hosp', season='s3'))
+    assert top == ['b', 'c', 'd']
+    assert best == 'a'
+
+
 def test_identity_stable_and_future_fields_change_id(tmp_path):
     manifest = dict(config=dict(seed=42, output='old', device='cpu', width=64),
                     dataset_sha256='abc', code_sha256={'/old/model.py': 'def'})

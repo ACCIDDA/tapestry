@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from tapestry.evaluation.hubs import KEY
+from tapestry.evaluation.sweep import fan_selection, fans
+
 DEFAULT = Path('data/experiments/b0-rebuilt/comparison-da7685987135')
 NAMES = {'wk inc flu hosp': 'Influenza admissions', 'wk inc flu prop ed visits': 'Influenza ED visits',
          'wk inc covid hosp': 'COVID-19 admissions', 'wk inc covid prop ed visits': 'COVID-19 ED visits',
@@ -43,6 +46,17 @@ def publish(comparison, docs):
     if manifest.get('scoring_engine') != 'epibench score --config-path':
         raise ValueError('A completed EpiBench evaluation is required')
     runs = pd.read_csv(comparison / 'run_ranking.csv')
+    model_names = {r.model: f'{r.label} · seed {int(r.seed)}' for r in runs.itertuples()}
+    definitions = json.loads((comparison / 'configurations.json').read_text())
+    variants = {r['label']: r['identity']['config'] for r in definitions}
+    anchor = variants['anchor']
+    fields = {'encoder': 'encoder', 'lookback': 'history (weeks)', 'count_transform': 'count transform',
+              'geography': 'geography features', 'dynamics': 'dynamics features', 'heads': 'prediction heads',
+              'decoder': 'decoder', 'latent': 'latent dimension', 'loss_weights': 'loss weighting'}
+    differences = []
+    for label, config in sorted(variants.items()):
+        changes = [f'{title}: {config[key]}' for key, title in fields.items() if config[key] != anchor[key]]
+        differences.append([f'`{label}`', '; '.join(changes) or 'Reference configuration (settings below)'])
     rankings = pd.read_csv(comparison / 'configuration_ranking.csv').merge(
         runs[['config_id', 'label']].drop_duplicates(), on='config_id').sort_values('flu_mean')
     leaderboard = pd.read_csv(comparison / 'leaderboard.csv', dtype={'horizon': str})
@@ -115,6 +129,15 @@ def publish(comparison, docs):
         table(['Variant', 'Configuration', 'Flu ratio ± SD', 'Admissions ratio ± SD'],
               [[f'`{r.label}`', f'`{r.config_id}`', f'{r.flu_mean:.4f} ± {r.flu_sd:.4f}',
                 f'{r.admissions_mean:.4f} ± {r.admissions_sd:.4f}'] for r in rankings.itertuples()]), '',
+        '## Model differences', '',
+        'Fan labels use variant names and seed numbers. Seeds 42/43/44 repeat the same configuration '
+        'with different random initialization. The reference `anchor` uses a multilayer perceptron (MLP), '
+        '12 weeks of history, fourth-root counts, geography and dynamics features, shared prediction heads, '
+        'the original (`legacy`) decoder, latent dimension 16, and influenza-first loss weighting. '
+        'The table lists changes from that reference; `conv` means temporal convolution, `state_us` means '
+        'separate state and national heads, and `residual2` means a two-block residual decoder.', '',
+        table(['Variant name', 'Differences from anchor'], differences), '',
+        'The official ensemble is the hub reference forecast, not one of these fitted variants.', '',
         '## Best model versus ensemble', '',
         'Means across seeds, with all four horizons included. Coverage columns are percentages. '
         'The full download includes seed SD, each horizon, and every variant.', '']
@@ -171,7 +194,11 @@ def publish(comparison, docs):
         '## Figures by target and season', '',
         table(['Target','Season','Figures'], [[NAMES[c['target']], c['season'],
             f"[Eight figures](b0-comparison/{c['directory']}.md)"] for c in manifest['cases']]), '',
-        'Figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; '
+        'Projection fans show the three best seeded runs across all six targets, plus the official ensemble '
+        '(light blue) and the best run for the displayed target/season (light red). Selection uses the geometric '
+        'mean of WIS ratios, weighting targets equally, then available season/geography cells equally. '
+        'The season winner uses both geography groups and is shown once if already in the top three. '
+        'Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; '
         'the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. '
         'Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.', '',
         '## Reproduction', '',
@@ -184,13 +211,35 @@ def publish(comparison, docs):
     for case in manifest['cases']:
         name = case['directory']; title = f"{NAMES[case['target']]} · {case['season']}"
         destination = assets/name; destination.mkdir(exist_ok=True)
+        top_models, season_best = fan_selection(leaderboard, runs.model, case)
+        selected_models = list(dict.fromkeys([*top_models, case['ensemble'], season_best]))
+        frames = []
+        for model in selected_models:
+            if model == case['ensemble']:
+                frozen_quantiles = pd.read_parquet(Path(manifest['frozen'])/name/'quantiles.parquet')
+                frames.append(frozen_quantiles[frozen_quantiles.model.eq(model)])
+                continue
+            forecast = pd.read_csv(comparison/'epibench'/name/'models'/model/'forecasts.csv',
+                                   dtype={'location': str, 'output_type_id': str})
+            wide = forecast.pivot(index=KEY, columns='output_type_id', values='value')
+            wide.columns = ['q' + column for column in wide.columns]
+            frames.append(wide.reset_index().assign(model=model))
+        units = pd.read_parquet(Path(manifest['frozen'])/name/'units.parquet')
+        fans(pd.concat(frames, ignore_index=True), units, case, destination, ['US', '37'],
+             top_models=top_models, season_best=season_best, model_names=model_names)
         page = [f'# {title}', '', '[Canonical report and model names](../b0-configuration-comparison.md)', '',
                 'All models use the same frozen tasks. US is the native national prediction; states/DC '
                 'are evaluated individually. Fans connect the four horizons from one forecast origin. '
-                'Blue bands show 50%/95% intervals around the median; black curves show truth. '
-                'Every fourth origin is illustrated. Admissions are counts; ED visits are proportions.', '']
+                'Fans show only the three best seeded runs across all six targets, plus the official ensemble '
+                '(light blue) and this target/season’s best run (light red). Bands show 50%/95% intervals; '
+                'black curves show truth. The season winner appears only once if already in the top three. '
+                'Every fourth origin is illustrated. Admissions are counts; ED visits are proportions.', '',
+                'Overall top three: ' + ', '.join(f'`{model_names[model]}`' for model in top_models) + '. '
+                f'Target/season best: `{model_names[season_best]}`. '
+                'See the [model differences table](../b0-configuration-comparison.md#model-differences) '
+                'and the canonical report’s equal-target WIS-ratio selection rule.', '']
         for label, filename in FIGURES:
-            source = comparison/'plots'/name/filename
+            source = destination/filename if filename.startswith('fans-') else comparison/'plots'/name/filename
             (destination/filename).write_text('\n'.join(line.rstrip() for line in source.read_text().splitlines())+'\n')
             url = f'../../assets/b0_configuration_comparison/{name}/{filename}'
             page += [f'## {label}', '', f'[![{title}: {label}]({url}){{ loading=lazy }}]({url})', '']

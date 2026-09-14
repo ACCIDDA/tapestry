@@ -8,6 +8,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from .configurations import identify, digest
@@ -41,16 +42,29 @@ def hubverse(frames, model, output, csv=False):
     return count
 
 
-def fans(wide, units, case, output, locations):
+def fan_selection(leaderboard, candidate_models, case):
+    """Rank seeded runs, equally weighting targets, then season/geography cells."""
+    cells = leaderboard[leaderboard.horizon.astype(str).eq('all') & leaderboard.model.isin(candidate_models)].copy()
+    cells['log_ratio'] = np.log(cells.wis_ratio.clip(lower=1e-12))
+    overall = cells.groupby(['model', 'target']).log_ratio.mean().groupby('model').mean().sort_values(kind='stable')
+    seasonal = cells[cells.target.eq(case['target']) & cells.season.eq(case['season'])]
+    best = seasonal.groupby('model').log_ratio.mean().sort_values(kind='stable').index[0]
+    return list(overall.head(3).index), best
+
+
+def fans(wide, units, case, output, locations, *, top_models, season_best, model_names=None):
     # Each fan is a SINGLE origin connected across its four future weeks.
     for location in locations:
         data = wide[wide.location == location]
-        models = sorted(data.model.unique())
+        models = list(dict.fromkeys([*top_models, case['ensemble'], season_best]))
+        models = [model for model in models if model in set(data.model)]
         if not models:
             continue
         fig, axes = plt.subplots(len(models), 1, figsize=(14, 2.2 * len(models)), sharex=True, sharey=True, squeeze=False)
         truth = units[units.location == location][['target_end_date', 'observed']].drop_duplicates().sort_values('target_end_date')
         for ax, model in zip(axes[:, 0], models):
+            color = '#ef9a9a' if model == season_best else '#90caf9' if model == case['ensemble'] else '#3879a8'
+            role = 'season best' if model == season_best else 'ensemble' if model == case['ensemble'] else 'overall top 3'
             ax.plot(pd.to_datetime(truth.target_end_date), truth.observed, color='black', lw=1, label='Frozen truth')
             part = data[data.model == model]
             # Prespecified every fourth reference week keeps overlapping fans legible.
@@ -60,10 +74,10 @@ def fans(wide, units, case, output, locations):
                 # Reindex missing horizons so lines cannot jump across absent weeks.
                 f = f.set_index('horizon').reindex(range(4))
                 x = pd.date_range(ref, periods=4, freq='7D')
-                ax.fill_between(x, f['q0.025'], f['q0.975'], color='#3879a8', alpha=.13, label='95%' if i == 0 else None)
-                ax.fill_between(x, f['q0.25'], f['q0.75'], color='#3879a8', alpha=.3, label='50%' if i == 0 else None)
-                ax.plot(x, f['q0.5'], color='#20638f', lw=1)
-            ax.set_ylabel(model, fontsize=7)
+                ax.fill_between(x, f['q0.025'], f['q0.975'], color=color, alpha=.2, label='95%' if i == 0 else None)
+                ax.fill_between(x, f['q0.25'], f['q0.75'], color=color, alpha=.45, label='50%' if i == 0 else None)
+                ax.plot(x, f['q0.5'], color=color, lw=1)
+            ax.set_ylabel(f'{(model_names or {}).get(model, model)}\n{role}', fontsize=9)
             ax.set_ylim(bottom=0)
         axes[0, 0].legend(loc='upper right', ncol=3)
         axes[0, 0].set_title(f"{case['target']} · {case['season']} · {location} · four-week projection fans")
@@ -166,7 +180,10 @@ def main():
                 fig.savefig(folder / f'{name}-{geography}.svg', bbox_inches='tight')
                 plt.close(fig)
         units = pd.read_parquet(args.frozen / case['directory'] / 'units.parquet')
-        fans(pd.concat(by_case[case['directory']], ignore_index=True), units, case, folder, args.locations)
+        top_models, season_best = fan_selection(leaderboard, objective.model, case)
+        fans(pd.concat(by_case[case['directory']], ignore_index=True), units, case, folder, args.locations,
+             top_models=top_models, season_best=season_best,
+             model_names={r['model_id']: f"{r['label']} · seed {r['seed']}" for r in records})
     manifest = dict(quantile_levels=[float(q[1:]) for q in QCOLS], scoring_engine='epibench score --config-path', runs=records, frozen=str(args.frozen.resolve()), frozen_manifest_sha256=digest(frozen),
                     epibench_plot_sha256=digest(module_path.read_text()), cases=cases,
                     evaluation_code_sha256={p.name: digest(p.read_text()) for p in Path(__file__).parent.glob('*') if p.suffix in {'.py', '.R'}},

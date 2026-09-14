@@ -43,6 +43,29 @@ Scoring uses quantiles 0.025, 0.25, 0.5, 0.75, and 0.975. Bias is the signed Epi
 | `mlp_h26_dynamics` | `B0-344ee9ec8f26` | 1.1038 ± 0.0548 | 1.0809 ± 0.1005 |
 | `baseline` | `B0-a4e53e1214ca` | 1.1356 ± 0.0414 | 1.2218 ± 0.0267 |
 
+## Model differences
+
+Fan labels use variant names and seed numbers. Seeds 42/43/44 repeat the same configuration with different random initialization. The reference `anchor` uses a multilayer perceptron (MLP), 12 weeks of history, fourth-root counts, geography and dynamics features, shared prediction heads, the original (`legacy`) decoder, latent dimension 16, and influenza-first loss weighting. The table lists changes from that reference; `conv` means temporal convolution, `state_us` means separate state and national heads, and `residual2` means a two-block residual decoder.
+
+| Variant name | Differences from anchor |
+| --- | --- |
+| `anchor` | Reference configuration (settings below) |
+| `balanced` | loss weighting: balanced_admissions |
+| `baseline` | history (weeks): 8; count transform: raw; geography features: False; dynamics features: False |
+| `conv_h12` | encoder: conv |
+| `conv_h26` | encoder: conv; history (weeks): 26 |
+| `flu_only` | loss weighting: flu_only |
+| `latent32` | latent dimension: 32 |
+| `mlp_h12` | dynamics features: False |
+| `mlp_h26` | history (weeks): 26; dynamics features: False |
+| `mlp_h26_dynamics` | history (weeks): 26 |
+| `mlp_h8` | history (weeks): 8; dynamics features: False |
+| `residual2` | decoder: residual2 |
+| `residual2_z32` | decoder: residual2; latent dimension: 32 |
+| `state_us` | prediction heads: state_us |
+
+The official ensemble is the hub reference forecast, not one of these fitted variants.
+
 ## Best model versus ensemble
 
 Means across seeds, with all four horizons included. Coverage columns are percentages. The full download includes seed SD, each horizon, and every variant.
@@ -141,7 +164,7 @@ The detailed tables contain WIS, bias, 50%/95% coverage, and WIS components for 
 | RSV admissions | 2025-2026 | [Eight figures](b0-comparison/rsv_rsv_hosp_2025-2026.md) |
 | RSV ED visits | 2025-2026 | [Eight figures](b0-comparison/rsv_rsv_prop_ed_visits_2025-2026.md) |
 
-Figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.
+Projection fans show the three best seeded runs across all six targets, plus the official ensemble (light blue) and the best run for the displayed target/season (light red). Selection uses the geometric mean of WIS ratios, weighting targets equally, then available season/geography cells equally. The season winner uses both geography groups and is shown once if already in the top three. Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.
 
 ## Reproduction
 
