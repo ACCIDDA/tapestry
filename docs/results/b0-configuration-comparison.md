@@ -164,7 +164,26 @@ The detailed tables contain WIS, bias, 50%/95% coverage, and WIS components for 
 | RSV admissions | 2025-2026 | [Eight figures](b0-comparison/rsv_rsv_hosp_2025-2026.md) |
 | RSV ED visits | 2025-2026 | [Eight figures](b0-comparison/rsv_rsv_prop_ed_visits_2025-2026.md) |
 
-Projection fans show the three best seeded runs across all six targets, plus the official ensemble (light blue) and the best run for the displayed target/season (light red). Selection uses the geometric mean of WIS ratios, weighting targets equally, then available season/geography cells equally. The season winner uses both geography groups and is shown once if already in the top three. Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.
+Projection fans show the three best configurations across all six targets, ranked by arithmetic mean seed score, plus the official ensemble (light blue) and the best configuration for the displayed target/season (light red). Each seed score uses the geometric mean of WIS ratios, weighting targets equally, then available season/geography cells equally. The season winner averages seed scores using both geography groups. Fans display the middle-performing seed: the median by overall score for the top three, or by target/season score for the season winner. Identical representative runs appear once; different middle seeds of the same configuration appear separately. Score ties use seed number; an even seed count uses the upper middle. Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.
+
+### All-target configuration ranking for fans
+
+| Variant | Mean seed score ± SD | Middle seed |
+| --- | --- | --- |
+| residual2 | 1.0197 ± 0.0103 | 44 |
+| latent32 | 1.0293 ± 0.0311 | 43 |
+| balanced | 1.0519 ± 0.0445 | 44 |
+| anchor | 1.0572 ± 0.0264 | 43 |
+| conv_h12 | 1.0587 ± 0.0247 | 43 |
+| conv_h26 | 1.0604 ± 0.0277 | 43 |
+| residual2_z32 | 1.0618 ± 0.0037 | 44 |
+| mlp_h12 | 1.0640 ± 0.0092 | 44 |
+| mlp_h8 | 1.0831 ± 0.0540 | 42 |
+| mlp_h26 | 1.0852 ± 0.0359 | 43 |
+| mlp_h26_dynamics | 1.0927 ± 0.0561 | 43 |
+| state_us | 1.1625 ± 0.0432 | 43 |
+| baseline | 1.2407 ± 0.0793 | 42 |
+| flu_only | 1.3954 ± 0.1028 | 42 |
 
 ## Reproduction
 

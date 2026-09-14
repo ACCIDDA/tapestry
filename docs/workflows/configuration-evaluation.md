@@ -137,14 +137,22 @@ scores average individual seed objectives and report their spread; three seeds a
 significance claim.
 
 Projection fans connect the four horizons **from the same forecast origin**;
-only the **top three individual seeded runs across all six targets** are shown,
-plus the official ensemble in **light blue** and the best run for the displayed
-target/season in **light red**. A season winner already in the top three appears
-once, highlighted red. Selection uses geometric mean WIS ratios: each target gets
-equal weight, with equal weight for available season/geography cells within a
-target. The target/season winner equally weights US and states/DC. All four
-horizons contribute through the leaderboard's `all` rows. This fan selection
-includes ED targets and is separate from the report's influenza/admissions rankings.
+only the **top three configurations across all six targets** are shown,
+plus the official ensemble in **light blue** and the best configuration for the
+displayed target/season in **light red**. Rank configurations by the arithmetic
+mean of their seed scores. Each seed score is the geometric mean WIS ratio,
+weighting targets equally, then available season/geography cells within each
+target equally. The target/season score equally weights US and states/DC.
+All four horizons contribute through the leaderboard's `all` rows.
+
+Fans use each configuration's **middle-performing seed**: the median seed by
+overall score for the top three, and by target/season score for the season winner.
+Identical representative runs appear once; if the same configuration has different
+middle seeds under the two objectives, both are shown. Ties use seed number;
+an even seed count uses the upper middle. The report includes the all-target
+configuration ranking with mean seed scores, sample SD, and representative seeds.
+This selection includes ED targets and is separate from the report's
+influenza/admissions rankings.
 
 Panel labels show variant names and seed numbers; the report's
 [model differences table](../results/b0-configuration-comparison.md#model-differences)

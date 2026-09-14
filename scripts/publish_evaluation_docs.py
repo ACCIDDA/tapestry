@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from tapestry.evaluation.hubs import KEY
-from tapestry.evaluation.sweep import fan_selection, fans
+from tapestry.evaluation.sweep import fan_ranking, fan_selection, fans
 
 DEFAULT = Path('data/experiments/b0-rebuilt/comparison-da7685987135')
 NAMES = {'wk inc flu hosp': 'Influenza admissions', 'wk inc flu prop ed visits': 'Influenza ED visits',
@@ -194,13 +194,20 @@ def publish(comparison, docs):
         '## Figures by target and season', '',
         table(['Target','Season','Figures'], [[NAMES[c['target']], c['season'],
             f"[Eight figures](b0-comparison/{c['directory']}.md)"] for c in manifest['cases']]), '',
-        'Projection fans show the three best seeded runs across all six targets, plus the official ensemble '
-        '(light blue) and the best run for the displayed target/season (light red). Selection uses the geometric '
+        'Projection fans show the three best configurations across all six targets, ranked by arithmetic mean seed score, plus the official ensemble '
+        '(light blue) and the best configuration for the displayed target/season (light red). Each seed score uses the geometric '
         'mean of WIS ratios, weighting targets equally, then available season/geography cells equally. '
-        'The season winner uses both geography groups and is shown once if already in the top three. '
+        'The season winner averages seed scores using both geography groups. Fans display the middle-performing seed: '
+        'the median by overall score for the top three, or by target/season score for the season winner. '
+        'Identical representative runs appear once; different middle seeds of the same configuration appear separately. '
+        'Score ties use seed number; an even seed count uses the upper middle. '
         'Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; '
         'the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. '
         'Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.', '',
+        '### All-target configuration ranking for fans', '',
+        table(['Variant', 'Mean seed score ± SD', 'Middle seed'],
+              [[r.label, f'{r.mean:.4f} ± {r.sd:.4f}', int(r.seed)]
+               for r in fan_ranking(leaderboard, runs).itertuples()]), '',
         '## Reproduction', '',
         f'Full artifacts are in `{comparison}`. See [Longleaf setup](../longleaf-setup.md) for input rebuilding, '
         'GPU arrays, parallel scoring, and resume commands. Publish the completed comparison with:', '',
@@ -211,7 +218,7 @@ def publish(comparison, docs):
     for case in manifest['cases']:
         name = case['directory']; title = f"{NAMES[case['target']]} · {case['season']}"
         destination = assets/name; destination.mkdir(exist_ok=True)
-        top_models, season_best = fan_selection(leaderboard, runs.model, case)
+        top_models, season_best = fan_selection(leaderboard, runs, case)
         selected_models = list(dict.fromkeys([*top_models, case['ensemble'], season_best]))
         frames = []
         for model in selected_models:
@@ -230,12 +237,13 @@ def publish(comparison, docs):
         page = [f'# {title}', '', '[Canonical report and model names](../b0-configuration-comparison.md)', '',
                 'All models use the same frozen tasks. US is the native national prediction; states/DC '
                 'are evaluated individually. Fans connect the four horizons from one forecast origin. '
-                'Fans show only the three best seeded runs across all six targets, plus the official ensemble '
-                '(light blue) and this target/season’s best run (light red). Bands show 50%/95% intervals; '
-                'black curves show truth. The season winner appears only once if already in the top three. '
+                'Fans show the three best configurations across all six targets, ranked by mean seed score, plus the official ensemble '
+                '(light blue) and this target/season’s best configuration (light red). Bands show 50%/95% intervals; '
+                'black curves show truth. Each panel uses the middle-performing seed under its selection objective. '
+                'Identical representative runs appear once; different middle seeds appear separately. '
                 'Every fourth origin is illustrated. Admissions are counts; ED visits are proportions.', '',
-                'Overall top three: ' + ', '.join(f'`{model_names[model]}`' for model in top_models) + '. '
-                f'Target/season best: `{model_names[season_best]}`. '
+                'Overall top three (middle seeds): ' + ', '.join(f'`{model_names[model]}`' for model in top_models) + '. '
+                f'Target/season best (middle seed): `{model_names[season_best]}`. '
                 'See the [model differences table](../b0-configuration-comparison.md#model-differences) '
                 'and the canonical report’s equal-target WIS-ratio selection rule.', '']
         for label, filename in FIGURES:

@@ -2,9 +2,9 @@
 
 [Canonical report and model names](../b0-configuration-comparison.md)
 
-All models use the same frozen tasks. US is the native national prediction; states/DC are evaluated individually. Fans connect the four horizons from one forecast origin. Fans show only the three best seeded runs across all six targets, plus the official ensemble (light blue) and this target/season’s best run (light red). Bands show 50%/95% intervals; black curves show truth. The season winner appears only once if already in the top three. Every fourth origin is illustrated. Admissions are counts; ED visits are proportions.
+All models use the same frozen tasks. US is the native national prediction; states/DC are evaluated individually. Fans connect the four horizons from one forecast origin. Fans show the three best configurations across all six targets, ranked by mean seed score, plus the official ensemble (light blue) and this target/season’s best configuration (light red). Bands show 50%/95% intervals; black curves show truth. Each panel uses the middle-performing seed under its selection objective. Identical representative runs appear once; different middle seeds appear separately. Every fourth origin is illustrated. Admissions are counts; ED visits are proportions.
 
-Overall top three: `latent32 · seed 42`, `residual2 · seed 43`, `balanced · seed 42`. Target/season best: `conv_h26 · seed 43`. See the [model differences table](../b0-configuration-comparison.md#model-differences) and the canonical report’s equal-target WIS-ratio selection rule.
+Overall top three (middle seeds): `residual2 · seed 44`, `latent32 · seed 43`, `balanced · seed 44`. Target/season best (middle seed): `conv_h26 · seed 42`. See the [model differences table](../b0-configuration-comparison.md#model-differences) and the canonical report’s equal-target WIS-ratio selection rule.
 
 ## US projection fans
 

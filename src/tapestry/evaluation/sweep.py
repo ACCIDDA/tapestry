@@ -42,14 +42,27 @@ def hubverse(frames, model, output, csv=False):
     return count
 
 
-def fan_selection(leaderboard, candidate_models, case):
-    """Rank seeded runs, equally weighting targets, then season/geography cells."""
-    cells = leaderboard[leaderboard.horizon.astype(str).eq('all') & leaderboard.model.isin(candidate_models)].copy()
+def fan_ranking(leaderboard, runs, case=None):
+    """Average seed objectives arithmetically; illustrate the median-scoring seed."""
+    cells = leaderboard[leaderboard.horizon.astype(str).eq('all') & leaderboard.model.isin(runs.model)].copy()
+    if case is not None:
+        cells = cells[cells.target.eq(case['target']) & cells.season.eq(case['season'])]
     cells['log_ratio'] = np.log(cells.wis_ratio.clip(lower=1e-12))
-    overall = cells.groupby(['model', 'target']).log_ratio.mean().groupby('model').mean().sort_values(kind='stable')
-    seasonal = cells[cells.target.eq(case['target']) & cells.season.eq(case['season'])]
-    best = seasonal.groupby('model').log_ratio.mean().sort_values(kind='stable').index[0]
-    return list(overall.head(3).index), best
+    scores = np.exp(cells.groupby(['model', 'target']).log_ratio.mean().groupby('model').mean())
+    seeds = runs[['model', 'config_id', 'seed', 'label']].merge(scores.rename('score'), on='model')
+    rows = []
+    for config, part in seeds.groupby('config_id'):
+        # Break score ties by seed number; for even counts use the upper middle.
+        middle = part.sort_values(['score', 'seed', 'model']).iloc[len(part) // 2]
+        rows.append(dict(config_id=config, label=middle.label, mean=part.score.mean(),
+                         sd=part.score.std(), seeds=len(part), model=middle.model, seed=middle.seed))
+    return pd.DataFrame(rows).sort_values(['mean', 'config_id']).reset_index(drop=True)
+
+
+def fan_selection(leaderboard, runs, case):
+    overall = fan_ranking(leaderboard, runs)
+    seasonal = fan_ranking(leaderboard, runs, case)
+    return overall.head(3).model.tolist(), seasonal.iloc[0].model
 
 
 def fans(wide, units, case, output, locations, *, top_models, season_best, model_names=None):
@@ -180,7 +193,7 @@ def main():
                 fig.savefig(folder / f'{name}-{geography}.svg', bbox_inches='tight')
                 plt.close(fig)
         units = pd.read_parquet(args.frozen / case['directory'] / 'units.parquet')
-        top_models, season_best = fan_selection(leaderboard, objective.model, case)
+        top_models, season_best = fan_selection(leaderboard, objective, case)
         fans(pd.concat(by_case[case['directory']], ignore_index=True), units, case, folder, args.locations,
              top_models=top_models, season_best=season_best,
              model_names={r['model_id']: f"{r['label']} · seed {r['seed']}" for r in records})

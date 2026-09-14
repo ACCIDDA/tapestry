@@ -24,9 +24,37 @@ def test_fan_selection_weights_targets_and_selects_local_winner():
     # Ensemble and individual horizon rows do not enter model selection.
     frame = pd.concat([frame, frame.assign(model='ensemble', wis_ratio=.01),
                        frame.assign(horizon='0', wis_ratio=.01)])
-    top, best = fan_selection(frame, ['a', 'b', 'c', 'd'], dict(target='hosp', season='s3'))
+    runs = pd.DataFrame(dict(model=list('abcd'), config_id=list('abcd'), label=list('abcd'), seed=42))
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s3'))
     assert top == ['b', 'c', 'd']
     assert best == 'a'
+
+
+def test_fan_ranking_averages_seed_scores_and_uses_middle_performance():
+    from tapestry.evaluation.sweep import fan_ranking, fan_selection
+
+    rows, runs = [], []
+    # A lucky seed must not put configuration a in the overall top three.
+    for config, scores in [('a', [.01, 5, 6]), ('b', [.9, .7, .8]),
+                           ('c', [1, 1.1, 1.2]), ('d', [1.3, 1.4, 1.5])]:
+        for seed, score in zip([42, 43, 44], scores):
+            model = f'{config}-{seed}'
+            runs.append(dict(model=model, config_id=config, label=config, seed=seed))
+            for target, value in [('hosp', score), ('ed', score)]:
+                rows.append(dict(model=model, target=target, season='s1', horizon='all', wis_ratio=value))
+    frame, runs = pd.DataFrame(rows), pd.DataFrame(runs)
+    ranking = fan_ranking(frame, runs)
+    assert ranking.config_id.tolist() == ['b', 'c', 'd', 'a']
+    assert ranking.iloc[0]['mean'] == pytest.approx(.8)
+    assert ranking.iloc[-1]['mean'] == pytest.approx(11.01 / 3)
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))
+    assert top == ['b-44', 'c-43', 'd-43']
+    assert best == 'b-44'
+    # The seasonal middle seed can differ from the overall representative.
+    frame.loc[frame.target.eq('hosp') & frame.model.str.startswith('b-'), 'wis_ratio'] = [.6, .7, .8]
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))
+    assert top[0] == 'b-42'
+    assert best == 'b-43'
 
 
 def test_identity_stable_and_future_fields_change_id(tmp_path):
