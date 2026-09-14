@@ -76,8 +76,10 @@ training dates, seed, dataset hash, channel/location registry, and loss history.
 This remains a finalized-data retrospective experiment, with the previously
 accepted NSSP finality and geography assumptions.
 
-There is no scheduler, early stopping, calibration, ensemble, experiment manager,
-training resume, or performance claim. Training minibatches are shuffled within
+The [named experiment manager](experiment-manager.md) now organizes scenarios,
+three-seed comparisons, and resume of completed runs. There is no scheduler,
+early stopping, calibration, ensemble, optimizer resume, or performance claim.
+Training minibatches are shuffled within
 the explicitly bounded fitting period; there is no random train/test split.
 
 ## Verified local smoke run
@@ -95,8 +97,9 @@ of location ordering under the local shared model.
 
 ## First three experiments: implemented switches
 
-Scope: the requested update implements experiments 1–3. Decoder and spatial
-attention experiments 4–5 remain proposals. Existing defaults and old checkpoints
+Experiments 1–3 are implemented, along with optional decoder, separate-head, and
+temporal-convolution switches below. Spatial attention remains a B1 proposal.
+Existing defaults and old checkpoints
 retain the original B0 behavior. Completed comparisons are in the
 [staged experiment results](../results/b0-full-experiments.md); defaults remain unchanged.
 
@@ -108,6 +111,10 @@ retain the original B0 behavior. Completed comparisons are in the
 | `--dynamics` | Recent slope, change in slope, observation age, validity flags, Christmas timing |
 | `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]` |
 | `--population-file` | Default frozen `data/metadata/b0_locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
+| `--encoder` | `mlp` (default) or `conv`: two shared temporal convolutions |
+| `--heads` | `shared` (default) or `state_us`: separate modulation/output parameters |
+| `--decoder` | `legacy` (default) or `residual2`: two latent-modulated residual blocks |
+| `--latent` | Default `16`; compare `32` independently of decoder depth |
 
 All modes retain all six input channels and six output heads. Flu-only supervision
 zeros the auxiliary loss contributions, so auxiliary forecasts from that mode are

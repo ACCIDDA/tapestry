@@ -1,4 +1,4 @@
-"""Small, independent switches for the first three B0 experiments."""
+"""Independent B0 representation, supervision, and architecture switches."""
 import csv
 from pathlib import Path
 
@@ -17,12 +17,18 @@ def add_experiment_args(parser):
     parser.add_argument('--dynamics', action='store_true', help='Include slopes, acceleration, observation age and Christmas timing')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
     parser.add_argument('--loss-weights', choices=list(LOSS_WEIGHTS), default='influenza_first')
+    parser.add_argument('--encoder', choices=['mlp', 'conv'], default='mlp')
+    parser.add_argument('--heads', choices=['shared', 'state_us'], default='shared')
+    parser.add_argument('--decoder', choices=['legacy', 'residual2'], default='legacy')
+    parser.add_argument('--latent', type=int, default=16)
 
 
 def model_options(episodes, args):
     transform = getattr(args, 'count_transform', 'raw')
     geography = getattr(args, 'geography', False)
     options = dict(count_transform=transform, geography=geography, dynamics=getattr(args, 'dynamics', False))
+    options.update(encoder=getattr(args, 'encoder', 'mlp'), heads=getattr(args, 'heads', 'shared'),
+                   decoder=getattr(args, 'decoder', 'legacy'), latent=getattr(args, 'latent', 16))
     if transform == 'raw' and not geography:
         return options
     with Path(args.population_file).open() as stream:

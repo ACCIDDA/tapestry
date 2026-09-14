@@ -23,4 +23,5 @@ def identify(run, family='B0'):
     full_hash = digest(identity)
     config_id = f'{family}-{full_hash[:12]}'
     return dict(config_id=config_id, model_id=f'{config_id}-s{seed}', seed=seed,
-                identity_sha256=full_hash, identity=identity, run=str(run.resolve()), label=run.name)
+                identity_sha256=full_hash, identity=identity, run=str(run.resolve()),
+                label=manifest.get('scenario_name', run.name))

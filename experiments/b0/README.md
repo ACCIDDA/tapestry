@@ -1,5 +1,18 @@
 # B0 experiment recipes
 
+For new comparisons, use the [named experiment manager](../../docs/workflows/experiment-manager.md):
+
+```bash
+.venv/bin/python -m tapestry.models.manager list
+.venv/bin/python -m tapestry.models.manager plan -e b0-next
+.venv/bin/python -m tapestry.models.manager run -e b0-next
+.venv/bin/python -m tapestry.models.manager compare -e b0-next
+```
+
+The focused suite has 14 configurations, 42 seeded CV runs, and 126 season fits.
+Readable scenario strings key saved results; rerunning resumes completed work.
+The scripts below are preserved for the older dated comparison.
+
 Run from the repository root with the package installed. These are research
 recipes for the existing B0 protocol; reusable training lives in
 `src/tapestry/models/` and evaluation in `src/tapestry/evaluation/`.

@@ -1,5 +1,12 @@
 # Five next experiments for Build B
 
+The [named B0 experiment manager](../workflows/experiment-manager.md) now implements
+a fixed 14-configuration comparison covering the existing feature/loss switches,
+separate state/US heads, two modulated decoder blocks, latent size, and temporal
+convolution. Spatial attention remains in the later B1 round. The recommendations
+and historical results below provide the context; the new suite has not been run
+as a full performance comparison.
+
 Recommendations after reviewing the design, implementation, and saved scoringutils
 results. These are hypotheses to test, not demonstrated improvements. Retain the
 accepted six finalized channels and no wastewater for this round.

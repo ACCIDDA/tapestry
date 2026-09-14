@@ -37,6 +37,7 @@ tapestry-model-data = "tapestry.model_data.cli:main"
 tapestry-data = "tapestry.data.cli:main"
 tapestry-select = "tapestry.data.selection:main"
 tapestry-explore = "tapestry.explorer:main"
+tapestry-experiments = "tapestry.models.manager:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tapestry"]

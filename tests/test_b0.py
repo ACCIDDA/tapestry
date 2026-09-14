@@ -111,3 +111,47 @@ def test_input_scalers_ignore_masked_values_and_weights_are_independent(tmp_path
     assert a == b
     assert a['input_scale'][:3] == pytest.approx([.1 ** .5] * 3)
     assert LOSS_WEIGHTS['flu_only'] == [1, 0, 0, 0, 0, 0]
+
+
+@pytest.mark.parametrize('encoder', ['mlp', 'conv'])
+@pytest.mark.parametrize('heads', ['shared', 'state_us'])
+@pytest.mark.parametrize('decoder', ['legacy', 'residual2'])
+def test_architecture_gradients_masking_and_checkpoint(encoder, heads, decoder):
+    model = B0(lookback=12, width=8, latent=32, encoder=encoder, heads=heads, decoder=decoder)
+    x = torch.ones(1, 12, 6, 2, 2)
+    x[:, :, 3:, 0] = .02
+    x[:, -2, :, 1] = 0
+    z = torch.randn(3, 1, 32, requires_grad=True)
+    cal = torch.zeros(1, 2)
+    out = model(x, cal, z=z, locations=['AL', 'US'])
+    assert out.shape == (3, 1, 4, 6, 2)
+    assert torch.isfinite(out).all() and (out >= 0).all()
+    assert (out[:, :, :, 3:] <= 1).all()
+    x[:, -2, :, 0] = float('nan')
+    assert torch.allclose(out, model(x, cal, z=z, locations=['AL', 'US']))
+    assert torch.allclose(out.flip(-1), model(x.flip(-1), cal, z=z, locations=['US', 'AL']))
+    clone = B0(**model.config)
+    clone.load_state_dict(model.state_dict())
+    assert torch.equal(out, clone(x, cal, z=z, locations=['AL', 'US']))
+    out.sum().backward()
+    assert z.grad.abs().sum() > 0
+    assert all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters())
+    if decoder == 'residual2':
+        assert all(layer.weight.grad.abs().sum() > 0 for layer in model.decoder.modulations)
+
+
+@pytest.mark.parametrize('decoder', ['legacy', 'residual2'])
+def test_separate_heads_receive_only_their_support_gradients(decoder):
+    model = B0(width=8, heads='state_us', decoder=decoder)
+    x = torch.ones(1, 8, 6, 2, 2)
+    x[:, :, 3:, 0] = .02
+    with pytest.raises(ValueError, match='location IDs'):
+        model(x, torch.zeros(1, 2))
+    out = model(x, torch.zeros(1, 2), members=2, locations=['AL', 'US'])
+    out[..., 0].sum().backward()
+    assert sum(p.grad.abs().sum() for p in model.decoder.parameters()) > 0
+    assert all(not p.grad.any() for p in model.us_decoder.parameters())
+    model.zero_grad()
+    model(x, torch.zeros(1, 2), members=2, locations=['AL', 'US'])[..., 1].sum().backward()
+    assert all(not p.grad.any() for p in model.decoder.parameters())
+    assert sum(p.grad.abs().sum() for p in model.us_decoder.parameters()) > 0
