@@ -1,5 +1,9 @@
 # B0 experiments 1–3: full staged comparison
 
+The [configuration evaluation report](b0-configuration-comparison.md) includes
+the original B0 alongside this sweep, with stable identifiers, downloadable
+rankings, and inline projection fans and scoring diagnostics for every target/season.
+
 Completed 14 full runs / 42 season fits. Each fit uses 50 epochs,
 width 64, latent dimension 16, eight independent training draws, and 2,048 evaluation
 draws per origin. Sum of fit/evaluation run times: 31.0 minutes, excluding

@@ -1,0 +1,10 @@
+{
+  "parquet_files": 6750,
+  "csv_files": 6750,
+  "quantile_rows_per_format": 62646480,
+  "model_directories_checked": 45,
+  "scored_forecasts": 906592,
+  "svg_figures": 72,
+  "sweep_rescore_max_wis_difference": 0.0,
+  "epibench_csv_loader_checked": true
+}

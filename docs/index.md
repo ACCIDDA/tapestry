@@ -23,7 +23,9 @@ For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
-[Completed experiments](results/b0-full-experiments.md) record observations;
-[design proposals](design/solution-b-plan.md) describe possible extensions.
+[Completed experiments](results/b0-full-experiments.md) record observations.
+The [configuration evaluation report](results/b0-configuration-comparison.md)
+includes rankings and projection fans for all 15 runs.
+[Design proposals](design/solution-b-plan.md) describe possible extensions.
 The [code and test review](maintenance.md) distinguishes current needs from
 optional features.

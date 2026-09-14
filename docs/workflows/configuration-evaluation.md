@@ -1,5 +1,7 @@
 # Configuration exports, rankings, and projection fans
 
+Read the [completed report with inline figures and rankings](../results/b0-configuration-comparison.md).
+
 This extends the existing frozen B0 comparison without model training. The user
 confirmed that “B-10” meant B0. All 14 runs in the completed September 14 sweep
 and the original September 13 CV run are included. Smoke tests under `tmp/` are
@@ -35,6 +37,17 @@ accepts any list of saved three-season CV runs. Add a future completed run to
 `--runs` and use a new output directory to regenerate a comparison including it.
 Resuming the same run set reuses scoring only when its quantiles, truth and R
 script match the saved content fingerprint. Exporting or scoring never refits.
+
+Refresh the documentation snapshot from completed results, then check the site:
+
+```bash
+.venv/bin/python scripts/publish_evaluation_docs.py
+.venv/bin/python -m mkdocs build --strict
+```
+
+This copies the ranking tables and 72 SVG figures into `docs/assets/` and generates
+the overview and nine target/season figure pages. The full forecast archive stays
+in `data/`; documentation links use portable relative paths.
 
 ## Identifiers
 
