@@ -2,10 +2,9 @@
 
 Read the [completed report with inline figures and rankings](../results/b0-configuration-comparison.md).
 
-This extends the existing frozen B0 comparison without model training. The user
-confirmed that “B-10” meant B0. All 14 runs in the completed September 14 sweep
-and the original September 13 CV run are included. Smoke tests under `tmp/` are
-intentionally excluded.
+The canonical `b0-rebuilt` experiment includes 14 configurations, all at seeds
+42/43/44, evaluated against pinned hub ensembles on rebuilt frozen inputs.
+See [Longleaf setup](../longleaf-setup.md) for the complete execution workflow.
 
 Our challenges remain **unversioned custom scoring configs**, with the existing
 finalized, non-vintaged evaluation truth. They are not registered as versioned
@@ -19,32 +18,23 @@ relative WIS, and writes `EpiBenchmark_scores.csv` and `summary.md`. All candida
 and the official ensemble are freshly scored together. The local R bridge is
 retained only for reproducing the historical frozen-support comparison.
 
-Sync the research environment (including current EpiBenchmark from GitHub `main`):
+Install the research environment and R packages before registering an experiment;
+keep dependencies fixed during execution. See [Longleaf setup](../longleaf-setup.md).
+
+To score the collected B0 runs and publish the completed report:
 
 ```bash
-uv sync --upgrade-package epibenchmark
+sbatch scripts/b0_evaluation_parallel.sbatch
+# After successful completion:
+.venv/bin/python scripts/publish_evaluation_docs.py
+.venv/bin/python -m mkdocs build --strict
 ```
 
-R packages `scoringutils` and `purrr` are also required; see
-[environment setup](../getting-started.md#r-for-epibenchmark-scoring).
-Reproduce the current report:
-
-```bash
-uv run python -m tapestry.evaluation.sweep \
-  --runs data/experiments/b0_full_20260914/*_s4? \
-         data/experiments/b0_season_cv_20260913 \
-  --csv --output data/evaluation/b0_epibench_five_quantiles
-uv run python scripts/validate_epibench_evaluation.py
-uv run python scripts/publish_evaluation_docs.py
-uv run --extra docs python -m mkdocs build --strict
-```
-
-Use `--epibench /path/to/epibench` only to override the installed package with a
-development checkout; use `--mirrors /path/to/mirrors` for another hub mirror location. Add completed saved runs with `--runs` and choose a new output
-directory when inputs change. Resuming identical inputs reuses EpiBench output
-only after matching forecast/truth content, adapter and EpiBench source hashes,
-hub schemas, and R/package versions. Two independent cases run concurrently by default; `--score-workers 1` runs serially.
-No scoring step retrains the model.
+The node launcher runs nine scoring cases concurrently. The underlying
+`tapestry.evaluation.sweep` CLI supports other collections of saved runs via
+`--runs`, `--frozen`, and `--output`; its default concurrency is two cases.
+Completed EpiBench scores are reused when their input and scorer fingerprints
+match. No scoring step retrains models.
 
 Each `epibench/<target-season>/` directory contains the runnable `score.yaml`,
 model CSV inputs, a local `hub/` snapshot, EpiBench output and log, and provenance.
@@ -68,9 +58,8 @@ the exporter selects the exact five stored values, with no interpolation or
 resampling. The current archive contains only five quantiles per forecast unit.
 
 WIS is recomputed for candidates and reference ensembles. Five-quantile WIS is
-not numerically interchangeable with the former 23-quantile WIS. The audit now
-checks every score against an independent five-quantile pinball calculation;
-median AE and 50/95% coverage must remain unchanged on the same tasks.
+not numerically interchangeable with the former 23-quantile WIS. Five-quantile WIS is the mean of the five scaled quantile losses. The current
+report uses saved EpiBench scores and the pipeline's built-in support and relative-WIS checks.
 
 [Emily’s configs](emily-configs.md) define vintage inputs and origin calendars.
 They are tested separately; this report still uses the nine existing frozen
@@ -143,8 +132,8 @@ ratios, weighting each available season/geography cell equally. The admissions
 objective first averages log ratios within each target and then equally weights
 admission targets. These reproduce the existing sweep's selection objectives.
 No absolute WIS is pooled across hospitalization and ED units. Configuration
-scores average individual seed objectives and report their spread; unequal seed
-counts and adaptive exploration prevent a controlled significance claim.
+scores average individual seed objectives and report their spread; three seeds and exploratory model selection do not establish a controlled
+significance claim.
 
 Projection fans connect the four horizons **from the same forecast origin**;
 these are not horizon-specific quantile ribbons connected across different

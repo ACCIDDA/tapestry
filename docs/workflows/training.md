@@ -101,7 +101,7 @@ Experiments 1–3 are implemented, along with optional decoder, separate-head, a
 temporal-convolution switches below. Spatial attention remains a B1 proposal.
 Existing defaults and old checkpoints
 retain the original B0 behavior. Completed comparisons are in the
-[staged experiment results](../results/b0-full-experiments.md); defaults remain unchanged.
+[canonical B0 results](../results/b0-configuration-comparison.md); defaults remain unchanged.
 
 | Switch | Values / behavior |
 |---|---|
@@ -162,9 +162,9 @@ The CV runner continues to report states/DC and native US separately.
 Validation: 15 focused model/data/CV tests, one-epoch three-fold smoke execution
 (sqrt, geography, dynamics, 12 weeks, flu-only), and a fourth-root 26-week balanced
 training/prediction smoke. Smoke runs test execution only; they do not establish
-forecast improvements. Full staged training and ensemble rescoring are now complete; see
-[the experiment report](../results/b0-full-experiments.md) for 14 runs / 42 fits and three-seed
-finalists. The report records state/US tradeoffs and does not change defaults.
+forecast improvements. Full training and ensemble scoring are complete; see
+[the canonical report](../results/b0-configuration-comparison.md) for 14 variants,
+42 runs, and 126 fits, with all variants evaluated at three seeds. The report records state/US tradeoffs and does not change defaults.
 
 ## Saved three-season CV forecasts and evaluation
 

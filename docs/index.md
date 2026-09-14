@@ -24,9 +24,11 @@ For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
-[Completed experiments](results/b0-full-experiments.md) record observations.
-The [configuration evaluation report](results/b0-configuration-comparison.md)
-includes rankings and projection fans for all 15 runs.
+The [canonical B0 report](results/b0-configuration-comparison.md) covers
+14 variants and 42 runs. The best aggregate model, `conv_h12`, has 10.8% lower
+influenza WIS and 8.1% lower three-admission WIS relative to ensemble parity
+on the balanced selection objectives. The report includes seed variability,
+matched controls, coverage, and projection fans.
 [Design proposals](design/solution-b-plan.md) describe possible extensions.
 The [code and test review](maintenance.md) distinguishes current needs from
 optional features.
