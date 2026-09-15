@@ -31,7 +31,8 @@ covid df7965dd1d4832a96fe6712f9de9f000abc01f3e
 rsv 53baf7db03a2429f5a3710d859319b9029df76cd
 HUBS
 
-frozen=data/evaluation/b0_hub_comparison_rebuilt
+# Frozen support on the hub's 23-quantile grid; the five-quantile support cannot score new runs.
+frozen=data/evaluation/b0_hub_comparison_q23
 if [[ ! -s "$frozen/manifest.json" ]]; then
     # Retain incomplete support builds for inspection.
     if [[ -e "$frozen" ]]; then
@@ -45,9 +46,9 @@ if [[ ! -s "$frozen/manifest.json" ]]; then
         --device cuda --epochs 1 --eval-members 8 --output "$bootstrap"
     .venv/bin/python -m tapestry.evaluation.compare \
         --run "$bootstrap" --mirrors data/mirrors \
-        --cache data/evaluation/hub_cache_rebuilt --output "$frozen"
+        --cache data/evaluation/hub_cache_q23 --output "$frozen"
 fi
 
-# Optional first argument names the experiment to register (default b0).
+# Optional arguments: experiment to register (default b0) and suite (default essential).
 .venv/bin/python -m tapestry.models.manager plan \
-    -e "${1:-b0}" --frozen "$frozen" --device cuda
+    -e "${1:-b0}" --suite "${2:-essential}" --frozen "$frozen" --device cuda

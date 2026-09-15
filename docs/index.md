@@ -24,12 +24,10 @@ For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
-The [canonical B0 report](results/b0-configuration-comparison.md) covers
-14 configurations, each evaluated at three seeds (42 runs). Configurations rank
-by mean all-target WIS ratio across seeds, including admissions and ED visits.
-`residual2` ranks first, followed by `latent32` and `balanced`. Its score is
-1.0197 ± 0.0103, about 2.0% above ensemble parity. The report includes seed
-variability, matched controls, coverage, and fans using middle-performing seeds.
+Earlier B0 comparison results were withdrawn. They are being recreated by the
+[architecture sweep](workflows/experiment-manager.md#architecture-sweep): 4,097
+configurations at three seeds, ranked by total-WIS ratios to the hub ensembles on
+all six targets, with admissions weighted twice ED visits.
 [Architecture](design/architecture.md) describes the proposed extensions.
 [Features and tests](maintenance.md) distinguishes required from optional
 features.

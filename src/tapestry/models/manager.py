@@ -1,4 +1,4 @@
-"""Manage B0 experiments by name: list, plan, run, status, and compare.
+"""Manage B0 experiments by name: list, plan, run, status, rank, and compare.
 
 One `jobs.csv` row (one Slurm array task) is one scenario with all of its seeds.
 Each seed attempt writes only its own folder, so tasks never share a registry;
@@ -18,11 +18,14 @@ import socket
 import subprocess
 import sys
 
+from .quantiles import LEVELS
 from .scenarios import ESSENTIAL, SUITES, TrainingScenario, get_scenarios, get_training_scenario
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
 JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
 SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')
+ARRAY_CHUNK = 1000
+FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 
 
 def save(path, value):
@@ -101,9 +104,20 @@ def plan(folder, scenarios, seeds, settings):
     return jobs
 
 
+def check_frozen(frozen):
+    """Fail before any fitting when runs could not be scored on the current quantile grid."""
+    expected = [f'q{q:g}' for q in LEVELS]
+    try:
+        quantiles = json.loads((Path(frozen) / 'manifest.json').read_text()).get('quantiles')
+    except (OSError, ValueError) as error:
+        raise ValueError(f'No frozen scoring support at {frozen}; build it with scripts/b0_prepare.sbatch') from error
+    if quantiles != expected:
+        raise ValueError(f'{frozen} holds quantiles {quantiles}; rebuild frozen support for the {len(expected)}-level grid')
+
+
 def complete_artifacts(output):
-    """A top-level scores file alone is insufficient evidence of a complete CV."""
-    required = ['manifest.json', 'scores.csv']
+    """A top-level scores file alone is insufficient evidence of a complete, scored CV."""
+    required = ['manifest.json', 'scores.csv', 'totals.csv']
     required += [f'eval_{season}/{name}' for season in SEASONS
                  for name in ('model.pt', 'forecasts.npz', 'training.json', 'scores.csv')]
     if not all((output / name).is_file() and (output / name).stat().st_size for name in required):
@@ -151,15 +165,19 @@ def run_seed(folder, job, seed, settings):
                '--dataset', settings['dataset'], '--population-file', settings['population_file'],
                '--eval-members', str(settings['eval_members']), '--device', settings['device'],
                '--seed', str(seed), '--output', str(output), *scenario.flags()]
+    scoring = [sys.executable, '-m', 'tapestry.evaluation.totals', 'score',
+               '--run', str(output), '--frozen', settings['frozen']]
     record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
-                  config=asdict(scenario), settings=settings, command=command, started=now(), **environment())
+                  config=asdict(scenario), settings=settings, command=command, scoring_command=scoring,
+                  started=now(), **environment())
     save(attempt / 'run.json', record)
     print(f'Running {job["name"]}, seed {seed}: {attempt}', flush=True)
     try:
         with (attempt / 'run.log').open('w') as log:
             execute(command, log)
+            execute(scoring, log)
         if not complete_artifacts(output):
-            raise RuntimeError('CV exited without all three fitted-fold artifacts')
+            raise RuntimeError('CV exited without all three fitted-fold artifacts and totals')
         manifest = json.loads((output / 'manifest.json').read_text())
         manifest.update(scenario_string=job['scenario'], scenario_name=job['name'])
         save(output / 'manifest.json', manifest)
@@ -180,6 +198,7 @@ def run(folder, tasks=None, device=None, keep_going=False):
     settings = json.loads((folder / 'experiment.json').read_text())
     if device:
         settings['device'] = device
+    check_frozen(settings['frozen'])
     jobs = read_jobs(folder)
     if tasks is not None:
         unknown = set(tasks) - {job['task'] for job in jobs}
@@ -219,9 +238,27 @@ def pending_tasks(rows):
     return sorted({row['task'] for row in rows if row['status'] != 'complete'})
 
 
-def compare(folder, workers=2, allow_incomplete=False):
-    """Score completed runs through the existing EpiBench sweep; warn when code versions differ."""
-    settings = json.loads((folder / 'experiment.json').read_text())
+def ranges(values):
+    """Compact Slurm array syntax: [0, 1, 2, 5] -> '0-2,5'."""
+    spans = []
+    for value in sorted(values):
+        if spans and value == spans[-1][1] + 1:
+            spans[-1][1] = value
+        else:
+            spans.append([value, value])
+    return ','.join(str(a) if a == b else f'{a}-{b}' for a, b in spans)
+
+
+def array_commands(tasks, experiment, chunk=ARRAY_CHUNK):
+    """Shared-partition submissions, chunked so array indices stay below `chunk`."""
+    commands = []
+    for offset in sorted({task // chunk * chunk for task in tasks}):
+        indices = [task - offset for task in tasks if offset <= task < offset + chunk]
+        commands.append(f'sbatch --array={ranges(indices)} --export=ALL,OFFSET={offset} scripts/b0_sweep.sbatch {experiment}')
+    return commands
+
+
+def completed_runs(folder, allow_incomplete):
     rows = collect(folder)
     done = [row for row in rows if row['status'] == 'complete']
     if not done or (len(done) < len(rows) and not allow_incomplete):
@@ -229,6 +266,27 @@ def compare(folder, workers=2, allow_incomplete=False):
     versions = {(row['git_commit'], row['git_dirty']) for row in done}
     if len(versions) > 1 or any(row['git_dirty'] is not False for row in done):
         print(f'Warning: runs come from {len(versions)} commit/dirty states: {sorted(versions, key=str)}', flush=True)
+    return done, versions
+
+
+def rank(folder, allow_incomplete=False):
+    """Rank completed runs by total-WIS ratios to the ensemble (`tapestry.evaluation.totals`)."""
+    from tapestry.evaluation.totals import rank as rank_runs
+    done, _ = completed_runs(folder, allow_incomplete)
+    attempts_used = sorted(row['attempt'] for row in done)
+    # Different ranked sets get different destinations; never mix partial rankings.
+    destination = folder / f'ranking-{hashlib.sha256(json.dumps(attempts_used).encode()).hexdigest()[:12]}'
+    runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'] / 'cv')
+            for row in sorted(done, key=lambda row: row['attempt'])]
+    ranking = rank_runs(runs, destination)
+    print(ranking.head(20).to_string(index=False), flush=True)
+    return destination
+
+
+def compare(folder, workers=2, allow_incomplete=False):
+    """Score completed runs through the existing EpiBench sweep; warn when code versions differ."""
+    settings = json.loads((folder / 'experiment.json').read_text())
+    done, versions = completed_runs(folder, allow_incomplete)
     runs = sorted(row['attempt'] for row in done)
     # Different compared sets get different destinations; never mix partial rankings.
     destination = folder / f'comparison-{hashlib.sha256(json.dumps(runs).encode()).hexdigest()[:12]}'
@@ -250,7 +308,7 @@ def compare(folder, workers=2, allow_incomplete=False):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'compare'])
+    parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
     parser.add_argument('--suite', choices=list(SUITES), default='essential')
@@ -258,14 +316,14 @@ def main(argv=None):
     parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
     parser.add_argument('--dataset', default='data/processed/build_b_finalized.npz')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
-    parser.add_argument('--frozen', default='data/evaluation/b0_hub_comparison')
+    parser.add_argument('--frozen', default=FROZEN, help='Frozen ensemble-supported tasks on the 23-quantile grid')
     parser.add_argument('--eval-members', type=int, default=2048)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda'],
                         help='plan: saved default (cpu); run: override for this invocation')
     parser.add_argument('-t', '--task', nargs='+', type=int, help='run: jobs.csv task numbers (default: all)')
     parser.add_argument('--keep-going', action='store_true', help='run: continue with remaining seeds after a failure')
     parser.add_argument('--workers', type=int, default=2, help='compare: concurrent EpiBench cases')
-    parser.add_argument('--allow-incomplete', action='store_true', help='compare: score only completed runs')
+    parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     if args.eval_members < 1 or args.workers < 1:
         parser.error('eval-members and workers must be positive')
@@ -295,6 +353,9 @@ def main(argv=None):
         if run(folder, args.task, args.device, args.keep_going):
             raise SystemExit(1)
         return
+    elif args.command == 'rank':
+        print(rank(folder, args.allow_incomplete))
+        return
     elif args.command == 'compare':
         print(compare(folder, args.workers, args.allow_incomplete))
         return
@@ -305,11 +366,13 @@ def main(argv=None):
         print(json.dumps({status: sum(row['status'] == status for row in rows) for status in sorted({r['status'] for r in rows})}))
     pending = pending_tasks(rows)
     if pending:
-        print(f'Pending tasks (check squeue before resubmitting): '
-              f'sbatch --array={",".join(map(str, pending))}%6 scripts/b0_array.sbatch {args.experiment}'
-              + ('' if args.root == 'data/experiments' else f' --root {args.root}'))
-        print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}'
-              + ('' if args.root == 'data/experiments' else f' --root {args.root}'))
+        root = '' if args.root == 'data/experiments' else f' --root {args.root}'
+        print('Pending tasks (check squeue before resubmitting). Shared GPU partitions:')
+        for command in array_commands(pending, args.experiment):
+            print(command + root)
+        if max(pending) < ARRAY_CHUNK:
+            print(f'Partition jlessler: sbatch --array={ranges(pending)}%6 scripts/b0_array.sbatch {args.experiment}{root}')
+        print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}')
 
 
 if __name__ == '__main__':

@@ -77,28 +77,33 @@ This is a finalized-data retrospective experiment, with the NSSP finality and
 geography assumptions of the [dataset contract](../data/build-b-finalized.md).
 
 The [named experiment manager](experiment-manager.md) organizes scenarios,
-three-seed comparisons, and resume of completed runs. There is no scheduler,
-early stopping, calibration, ensemble, optimizer resume, or performance claim.
+three-seed comparisons, and resume of completed runs. Early stopping is optional
+(`--patience`, below); there is no calibration, ensemble, optimizer resume, or
+performance claim.
 Training minibatches are shuffled within
 the explicitly bounded fitting period; there is no random train/test split.
 
 ## Experiment switches
 
-Defaults give the baseline B0 behavior. Spatial attention is a B1 proposal.
-Comparisons are in the [canonical B0 results](../results/b0-configuration-comparison.md).
+Defaults give the baseline B0 behavior. The
+[architecture sweep](experiment-manager.md#architecture-sweep) crosses these switches.
 
 | Switch | Values / behavior |
 |---|---|
-| `--count-transform` | `raw` (baseline), `sqrt`, `fourth_root` |
+| `--count-transform` | `raw` (baseline counts), or the rate per 100,000 as `rate`, `sqrt`, `fourth_root`, `log1p` |
+| `--ed-transform` | `linear` (original: scaled proportions in, logit residual out), `logit` (centered logit in and out), `fourth_root` (in and out) |
 | `--geography` | Log(population / 100000) and native-US indicator |
 | `--lookback` | Compare `8`, `12`, `26`; same MLP architecture and width |
 | `--dynamics` | Recent slope, change in slope, observation age, validity flags, Christmas timing |
-| `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]` |
+| `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]`; `objective`: `[1,1,1,.5,.5,.5]`, matching the selection score |
 | `--population-file` | Default frozen `data/metadata/b0_locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
 | `--encoder` | `mlp` (default) or `conv`: two shared temporal convolutions |
 | `--heads` | `shared` (default) or `state_us`: separate modulation/output parameters |
 | `--decoder` | `legacy` (default) or `residual2`: two latent-modulated residual blocks |
 | `--latent` | Default `16`; compare `32` independently of decoder depth |
+| `--spatial` | `none` (default) or `attention`: one attention block across locations |
+| `--noise` | `global` (default) or `local`: adds a per-location latent |
+| `--patience` | Season CV only. `0` (default) trains `--epochs` epochs; otherwise early stopping with `--epochs` as the cap |
 
 All modes retain all six input channels and six output heads. Flu-only supervision
 zeros the auxiliary loss contributions, so auxiliary forecasts from that mode are
@@ -109,7 +114,12 @@ selected power transform and training-context Q95 scaling. The decoder inverts
 both operations to admission counts **before** fair CRPS. ED remains proportional
 with a bounded sigmoid decoder. Native-unit loss Q95 scales are fitted separately
 and stay identical across representation and loss-weight variants on a given fold.
-No centering is used, preserving a simple nonnegative transformed residual anchor.
+Counts are not centered, preserving a simple nonnegative transformed residual anchor.
+The transform also sets where uncertainty acts: residuals and latent perturbations
+are added in transformed space, so `rate` spreads equally in absolute terms at every
+level, `sqrt` roughly like Poisson variation, `fourth_root` between those, and `log1p`
+proportionally. `logit` ED inputs are centered on the training mean and divided by
+the training SD; `fourth_root` ED uses the count softplus residual and is capped at one.
 Input scale fitting excludes held-out observations; direct training also excludes
 pre-training context dates from scale fitting. Scales are saved in model buffers.
 
@@ -127,6 +137,32 @@ weeks relative to December 25 in the July–June winter containing the origin,
 divided by 26. These features use only the context. Observation age describes
 missing observations, not release latency in this finalized-data panel.
 
+Spatial attention applies one pre-norm, four-head attention block with a
+feed-forward layer to the per-location context embeddings of each episode (50
+states, DC, and US). Each token summarizes only context observed by the forecast
+date. Location identity comes from the geography features, with no learned
+per-location embedding, so outputs follow any location order.
+
+Local noise adds a four-dimensional latent per member, episode, and location,
+shared across that location's horizons and channels. A linear map turns it into
+extra scale and shift in every decoder modulation, multiplied by a learned
+nonnegative magnitude (softplus, initialized at one). Each fold's `training.json`
+records the learned magnitude. New modules are created after the original ones,
+so global-noise, non-spatial configurations keep their original initialization.
+
+Early stopping hides three consecutive target weeks out of every sixteen inside the
+two training seasons of each fold (weeks 4–6, 20–22, and 36–38 of a season: start,
+winter, and spring; 18–19 weeks per fold). Hidden weeks are removed from the inner
+fit's context, labels, and scales, which keeps 80–85 of about 100 training windows;
+the refit uses all of them. Validation episodes are the origins with a hidden week
+among their targets, scored only on hidden weeks, so each hidden week is predicted
+at all four horizons. After every epoch, the weighted fair CRPS on validation
+episodes uses fixed draws (32 members).
+Training stops after `--patience` epochs without improvement, restoring the best
+epoch; the model is then refit on all training weeks for that many epochs. The inner
+model's validation forecasts are saved as `validation_forecasts.npz` and
+`validation_scores.csv` for later calibration.
+
 Example three-season experiment (choose a fresh output directory):
 
 ```bash
@@ -141,9 +177,7 @@ while keeping the selected representation and history fixed. Use the same seeds,
 fit/evaluation dates, and ensemble-supported scoring sets. These same
 switches are accepted by `python -m tapestry.models train`; prediction reads
 all feature settings from its checkpoint and supports reordered location subsets.
-The CV runner reports states/DC and native US separately. See
-[the canonical report](../results/b0-configuration-comparison.md) for the
-14-variant, three-seed comparison.
+The CV runner reports states/DC and native US separately.
 
 ## Saved three-season CV forecasts and evaluation
 
@@ -151,8 +185,8 @@ Season folds are 2023–24, 2024–25 and 2025–26 (CDC epiweeks 31–30).
 Every fold excludes the held-out season from fitting contexts, labels and scales.
 Evaluation conditions on already observed past context, including within that
 season, and scores only target weeks in the held-out season. Weekly origins use
-four future leads; the default history is eight weeks. Forecast files retain five
-quantiles (0.025, 0.25, 0.5, 0.75, 0.975) from 2,048 draws and 100 complete sample members per origin. Admissions
+four future leads; the default history is eight weeks. Forecast files retain the
+hub's 23 quantiles from 2,048 draws and 100 complete sample members per origin. Admissions
 are rounded half-up for the CV export; ED values remain proportions.
 
 Only training on 2023–24 and 2024–25 to evaluate 2025–26 is chronological. The
@@ -160,6 +194,7 @@ other folds train on later seasons. All inputs are finalized and all folds have
 been examined during exploratory selection; none is an untouched final test set.
 
 Each fold saves its checkpoint, forecasts, training manifest, and a diagnostic
-`scores.csv`. Those Python diagnostics are not used in the report or configuration
-ranking. Use the [full EpiBench evaluation](configuration-evaluation.md) on the
-saved forecasts.
+`scores.csv`. Those diagnostics are not used for ranking: the manager scores each
+run against the hub ensembles into `totals.csv` ([ranking](experiment-manager.md#ranking)),
+and the [full EpiBench evaluation](configuration-evaluation.md) remains available
+for shortlisted runs.

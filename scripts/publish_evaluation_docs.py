@@ -126,10 +126,8 @@ def publish(comparison, docs):
         f'`{rankings.sort_values("flu_mean").iloc[0].label}` leads the influenza objective and '
         f'`{rankings.sort_values("admissions_mean").iloc[0].label}` leads the admissions objective; '
         'neither secondary objective determines the overall winner.', '',
-        'This is the canonical rebuilt-input comparison. CDC observations were downloaded September 14, 2026; '
-        'the training date range is September 2023–August 29, 2026 and hub commits are pinned. '
-        'It is a new frozen experiment, not exact reproduction of the September 4 CDC snapshots. '
-        'The first two CV folds train on later seasons and all three seasons informed development. '
+        'The training date range is September 2023–August 29, 2026 and hub commits are pinned. '
+        'The first two CV folds train on later seasons and all three seasons inform development. '
         '**These are exploratory results, not prospective validation.**', '',
         'Scoring uses quantiles 0.025, 0.25, 0.5, 0.75, and 0.975. Bias is the signed EpiBench/scoringutils '
         'quantile bias score, not an error in admission counts. Coverage is the fraction of truth values inside '
@@ -144,7 +142,7 @@ def publish(comparison, docs):
         'Fan labels use variant names and seed numbers. Seeds 42/43/44 repeat the same configuration '
         'with different random initialization. The reference `anchor` uses a multilayer perceptron (MLP), '
         '12 weeks of history, fourth-root counts, geography and dynamics features, shared prediction heads, '
-        'the original (`legacy`) decoder, latent dimension 16, and influenza-first loss weighting. '
+        'the `legacy` decoder, latent dimension 16, and influenza-first loss weighting. '
         'The table lists changes from that reference; `conv` means temporal convolution, `state_us` means '
         'separate state and national heads, and `residual2` means a two-block residual decoder.', '',
         table(['Variant name', 'Differences from anchor'], differences), '',
@@ -203,8 +201,8 @@ def publish(comparison, docs):
         'The detailed tables contain WIS, bias, 50%/95% coverage, and WIS components for horizons 0–3 '
         'and all horizons combined. Horizon 0 means the first future week. Missing target/seasons are '
         'unavailable in the pinned ensemble-supported task sets, rather than failed runs.', '',
-        'Ranking downloads are recomputed from the saved leaderboard using the current all-target rule. '
-        'The original scoring manifest records the unchanged forecast and evaluation provenance.', '',
+        'Ranking downloads are computed from the saved leaderboard using the all-target rule. '
+        'The scoring manifest records forecast and evaluation provenance.', '',
         '## Figures by target and season', '',
         table(['Target','Season','Figures'], [[NAMES[c['target']], c['season'],
             f"[Eight figures](b0-comparison/{c['directory']}.md)"] for c in manifest['cases']]), '',

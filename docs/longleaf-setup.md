@@ -81,8 +81,9 @@ does not request a GPU or submit a training job.
 
 ## Build the frozen inputs
 
-Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The essential suite has
-14 configurations × three seeds = 42 CV runs and 126 season fits. These are
+Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The architecture sweep
+has 4,097 configurations × three seeds = 12,291 CV runs and 36,873 season fits;
+the essential suite has 14 configurations × three seeds = 42 CV runs. These are
 exploratory finalized-data comparisons, not prospective validation.
 
 Skip acquisition above when
@@ -134,17 +135,52 @@ uncommitted changes, and results for the paper are rerun from a clean tree.
 
 ```bash
 mkdir -p output/slurm
-sbatch scripts/b0_prepare.sbatch b0-explore
+sbatch scripts/b0_prepare.sbatch b0-sweep grid
 ```
 
 This one-GPU job loads R, runs three one-epoch bootstrap fits with eight evaluation
-members, builds `data/evaluation/b0_hub_comparison_rebuilt`, and plans the
-essential suite for the named experiment (default `b0`) with `--device cuda`. The bootstrap fits supply evaluation dates and
-locations; they are separate from the 126 full training fits. Completed support
-is reused. If support construction fails, inspect and archive its incomplete
-output directory before resubmitting.
+members, builds `data/evaluation/b0_hub_comparison_q23` on the hub's 23-quantile
+grid, and plans the named experiment (default `b0`) and suite (default `essential`)
+with `--device cuda`. The bootstrap fits supply evaluation dates and locations; they
+are separate from the experiment's fits. Completed support is reused. If support
+construction fails, inspect and archive its incomplete output directory before
+resubmitting. Support built earlier for five quantiles cannot score new runs, and
+`manager run` refuses to start with it.
 
 Wait for preparation to complete before distributing training.
+
+## Run the architecture sweep on the shared GPU partitions
+
+The sweep has 4,097 array tasks, one per configuration; each runs three seeds of
+three season folds and writes `totals.csv` for every seed. `scripts/b0_sweep.sbatch`
+requests one GPU, four CPUs, 16 GiB, and six hours on `a100-gpu,l40-gpu,jlessler`
+with QOS `gpu_access`, like InfluPaint's inpainting arrays. These limits are
+allowances; runtime has not been measured.
+
+```bash
+.venv/bin/python -m tapestry.models.manager status -e b0-sweep | tail -8
+```
+
+`status` prints one submission per chunk of 1,000 tasks, adding `OFFSET` so array
+indices stay small. For a fresh sweep:
+
+```bash
+sbatch --array=0-999 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch b0-sweep
+sbatch --array=0-999 --export=ALL,OFFSET=1000 scripts/b0_sweep.sbatch b0-sweep
+sbatch --array=0-999 --export=ALL,OFFSET=2000 scripts/b0_sweep.sbatch b0-sweep
+sbatch --array=0-999 --export=ALL,OFFSET=3000 scripts/b0_sweep.sbatch b0-sweep
+sbatch --array=0-96 --export=ALL,OFFSET=4000 scripts/b0_sweep.sbatch b0-sweep
+```
+
+Logs are `output/slurm/b0-sweep-ARRAY_ID_INDEX.log`; the jobs.csv task is
+`OFFSET + INDEX`. When the arrays have finished, rank on a CPU allocation:
+
+```bash
+.venv/bin/python -m tapestry.models.manager rank -e b0-sweep
+```
+
+The printed folder holds `configuration_ranking.csv`, `run_scores.csv`, and
+`season_scores.csv` ([definitions](workflows/experiment-manager.md#ranking)).
 
 ## Train across six GPUs
 

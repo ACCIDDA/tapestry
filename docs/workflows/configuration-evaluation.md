@@ -1,10 +1,9 @@
 # Configuration exports, rankings, and projection fans
 
-Read the [completed report with inline figures and rankings](../results/b0-configuration-comparison.md).
-
-The canonical `b0-rebuilt` experiment includes 14 configurations, all at seeds
-42/43/44, evaluated against pinned hub ensembles on rebuilt frozen inputs.
-See [Longleaf setup](../longleaf-setup.md) for the complete execution workflow.
+Sweep rankings use [total-WIS ratios](experiment-manager.md#ranking), computed
+for every run. This page covers the full EpiBench pipeline with plots and fans,
+intended for shortlisted configurations. Earlier published B0 reports were
+withdrawn. See [Longleaf setup](../longleaf-setup.md) for the execution workflow.
 
 Our challenges are **unversioned custom scoring configs**, with finalized,
 non-vintaged evaluation truth. They are not registered as versioned
@@ -49,17 +48,15 @@ fans from the saved EpiBench forecast inputs (72 SVG figures in total). Full
 Hubverse exports stay in `data/`. CSV companions are supported because EpiBench's
 submitted-model loader currently accepts CSV only.
 
-## Five-quantile output policy
+## Quantile grid
 
-Scoring and saved predictions use `[0.025, 0.25, 0.5, 0.75, 0.975]`:
-median plus the bounds of the central 50% and 95% intervals. The CV and prediction
-NPZ writers, Hubverse CSV/Parquet exports, and EpiBench inputs all use this grid.
-When an archive stores 23 quantiles, the exporter selects the exact five stored
-values, with no interpolation or resampling.
+Scoring and saved predictions use the hub's 23 levels: 0.01, 0.025, 0.05, 0.10,
+…, 0.90, 0.95, 0.975, 0.99. The CV and prediction NPZ writers, Hubverse CSV/Parquet
+exports, totals, and EpiBench inputs all use this grid. The exporter selects the
+exact stored levels, with no interpolation or resampling.
 
-WIS is recomputed for candidates and reference ensembles. Five-quantile WIS is
-not numerically interchangeable with 23-quantile WIS. Five-quantile WIS is the mean of the five scaled quantile losses. The
-report uses saved EpiBench scores and the pipeline's built-in support and relative-WIS checks.
+WIS is recomputed for candidates and reference ensembles. WIS from the earlier
+five-quantile reports is not numerically interchangeable with 23-quantile WIS.
 
 [Emily’s configs](emily-configs.md) define vintage inputs and origin calendars.
 They are separate from this evaluation, which uses the nine frozen evaluation
@@ -68,7 +65,7 @@ task sets and finalized-data B0 models.
 ## Identifiers
 
 A configuration ID is its [scenario string](experiment-manager.md#scenario-strings),
-for example `b0:h12:tr_4rt:geo1:dyn1:lw_first:enc_mlp:hd_sh:dec_leg:z16:w64:ep50:bs8:m8:lr0.001`,
+for example `b0:h12:tr_4rt:ed_lin:geo1:dyn1:lw_first:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:z16:w64:ep50:pat0:bs8:m8:lr0.001`,
 and `<scenario>:s42` identifies its seed-42 run. Seeds share a configuration ID.
 Moving the run, switching execution device, or changing code or data does not
 change it. Dataset and code hashes, the git commit, and evaluation draws are saved
@@ -88,7 +85,7 @@ contains Hubverse long-form columns:
 reference_date,target,horizon,target_end_date,location,output_type,output_type_id,value
 ```
 
-Only the five levels **0.025, 0.25, 0.5, 0.75, 0.975** and available held-out target weeks are exported, including
+Only the 23 hub levels and available held-out target weeks are exported, including
 origins with no corresponding ensemble submission. These are retrospective
 forecast archives, not operational submissions. Files are partitioned by hub,
 model, and reference date, with no truth columns mixed into submissions. Native
@@ -159,9 +156,8 @@ an even seed count uses the upper middle. The report includes the all-target
 configuration ranking with mean seed scores, sample SD, and representative seeds.
 This selection includes ED targets and matches the report's primary ranking.
 
-Panel labels show variant names and seed numbers; the report's
-[model differences table](../results/b0-configuration-comparison.md#model-differences)
-explains each variant's settings. Every fourth available origin is shown to reduce overlap; all origins
+Panel labels show variant names and seed numbers; `configurations.csv` lists each
+variant's settings. Every fourth available origin is shown to reduce overlap; all origins
 are exported and scored. Median and 50/95% intervals overlay frozen truth. US and
 NC are a prespecified illustration, not selected for performance. Use
 `--locations US 37 06 36` for other native hub location codes.
@@ -173,10 +169,10 @@ first two folds. These rankings are exploratory, not untouched validation.
 ## What EpiBench still needs for a direct frozen benchmark
 
 The interpretation of “full EpiBench” here is the complete **custom-config scoring
-pipeline**, using the requested five quantiles and retaining the official-ensemble reference,
+pipeline**, using the hub's 23 quantiles and retaining the official-ensemble reference,
 and frozen dates. The four bundled library challenges cover influenza admissions
-for three seasons and RSV admissions for 2025–26. They use the same five quantiles,
-but the hub baseline as reference and their own dates. Switching to those challenges
+for three seasons and RSV admissions for 2025–26. They use the hub baseline as
+reference and their own dates. Switching to those challenges
 would change the experiment and still leave COVID and ED targets uncovered.
 
 These are observations of the local checkout, not missing scoring metrics:

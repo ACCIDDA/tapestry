@@ -1,4 +1,4 @@
-"""Three leave-one-season-out fits of the frozen-data B0 pilot; no tuning."""
+"""Three leave-one-season-out fits of the frozen-data B0 pilot, with optional early stopping."""
 from __future__ import annotations
 
 import argparse
@@ -18,9 +18,39 @@ from tapestry.model_data.finalized import season
 from .run import calendar, fit
 from .experiments import add_experiment_args, LOSS_WEIGHTS
 from .manager import git_state
+from .quantiles import LEVELS
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
-from .quantiles import LEVELS
+# Early stopping hides weeks 4–6, 20–22, and 36–38 of each training season.
+VALIDATION_WEEKS, VALIDATION_SPACING, VALIDATION_OFFSET = 3, 16, 4
+COVERAGE = (50, 80, 90, 95)
+
+
+def season_labels(ds):
+    return np.array([season(date.fromisoformat(day)) for day in ds.dates])
+
+
+def masked_episodes(ds, keep, origins, lookback):
+    """Episodes ending at `origins` whose context and labels come only from weeks in `keep`."""
+    panel = ds.panel.copy()
+    panel[~keep] = 0
+    masked = FinalizedDataset(panel, ds.dates, ds.locations, ds.metadata)
+    episodes = []
+    for day in origins:
+        q = masked.query(day, lookback=lookback)
+        if q['Y'][:, :, 1].any():
+            episodes.append(q)
+    return episodes
+
+
+def channel_scales(ds, keep):
+    """Native-unit Q95 per channel over the kept weeks, for loss normalization."""
+    scales = []
+    for c in range(6):
+        values = ds.panel[keep, c, 0]
+        valid = values[ds.panel[keep, c, 1].astype(bool)]
+        scales.append(max(float(np.quantile(valid, .95)) if valid.size else 0, 1 if c < 3 else .001))
+    return scales
 
 
 def fold_data(ds, held_out, lookback=8):
@@ -30,18 +60,10 @@ def fold_data(ds, held_out, lookback=8):
     Evaluate origins in the held-out season; allow observed past context, but
     score only labels in that season. This is finalized-data cross-validation.
     """
-    labels = np.array([season(date.fromisoformat(day)) for day in ds.dates])
-    train_seasons = [s for s in SEASONS if s != held_out]
-    training = np.isin(labels, train_seasons)
+    labels = season_labels(ds)
+    training = np.isin(labels, [s for s in SEASONS if s != held_out])
     testing = labels == held_out
-    panel = ds.panel.copy()
-    panel[~training] = 0
-    train_ds = FinalizedDataset(panel, ds.dates, ds.locations, ds.metadata)
-    episodes = []
-    for day in np.array(ds.dates)[training]:
-        q = train_ds.query(day, lookback=lookback)
-        if q['Y'][:, :, 1].any():
-            episodes.append(q)
+    episodes = masked_episodes(ds, training, np.array(ds.dates)[training], lookback)
     evaluation = []
     for day in np.array(ds.dates)[testing]:
         q = ds.query(day, lookback=lookback)
@@ -50,20 +72,58 @@ def fold_data(ds, held_out, lookback=8):
                 q['Y'][h] = 0
         if q['Y'][:, :, 1].any():
             evaluation.append(q)
-    scales = []
-    for c in range(6):
-        values = ds.panel[training, c, 0]
-        valid = values[ds.panel[training, c, 1].astype(bool)]
-        scales.append(max(float(np.quantile(valid, .95)) if valid.size else 0, 1 if c < 3 else .001))
+    scales = channel_scales(ds, training)
     if not episodes or not evaluation:
         raise ValueError(f'No training or evaluation episodes for {held_out}')
     return episodes, evaluation, scales
 
 
+def validation_split(ds, held_out, lookback=8, horizons=4):
+    """Early-stopping episodes inside the two training seasons of a fold.
+
+    Each training season hides three consecutive target weeks out of every sixteen
+    (season start, winter, and spring). Hidden weeks are removed from the inner fit's
+    context, labels and scales, as a held-out season is from a fold. Validation
+    episodes are the origins with a hidden week among their targets; only hidden
+    weeks are scored, so each is predicted at every horizon. Validation episodes may
+    condition on earlier training-season weeks.
+    """
+    labels = season_labels(ds)
+    training = np.isin(labels, [s for s in SEASONS if s != held_out])
+    hidden = np.zeros(len(ds.dates), dtype=bool)
+    for label in SEASONS:
+        if label != held_out:
+            weeks = np.flatnonzero(labels == label)
+            position = np.arange(len(weeks)) % VALIDATION_SPACING
+            hidden[weeks[(position >= VALIDATION_OFFSET) & (position < VALIDATION_OFFSET + VALIDATION_WEEKS)]] = True
+    origins = np.zeros(len(ds.dates), dtype=bool)
+    for i in np.flatnonzero(hidden):
+        origins[max(i - horizons, 0):i] = True
+    origins &= training
+    inner = training & ~hidden
+    dates = np.array(ds.dates)
+    hidden_dates = set(dates[hidden])
+    inner_episodes = masked_episodes(ds, inner, dates[inner], lookback)
+    validation = []
+    for episode in masked_episodes(ds, training, dates[origins], lookback):
+        for h, target in enumerate(episode['target_dates']):
+            if target not in hidden_dates:
+                episode['Y'][h] = 0
+        if episode['Y'][:, :, 1].any():
+            validation.append(episode)
+    if not inner_episodes or not validation:
+        raise ValueError(f'No inner training or validation episodes for {held_out}')
+    info = {'validation_weeks': sorted(hidden_dates), 'validation_origins': [e['context_dates'][-1] for e in validation],
+            'validation_target_weeks': int(hidden.sum()),
+            'inner_weeks': int(inner.sum()), 'training_weeks': int(training.sum()),
+            'inner_episodes': len(inner_episodes), 'validation_episodes': len(validation)}
+    return inner_episodes, validation, channel_scales(ds, inner), info
+
+
 def wis(quantiles, truth):
-    """Five-quantile WIS diagnostic; official evaluation runs through EpiBench."""
+    """Quantile WIS diagnostic (twice the mean pinball loss); rankings use `tapestry.evaluation.totals`."""
     if quantiles.shape[0] != len(LEVELS):
-        raise ValueError('WIS expects the five saved quantiles')
+        raise ValueError(f'WIS expects the {len(LEVELS)} saved quantiles')
     levels = LEVELS.reshape((-1,) + (1,) * (quantiles.ndim - 1))
     error = truth - quantiles
     return 2 * np.maximum(levels * error, (levels - 1) * error).mean(axis=0)
@@ -77,7 +137,12 @@ def persistence(x):
     return values, mask.any(axis=0)
 
 
-def evaluate(model, episodes, args, output):
+def level(value):
+    return int(np.flatnonzero(np.isclose(LEVELS, value))[0])
+
+
+def evaluate(model, episodes, args, output, name=''):
+    """Save quantiles, retained members, and diagnostics as `<name>forecasts.npz` and `<name>scores.csv`."""
     model.eval()
     quantiles, retained, truths, masks, baselines, baseline_masks = [], [], [], [], [], []
     for i, episode in enumerate(episodes):
@@ -104,7 +169,7 @@ def evaluate(model, episodes, args, output):
     q = np.stack(quantiles, axis=1)  # Q,N,H,C,L
     y, mask = np.stack(truths), np.stack(masks)
     baseline, baseline_mask = np.stack(baselines), np.stack(baseline_masks)
-    np.savez_compressed(output / 'forecasts.npz', quantiles=q, quantile_levels=LEVELS,
+    np.savez_compressed(output / f'{name}forecasts.npz', quantiles=q, quantile_levels=LEVELS,
                         samples=np.stack(retained, axis=1), truth=y, mask=mask,
                         baseline=baseline, baseline_mask=baseline_mask,
                         context_end=[e['context_dates'][-1] for e in episodes],
@@ -115,13 +180,11 @@ def evaluate(model, episodes, args, output):
                                              'sample_axes': ['member', 'origin', 'horizon', 'channel', 'location'],
                                              'member_identity': 'shared across horizon/channel/location within each origin',
                                              'count_quantiles': 'round-half-up', 'baseline': 'deterministic last observation'}))
-    metrics = {
-        'wis': wis(q, y), 'mae': np.abs(q[2] - y),
-        'coverage50': ((y >= q[1]) & (y <= q[3])).astype(float),
-        'coverage95': ((y >= q[0]) & (y <= q[4])).astype(float),
-        'width50': q[3] - q[1],
-        'baseline_wis': wis(np.broadcast_to(baseline, q.shape), y),
-    }
+    metrics = {'wis': wis(q, y), 'mae': np.abs(q[level(.5)] - y), 'width50': q[level(.75)] - q[level(.25)],
+               'baseline_wis': wis(np.broadcast_to(baseline, q.shape), y)}
+    for coverage in COVERAGE:
+        tail = (1 - coverage / 100) / 2
+        metrics[f'coverage{coverage}'] = ((y >= q[level(tail)]) & (y <= q[level(1 - tail)])).astype(float)
     common = mask & baseline_mask
     rows = []
     locations = np.array(episodes[0]['locations'])
@@ -134,14 +197,14 @@ def evaluate(model, episodes, args, output):
                 matched = common[:, :, c, :] & selected
                 row = {'channel': channel, 'geography': group, 'horizon': 'all' if horizon == 0 else horizon,
                        'n': int(selected.sum()), 'baseline_comparison_n': int(matched.sum())}
-                for name, values in metrics.items():
-                    valid = matched if name == 'baseline_wis' else selected
-                    row[name] = float(values[:, :, c, :][valid].mean()) if valid.any() else None
+                for metric, values in metrics.items():
+                    valid = matched if metric == 'baseline_wis' else selected
+                    row[metric] = float(values[:, :, c, :][valid].mean()) if valid.any() else None
                 row['model_wis_common'] = float(metrics['wis'][:, :, c, :][matched].mean()) if matched.any() else None
                 base = row['baseline_wis']
                 row['wis_ratio_to_persistence'] = row['model_wis_common'] / base if base else None
                 rows.append(row)
-    with (output / 'scores.csv').open('w') as stream:
+    with (output / f'{name}scores.csv').open('w') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
@@ -156,11 +219,13 @@ def run(args):
     started = time.perf_counter()
     code_paths = [Path(__file__), Path(__file__).with_name('b0.py'), Path(__file__).with_name('run.py'), Path(__file__).with_name('experiments.py'), Path(__file__).with_name('quantiles.py'),
                   Path(__file__).parents[1] / 'model_data' / 'finalized.py']
+    stopping = (f'early stopping on inner validation blocks (patience {args.patience}, cap {args.epochs} epochs), '
+                'then a refit on all training weeks for the best epoch count' if args.patience else f'fixed {args.epochs} epochs')
     manifest = {'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
                 'code_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in code_paths},
                 'git': git_state(),
-                'protocol': 'fixed 50-epoch default, three leave-one-season-out finalized-data folds; no holdout tuning',
+                'protocol': f'{stopping}; three leave-one-season-out finalized-data folds; no holdout tuning',
                 'season_definition': 'CDC epiweek 31–30; season 1 begins at available September 2023 data',
                 'stride_weeks': 1, 'horizons': [1, 2, 3, 4],
                 'holdout_rule': 'excluded from fit context, targets, and scalers; evaluation labels stay within held-out season',
@@ -169,7 +234,6 @@ def run(args):
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     all_scores = []
     for held_out in SEASONS:
-        torch.manual_seed(args.seed)
         train_seasons = [s for s in SEASONS if s != held_out]
         folder = output / f'eval_{held_out}'
         folder.mkdir()
@@ -180,10 +244,26 @@ def run(args):
                 'evaluation_context_ends': [e['context_dates'][-1] for e in evaluation],
                 'scale': scales, 'chronological': held_out == SEASONS[-1]}
         print(json.dumps(info), flush=True)
+        fit_args = args
+        if args.patience:
+            inner, validation, inner_scales, split = validation_split(ds, held_out, args.lookback, len(args.horizons))
+            torch.manual_seed(args.seed)
+            before = time.perf_counter()
+            stopped, record = fit(inner, inner_scales, args, validation=validation)
+            split.update(record, scale=inner_scales, seconds=time.perf_counter() - before,
+                         local_noise_scale=stopped.local_noise_scales())
+            # Out-of-sample validation forecasts are kept for later calibration.
+            torch.manual_seed(args.seed + 1000)
+            evaluate(stopped, validation, args, folder, name='validation_')
+            info['early_stopping'] = split
+            fit_args = argparse.Namespace(**{**vars(args), 'epochs': record['best_epoch']})
+        torch.manual_seed(args.seed)
         before = time.perf_counter()
-        model, history = fit(training, scales, args)
+        model, record = fit(training, scales, fit_args)
         info['train_seconds'] = time.perf_counter() - before
-        info['history'] = history
+        info['epochs'] = fit_args.epochs
+        info['history'] = record['loss']
+        info['local_noise_scale'] = model.local_noise_scales()
         info['experiment'] = model.config
         info['loss_weights'] = LOSS_WEIGHTS[args.loss_weights]
         info['parameters'] = sum(p.numel() for p in model.parameters())
@@ -212,7 +292,9 @@ def build_parser():
     parser.add_argument('--dataset', default='data/processed/build_b_finalized.npz')
     parser.add_argument('--output', default='data/experiments/b0_season_cv')
     parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=50, help='Fixed epochs, or the cap with --patience')
+    parser.add_argument('--patience', type=int, default=0,
+                        help='0 trains fixed epochs; otherwise stop on inner validation blocks, then refit')
     parser.add_argument('--lookback', type=int, default=8)
     parser.add_argument('--width', type=int, default=64)
     parser.add_argument('--batch-size', type=int, default=8)
@@ -230,6 +312,8 @@ def main():
     args.horizons = [1, 2, 3, 4]
     if min(args.epochs, args.lookback, args.width, args.batch_size, args.eval_members) < 1 or args.members < 2:
         parser.error('Positive dimensions/epochs required; training members >= 2')
+    if args.patience < 0:
+        parser.error('patience must be nonnegative')
     run(args)
 
 

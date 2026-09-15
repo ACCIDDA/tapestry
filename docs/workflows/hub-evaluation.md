@@ -2,10 +2,10 @@
 
 This workflow builds the frozen evaluation task and truth set used by the
 [full EpiBench scoring workflow](configuration-evaluation.md), and scores saved
-Build B quantiles against it with no retraining. Rankings are in the
-[configuration evaluation report](../results/b0-configuration-comparison.md).
-The results below use 23 quantiles; the code exports five, so exact reproduction
-of those results requires the source revision recorded in their manifest.
+Build B quantiles against it with no retraining. Sweep rankings use
+[total-WIS ratios](experiment-manager.md#ranking) on this task set. Current code
+saves and scores the hub's 23 quantiles; support built for the earlier five-quantile
+grid cannot score new runs and must be rebuilt with `scripts/b0_prepare.sbatch`.
 
 It uses the external `Rscript` -> `as_forecast_quantile()` -> `score()` pattern and
 metrics of `../epibench/src/epibench/scoring_bridge.py`, calling **R scoringutils**.

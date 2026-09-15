@@ -274,7 +274,7 @@ def write_report(output, records, cases, objective, configs):
               '', link('Detailed target/season/geography/horizon leaderboard', Path('leaderboard.csv')),
               '', link('Configuration definitions and provenance', Path('configurations.json')),
               '', 'Hubverse forecasts are stored under `hubverse/<hub>/model-output/<model_id>/`, '
-              'one Parquet file per reference date with five quantiles and horizons 0–3. '
+              'one Parquet file per reference date with the saved quantile grid and horizons 0–3. '
               'Use `--csv` for CSV companions accepted directly by the EpiBench CLI. '
               'ED values are proportions. Every available origin is exported; fans display every fourth origin '
               'for readability, with median, 50% and 95% intervals. NC uses FIPS 37.', '',

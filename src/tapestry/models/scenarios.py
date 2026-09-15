@@ -6,32 +6,40 @@ scenario_string, essential set). Stable names replace position-based numeric IDs
 from dataclasses import asdict, dataclass, fields, replace
 from itertools import product
 
-from .experiments import LOSS_WEIGHTS
+from .experiments import COUNT_TRANSFORMS, ED_TRANSFORMS, LOSS_WEIGHTS
 
 # Field order fixes the string order. Categorical values use short codes.
-PREFIX = dict(lookback='h', count_transform='tr_', geography='geo', dynamics='dyn',
-              loss_weights='lw_', encoder='enc_', heads='hd_', decoder='dec_', latent='z',
-              width='w', epochs='ep', batch_size='bs', members='m', lr='lr')
-CODES = dict(count_transform={'raw': 'raw', 'sqrt': 'sqrt', 'fourth_root': '4rt'},
-             loss_weights={'influenza_first': 'first', 'balanced_admissions': 'bal', 'flu_only': 'fluonly'},
-             encoder={'mlp': 'mlp', 'conv': 'conv'}, heads={'shared': 'sh', 'state_us': 'su'},
-             decoder={'legacy': 'leg', 'residual2': 'res2'})
+PREFIX = dict(lookback='h', count_transform='tr_', ed_transform='ed_', geography='geo', dynamics='dyn',
+              loss_weights='lw_', encoder='enc_', spatial='sp_', heads='hd_', decoder='dec_', noise='nz_',
+              latent='z', width='w', epochs='ep', patience='pat', batch_size='bs', members='m', lr='lr')
+CODES = dict(count_transform={'raw': 'raw', 'rate': 'rate', 'sqrt': 'sqrt', 'fourth_root': '4rt', 'log1p': 'log1p'},
+             ed_transform={'linear': 'lin', 'logit': 'logit', 'fourth_root': '4rt'},
+             loss_weights={'influenza_first': 'first', 'balanced_admissions': 'bal', 'flu_only': 'fluonly',
+                           'objective': 'obj'},
+             encoder={'mlp': 'mlp', 'conv': 'conv'}, spatial={'none': 'none', 'attention': 'attn'},
+             heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2'},
+             noise={'global': 'glob', 'local': 'loc'})
 assert set(CODES['loss_weights']) == set(LOSS_WEIGHTS)
+assert set(CODES['count_transform']) == set(COUNT_TRANSFORMS) and set(CODES['ed_transform']) == set(ED_TRANSFORMS)
 
 
 @dataclass(frozen=True)
 class TrainingScenario:
     lookback: int = 12
     count_transform: str = 'fourth_root'
+    ed_transform: str = 'linear'
     geography: bool = True
     dynamics: bool = True
     loss_weights: str = 'influenza_first'
     encoder: str = 'mlp'
+    spatial: str = 'none'
     heads: str = 'shared'
     decoder: str = 'legacy'
+    noise: str = 'global'
     latent: int = 16
     width: int = 64
     epochs: int = 50
+    patience: int = 0
     batch_size: int = 8
     members: int = 8
     lr: float = .001
@@ -42,6 +50,8 @@ class TrainingScenario:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)}')
         if min(self.lookback, self.latent, self.width, self.epochs, self.batch_size) < 1 or self.members < 2:
             raise ValueError('Positive dimensions/epochs required; training members >= 2')
+        if self.patience < 0 or (self.patience and self.patience >= self.epochs):
+            raise ValueError('Patience must be 0 (fixed epochs) or below the epoch cap')
         if not (0 < self.lr < float('inf') and float(f'{self.lr:g}') == self.lr):
             raise ValueError(f'lr must be positive and representable in the string: {self.lr}')
 
@@ -127,15 +137,23 @@ ESSENTIAL = {
     'conv_h26': (replace(ANCHOR, encoder='conv', lookback=26), 'mlp_h26_dynamics', 'Shared temporal filters at twenty-six weeks'),
 }
 
+# Architecture sweep factors. Fixed: geography features, objective-matched loss
+# weights [1,1,1,.5,.5,.5], width 64, batch 8, 8 training draws, learning rate .001.
+GRID = dict(lookback=(8, 12), dynamics=(False, True), encoder=('mlp', 'conv'), decoder=('legacy', 'residual2'),
+            latent=(16, 32), spatial=('none', 'attention'), noise=('global', 'local'), heads=('shared', 'state_us'),
+            count_transform=('rate', 'sqrt', 'fourth_root', 'log1p'), ed_transform=('logit', 'fourth_root'),
+            # (epochs, patience): fixed 50 epochs, or early stopping with patience 20 up to 300 epochs.
+            stopping=((50, 0), (300, 20)))
+
 
 def grid():
-    # Full interactions, with representation and runtime fixed; spatial attention belongs to B1.
-    keys = ('lookback', 'dynamics', 'loss_weights', 'encoder', 'heads', 'decoder', 'latent')
-    values = ((8, 12, 26), (False, True), tuple(LOSS_WEIGHTS), ('mlp', 'conv'),
-              ('shared', 'state_us'), ('legacy', 'residual2'), (16, 32))
-    scenarios = {'baseline': BASELINE}
-    for setting in product(*values):
-        scenario = replace(ANCHOR, **dict(zip(keys, setting)))
+    """Full factorial architecture sweep plus the raw-count baseline: 4,097 configurations."""
+    base = replace(ANCHOR, loss_weights='objective')
+    scenarios = {'baseline': replace(BASELINE, loss_weights='objective')}
+    for setting in product(*GRID.values()):
+        options = dict(zip(GRID, setting))
+        options['epochs'], options['patience'] = options.pop('stopping')
+        scenario = replace(base, **options)
         scenarios[scenario.scenario_string] = scenario
     return scenarios
 

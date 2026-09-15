@@ -9,8 +9,10 @@ import numpy as np
 import torch
 
 from tapestry.model_data import CHANNELS, FinalizedDataset
-from .b0 import B0, fair_crps
+from .b0 import B0, LOCAL_LATENT, fair_crps
 from .experiments import LOSS_WEIGHTS, add_experiment_args, model_options
+
+VALIDATION_MEMBERS = 32
 
 
 def calendar(days, dynamics=False):
@@ -23,14 +25,57 @@ def calendar(days, dynamics=False):
     return np.stack(columns, axis=-1).astype('float32')
 
 
-def fit(episodes, scales, args, options=None):
-    """Fit fixed hyperparameters on an already selected set of weekly episodes."""
+def tensors(episodes, model, device):
+    x = torch.tensor(np.stack([e['X'] for e in episodes]), device=device)
+    y = torch.tensor(np.stack([e['Y'] for e in episodes]), device=device)
+    cal = torch.tensor(calendar([e['context_dates'][-1] for e in episodes], model.config['dynamics']), device=device)
+    return x, y, cal
+
+
+def validation_draws(model, episodes, args):
+    """Fixed draws per validation batch, so epochs differ only through the weights."""
+    generator = torch.Generator().manual_seed(args.seed + 2000)
+    draws = []
+    for ids in torch.arange(len(episodes)).split(args.batch_size):
+        z = torch.randn(VALIDATION_MEMBERS, len(ids), model.config['latent'], generator=generator)
+        local = (torch.randn(VALIDATION_MEMBERS, len(ids), len(episodes[0]['locations']), LOCAL_LATENT, generator=generator)
+                 if model.config['noise'] == 'local' else None)
+        draws.append((ids, z.to(args.device), None if local is None else local.to(args.device)))
+    return draws
+
+
+def validation_loss(model, episodes, args, draws):
+    """Mean weighted fair CRPS over validation episodes, in the same units as training."""
+    x, y, cal = tensors(episodes, model, args.device)
+    weights = torch.tensor(LOSS_WEIGHTS[getattr(args, 'loss_weights', 'influenza_first')], device=args.device)
+    total = 0.
+    model.eval()
+    with torch.no_grad():
+        for ids, z, local_z in draws:
+            samples = model(x[ids], cal[ids], z=z, local_z=local_z, locations=episodes[0]['locations'])
+            scores = fair_crps(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
+            total += float((weights * scores / model.scale).sum()) * len(ids)
+    model.train()
+    return total / len(episodes)
+
+
+def fit(episodes, scales, args, options=None, validation=None):
+    """Fit fixed hyperparameters on already selected weekly episodes.
+
+    With validation episodes, evaluate after every epoch, stop after `patience`
+    epochs without improvement (`epochs` is then the cap), and return the weights
+    of the best epoch. Returns the model and a record of both loss curves.
+    """
     model = B0(args.lookback, args.horizons, args.width, scale=scales, **(model_options(episodes, args) if options is None else options)).to(args.device)
-    x = torch.tensor(np.stack([e['X'] for e in episodes]), device=args.device)
-    y = torch.tensor(np.stack([e['Y'] for e in episodes]), device=args.device)
-    cal = torch.tensor(calendar([e['context_dates'][-1] for e in episodes], model.config['dynamics']), device=args.device)
+    x, y, cal = tensors(episodes, model, args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    history = []
+    weights = torch.tensor(LOSS_WEIGHTS[getattr(args, 'loss_weights', 'influenza_first')], device=args.device)
+    patience = getattr(args, 'patience', 0) if validation is not None else 0
+    if validation is not None and patience < 1:
+        raise ValueError('Early stopping needs a positive patience')
+    draws = validation_draws(model, validation, args) if validation is not None else None
+    record = dict(loss=[], validation_loss=[], best_epoch=None)
+    best, best_state = float('inf'), None
     for epoch in range(args.epochs):
         order = torch.randperm(len(episodes), device=args.device)
         total = 0
@@ -39,7 +84,6 @@ def fit(episodes, scales, args, options=None):
             samples = model(x[ids], cal[ids], args.members, locations=episodes[0]['locations'])
             scores = fair_crps(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
             # Native-unit CRPS after inversion; fixed channel Q95 across weight ablations.
-            weights = scores.new_tensor(LOSS_WEIGHTS[getattr(args, 'loss_weights', 'influenza_first')])
             loss = (weights * scores / model.scale).sum()
             if not torch.isfinite(loss):
                 raise ValueError('Nonfinite training loss')
@@ -47,9 +91,24 @@ def fit(episodes, scales, args, options=None):
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
             total += loss.item() * len(ids)
-        history.append(total / len(episodes))
-        print(json.dumps({'epoch': epoch + 1, 'loss': history[-1]}), flush=True)
-    return model, history
+        record['loss'].append(total / len(episodes))
+        progress = {'epoch': epoch + 1, 'loss': record['loss'][-1]}
+        if validation is not None:
+            # Validation draws use their own generator, leaving the training stream unchanged.
+            current = validation_loss(model, validation, args, draws)
+            if not np.isfinite(current):
+                raise ValueError('Nonfinite validation loss')
+            record['validation_loss'].append(current)
+            progress['validation_loss'] = current
+            if current < best:
+                best, record['best_epoch'] = current, epoch + 1
+                best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+        print(json.dumps(progress), flush=True)
+        if validation is not None and epoch + 1 - record['best_epoch'] >= patience:
+            break
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    return model, record
 
 
 def train(args):
@@ -76,7 +135,7 @@ def train(args):
                 e['X'][i] = 0
         scale_episodes.append(e)
     options = model_options(scale_episodes, args)
-    model, history = fit(episodes, scales, args, options=options)
+    model, record = fit(episodes, scales, args, options=options)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     metadata = {'train_start': args.train_start, 'train_end': args.train_end,
@@ -85,7 +144,8 @@ def train(args):
                 'channels': list(CHANNELS), 'locations': list(ds.locations),
                 'loss': 'fair CRPS in native units / training Q95',
                 'loss_weights': LOSS_WEIGHTS[args.loss_weights], 'experiment': model.config,
-                'history': history, 'torch_version': str(torch.__version__),
+                'history': record['loss'], 'local_noise_scale': model.local_noise_scales(),
+                'torch_version': str(torch.__version__),
                 'parameters': sum(p.numel() for p in model.parameters())}
     torch.save({'config': model.config, 'state_dict': model.cpu().state_dict(), 'metadata': metadata}, output)
     output.with_suffix('.json').write_text(json.dumps(metadata, indent=2) + '\n')

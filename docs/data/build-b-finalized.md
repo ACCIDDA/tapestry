@@ -3,7 +3,7 @@
 This page defines the finalized six-channel dataset used by B0: intake through
 `SelectedData`, the tensor materializer, and the window querier. For the model,
 see [training and prediction](../workflows/training.md) and the
-[scored results](../results/b0-configuration-comparison.md). The
+[architecture sweep](../workflows/experiment-manager.md#architecture-sweep). The
 [architecture](../design/architecture.md) records the broader proposals.
 
 ## Contract and assumptions

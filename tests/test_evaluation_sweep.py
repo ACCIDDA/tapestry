@@ -91,10 +91,10 @@ def test_hubverse_roundtrip_and_bad_dates(tmp_path):
     frame = pd.DataFrame(dict(reference_date=['2025-01-04'] * 4,
         target_end_date=['2025-01-04', '2025-01-11', '2025-01-18', '2025-01-25'],
         location=['01'] * 4, horizon=range(4)))
-    frame[QCOLS] = np.arange(5)
+    frame[QCOLS] = np.arange(len(QCOLS))
     # Supply all hubs because the submission writer creates a complete repository.
     frames = {('2024-2025', f'wk inc {d} hosp'): frame for d in ('flu', 'covid', 'rsv')}
-    assert hubverse(frames, 'B0-test-s42', tmp_path, csv=True) == 3 * 4 * 5
+    assert hubverse(frames, 'B0-test-s42', tmp_path, csv=True) == 3 * 4 * len(QCOLS)
     path = next((tmp_path / 'hubverse/flusight').rglob('*.parquet'))
     long = pd.read_parquet(path)
     csv = pd.read_csv(path.with_suffix('.csv'), dtype={'location': str, 'output_type_id': str})
@@ -140,7 +140,7 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
         folder = run / f'eval_{held}'
         folder.mkdir()
         context = date(year, 10, 7)
-        q = np.broadcast_to(np.linspace(.01, .23, 5)[:, None, None, None, None], (5, 1, 4, 6, 2))
+        q = np.broadcast_to(np.linspace(.01, .23, len(LEVELS))[:, None, None, None, None], (len(LEVELS), 1, 4, 6, 2))
         np.savez(folder / 'forecasts.npz', quantile_levels=LEVELS, quantiles=q,
                  context_end=[context.isoformat()],
                  target_dates=[[(context + timedelta(weeks=h)).isoformat() for h in range(1, 5)]],
@@ -177,7 +177,7 @@ def test_shared_forecast_matching_rejects_missing_and_duplicate_tasks():
     units = pd.DataFrame(dict(reference_date=['2025-01-04'] * 2,
         target_end_date=['2025-01-04'] * 2, location=['01', 'US'], horizon=[0, 0], observed=[1., 2.]))
     predictions = units[KEY].copy()
-    predictions[QCOLS] = np.arange(5)
+    predictions[QCOLS] = np.arange(len(QCOLS))
     matched = match_forecasts(predictions.iloc[::-1], units, 'wk inc flu hosp')
     assert matched.location.tolist() == ['01', 'US']
     with pytest.raises(ValueError, match='Missing frozen tasks'):

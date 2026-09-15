@@ -26,7 +26,7 @@ finalized evaluation truth. Emily’s created artifacts are separate.
 
 ## Consequences for the B0 report
 
-The [B0 report](../results/b0-configuration-comparison.md) uses the full EpiBench scoring command with exactly **0.025, 0.25, 0.5, 0.75, 0.975** on nine frozen evaluation task sets. Predictions and Hubverse exports save only those five quantiles.
+B0 scoring uses nine frozen evaluation task sets with the hub's 23 quantiles, through [total-WIS ranking](experiment-manager.md#ranking) or the full EpiBench scoring command. Earlier B0 reports used five quantiles and were withdrawn.
 
 Challenge ground truth is not used, and Emily’s origins do not define the scoring calendar. For example, the RSV 2024–25 config creates historical inputs, but that alone does not supply an official-ensemble comparison on the frozen task set. Switching B0 to these provisional inputs would require constructing and fitting a vintage-aware experiment; B0 fits use finalized data.
 

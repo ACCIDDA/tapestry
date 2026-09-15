@@ -8,44 +8,66 @@ LOSS_WEIGHTS = {
     'influenza_first': [1, .1, .1, .1, .1, .1],
     'balanced_admissions': [1, 1, 1, .1, .1, .1],
     'flu_only': [1, 0, 0, 0, 0, 0],
+    # Matches the selection score: each admissions target counts twice an ED target.
+    'objective': [1, 1, 1, .5, .5, .5],
 }
+COUNT_TRANSFORMS = ('raw', 'rate', 'sqrt', 'fourth_root', 'log1p')
+ED_TRANSFORMS = ('linear', 'logit', 'fourth_root')
 
 
 def add_experiment_args(parser):
-    parser.add_argument('--count-transform', choices=['raw', 'sqrt', 'fourth_root'], default='raw')
+    parser.add_argument('--count-transform', choices=COUNT_TRANSFORMS, default='raw',
+                        help='raw counts, or rate per 100,000 with no transform, square/fourth root, or log1p')
+    parser.add_argument('--ed-transform', choices=ED_TRANSFORMS, default='linear',
+                        help='linear inputs with a logit residual (original), logit, or fourth root')
     parser.add_argument('--geography', action='store_true', help='Include log population and native US flag')
     parser.add_argument('--dynamics', action='store_true', help='Include slopes, acceleration, observation age and Christmas timing')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
     parser.add_argument('--loss-weights', choices=list(LOSS_WEIGHTS), default='influenza_first')
     parser.add_argument('--encoder', choices=['mlp', 'conv'], default='mlp')
+    parser.add_argument('--spatial', choices=['none', 'attention'], default='none',
+                        help='One attention block across locations at the same forecast date')
     parser.add_argument('--heads', choices=['shared', 'state_us'], default='shared')
     parser.add_argument('--decoder', choices=['legacy', 'residual2'], default='legacy')
+    parser.add_argument('--noise', choices=['global', 'local'], default='global',
+                        help='Global latent only, or global plus a per-location latent')
     parser.add_argument('--latent', type=int, default=16)
 
 
 def model_options(episodes, args):
     transform = getattr(args, 'count_transform', 'raw')
+    ed_transform = getattr(args, 'ed_transform', 'linear')
     geography = getattr(args, 'geography', False)
-    options = dict(count_transform=transform, geography=geography, dynamics=getattr(args, 'dynamics', False))
-    options.update(encoder=getattr(args, 'encoder', 'mlp'), heads=getattr(args, 'heads', 'shared'),
-                   decoder=getattr(args, 'decoder', 'legacy'), latent=getattr(args, 'latent', 16))
-    if transform == 'raw' and not geography:
+    options = dict(count_transform=transform, ed_transform=ed_transform, geography=geography,
+                   dynamics=getattr(args, 'dynamics', False))
+    options.update(encoder=getattr(args, 'encoder', 'mlp'), spatial=getattr(args, 'spatial', 'none'),
+                   heads=getattr(args, 'heads', 'shared'), decoder=getattr(args, 'decoder', 'legacy'),
+                   noise=getattr(args, 'noise', 'global'), latent=getattr(args, 'latent', 16))
+    populations = None
+    if transform != 'raw' or geography:
+        with Path(args.population_file).open() as stream:
+            rows = list(csv.DictReader(stream))
+        populations = {}
+        for row in rows:
+            loc, value = row.get('abbreviation', row['location']), float(row['population'])
+            if loc in populations or not np.isfinite(value) or value <= 0:
+                raise ValueError(f'Invalid or duplicate population for {loc}')
+            populations[loc] = value
+        missing = set(episodes[0]['locations']) - populations.keys()
+        if missing:
+            raise ValueError(f'Missing population for locations: {sorted(missing)}')
+        options['populations'] = {loc: populations[loc] for loc in episodes[0]['locations']}
+    if transform == 'raw' and ed_transform == 'linear':
         return options
-    with Path(args.population_file).open() as stream:
-        rows = list(csv.DictReader(stream))
-    populations = {}
-    for row in rows:
-        loc, value = row.get('abbreviation', row['location']), float(row['population'])
-        if loc in populations or not np.isfinite(value) or value <= 0:
-            raise ValueError(f'Invalid or duplicate population for {loc}')
-        populations[loc] = value
+    options.update(input_scales(episodes, transform, ed_transform, options.get('populations')))
+    return options
+
+
+def input_scales(episodes, transform, ed_transform, populations):
+    """Training-only scales (and logit centers) in each channel's model space."""
+    import torch
+    from .b0 import transform_counts, transform_proportions
     locations = episodes[0]['locations']
-    missing = set(locations) - populations.keys()
-    if missing:
-        raise ValueError(f'Missing population for locations: {sorted(missing)}')
-    options['populations'] = {loc: populations[loc] for loc in locations}
-    if transform == 'raw':
-        return options
     # Count each context date once; do not overweight dates occurring in more windows.
     # The caller has already masked all observations outside the fitting partition.
     by_date = {}
@@ -54,16 +76,24 @@ def model_options(episodes, args):
             raise ValueError('Training episodes must share location order')
         for day, row in zip(episode['context_dates'], episode['X']):
             by_date[day] = row
-    panel = np.stack(list(by_date.values()))
-    pop = np.array([populations[loc] for loc in locations])
-    power = .5 if transform == 'sqrt' else .25
-    scales = []
+    panel = torch.as_tensor(np.stack(list(by_date.values())))  # date, channel, (value, mask), location
+    valid = panel[:, :, 1].bool()
+    values = torch.where(valid, panel[:, :, 0], 0)
+    population = torch.tensor([populations[loc] for loc in locations]) if populations else None
+    transformed = torch.cat((transform_counts(values[:, :3], population, transform),
+                             transform_proportions(values[:, 3:], ed_transform)), 1).numpy()
+    valid = valid.numpy()
+    scales, offsets = [], []
     for c in range(6):
-        values = panel[:, c, 0]
-        if c < 3:
-            values = np.maximum(values, 0) * 100000 / pop
-            values = values ** power
-        valid = values[panel[:, c, 1].astype(bool)]
-        scales.append(max(float(np.quantile(valid, .95)) if valid.size else 0, .001))
-    options['input_scale'] = scales
-    return options
+        observed = transformed[:, c][valid[:, c]]
+        if c >= 3 and ed_transform == 'logit':
+            offsets.append(float(observed.mean()) if observed.size else 0.)
+            scales.append(max(float(observed.std()) if observed.size else 0, .1))
+        else:
+            offsets.append(0.)
+            floor = 1 if c < 3 and transform == 'raw' else .001
+            scales.append(max(float(np.quantile(observed, .95)) if observed.size else 0, floor))
+    result = dict(input_scale=scales)
+    if ed_transform == 'logit':
+        result['input_offset'] = offsets
+    return result

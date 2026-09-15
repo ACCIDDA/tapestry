@@ -105,6 +105,25 @@ Proposed internal horizon list: **`[-1, 0, 1, 2, 3, 4, 5, 6]`**, eight outputs, 
 
 The geographic request list is explicit: 50 states, DC, PR, and US where required and supportable. The explorer currently displays 51 state/DC entries; that is not evidence that the PR and US output paths have been implemented.
 
+### 3.5 Hub targets and truth sources
+
+B0 forecasts six weekly hub targets. Model selection uses all six: admissions and ED-visit proportions both matter.
+
+| Hub | Target | Source and column | Units |
+|---|---|---|---|
+| FluSight | `wk inc flu hosp` | NHSN Weekly Hospital Respiratory Data, `totalconfflunewadm` | Hospital admissions of patients with confirmed influenza in the reporting week |
+| FluSight | `wk inc flu prop ed visits` | NSSP Emergency Department Visit Trajectories (state and sub-state), `percent_visits_influenza` | Proportion of ED visits |
+| COVID-19 | `wk inc covid hosp` | NHSN Weekly Hospital Respiratory Data, `totalconfc19newadm` | New hospitalizations due to COVID-19 |
+| COVID-19 | `wk inc covid prop ed visits` | NSSP, `percent_visits_covid` | Proportion of ED visits; an optional hub target since June 18, 2025 |
+| RSV | `wk inc rsv hosp` | NHSN Hospital Respiratory Reporting, `totalconfrsvnewadm` | Confirmed RSV hospital admissions |
+| RSV | `wk inc rsv prop ed visits` | NSSP, `percent_visits_rsv` | Proportion of ED visits |
+
+The columns are those read by the [dataset builder](../data/build-b-finalized.md). NSSP reports percentages; the hubs accept and store decimal proportions (percent / 100), and the builder divides by 100.
+
+NHSN official counts are released on Fridays and preliminary counts on Wednesdays. Official counts can be revised in later updates, and backfilled data can change values week over week; the most recent week needs particular caution because hospitals report the previous day's admissions. CDC notes that data before December 1, 2020 may contain unresolved anomalies and that data before August 1, 2020 are unavailable. Influenza fields became mandatory in February 2022; the number of reporting hospitals rose afterward and then stabilized. That count of reporting hospitals is a separate NHSN column: `totalconfflunewadm`, which the FluSight description mentions in that context, is the admissions count itself. Influenza data from 2020–21 through 2024–25 also appear in the archived COVID-19 Reported Patient Impact and Hospital Capacity by State Timeseries.
+
+FluSight also defines rate-change and peak targets from the same NHSN column; B0 does not forecast them. The B0 pilot trains and scores on finalized latest values, not release vintages (§3.3, §17).
+
 ## 4. Training data: what exists and what must be built
 
 ### 4.1 Local evidence
@@ -426,6 +445,15 @@ For a central `(1−alpha)` interval `[l,u]`, the interval score is its width pl
 
 Report paired mean WIS differences/ratios to the hub baseline and ensemble, and tournament relative WIS when comparing incomplete submission archives; freeze the comparison pool. Include MAE, 50/80/90/95% coverage, interval width, quantile reliability, submission completeness, and by-horizon revision/nowcast performance. Fair sample CRPS is a useful diagnostic, not a replacement for actual exported-quantile WIS.
 
+**B0 selection score.** Architecture sweeps compare exported 23-level quantiles with the official hub ensembles on identical frozen tasks: every location including US, every scored reference date, and horizons 0–3.
+
+1. **Per target and season:** total model WIS ÷ total ensemble WIS, each summed over all of those tasks. Relative WIS is a ratio of average WIS over the same task set; it is never computed by averaging task-level ratios (model WIS for task *i* ÷ ensemble WIS for task *i*), whose mean has poor statistical properties. Likewise, no per-state ratio is averaged.
+2. **Per target:** the mean of its season ratios, so each season counts one third where a target has three test seasons (flu admissions) and one half where it has two (COVID admissions).
+3. **Combined:** `(2 × (flu + COVID + RSV admissions) + (flu + COVID + RSV ED visits)) / 9`. Each admissions target counts twice as much as each ED target.
+4. **Per configuration:** the mean of run scores across seeds, with their SD.
+
+Always report all six target scores beside the combined score, the same computation restricted to states/DC tasks and to US tasks, every season's ratio, and 50/80/90/95% coverage for model and ensemble. The training loss weights `[1,1,1,.5,.5,.5]` mirror the 2:1 weighting. The implementation is `tapestry.evaluation.totals`; per-run sums are stored by target, season, geography, and horizon, so other aggregations need no rescoring.
+
 Stratify by season, horizon, location size, epidemic growth/decline, peak proximity, low-count weeks, reporting completeness, and covariate coverage. Retrospectively defined peak proximity is an evaluation stratum only. Also report revision-size sensitivity rather than dropping difficult revised outcomes from the main score.
 
 ### 10.4 Dependence, uncertainty, and stress tests
@@ -538,8 +566,15 @@ History length is configurable, by default **8 weeks**. The
 and window/season/location queries, and [training](../workflows/training.md)
 documents the shared MLP, stochastic decoder, masked fair-CRPS fit, and
 sample/quantile prediction. This scope takes precedence over the 12-week and
-historical auxiliary-source design above. Historical release handling, revision
-nowcasts, B1 spatial attention, and operational evaluation remain later work.
+historical auxiliary-source design above.
+
+The B0 [architecture sweep](../workflows/experiment-manager.md#architecture-sweep)
+adds optional spatial attention across locations, per-location latent noise, count
+and ED transforms, and early stopping, and crosses them with history, dynamics,
+encoder, decoder, latent size, and heads: 4,097 configurations at three seeds,
+ranked by the selection score in §10.3. Earlier B0 comparison results were
+withdrawn and will be recreated from this sweep. Historical release handling,
+revision nowcasts, and operational evaluation remain later work.
 
 ## References
 
