@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -131,6 +132,8 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
     from tapestry.models.season_cv import LEVELS
     if not shutil.which('Rscript') or importlib.util.find_spec('epibench') is None:
         pytest.skip('Integration requires local R and installed EpiBenchmark')
+    if not Path('data/mirrors/hub_flusight_current.git').is_dir():
+        pytest.skip('Integration requires local FluSight hub mirror')
     run = tmp_path / 'run'
     run.mkdir()
     from dataclasses import asdict
