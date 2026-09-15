@@ -66,4 +66,6 @@ nav:
       - Frozen hub support: workflows/hub-evaluation.md
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
+  - Results:
+      - B0 crosses calibration: results/b0-crosses.md
   - Features and tests: maintenance.md
