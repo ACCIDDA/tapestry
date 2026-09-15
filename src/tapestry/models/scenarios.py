@@ -158,11 +158,46 @@ def grid():
     return scenarios
 
 
+# Three deliberately chosen reference recipes, not selected from sweep scores.
+# Hold the scoring objective and seeds fixed while testing local changes.
+CROSS_ANCHORS = {
+    'raw': replace(BASELINE, loss_weights='objective'),
+    'anchor': replace(ANCHOR, loss_weights='objective'),
+    'conv': replace(ANCHOR, loss_weights='objective', encoder='conv', decoder='residual2',
+                    latent=32, spatial='attention', noise='local', heads='state_us',
+                    ed_transform='logit'),
+}
+
+
+def crosses():
+    """One-factor changes around three references; shared configurations run once.
+
+    Cover every original grid level, plus raw counts, linear ED and geography
+    ablation to connect the historical references. Stopping is a paired policy.
+    This screens local effects; it does not exhaustively estimate interactions.
+    """
+    axes = {**GRID, 'count_transform': ('raw', *GRID['count_transform']),
+            'ed_transform': ('linear', *GRID['ed_transform']), 'geography': (False, True)}
+    scenarios = dict(CROSS_ANCHORS)
+    seen = set(scenarios.values())
+    for name, anchor in CROSS_ANCHORS.items():
+        for field, values in axes.items():
+            for value in values:
+                options = dict(zip(('epochs', 'patience'), value)) if field == 'stopping' else {field: value}
+                candidate = replace(anchor, **options)
+                if candidate not in seen:
+                    label = '_'.join(map(str, value)) if field == 'stopping' else encode(field, value)
+                    scenarios[f'{name}__{field}_{label}'] = candidate
+                    seen.add(candidate)
+    return scenarios
+
+
 # Add a named suite here for each new exploration, e.g.
 #   'capacity': {'anchor': ANCHOR, **ofat(ANCHOR, width=(32, 128), epochs=(100,))},
 SUITES = {
     'essential': lambda: {name: value[0] for name, value in ESSENTIAL.items()},
     'grid': grid,
+    'crosses': crosses,
 }
 
 

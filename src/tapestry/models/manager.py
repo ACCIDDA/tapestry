@@ -367,7 +367,7 @@ def main(argv=None):
     pending = pending_tasks(rows)
     if pending:
         root = '' if args.root == 'data/experiments' else f' --root {args.root}'
-        print('Pending tasks (check squeue before resubmitting). Shared GPU partitions:')
+        print('Pending tasks (check squeue -a before resubmitting). Sweep launcher:')
         for command in array_commands(pending, args.experiment):
             print(command + root)
         if max(pending) < ARRAY_CHUNK:

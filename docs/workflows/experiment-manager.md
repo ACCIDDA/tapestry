@@ -177,6 +177,30 @@ so mixed commits are acceptable only during exploration.
 A later `plan` with different settings updates `experiment.json` and prints the
 changed keys; each attempt keeps the settings it actually used.
 
+## Smaller calibration: crosses
+
+The `crosses` suite replaces the cancelled full `b0-sweep` with 51 unique
+configurations (153 seed runs, 459 season fits). Three reference recipes are
+chosen in advance: historical raw-count B0, the existing fourth-root/geography/
+dynamics anchor, and an anchor with convolution, residual decoder, latent 32,
+spatial attention, local noise, separate state/US heads and logit ED inputs.
+These references are design choices, not winners selected from the partial sweep.
+
+Each reference gets every original grid level as a one-factor change. Raw count,
+linear ED and geography on/off are also included to connect the historical
+references. Epoch cap and patience change together as one stopping policy.
+Duplicate configurations run once. All runs use objective loss weights, seeds
+42/43/44 and the same frozen 23-quantile scoring support. This screens local
+effects around different recipes; exhaustive interaction testing is out of scope.
+The cancelled sweep's artifacts are retained separately; this small experiment
+runs fresh so partial attempts are not treated as completed results.
+
+```bash
+.venv/bin/python -m tapestry.models.manager plan -e b0-crosses --suite crosses --device cuda
+.venv/bin/python -m tapestry.models.manager status -e b0-crosses
+sbatch --array=0-50 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch b0-crosses
+```
+
 ## Slurm
 
 Both launchers run `manager run --task <row> --device cuda --keep-going` for one
@@ -184,8 +208,15 @@ Both launchers run `manager run --task <row> --device cuda --keep-going` for one
 
 | Script | Partitions | Per task | Use |
 |---|---|---|---|
-| `scripts/b0_sweep.sbatch` | `a100-gpu,l40-gpu,volta-gpu`, QOS `gpu_access` | 1 GPU, 4 CPUs, 16 GiB, 6 h | Large experiments such as the sweep |
+| `scripts/b0_sweep.sbatch` | `jlessler`, QOS `normal` | 1 GPU, 4 CPUs, 16 GiB, 6 h | Large experiments such as the sweep |
 | `scripts/b0_array.sbatch` | `jlessler` | 1 GPU, 4 CPUs, 64 GiB, 1 day | Small experiments on the lab's six GPUs |
+
+The calibration now uses the patron nodes `g1803jles01` (four L40 GPUs) and
+`g1803jles02` (two H100 GPUs). Previous shared-partition settings remain
+commented in `scripts/b0_sweep.sbatch`.
+
+Volta V100 is excluded because the installed PyTorch 2.14 CUDA 13 build lacks
+its compute-capability 7.0 kernels. A100 and L40 remain supported.
 
 Resource limits are allowances, not measurements. Slurm caps array indices, so
 `b0_sweep.sbatch` adds `OFFSET` to `SLURM_ARRAY_TASK_ID`. `status` prints

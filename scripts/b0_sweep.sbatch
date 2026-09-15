@@ -1,7 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=b0-sweep
-#SBATCH --partition=a100-gpu,l40-gpu,volta-gpu
-#SBATCH --qos=gpu_access
+#SBATCH --partition=jlessler
+#SBATCH --qos=normal
+# Previous shared-partition settings (remove the extra # to restore):
+##SBATCH --partition=a100-gpu,l40-gpu
+##SBATCH --qos=gpu_access
+# Earlier list also included volta-gpu; current PyTorch CUDA 13 lacks V100 kernels.
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -10,7 +14,7 @@
 #SBATCH --time=06:00:00
 #SBATCH --output=output/slurm/b0-sweep-%A_%a.log
 
-# Shared Longleaf GPU partitions. One array task = one jobs.csv row: a scenario with all
+# Patron GPU partition. One array task = one jobs.csv row: a scenario with all
 # of its seeds, each fitting three season folds and writing totals.csv. Slurm caps array
 # indices, so submit large experiments in chunks of 1,000 with OFFSET, from the repository root:
 #   sbatch --array=0-999 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch EXPERIMENT

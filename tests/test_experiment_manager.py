@@ -9,7 +9,7 @@ import pytest
 pytest.importorskip('torch')
 
 from tapestry.models import manager
-from tapestry.models.scenarios import ANCHOR, BASELINE, GRID, TrainingScenario, get_scenarios, ofat
+from tapestry.models.scenarios import ANCHOR, BASELINE, CROSS_ANCHORS, GRID, TrainingScenario, get_scenarios, ofat
 
 
 def test_short_strings_round_trip_and_reject_typos():
@@ -38,6 +38,25 @@ def test_grid_crosses_every_factor_once():
     for field, values in GRID.items():
         observed = Counter((s.epochs, s.patience) if field == 'stopping' else getattr(s, field) for s in sweep)
         assert observed == {value: 4096 // len(values) for value in values}
+
+
+def test_crosses_cover_each_axis_without_factorial_combinations():
+    scenarios = get_scenarios('crosses')
+    candidates = set(scenarios.values())
+    assert len(candidates) == len(scenarios) < 60
+    assert set(CROSS_ANCHORS.values()) <= candidates
+    for anchor in CROSS_ANCHORS.values():
+        for field, values in {**GRID, 'count_transform': ('raw', *GRID['count_transform']),
+                              'ed_transform': ('linear', *GRID['ed_transform']),
+                              'geography': (False, True)}.items():
+            for value in values:
+                options = dict(zip(('epochs', 'patience'), value)) if field == 'stopping' else {field: value}
+                assert replace(anchor, **options) in candidates
+    for candidate in candidates:
+        assert candidate.loss_weights == 'objective'
+        assert any(len({('stopping' if key in ('epochs', 'patience') else key)
+                        for key, value in asdict(candidate).items() if value != getattr(anchor, key)}) <= 1
+                   for anchor in CROSS_ANCHORS.values())
 
 
 def test_flags_parse_back_to_the_same_scenario():
