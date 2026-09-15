@@ -31,6 +31,9 @@ def add_experiment_args(parser):
     parser.add_argument('--decoder', choices=['legacy', 'residual2'], default='legacy')
     parser.add_argument('--noise', choices=['global', 'local'], default='global',
                         help='Global latent only, or global plus a per-location latent')
+    parser.add_argument('--us-error', choices=['none', 'shared_factor'], default='none',
+                        help='shared_factor adds a per-episode, per-channel common mode to every '
+                             'location, so state errors correlate instead of cancelling into the US')
     parser.add_argument('--latent', type=int, default=16)
 
 
@@ -42,7 +45,8 @@ def model_options(episodes, args):
                    dynamics=getattr(args, 'dynamics', False))
     options.update(encoder=getattr(args, 'encoder', 'mlp'), spatial=getattr(args, 'spatial', 'none'),
                    heads=getattr(args, 'heads', 'shared'), decoder=getattr(args, 'decoder', 'legacy'),
-                   noise=getattr(args, 'noise', 'global'), latent=getattr(args, 'latent', 16))
+                   noise=getattr(args, 'noise', 'global'), us_error=getattr(args, 'us_error', 'none'),
+                   latent=getattr(args, 'latent', 16))
     populations = None
     if transform != 'raw' or geography:
         with Path(args.population_file).open() as stream:

@@ -4,21 +4,22 @@ Adapted from influpaint/influpaint/batch/scenarios.py (TrainingScenario,
 scenario_string, essential set). Stable names replace position-based numeric IDs.
 """
 from dataclasses import asdict, dataclass, fields, replace
-from itertools import product
 
 from .experiments import COUNT_TRANSFORMS, ED_TRANSFORMS, LOSS_WEIGHTS
 
 # Field order fixes the string order. Categorical values use short codes.
 PREFIX = dict(lookback='h', count_transform='tr_', ed_transform='ed_', geography='geo', dynamics='dyn',
               loss_weights='lw_', encoder='enc_', spatial='sp_', heads='hd_', decoder='dec_', noise='nz_',
-              latent='z', width='w', epochs='ep', patience='pat', batch_size='bs', members='m', lr='lr')
+              us_error='us_', latent='z', width='w', epochs='ep', patience='pat', batch_size='bs', members='m',
+              lr='lr')
 CODES = dict(count_transform={'raw': 'raw', 'rate': 'rate', 'sqrt': 'sqrt', 'fourth_root': '4rt', 'log1p': 'log1p'},
              ed_transform={'linear': 'lin', 'logit': 'logit', 'fourth_root': '4rt'},
              loss_weights={'influenza_first': 'first', 'balanced_admissions': 'bal', 'flu_only': 'fluonly',
                            'objective': 'obj'},
              encoder={'mlp': 'mlp', 'conv': 'conv'}, spatial={'none': 'none', 'attention': 'attn'},
              heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2'},
-             noise={'global': 'glob', 'local': 'loc'})
+             noise={'global': 'glob', 'local': 'loc'},
+             us_error={'none': 'none', 'shared_factor': 'shf'})
 assert set(CODES['loss_weights']) == set(LOSS_WEIGHTS)
 assert set(CODES['count_transform']) == set(COUNT_TRANSFORMS) and set(CODES['ed_transform']) == set(ED_TRANSFORMS)
 
@@ -36,6 +37,7 @@ class TrainingScenario:
     heads: str = 'shared'
     decoder: str = 'legacy'
     noise: str = 'global'
+    us_error: str = 'none'
     latent: int = 16
     width: int = 64
     epochs: int = 50
@@ -137,25 +139,20 @@ ESSENTIAL = {
     'conv_h26': (replace(ANCHOR, encoder='conv', lookback=26), 'mlp_h26_dynamics', 'Shared temporal filters at twenty-six weeks'),
 }
 
-# Architecture sweep factors. Fixed: geography features, objective-matched loss
-# weights [1,1,1,.5,.5,.5], width 64, batch 8, 8 training draws, learning rate .001.
-GRID = dict(lookback=(8, 12), dynamics=(False, True), encoder=('mlp', 'conv'), decoder=('legacy', 'residual2'),
+# Levels explored around each reference. Fixed: geography features,
+# objective-matched loss weights [1,1,1,.5,.5,.5], width 64, batch 8, 8 training
+# draws, learning rate .001. Add or remove a level here and `crosses` follows;
+# this is the single registry of what the experiment varies.
+AXES = dict(lookback=(8, 12), dynamics=(False, True), encoder=('mlp', 'conv'), decoder=('legacy', 'residual2'),
             latent=(16, 32), spatial=('none', 'attention'), noise=('global', 'local'), heads=('shared', 'state_us'),
-            count_transform=('rate', 'sqrt', 'fourth_root', 'log1p'), ed_transform=('logit', 'fourth_root'),
-            # (epochs, patience): fixed 50 epochs, or early stopping with patience 20 up to 300 epochs.
-            stopping=((50, 0), (300, 20)))
-
-
-def grid():
-    """Full factorial architecture sweep plus the raw-count baseline: 4,097 configurations."""
-    base = replace(ANCHOR, loss_weights='objective')
-    scenarios = {'baseline': replace(BASELINE, loss_weights='objective')}
-    for setting in product(*GRID.values()):
-        options = dict(zip(GRID, setting))
-        options['epochs'], options['patience'] = options.pop('stopping')
-        scenario = replace(base, **options)
-        scenarios[scenario.scenario_string] = scenario
-    return scenarios
+            count_transform=('raw', 'rate', 'sqrt', 'fourth_root', 'log1p'),
+            ed_transform=('linear', 'logit', 'fourth_root'), geography=(False, True),
+            # Correlated national error: a per-episode, per-channel common mode
+            # shared by every location, so state errors stop cancelling into the US.
+            us_error=('none', 'shared_factor'),
+            # (epochs, patience): fixed 50/100/300 epochs isolate training length;
+            # patience 20 up to 300 adds validation checkpoint selection on top.
+            stopping=((50, 0), (100, 0), (300, 0), (300, 20)))
 
 
 # Three deliberately chosen reference recipes, not selected from sweep scores.
@@ -172,16 +169,14 @@ CROSS_ANCHORS = {
 def crosses():
     """One-factor changes around three references; shared configurations run once.
 
-    Cover every original grid level, plus raw counts, linear ED and geography
-    ablation to connect the historical references. Stopping is a paired policy.
-    This screens local effects; it does not exhaustively estimate interactions.
+    Every level in `AXES` is visited on every reference, so adding a level there
+    extends the experiment without touching this function. Stopping is a paired
+    policy. This screens local effects; it does not estimate interactions.
     """
-    axes = {**GRID, 'count_transform': ('raw', *GRID['count_transform']),
-            'ed_transform': ('linear', *GRID['ed_transform']), 'geography': (False, True)}
     scenarios = dict(CROSS_ANCHORS)
     seen = set(scenarios.values())
     for name, anchor in CROSS_ANCHORS.items():
-        for field, values in axes.items():
+        for field, values in AXES.items():
             for value in values:
                 options = dict(zip(('epochs', 'patience'), value)) if field == 'stopping' else {field: value}
                 candidate = replace(anchor, **options)
@@ -196,7 +191,6 @@ def crosses():
 #   'capacity': {'anchor': ANCHOR, **ofat(ANCHOR, width=(32, 128), epochs=(100,))},
 SUITES = {
     'essential': lambda: {name: value[0] for name, value in ESSENTIAL.items()},
-    'grid': grid,
     'crosses': crosses,
 }
 

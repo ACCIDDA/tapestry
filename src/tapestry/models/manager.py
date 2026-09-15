@@ -51,8 +51,18 @@ def git_state():
     return dict(git_commit=commit, git_dirty=bool(changes))
 
 
+def torch_state():
+    """The wheel that produced the numbers; CUDA builds differ in supported architectures."""
+    try:
+        import torch
+        return dict(torch_version=torch.__version__)
+    except ImportError:
+        return dict(torch_version=None)
+
+
 def environment():
-    return dict(host=socket.gethostname(), slurm={name: os.environ.get(name) for name in SLURM}, **git_state())
+    return dict(host=socket.gethostname(), slurm={name: os.environ.get(name) for name in SLURM},
+                **torch_state(), **git_state())
 
 
 def experiment_folder(root, name):

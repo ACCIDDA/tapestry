@@ -1,11 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=b0-sweep
-#SBATCH --partition=jlessler
-#SBATCH --qos=normal
-# Previous shared-partition settings (remove the extra # to restore):
-##SBATCH --partition=a100-gpu,l40-gpu
-##SBATCH --qos=gpu_access
-# Earlier list also included volta-gpu; current PyTorch CUDA 13 lacks V100 kernels.
+#SBATCH --partition=a100-gpu,l40-gpu,volta-gpu
+#SBATCH --qos=gpu_access
+# Patron nodes (remove the extra # to restore; they need --qos=normal):
+##SBATCH --partition=jlessler
+##SBATCH --qos=normal
+# volta-gpu is back: torch is pinned to a CUDA 12.6 wheel, whose architectures
+# include sm_70 (V100). sm_89 (L40/L40S) runs the sm_86 cubin by Ada binary
+# compatibility. Do not move the torch pin without rechecking get_arch_list().
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -14,7 +16,7 @@
 #SBATCH --time=06:00:00
 #SBATCH --output=output/slurm/b0-sweep-%A_%a.log
 
-# Patron GPU partition. One array task = one jobs.csv row: a scenario with all
+# Shared Longleaf GPU partitions. One array task = one jobs.csv row: a scenario with all
 # of its seeds, each fitting three season folds and writing totals.csv. Slurm caps array
 # indices, so submit large experiments in chunks of 1,000 with OFFSET, from the repository root:
 #   sbatch --array=0-999 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch EXPERIMENT

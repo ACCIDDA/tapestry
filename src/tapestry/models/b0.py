@@ -178,11 +178,12 @@ class B0(nn.Module):
     def __init__(self, lookback=8, horizons=(1, 2, 3, 4), width=64, latent=16, scale=None,
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
-                 noise='global', input_offset=None):
+                 noise='global', us_error='none', input_offset=None):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent)
         if (encoder not in ('mlp', 'conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
-                or spatial not in ('none', 'attention') or noise not in ('global', 'local')):
+                or spatial not in ('none', 'attention') or noise not in ('global', 'local')
+                or us_error not in ('none', 'shared_factor')):
             raise ValueError('Unknown B0 architecture option')
         if min(lookback, width, latent) < 1:
             raise ValueError('B0 dimensions must be positive')
@@ -196,7 +197,7 @@ class B0(nn.Module):
             raise ValueError('Populations must be finite and positive')
         self.config.update(count_transform=count_transform, populations=populations,
                            geography=geography, dynamics=dynamics, encoder=encoder, heads=heads, decoder=decoder,
-                           ed_transform=ed_transform, spatial=spatial, noise=noise)
+                           ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error)
         # Separate transformed input scales from native-unit loss normalization.
         # No extra buffer in the original representation, so original checkpoints still load.
         if count_transform != 'raw' or ed_transform != 'linear':
@@ -238,6 +239,11 @@ class B0(nn.Module):
                     self.us_local_scale = copy.deepcopy(self.local_scale)
         if spatial == 'attention':
             self.spatial = SpatialBlock(width)
+        if us_error == 'shared_factor':
+            # Starts as a no-op: softplus(-8) is under 4e-4, so the variant begins
+            # at the routed-head model and training decides how much common mode
+            # to add. One magnitude per channel; diseases peak at different times.
+            self.national_scale = nn.Parameter(torch.full((6,), -8.))
 
     def local_noise_scales(self):
         """Learned magnitudes of the per-location latent term, by head."""
@@ -313,6 +319,15 @@ class B0(nn.Module):
             us = decode(self.us_decoder, 'us_')
             is_us = torch.tensor([loc == 'US' for loc in locations], device=x.device)
             delta = torch.where(is_us[None, None, None, :, None, None], us, delta)
+        if config['us_error'] == 'shared_factor':
+            # One draw per episode, member and channel, shared by every location: a
+            # common national mode. Without it the only shared randomness is `z`,
+            # whose per-location modulation leaves state errors free to cancel when
+            # the national prediction forms, which is what makes US intervals narrow.
+            # Applied before the anchor, so in transformed space it acts proportionally.
+            # delta is [M,N,H,L,C,1] here; the channel/location swap follows below.
+            national = torch.randn(delta.shape[0], n, 1, 1, c, 1, device=x.device, dtype=delta.dtype)
+            delta = delta + national * F.softplus(self.national_scale)[None, None, None, None, :, None]
         delta = delta.squeeze(-1).permute(0, 1, 2, 4, 3)
         # Last valid focal value anchors the residual; zero-history uses a small prior.
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)

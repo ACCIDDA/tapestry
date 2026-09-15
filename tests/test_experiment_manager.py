@@ -1,5 +1,4 @@
-"""Scenario strings, the sweep grid, and the per-task experiment layout with resume."""
-from collections import Counter
+"""Scenario strings, the cross suite, and the per-task experiment layout with resume."""
 from dataclasses import asdict, replace
 import json
 from pathlib import Path
@@ -9,46 +8,32 @@ import pytest
 pytest.importorskip('torch')
 
 from tapestry.models import manager
-from tapestry.models.scenarios import ANCHOR, BASELINE, CROSS_ANCHORS, GRID, TrainingScenario, get_scenarios, ofat
+from tapestry.models.scenarios import ANCHOR, AXES, BASELINE, CROSS_ANCHORS, TrainingScenario, get_scenarios, ofat
 
 
 def test_short_strings_round_trip_and_reject_typos():
-    scenarios = {*get_scenarios('essential').values(), *get_scenarios('grid').values()}
+    scenarios = {*get_scenarios('essential').values(), *get_scenarios('crosses').values()}
     assert len({scenario.scenario_string for scenario in scenarios}) == len(scenarios)
     assert all(TrainingScenario.from_string(s.scenario_string) == s for s in scenarios)
     text = ANCHOR.scenario_string
     assert text == ('b0:h12:tr_4rt:ed_lin:geo1:dyn1:lw_first:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:'
-                    'z16:w64:ep50:pat0:bs8:m8:lr0.001')
+                    'us_none:z16:w64:ep50:pat0:bs8:m8:lr0.001')
     for bad in (text.replace('tr_4rt', 'tr_fourth'), text.replace(':h12', ':h012'), text.replace(':z16', ''),
                 text.replace('b0:', 'b1:'), text.replace('w64:ep50', 'ep50:w64'), text + ':x1',
                 text.replace('geo1', 'geo2'), text.replace('lr0.001', 'lr1e-3'), text.replace('pat0', 'pat'),
-                text.replace('nz_glob', 'nz_global'), text.replace('ep50:pat0', 'ep50:pat50')):
+                text.replace('nz_glob', 'nz_global'), text.replace('ep50:pat0', 'ep50:pat50'),
+                text.replace('us_none', 'us_shared_factor')):
         with pytest.raises(ValueError):
             TrainingScenario.from_string(bad)
-
-
-def test_grid_crosses_every_factor_once():
-    grid = get_scenarios('grid')
-    assert len(grid) == 4097
-    assert grid['baseline'] == replace(BASELINE, loss_weights='objective')
-    sweep = [scenario for name, scenario in grid.items() if name != 'baseline']
-    assert len(set(sweep)) == 4096
-    assert {s.loss_weights for s in grid.values()} == {'objective'}
-    assert all(s.geography and s.width == 64 and s.lr == .001 for s in sweep)
-    for field, values in GRID.items():
-        observed = Counter((s.epochs, s.patience) if field == 'stopping' else getattr(s, field) for s in sweep)
-        assert observed == {value: 4096 // len(values) for value in values}
 
 
 def test_crosses_cover_each_axis_without_factorial_combinations():
     scenarios = get_scenarios('crosses')
     candidates = set(scenarios.values())
-    assert len(candidates) == len(scenarios) < 60
+    assert len(candidates) == len(scenarios) < 120
     assert set(CROSS_ANCHORS.values()) <= candidates
     for anchor in CROSS_ANCHORS.values():
-        for field, values in {**GRID, 'count_transform': ('raw', *GRID['count_transform']),
-                              'ed_transform': ('linear', *GRID['ed_transform']),
-                              'geography': (False, True)}.items():
+        for field, values in AXES.items():
             for value in values:
                 options = dict(zip(('epochs', 'patience'), value)) if field == 'stopping' else {field: value}
                 assert replace(anchor, **options) in candidates

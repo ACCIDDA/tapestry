@@ -14,8 +14,14 @@ dependencies = ["epidatpy>=0.6.0,<0.7"]
 
 [project.optional-dependencies]
 model-data = ["numpy>=1.24"]
-model = ["numpy>=1.24", "torch>=2.1"]
-evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "seaborn>=0.13", "reportlab>=4", "pypdf>=4", "PyYAML>=6"]
+# torch is pinned to the CUDA 12.6 build: it is the newest wheel line whose
+# compiled architectures still include sm_70 (V100). CUDA 13 wheels dropped it,
+# which locks the 80-card volta-gpu partition out. sm_89 (L40/L40S) is covered by
+# binary compatibility with the sm_86 cubin, verified on g1803jles01; sm_80 and
+# sm_90 are native. PyTorch stops publishing cu126 wheels at 2.15, so do not
+# let `uv sync --upgrade` move this pin without re-checking the arch list.
+model = ["numpy>=1.24", "torch==2.9.1"]
+evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch==2.9.1", "matplotlib>=3.7", "seaborn>=0.13", "reportlab>=4", "pypdf>=4", "PyYAML>=6"]
 explorer = ["pyarrow>=10"]
 docs = [
   "mkdocs>=1.6,<2",
@@ -31,6 +37,13 @@ dev = ["tapestry[model,explorer,evaluation]", "pytest>=8", "EpiBenchmark"]
 # Follow upstream main: uv sync --upgrade-package epibenchmark.
 # uv's generated lockfile is local, not a committed experiment constraint.
 EpiBenchmark = { git = "https://github.com/ACCIDDA/epibench", branch = "main" }
+# Without this mapping torch resolves from PyPI, which now ships CUDA 13 only.
+torch = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [project.scripts]
 tapestry-model-data = "tapestry.model_data.cli:main"
