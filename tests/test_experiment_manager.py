@@ -17,7 +17,7 @@ def test_short_strings_round_trip_and_reject_typos():
     assert all(TrainingScenario.from_string(s.scenario_string) == s for s in scenarios)
     text = ANCHOR.scenario_string
     assert text == ('b0:h12:tr_4rt:ed_lin:geo1:dyn1:lw_first:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:'
-                    'us_none:z16:w64:ep50:pat0:bs8:m8:lr0.001')
+                    'us_none:z16:w64:ep50:pat0:bs8:m128:lr0.001')
     for bad in (text.replace('tr_4rt', 'tr_fourth'), text.replace(':h12', ':h012'), text.replace(':z16', ''),
                 text.replace('b0:', 'b1:'), text.replace('w64:ep50', 'ep50:w64'), text + ':x1',
                 text.replace('geo1', 'geo2'), text.replace('lr0.001', 'lr1e-3'), text.replace('pat0', 'pat'),
@@ -138,3 +138,41 @@ def test_plan_run_resume_and_status(tmp_path, monkeypatch):
     assert rows['anchor', 43]['status'] == 'complete'
     assert rows['anchor', 43]['attempt'].endswith('s43/attempt-002')
     assert manager.pending_tasks(rows.values()) == [1, 2]
+
+
+def test_concurrent_seeds_each_run_once(tmp_path, monkeypatch):
+    """Pooled fitting must cover every seed exactly once and never share an attempt folder."""
+    from tapestry.evaluation.hubs import QCOLS
+    import threading
+    import time
+    monkeypatch.chdir(tmp_path)
+    lock = threading.Lock()
+    seen, peak, live = [], [0], [0]
+
+    def fake_run(command, log):
+        output = Path(command[command.index('--output' if '--output' in command else '--run') + 1])
+        if 'tapestry.evaluation.totals' in command:
+            (output / 'totals.csv').write_text('x')
+            return
+        with lock:
+            live[0] += 1
+            peak[0] = max(peak[0], live[0])
+            seen.append((command[command.index('--seed') + 1], str(output)))
+        # A real fit takes seconds; hold briefly so overlapping workers are observable.
+        time.sleep(.05)
+        write_cv(output, int(command[command.index('--seed') + 1]))
+        with lock:
+            live[0] -= 1
+
+    monkeypatch.setattr(manager, 'execute', fake_run)
+    monkeypatch.setattr(manager, 'git_state', lambda: dict(git_commit='abc', git_dirty=False))
+    write_frozen(Path('frozen'), QCOLS)
+    manager.main(['plan', '-e', 'pool', '--scenario', 'anchor', 'baseline', '--seeds', '42', '43', '44',
+                  '--frozen', 'frozen'])
+    folder = Path('data/experiments/pool')
+    assert manager.run(folder, None, 'cpu', True, 3) == 0
+    # Six (scenario, seed) pairs, each fitted exactly once into its own folder.
+    assert len(seen) == 6 and len({path for _, path in seen}) == 6
+    assert sorted(seed for seed, _ in seen) == ['42', '42', '43', '43', '44', '44']
+    assert peak[0] > 1, 'expected concurrent fits'
+    assert all(row['status'] == 'complete' for row in manager.collect(folder))

@@ -198,12 +198,15 @@ class B0(nn.Module):
         self.config.update(count_transform=count_transform, populations=populations,
                            geography=geography, dynamics=dynamics, encoder=encoder, heads=heads, decoder=decoder,
                            ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error)
-        # Separate transformed input scales from native-unit loss normalization.
-        # No extra buffer in the original representation, so original checkpoints still load.
-        if count_transform != 'raw' or ed_transform != 'linear':
-            self.register_buffer('input_scale', torch.ones(6) if input_scale is None else torch.as_tensor(input_scale).float())
+        # Transformed input scales, always per channel AND location, kept separate from
+        # the native-unit loss normalization in `scale`. A single pooled scale put the
+        # US at ~40x model units against a state's 0.8, which collapsed its intervals;
+        # normalizing each location by its own history removes that. Stored [C, L] so
+        # every use broadcasts over the trailing location axis. A flat [C] value is
+        # accepted and broadcast, which keeps direct constructor calls working.
+        self.register_buffer('input_scale', self._per_location(input_scale, 1.))
         if ed_transform == 'logit':
-            self.register_buffer('input_offset', torch.zeros(6) if input_offset is None else torch.as_tensor(input_offset).float())
+            self.register_buffer('input_offset', self._per_location(input_offset, 0.))
         self.register_buffer('scale', torch.ones(6) if scale is None else torch.as_tensor(scale).float())
         self.context = nn.Sequential(nn.Linear((lookback * 6 * 2 if encoder == 'mlp' else width) + 2 + 2 * geography + 31 * dynamics, width), nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * 2, width), nn.SiLU(), nn.Linear(width, width))
@@ -240,10 +243,24 @@ class B0(nn.Module):
         if spatial == 'attention':
             self.spatial = SpatialBlock(width)
         if us_error == 'shared_factor':
-            # Starts as a no-op: softplus(-8) is under 4e-4, so the variant begins
-            # at the routed-head model and training decides how much common mode
-            # to add. One magnitude per channel; diseases peak at different times.
-            self.national_scale = nn.Parameter(torch.full((6,), -8.))
+            # Sized against the decoder residual, whose magnitude at initialization is
+            # ~0.10 (abs mean 0.096, p95 0.230): softplus(-2.252) = 0.10 makes the common
+            # mode comparable to the signal it perturbs, so the optimizer feels it and can
+            # grow or shrink it. An earlier near-zero start (softplus(-8) = 3e-4) never
+            # moved at all. One magnitude per channel; diseases peak at different times.
+            self.national_scale = nn.Parameter(softplus_inverse(.1).expand(6).clone())
+
+    @staticmethod
+    def _per_location(value, default):
+        """[C] or [C, L] scales as a [C, L] buffer; a flat value broadcasts to every location."""
+        if value is None:
+            return torch.full((6, 1), float(default))
+        tensor = torch.as_tensor(value).float()
+        if tensor.ndim == 1:
+            tensor = tensor[:, None]
+        if tensor.ndim != 2 or tensor.shape[0] != 6:
+            raise ValueError(f'Per-location scales must be [6] or [6, locations], got {tuple(tensor.shape)}')
+        return tensor.contiguous()
 
     def local_noise_scales(self):
         """Learned magnitudes of the per-location latent term, by head."""
@@ -268,13 +285,15 @@ class B0(nn.Module):
             if locations is None or len(locations) != l:
                 raise ValueError('Provide ordered location IDs for population metadata')
             population = x.new_tensor([config['populations'][loc] for loc in locations])
-        input_scale = getattr(self, 'input_scale', self.scale)
+        input_scale = self.input_scale
         offset = getattr(self, 'input_offset', None)
+        if input_scale.shape[-1] not in (1, l):
+            raise ValueError(f'Input scale holds {input_scale.shape[-1]} locations, not {l}')
         transformed = torch.cat((transform_counts(raw[:, :, :3], population, config['count_transform']),
                                  transform_proportions(raw[:, :, 3:], config['ed_transform'])), 2)
         if offset is not None:
-            transformed = transformed - offset[None, None, :, None]
-        values = torch.where(valid, transformed / input_scale[None, None, :, None], 0)
+            transformed = transformed - offset[None, None, :, :]
+        values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
         fields = torch.stack((values, mask), dim=-1)  # N,P,C,L,2
         context = fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)
         if config['encoder'] == 'conv':
@@ -333,16 +352,16 @@ class B0(nn.Module):
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
         anchor = values.gather(1, idx[:, None]).squeeze(1)
         anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
-        counts = positive_residual(anchor[:, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, None]
+        counts = positive_residual(anchor[:, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
         counts = invert_counts(counts, population, config['count_transform'])
         if config['ed_transform'] == 'fourth_root':
-            root = positive_residual(anchor[:, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, None]
+            root = positive_residual(anchor[:, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
             ed = root.pow(4).clamp(max=1)
         else:
             if config['ed_transform'] == 'logit':
-                logit = anchor[:, 3:] * input_scale[None, 3:, None] + offset[None, 3:, None]
+                logit = anchor[:, 3:] * input_scale[None, 3:, :] + offset[None, 3:, :]
             else:
-                proportion = (anchor[:, 3:] * input_scale[None, 3:, None]).clamp(*ED_BOUNDS)
+                proportion = (anchor[:, 3:] * input_scale[None, 3:, :]).clamp(*ED_BOUNDS)
                 logit = torch.logit(proportion)
             ed = torch.sigmoid(logit[None, :, None] + delta[:, :, :, 3:])
         return torch.cat((counts, ed), dim=3)

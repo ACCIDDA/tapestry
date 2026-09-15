@@ -61,8 +61,9 @@ def model_options(episodes, args):
         if missing:
             raise ValueError(f'Missing population for locations: {sorted(missing)}')
         options['populations'] = {loc: populations[loc] for loc in episodes[0]['locations']}
-    if transform == 'raw' and ed_transform == 'linear':
-        return options
+    # Raw counts in linear ED space used to skip this and fall back to the pooled
+    # native-unit scale, which is exactly the path that put the US ~40x out of range.
+    # Every configuration now gets per-location, per-channel input scales.
     options.update(input_scales(episodes, transform, ed_transform, options.get('populations')))
     return options
 
@@ -87,16 +88,35 @@ def input_scales(episodes, transform, ed_transform, populations):
     transformed = torch.cat((transform_counts(values[:, :3], population, transform),
                              transform_proportions(values[:, 3:], ed_transform)), 1).numpy()
     valid = valid.numpy()
+    # One scale per channel AND location. Pooling locations set a single scale from
+    # state-sized counts, so the US entered the model ~40x too large and its intervals
+    # collapsed; each location is now normalized by its own history. Falls back to the
+    # pooled value where a location has no observations of a channel.
     scales, offsets = [], []
     for c in range(6):
-        observed = transformed[:, c][valid[:, c]]
-        if c >= 3 and ed_transform == 'logit':
-            offsets.append(float(observed.mean()) if observed.size else 0.)
-            scales.append(max(float(observed.std()) if observed.size else 0, .1))
+        pooled = transformed[:, c][valid[:, c]]
+        logit_channel = c >= 3 and ed_transform == 'logit'
+        floor = .1 if logit_channel else (1 if c < 3 and transform == 'raw' else .001)
+        if logit_channel:
+            fallback = max(float(pooled.std()) if pooled.size else 0, floor)
+            pooled_offset = float(pooled.mean()) if pooled.size else 0.
         else:
-            offsets.append(0.)
-            floor = 1 if c < 3 and transform == 'raw' else .001
-            scales.append(max(float(np.quantile(observed, .95)) if observed.size else 0, floor))
+            fallback = max(float(np.quantile(pooled, .95)) if pooled.size else 0, floor)
+            pooled_offset = 0.
+        channel_scales, channel_offsets = [], []
+        for li in range(len(locations)):
+            observed = transformed[:, c, li][valid[:, c, li]]
+            if not observed.size:
+                channel_scales.append(fallback)
+                channel_offsets.append(pooled_offset)
+            elif logit_channel:
+                channel_offsets.append(float(observed.mean()))
+                channel_scales.append(max(float(observed.std()), floor))
+            else:
+                channel_offsets.append(0.)
+                channel_scales.append(max(float(np.quantile(observed, .95)), floor))
+        scales.append(channel_scales)
+        offsets.append(channel_offsets)
     result = dict(input_scale=scales)
     if ed_transform == 'logit':
         result['input_offset'] = offsets

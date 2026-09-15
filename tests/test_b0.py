@@ -154,7 +154,9 @@ def test_input_scalers_ignore_masked_values_and_weights_are_independent(tmp_path
     args.loss_weights = 'balanced_admissions'
     b = model_options([episode, episode], args)
     assert a == b
-    assert a['input_scale'][:3] == pytest.approx([.1 ** .5] * 3)
+    # One scale per channel and location; this episode holds a single location.
+    assert [s[0] for s in a['input_scale'][:3]] == pytest.approx([.1 ** .5] * 3)
+    assert all(len(s) == 1 for s in a['input_scale'])
     assert 'input_offset' not in a
     assert LOSS_WEIGHTS['flu_only'] == [1, 0, 0, 0, 0, 0]
     assert LOSS_WEIGHTS['objective'] == [1, 1, 1, .5, .5, .5]
@@ -175,10 +177,10 @@ def test_logit_ed_inputs_center_on_training_values_and_log1p_counts_scale(tmp_pa
     options = model_options([episode], args)
     p = np.array([.01, .02, .04])
     logits = np.log(p / (1 - p))
-    assert options['input_offset'] == pytest.approx([0, 0, 0] + [logits.mean()] * 3, rel=1e-5)
-    assert options['input_scale'][3:] == pytest.approx([logits.std()] * 3, rel=1e-5)
+    assert [o[0] for o in options['input_offset']] == pytest.approx([0, 0, 0] + [logits.mean()] * 3, rel=1e-5)
+    assert [s[0] for s in options['input_scale'][3:]] == pytest.approx([logits.std()] * 3, rel=1e-5)
     rates = np.log1p(np.array([10., 20., 40.]) / 10)
-    assert options['input_scale'][:3] == pytest.approx([np.quantile(rates, .95)] * 3, rel=1e-5)
+    assert [s[0] for s in options['input_scale'][:3]] == pytest.approx([np.quantile(rates, .95)] * 3, rel=1e-5)
 
 
 @pytest.mark.parametrize('encoder', ['mlp', 'conv'])

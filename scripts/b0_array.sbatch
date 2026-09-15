@@ -5,9 +5,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=64G
-#SBATCH --time=1-00:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=32G
+#SBATCH --time=01:00:00
 #SBATCH --output=output/slurm/b0-array-%A_%a.log
 
 # One array task = one jobs.csv row: a scenario and all of its seeds, in sequence.
@@ -15,10 +15,12 @@
 #   sbatch --array=0-13%6 scripts/b0_array.sbatch EXPERIMENT [extra manager options]
 set -euo pipefail
 experiment=${1:?usage: sbatch --array=TASKS scripts/b0_array.sbatch EXPERIMENT}
-export OMP_NUM_THREADS=4
-export MKL_NUM_THREADS=4
+# Each concurrent fit calls torch.set_num_threads(2); keep the BLAS pools
+# small so FIT_WORKERS fits do not oversubscribe the allocated cores.
+export OMP_NUM_THREADS=2
+export MKL_NUM_THREADS=2
 export PYTHONUNBUFFERED=1
 hostname
 .venv/bin/python -c 'import torch; assert torch.cuda.is_available(), "CUDA unavailable"; print(torch.__version__, torch.cuda.get_device_name(0))'
 .venv/bin/python -m tapestry.models.manager run -e "$experiment" --task "$SLURM_ARRAY_TASK_ID" \
-    --device cuda --keep-going "${@:2}"
+    --device cuda --keep-going --fit-workers "${FIT_WORKERS:-3}" "${@:2}"

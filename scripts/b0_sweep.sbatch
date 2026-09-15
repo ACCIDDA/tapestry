@@ -11,9 +11,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --time=06:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=32G
+#SBATCH --time=01:00:00
 #SBATCH --output=output/slurm/b0-sweep-%A_%a.log
 
 # Shared Longleaf GPU partitions. One array task = one jobs.csv row: a scenario with all
@@ -25,11 +25,15 @@
 set -euo pipefail
 experiment=${1:?usage: sbatch --array=TASKS --export=ALL,OFFSET=N scripts/b0_sweep.sbatch EXPERIMENT}
 task=$(( ${OFFSET:-0} + SLURM_ARRAY_TASK_ID ))
-export OMP_NUM_THREADS=4
-export MKL_NUM_THREADS=4
+# Each concurrent fit calls torch.set_num_threads(2); keep the BLAS pools
+# small so FIT_WORKERS fits do not oversubscribe the allocated cores.
+export OMP_NUM_THREADS=2
+export MKL_NUM_THREADS=2
 export PYTHONUNBUFFERED=1
 hostname
 echo "Experiment ${experiment}, jobs.csv task ${task}"
 .venv/bin/python -c 'import torch; assert torch.cuda.is_available(), "CUDA unavailable"; print(torch.__version__, torch.cuda.get_device_name(0))'
+# One fit uses a small fraction of the card, so a task's seeds share one GPU rather
+# than queueing behind each other; each fit pins two torch threads inside the 16 cores.
 .venv/bin/python -m tapestry.models.manager run -e "$experiment" --task "$task" \
-    --device cuda --keep-going "${@:2}"
+    --device cuda --keep-going --fit-workers "${FIT_WORKERS:-3}" "${@:2}"

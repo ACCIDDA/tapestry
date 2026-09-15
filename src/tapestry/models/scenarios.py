@@ -43,7 +43,11 @@ class TrainingScenario:
     epochs: int = 50
     patience: int = 0
     batch_size: int = 8
-    members: int = 8
+    # Training draws per episode. Fair CRPS is already unbiased at 8 (the m(m-1)
+    # Ferro divisor), so this is variance reduction, not a bias fix: the per-batch
+    # gradient estimate falls as 1/sqrt(m). Evaluation dominates a fold at ~21s
+    # against a few seconds of fitting, so the extra draws are close to free.
+    members: int = 128
     lr: float = .001
 
     def __post_init__(self):

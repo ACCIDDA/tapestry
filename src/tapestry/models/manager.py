@@ -6,6 +6,7 @@ Each seed attempt writes only its own folder, so tasks never share a registry;
 attempt records its git commit and whether the checkout had uncommitted changes.
 """
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ import re
 import socket
 import subprocess
 import sys
+import threading
 
 from .quantiles import LEVELS
 from .scenarios import ESSENTIAL, SUITES, TrainingScenario, get_scenarios, get_training_scenario
@@ -204,7 +206,23 @@ def run_seed(folder, job, seed, settings):
     return True
 
 
-def run(folder, tasks=None, device=None, keep_going=False):
+def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1):
+    """Fit the selected tasks, up to `fit_workers` CONFIGURATIONS at a time.
+
+    A worker owns one configuration and fits its seeds in sequence, so seeds of a
+    configuration never overlap while `fit_workers` different configurations run
+    side by side on one card. This is the shape that keeps a GPU busy: a task has
+    only three seeds, so parallelising seeds caps concurrency at three, while
+    parallelising configurations has no such ceiling.
+
+    One fit uses a small fraction of a GPU (28k-142k parameters, batch 8), so the
+    card idles between kernel launches and several fits share it well. Each seed is
+    a separate subprocess writing its own attempt folder, created with
+    `exist_ok=False`, so concurrent fits cannot share state or race for a folder.
+    CPU is the binding resource: each fit pins two torch threads, so keep
+    `fit_workers` at or below half the allocated cores. GPU memory is the other
+    limit: the heaviest configuration peaks near 6 GiB, so ~6 lanes fit a 44 GiB L40.
+    """
     settings = json.loads((folder / 'experiment.json').read_text())
     if device:
         settings['device'] = device
@@ -215,13 +233,32 @@ def run(folder, tasks=None, device=None, keep_going=False):
         if unknown:
             raise ValueError(f'Unknown tasks {sorted(unknown)} in {folder / "jobs.csv"}')
         jobs = [job for job in jobs if job['task'] in tasks]
-    failures = 0
-    for job in jobs:
+    if fit_workers < 1:
+        raise ValueError('fit_workers must be positive')
+    # One unit of work is a whole configuration, not a seed: that is what keeps a
+    # configuration's seeds in sequence while several configurations run at once.
+    # The pool's max_workers does the throttling: submit everything and let it queue.
+    # Without --keep-going a failure stops configurations that have not started;
+    # lanes already running finish their current seed, and a skipped seed stays
+    # 'planned' for the next run to pick up.
+    failures, stop = 0, threading.Event()
+
+    def fit(job):
+        """Fit one configuration's seeds in order; returns the number that failed."""
+        failed = 0
         for seed in job['seeds']:
+            if stop.is_set():
+                break
             if not run_seed(folder, job, seed, settings):
-                failures += 1
+                failed += 1
                 if not keep_going:
-                    return failures
+                    stop.set()
+                    break
+        return failed
+
+    with ThreadPoolExecutor(max_workers=fit_workers) as pool:
+        for future in as_completed([pool.submit(fit, job) for job in jobs]):
+            failures += future.result()
     return failures
 
 
@@ -333,6 +370,9 @@ def main(argv=None):
     parser.add_argument('-t', '--task', nargs='+', type=int, help='run: jobs.csv task numbers (default: all)')
     parser.add_argument('--keep-going', action='store_true', help='run: continue with remaining seeds after a failure')
     parser.add_argument('--workers', type=int, default=2, help='compare: concurrent EpiBench cases')
+    parser.add_argument('--fit-workers', type=int, default=1,
+                        help='run: configurations fitted concurrently on one GPU, each running its '
+                             'seeds in sequence; every fit pins two torch threads')
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     if args.eval_members < 1 or args.workers < 1:
@@ -360,7 +400,7 @@ def main(argv=None):
         plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
     elif args.command == 'run':
-        if run(folder, args.task, args.device, args.keep_going):
+        if run(folder, args.task, args.device, args.keep_going, args.fit_workers):
             raise SystemExit(1)
         return
     elif args.command == 'rank':
