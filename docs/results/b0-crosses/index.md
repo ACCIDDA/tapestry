@@ -294,6 +294,21 @@ against the frozen truth, not through `manager compare`. EpiBench relative WIS
 and its standard diagnostic plot set are **not** included here; the §10.3
 selection score is the total-WIS ratio `rank` already computes.
 
+### Member trajectories
+
+Fans hide what individual ensemble members do. The same rank-1 configuration,
+drawn as 50 of its 100 saved members per origin:
+
+![Member trajectories, influenza admissions 2024-2025](figures/trajectories-flu_hosp-2024-2025.png)
+
+Influenza 2024-2025 is chosen because it contains the within-season rebound and
+because rank 1 scores well there (0.819), so this is not a strawman season. Two
+things are visible that the quantile fans do not show. Members are **tight and
+nearly parallel** — they share one episode-level latent, so they disagree about
+level far more than about shape, which is the narrow-interval result above seen
+directly. And at the February origins the whole bundle points **down** into the
+second peak while truth climbs past it, at both US and NC.
+
 ### The double-peak failure persists
 
 Measured on influenza 2024-2025 over every origin where truth fell for a week
@@ -382,11 +397,33 @@ than mean ranks.
 **Geography.** The scaling fix removed a genuine artifact — the best US score
 went from 1.19 to 0.888 — but the states/US tension is structural, not fixed.
 ρ = −0.127 between the two orderings, and the `conv` family still pays 1.16–1.37
-at US to win on states. The global latent draw shared across locations remains
-the plausible mechanism: state errors cancel when the national prediction forms.
-`us_error_shf` (a learned common-mode term) now helps both references at US
-(−0.043 on `anchor`, −0.074 on `conv`), which is the first positive signal for
-that switch and worth pursuing.
+at US to win on states.
+
+**The mechanism is not aggregation.** The US is location 52 on the same axis as
+the states: it is encoded, decoded and fit directly, with its own `is_us`
+geography flag, and nothing in the forward pass sums states into a national
+number. The US *mean* is fit like any other location.
+
+Measured on the saved members (flu admissions, horizon 3, 2024-2025, seed 42,
+100 members per origin), the defect is interval **width**, not correlation:
+
+| Configuration | US 95% width | Width if states were summed | Ratio | US 95% coverage |
+|---|---:|---:|---:|---:|
+| `anchor` (reference) | 12,012 | 15,863 | 1.32 | 68.8% |
+| `anchor__us_error_shf` | 11,470 | 12,508 | **1.09** | 60.4% |
+| `anchor__stopping_300_0` (rank 1) | 4,927 | 11,863 | **2.41** | 47.9% |
+| `conv` | 5,561 | 10,872 | 1.95 | 66.7% |
+
+Member deviations are in fact *highly* correlated across locations — mean
+corr(US, state) is 0.98 on the `anchor` reference — so the earlier hypothesis
+that state errors cancel is wrong for that recipe. What distinguishes the
+configurations is how much total spread they retain: rank 1's US interval is
+**2.4× narrower** than the same model's own states imply, and its member
+correlation drops to 0.56. Long training without early stopping shrinks the
+ensemble spread, and it shrinks it hardest where coverage was already worst.
+`us_error_shf` is the only switch that pulls the ratio back toward 1 (1.09),
+which is consistent with its design and with its US gains (−0.043 on `anchor`,
+−0.074 on `conv`).
 
 **Where to look next**, in priority order: (1) rerun the stopping ladder with
 patience on by default, since the current rank 1 is an artifact of its absence;

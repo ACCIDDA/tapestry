@@ -215,6 +215,46 @@ def horizon_figure(totals, output):
     plt.close(fig)
 
 
+def trajectory_figure(ranking, configs, runs, output, season='2024-2025', channel=0):
+    """Individual members for the best configuration: fans hide the shape/level split."""
+    manifest = json.loads((ranking / 'manifest.json').read_text())
+    paths = {(r['name'], r['seed']): r['path'] for r in manifest['runs']}
+    best = configs.nsmallest(1, 'combined_mean').iloc[0]['name']
+    part = runs[runs.geography.eq('all') & runs.name.eq(best)].sort_values(['combined', 'seed'])
+    seed = int(part.iloc[len(part) // 2].seed)
+    with np.load(Path(paths[(best, seed)]) / f'eval_{season}' / 'forecasts.npz', allow_pickle=False) as data:
+        samples = data['samples'][:, :, :, channel, :]
+        truth, mask = data['truth'][:, :, channel, :], data['mask'][:, :, channel, :]
+        target_dates, locations = data['target_dates'], list(data['locations'])
+    fig, axes = plt.subplots(2, 1, figsize=(13, 8.5))
+    for ax, location in zip(axes, ['US', 'NC']):
+        index = locations.index(location)
+        observed = {target_dates[o, h]: truth[o, h, index]
+                    for o in range(truth.shape[0]) for h in range(truth.shape[1]) if mask[o, h, index]}
+        days = sorted(observed)
+        ax.plot(pd.to_datetime(days), [observed[d] for d in days], color='black', lw=1.8, zorder=6, label='Frozen truth')
+        for i, origin in enumerate(range(0, samples.shape[1], 3)):
+            x = pd.to_datetime(target_dates[origin])
+            trajectories = samples[:, origin, :, index]
+            # Half the saved members keeps the bundle readable at this line width.
+            for member in range(0, trajectories.shape[0], 2):
+                ax.plot(x, trajectories[member], color='#4f81bd', lw=.45, alpha=.16, zorder=2,
+                        label='Ensemble members' if i == 0 and member == 0 else None)
+            ax.plot(x, np.median(trajectories, 0), color='#c0504d', lw=1.5, zorder=5,
+                    label='Member median' if i == 0 else None)
+        ax.set_ylim(bottom=0)
+        ax.set_ylabel('Weekly influenza admissions')
+        ax.set_title('United States' if location == 'US' else 'North Carolina', fontsize=10)
+        ax.legend(fontsize=8, loc='upper right')
+    fig.suptitle(f'{best} (rank 1, seed {seed}) · influenza admissions · {season}\n'
+                 'Individual member trajectories, every third origin — each fan is one origin, four weeks ahead',
+                 fontsize=11)
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(output / f'trajectories-flu_hosp-{season}.png', dpi=140, bbox_inches='tight')
+    plt.close(fig)
+
+
 def fan_figures(experiment, ranking, names, configs, runs, frozen, output):
     """US and North Carolina fans for the leaders against the hub ensemble."""
     manifest = json.loads((ranking / 'manifest.json').read_text())
@@ -288,6 +328,7 @@ def main():
     seed_figure(configs, runs, args.output)
     coverage_figure(seasons, args.output)
     horizon_figure(totals, args.output)
+    trajectory_figure(ranking, configs, runs, args.output)
     if not args.skip_fans:
         fan_figures(experiment, ranking, names, configs, runs, args.frozen, args.output)
     print(f'Wrote figures to {args.output}')
