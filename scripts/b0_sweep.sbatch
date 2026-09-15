@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=b0-sweep
-#SBATCH --partition=a100-gpu,l40-gpu,jlessler
+#SBATCH --partition=a100-gpu,l40-gpu,volta-gpu
 #SBATCH --qos=gpu_access
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1

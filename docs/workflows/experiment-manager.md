@@ -184,7 +184,7 @@ Both launchers run `manager run --task <row> --device cuda --keep-going` for one
 
 | Script | Partitions | Per task | Use |
 |---|---|---|---|
-| `scripts/b0_sweep.sbatch` | `a100-gpu,l40-gpu,jlessler`, QOS `gpu_access` | 1 GPU, 4 CPUs, 16 GiB, 6 h | Large experiments such as the sweep |
+| `scripts/b0_sweep.sbatch` | `a100-gpu,l40-gpu,volta-gpu`, QOS `gpu_access` | 1 GPU, 4 CPUs, 16 GiB, 6 h | Large experiments such as the sweep |
 | `scripts/b0_array.sbatch` | `jlessler` | 1 GPU, 4 CPUs, 64 GiB, 1 day | Small experiments on the lab's six GPUs |
 
 Resource limits are allowances, not measurements. Slurm caps array indices, so
