@@ -162,7 +162,7 @@ Pooling states/DC with US, B0 beats the ensemble for influenza admissions in
 2024-25 but not the other two influenza seasons. Separately, state/DC influenza
 WIS is approximately 14%, 25%, and 17% lower than the ensemble across the three
 seasons; native US is worse in all three and drives the weaker pooled results.
-See [the geographic breakdown](../design/b0-next-experiments.md#diagnostic-correction-national-versus-state-performance). It is worse for COVID admissions in both available seasons and
+The geographic breakdown is reported in the canonical B0 results. It is worse for COVID admissions in both available seasons and
 RSV admissions in 2025-26. The displayed matched ED comparisons favor B0 for flu
 and RSV, but favor the ensemble for COVID. These are finalized-CV comparisons
 with an information advantage over prospective hub models, as explained above.

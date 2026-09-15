@@ -1,10 +1,15 @@
-# Build B: finalized six-channel pilot
+# B0 definition and implementation: finalized six-channel pilot
 
 Implemented 13 September 2026. The existing intake and `SelectedData` were already
 coded; the tensor materializer and window querier were added for this pilot.
-B0, transforms, the stochastic decoder, losses, and training are now implemented;
-see [training and prediction](../workflows/training.md). The
+B0, transforms, the stochastic decoder, losses, training, and canonical scoring
+are implemented; see [training and prediction](../workflows/training.md) and the
+[scored results](../results/b0-configuration-comparison.md). The
 [architecture](../design/architecture.md) records the broader proposals.
+
+Implemented and scored in B0: finalized retrospective NHSN/NSSP inputs, six channels,
+configurable lookback windows, masked stochastic prediction, the configuration
+comparison, three seeds, and hub/scoringutils evaluation.
 
 ## Contract and assumptions
 
@@ -95,4 +100,5 @@ This is a corpus, not a declaration that all its seasons are training data.
 Checks include zero versus missing, percent-to-proportion conversion, invalid
 values, conflicting duplicates, 8/12-week windows, date alignment, season
 boundaries including a 53-week year, round-trip loading, and target-bound masks.
-No model was fitted or evaluated.
+The dataset and model-data checks passed locally. Model fitting and evaluation are
+reported in the canonical B0 results page linked above.

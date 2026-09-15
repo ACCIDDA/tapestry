@@ -40,8 +40,22 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Architecture: design/architecture.md
   - Getting started: getting-started.md
   - Longleaf setup: longleaf-setup.md
+  - B0:
+      - Definition and implementation: data/build-b-finalized.md
+      - Scored results:
+          - Report and rankings: results/b0-configuration-comparison.md
+          - Influenza admissions 2023–2024: results/b0-comparison/flusight_flu_hosp_2023-2024.md
+          - Influenza admissions 2024–2025: results/b0-comparison/flusight_flu_hosp_2024-2025.md
+          - Influenza admissions 2025–2026: results/b0-comparison/flusight_flu_hosp_2025-2026.md
+          - Influenza ED 2025–2026: results/b0-comparison/flusight_flu_prop_ed_visits_2025-2026.md
+          - COVID admissions 2024–2025: results/b0-comparison/covid_covid_hosp_2024-2025.md
+          - COVID admissions 2025–2026: results/b0-comparison/covid_covid_hosp_2025-2026.md
+          - COVID ED 2025–2026: results/b0-comparison/covid_covid_prop_ed_visits_2025-2026.md
+          - RSV admissions 2025–2026: results/b0-comparison/rsv_rsv_hosp_2025-2026.md
+          - RSV ED 2025–2026: results/b0-comparison/rsv_rsv_prop_ed_visits_2025-2026.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md
@@ -58,25 +72,9 @@ nav:
   - Development: development.md
   - Mac and Longleaf: development-longleaf.md
   - Current workflows:
-      - Canonical dataset: data/build-b-finalized.md
       - Training and prediction: workflows/training.md
-      - Named B0 experiments: workflows/experiment-manager.md
+      - Experiment manager: workflows/experiment-manager.md
       - Frozen hub support: workflows/hub-evaluation.md
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
-  - Experiment results:
-      - Canonical B0 experiments:
-          - Report and rankings: results/b0-configuration-comparison.md
-          - Influenza admissions 2023–2024: results/b0-comparison/flusight_flu_hosp_2023-2024.md
-          - Influenza admissions 2024–2025: results/b0-comparison/flusight_flu_hosp_2024-2025.md
-          - Influenza admissions 2025–2026: results/b0-comparison/flusight_flu_hosp_2025-2026.md
-          - Influenza ED 2025–2026: results/b0-comparison/flusight_flu_prop_ed_visits_2025-2026.md
-          - COVID admissions 2024–2025: results/b0-comparison/covid_covid_hosp_2024-2025.md
-          - COVID admissions 2025–2026: results/b0-comparison/covid_covid_hosp_2025-2026.md
-          - COVID ED 2025–2026: results/b0-comparison/covid_covid_prop_ed_visits_2025-2026.md
-          - RSV admissions 2025–2026: results/b0-comparison/rsv_rsv_hosp_2025-2026.md
-          - RSV ED 2025–2026: results/b0-comparison/rsv_rsv_prop_ed_visits_2025-2026.md
-  - Architecture:
-      - Architecture: design/architecture.md
-      - Further experiments: design/b0-next-experiments.md
   - Code and tests review: maintenance.md
