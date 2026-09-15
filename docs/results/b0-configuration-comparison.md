@@ -20,7 +20,7 @@ The next configurations are `latent32` (1.0293 ± 0.0311), `balanced` (1.0519 ±
 
 Lower WIS is better; ratio 1 means ensemble parity. The primary all-target score first computes each seed’s geometric mean WIS ratio, weighting the six targets equally, then available season/geography cells equally within each target. Configuration scores are arithmetic means of these seed scores. The secondary influenza objective is the geometric mean of model mean-WIS / ensemble mean-WIS across the three seasons and two geography groups, equally weighted. The admissions objective first gives each admission target equal weight. Reported configuration values average the three seed objectives. Percentage improvements refer to these aggregates, not a pooled raw WIS. ED forecasts enter the primary all-target ranking; they are excluded only from the two secondary objectives. `conv_h12` leads the influenza objective and `conv_h12` leads the admissions objective; neither secondary objective determines the overall winner.
 
-This is the canonical rebuilt-input comparison. CDC observations were downloaded September 14, 2026; the training date range is September 2023–August 29, 2026 and hub commits are pinned. It is a new frozen experiment, not exact reproduction of the September 4 CDC snapshots. The first two CV folds train on later seasons and all three seasons informed development. **These are exploratory results, not prospective validation.**
+The training date range is September 2023–August 29, 2026 and hub commits are pinned. The first two CV folds train on later seasons and all three seasons inform development. **These are exploratory results, not prospective validation.**
 
 Scoring uses quantiles 0.025, 0.25, 0.5, 0.75, and 0.975. Bias is the signed EpiBench/scoringutils quantile bias score, not an error in admission counts. Coverage is the fraction of truth values inside the prediction interval. States/DC metrics average individual location forecast tasks; US is the native national prediction. Every candidate uses the same frozen tasks as its ensemble.
 
@@ -47,7 +47,7 @@ Ordered by all-target mean across seeds. SD is sample variability across the thr
 
 ## Model differences
 
-Fan labels use variant names and seed numbers. Seeds 42/43/44 repeat the same configuration with different random initialization. The reference `anchor` uses a multilayer perceptron (MLP), 12 weeks of history, fourth-root counts, geography and dynamics features, shared prediction heads, the original (`legacy`) decoder, latent dimension 16, and influenza-first loss weighting. The table lists changes from that reference; `conv` means temporal convolution, `state_us` means separate state and national heads, and `residual2` means a two-block residual decoder.
+Fan labels use variant names and seed numbers. Seeds 42/43/44 repeat the same configuration with different random initialization. The reference `anchor` uses a multilayer perceptron (MLP), 12 weeks of history, fourth-root counts, geography and dynamics features, shared prediction heads, the `legacy` decoder, latent dimension 16, and influenza-first loss weighting. The table lists changes from that reference; `conv` means temporal convolution, `state_us` means separate state and national heads, and `residual2` means a two-block residual decoder.
 
 | Variant name | Differences from anchor |
 | --- | --- |
@@ -152,7 +152,7 @@ Use **`residual2`** as the overall reference for follow-up experiments. Compare 
 
 The detailed tables contain WIS, bias, 50%/95% coverage, and WIS components for horizons 0–3 and all horizons combined. Horizon 0 means the first future week. Missing target/seasons are unavailable in the pinned ensemble-supported task sets, rather than failed runs.
 
-Ranking downloads are recomputed from the saved leaderboard using the current all-target rule. The original scoring manifest records the unchanged forecast and evaluation provenance.
+Ranking downloads are computed from the saved leaderboard using the all-target rule. The scoring manifest records forecast and evaluation provenance.
 
 ## Figures by target and season
 

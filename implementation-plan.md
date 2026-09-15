@@ -4,22 +4,19 @@ Companion to [Architecture candidates](architecture-candidates.md), which decide
 This one decides *how*, in enough detail to start writing code on Monday: schemas, tensor shapes,
 loss definitions, hyperparameter defaults, test invariants, gates, and a dated schedule.
 
-Written 2026-09-04. Target: FluSight 2026-2027, hub expected to open ~early November 2026.
+Target: FluSight 2026-2027, hub expected to open ~early November 2026.
 Working assumption: **9 weeks of calendar time**, one developer, one GPU.
 
-**Acquisition update, 2026-09-11:** the active Delphi sources are V5 NHSN,
-NSSP, NWSS, and inpatient/outpatient claims. Older
-Delphi API code has been removed. Historical ILI/ILI+/FluSurv experiments below
-are conditional on future V5 adapters; the current source catalog is documented
-in [data sources](docs/data/sources.md). CDC and Hubverse feeds remain available.
+**Active sources:** Delphi sources are V5 NHSN, NSSP, NWSS, and inpatient/outpatient
+claims; CDC and Hubverse feeds are also available. Historical ILI/ILI+/FluSurv
+experiments below are conditional on V5 adapters; see [data sources](docs/data/sources.md).
 
 ---
 
 ## 0. How to read this document
 
-Every design decision carries a provenance tag naming where it comes from. The user-facing
-requirement for this plan was to make attribution explicit, so nothing is asserted without a source
-or an explicit `[NEW]`.
+Every design decision carries a provenance tag naming where it comes from. Nothing is asserted
+without a source or an explicit `[NEW]`.
 
 | Tag | Source |
 |---|---|
@@ -67,8 +64,8 @@ Revised ordering, and the single most consequential change this plan makes to th
 ### 1.2 What gets submitted in November
 
 The quantile average of whatever clears gate G3 (§14), from: B (seed-ensembled) and C. If nothing
-clears, the hub baseline. Dropping the GBQR floor (§9) removed the project's published,
-top-of-leaderboard hedge, so B is now on the critical path for having anything worth submitting.
+clears, the hub baseline. With no GBQR floor (§9), B is on the critical path for having anything
+worth submitting.
 
 Note the tension the design doc already flags: `[FLU]`'s own ablation found ensembling contributed
 almost nothing (0.625 → 0.622). The ensemble is therefore included on the evidence of the
@@ -773,16 +770,14 @@ signals), which `[IP]` demonstrated qualitatively and which the theoretical inpa
 
 ## 9. No same-data floor
 
-**Decided 2026-09-14: the GBQR floor is not built.** The plan originally called for a `[FLU]`-style
-LightGBM quantile regression fed our own covariate table, serving two purposes: a controlled
-same-data comparison that isolates the architecture from the data, and a fast, published, shippable
-hedge. It is dropped on time grounds.
+**No GBQR floor is built.** A `[FLU]`-style LightGBM quantile regression on our covariate table
+would give a controlled same-data comparison and a fast, shippable hedge; it is out of scope for
+time.
 
-Two consequences are worth recording rather than rediscovering. There is no same-data control, so
-every model comparison is against external benchmarks built on different information — the hub
-baseline and the FluSight ensemble — and any margin over them mixes architecture with data and
-retrospective advantages. And there is no fast fallback if B misses its gates; the fallback is now
-the hub baseline.
+Consequences: there is no same-data control, so every model comparison is against external
+benchmarks built on different information — the hub baseline and the FluSight ensemble — and any
+margin over them mixes architecture with data and retrospective advantages. There is no fast
+fallback if B misses its gates; the fallback is the hub baseline.
 
 ---
 

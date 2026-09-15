@@ -82,9 +82,8 @@ preservation, not a complete sequence of vintages.
 
 ### Delphi Epidata
 
-Only the five migrated sources listed above are enabled. Direct CDC and Hubverse
-sources remain separate. The former FluView/ILINet, clinical-lab, and FluSurv
-fetchers and their CLI options have been removed; there is no older-API fallback.
+Only the five Delphi V5 sources listed above are enabled. Direct CDC and Hubverse
+sources are separate.
 
 Following Delphi's [Python migration guide](https://cmu-delphi.github.io/epidatpy/migration_guide.html),
 the downloader uses `EpiDataContext.epidata_meta()` to discover and validate live
@@ -109,16 +108,16 @@ retries, and explicit resume directories. A saved `request.json` prevents reuse
 under different source, signal, geography, fill, or version selectors. A resumed
 unbounded archive or latest snapshot can include new upstream revisions in its
 newly downloaded partitions; use an explicit historical version selector when
-a fixed information cutoff is required. Existing raw snapshots are not deleted
-by the migration; old staging directories without `request.json` cannot resume.
+a fixed information cutoff is required. Staging directories without
+`request.json` cannot resume.
 
 Source details:
 
 - [NHSN](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/nhsn.html):
   weekly admissions, reporting coverage, and bed indicators.
 - [NSSP](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/nssp.html):
-  weekly ED indicators. The configured pull excludes the previously empty MSA
-  partition; it can still be requested explicitly with `--geo-type msa`.
+  weekly ED indicators. The configured pull excludes the MSA partition; it can
+  be requested explicitly with `--geo-type msa`.
 - [NWSS](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/nwss.html):
   COVID-19, influenza A, and RSV concentrations at native sewershed support.
   `reference_time` is sample collection date. Keep `nwss_source` and
@@ -128,11 +127,11 @@ Source details:
 - [Inpatient claims](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/claims_inpatient.html)
   and [outpatient claims](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/claims_outpatient.html):
   daily seven-day percentages for influenza, COVID-19, and other ARI. These use
-  the new `claims_inpatient_adm_pct_*` and `claims_outpatient_ov_pct_*` signal
+  the `claims_inpatient_adm_pct_*` and `claims_outpatient_ov_pct_*` signal
   names. Suppressed windows are absent rows; these feeds need revision-aware
-  evaluation because claims backfill substantially. Live checks on 2026-09-11
-  returned blank fill labels even though the source docs describe `source`;
-  imposing that filter would discard these rows.
+  evaluation because claims backfill substantially. Claims rows carry blank fill
+  labels even though the source docs describe `source`; imposing that filter
+  would discard these rows.
 
 Full reference-date history is not necessarily full historical release coverage.
 Inspect the saved `reference_time_range` and `report_time_range` before selecting

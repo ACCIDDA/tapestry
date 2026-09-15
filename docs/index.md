@@ -8,7 +8,7 @@ Raw snapshots → shared selection → canonical weekly dataset → B0 → evalu
                         └────────→ local explorer
 ```
 
-The implemented model uses six channels: NHSN admissions and NSSP ED proportions
+The model uses six channels: NHSN admissions and NSSP ED proportions
 for influenza, COVID-19, and RSV, with explicit missingness masks. Training,
 prediction, season cross-validation, hub scoring, and configuration comparison
 are available. The broader vintage-aware architecture remains a research proposal;
@@ -17,8 +17,8 @@ the current model uses finalized retrospective data.
 Start with [Getting started](getting-started.md) and the
 [canonical dataset](data/build-b-finalized.md). Current commands are in
 [training](workflows/training.md) and [full EpiBench evaluation](workflows/configuration-evaluation.md).
-The [frozen hub support](workflows/hub-evaluation.md) page records the original
-comparison protocol.
+The [frozen hub support](workflows/hub-evaluation.md) page documents how the
+frozen evaluation task set is built.
 
 For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
@@ -31,5 +31,5 @@ by mean all-target WIS ratio across seeds, including admissions and ED visits.
 1.0197 ± 0.0103, about 2.0% above ensemble parity. The report includes seed
 variability, matched controls, coverage, and fans using middle-performing seeds.
 [Architecture](design/architecture.md) describes the proposed extensions.
-The [code and test review](maintenance.md) distinguishes current needs from
-optional features.
+[Features and tests](maintenance.md) distinguishes required from optional
+features.

@@ -1,21 +1,19 @@
-# Frozen hub support and historical comparison
+# Frozen hub support
 
-The current report uses the [full EpiBench scoring workflow](configuration-evaluation.md)
-and [configuration evaluation report](../results/b0-configuration-comparison.md).
-The commands below document how the original frozen task set was established;
-they document the historical 23-quantile result, not the current scoring entrypoint.
-Current code and new exports use five quantiles; exact historical reproduction
-requires its recorded source revision. The original frozen task/truth files remain unchanged.
+This workflow builds the frozen evaluation task and truth set used by the
+[full EpiBench scoring workflow](configuration-evaluation.md), and scores saved
+Build B quantiles against it with no retraining. Rankings are in the
+[configuration evaluation report](../results/b0-configuration-comparison.md).
+The results below use 23 quantiles; the code exports five, so exact reproduction
+of those results requires the source revision recorded in their manifest.
 
-This historical comparison evaluates already saved Build B quantiles, with no retraining. It implements
-the same external `Rscript` -> `as_forecast_quantile()` -> `score()` pattern and
-metrics as `../epibench/src/epibench/scoring_bridge.py`. It calls **R scoringutils**;
-it does not substitute the earlier Python WIS calculation. The pipeline is in
-`src/tapestry/evaluation/`.
+It uses the external `Rscript` -> `as_forecast_quantile()` -> `score()` pattern and
+metrics of `../epibench/src/epibench/scoring_bridge.py`, calling **R scoringutils**.
+The pipeline is in `src/tapestry/evaluation/`.
 
 ## Run
 
-From the repository root, with the existing environment:
+From the repository root:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.compare \
@@ -46,13 +44,12 @@ Each location/season/target page has four horizon rows and three model columns,
 with matching dates and y-axis limits. Missing weeks break lines.
 
 Fresh environments need `pip install -e '.[evaluation]'` plus R packages
-`scoringutils` and `purrr`. The initial run used scoringutils 2.1.1. Exact R/package
-versions are saved per comparison. No SSH, new hub fetch, or model training is
+`scoringutils` and `purrr`. Exact R/package versions are saved per comparison. No SSH, new hub fetch, or model training is
 required when using the local mirrors and saved forecasts.
 
-## User-directed scoring support
+## Scoring support
 
-The ensemble defines the evaluation support, as requested. A forecast unit is
+The ensemble defines the evaluation support. A forecast unit is
 `reference_date, target_end_date, location, horizon` within one target/season.
 A unit must have a complete valid 23-quantile ensemble forecast, a held-out B0
 forecast, and a finite observation in the pinned hub truth. We do not score dates
@@ -69,15 +66,14 @@ hub quantiles are scored as submitted. ED values remain proportions, not percent
 Truth is the latest **full release per target** in the pinned canonical
 `target-data/time-series.csv` (FluSight) or `.parquet` (COVID, RSV). Missing rows
 are not filled from older releases. All models are scored against this same
-truth, and differences from the earlier finalized CV labels are counted. The
-export's original missing label does not forbid scoring a prediction if the
-hub's frozen truth now provides an observation; such additional cells are counted.
+truth, and differences from the finalized CV labels are counted. A missing CV
+label does not forbid scoring a prediction if the hub's frozen truth provides an
+observation; such additional cells are counted.
 
-Only the current CDC RSV hub is used, per the user's explicit instruction. There
-is no older RSV-NET/catchment comparison. COVID means the current Forecast Hub,
+Only the current CDC RSV hub is used; there is no RSV-NET/catchment comparison. COVID means the current Forecast Hub,
 not the Scenario Modeling Hub. Both hospitalization and ED channels are included
-for COVID and RSV where the official ensemble supports them. Earlier unavailable
-seasons are explicitly reported.
+for COVID and RSV where the official ensemble supports them. Unavailable seasons
+are explicitly reported.
 
 ## Best-model selection and interpretation
 
@@ -90,7 +86,7 @@ eligible to win by omitting difficult forecasts. If there is no complete eligibl
 competitor, submissions with at least 90% coverage are ranked on their identical
 shared ensemble units. The three-model table and plots use that explicitly marked
 subset, while full ensemble-supported scores remain available. If even that set
-is empty, no winner is assigned. This fallback was introduced because the ED and
+is empty, no winner is assigned. This fallback exists because the ED and
 RSV archives have no fully complete individual competitor on the requested support.
 
 The ranking pools available native locations including US, as does the headline
@@ -130,7 +126,7 @@ observations, malformed dates, and unmaterialized LFS payloads. Invalid tasks ar
 excluded as whole tasks, not repaired by interpolation or rearranging quantiles.
 
 Tests check extraction validation and the actual scoringutils result against an
-independent pinball calculation. The PDF is rendered and inspected before delivery.
+independent pinball calculation.
 
 To regenerate only selection/summary tables from existing R scores (no refit or
 rescoring):
@@ -139,10 +135,9 @@ rescoring):
 PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.summary data/evaluation/b0_hub_comparison
 ```
 
-## Completed comparison
+## Comparison results
 
-The first run scored nine supported target/season combinations with scoringutils
-2.1.1. All locations including US are pooled below. Asterisked rows use the
+Nine supported target/season combinations are scored with scoringutils 2.1.1. All locations including US are pooled below. Asterisked rows use the
 explicit common-unit fallback for best-model comparison; full ensemble scores
 remain in each case directory. Lower WIS is better.
 

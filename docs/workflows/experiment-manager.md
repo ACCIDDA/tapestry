@@ -1,8 +1,7 @@
 # Named B0 experiments
 
-The manager follows InfluPaint's batch pattern (`influpaint/influpaint/batch/`):
-an immutable `TrainingScenario`, a short readable scenario string, a job list whose
-rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV
+The manager uses an immutable `TrainingScenario`, a short readable scenario
+string, a job list whose rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV
 files and the existing CV/EpiBench commands, with no MLflow server.
 
 Run from the repository root in the installed environment. Stored paths are
@@ -26,7 +25,7 @@ copied between Longleaf and a laptop.
 .venv/bin/python -m tapestry.models.manager compare -e b0-explore
 ```
 
-After reinstalling the package, `tapestry-experiments` is an equivalent entrypoint.
+`tapestry-experiments` is an equivalent installed entrypoint.
 Training and scoring are separate commands; completing `run` alone produces CV
 diagnostics, not official rankings.
 
@@ -55,7 +54,7 @@ Every token is always present, in this order. Parsing is strict: a typo, a missi
 token, or a non-canonical number (`h012`, `lr1e-3`) fails rather than falling back
 to a default. Pass an alias such as `state_us` or a quoted full string to
 `--scenario`; `TrainingScenario` and `dataclasses.replace` give the same interface
-from Python. Stable strings replace InfluPaint's position-based numeric IDs.
+from Python.
 
 The scenario string is the configuration ID in every comparison output, and a run
 appends its seed: `<scenario>:s42`. Code, data, and git versions are provenance,
@@ -164,18 +163,18 @@ EpiBench wrote scores, but before provenance was saved, is moved to
 **Recommended: 14 configurations × 3 seeds = 42 CV runs = 126 season fits.**
 Every candidate receives all three seeds; there is no seed-42 screening step.
 One run means one configuration and seed evaluated in all three held-out seasons.
-The historical control is raw counts, 8 weeks, no geography or dynamics, and the
-original decoder. The anchor is the existing fourth-root, geography, 12-week,
-dynamics candidate with influenza-first supervision, shared MLPs, shared decoder,
+The baseline control is raw counts, 8 weeks, no geography or dynamics, and the
+`legacy` decoder. The anchor is the fourth-root, geography, 12-week, dynamics
+candidate with influenza-first supervision, shared MLPs, shared decoder,
 and latent dimension 16. Neither is assumed superior at state level.
 
 | Alias | Change | Matched control |
 |---|---|---|
-| `baseline` | Historical raw-count B0 | Reference |
-| `anchor` | Existing feature/representation candidate | `baseline`; bundled historical comparison |
+| `baseline` | Raw-count B0 | Reference |
+| `anchor` | Feature/representation candidate | `baseline` |
 | `state_us` | Separate state and native-US stochastic heads | `anchor` |
 | `residual2` | Two modulated residual decoder blocks; latent stays 16 | `anchor` |
-| `latent32` | Latent 32 with original decoder | `anchor` |
+| `latent32` | Latent 32 with `legacy` decoder | `anchor` |
 | `residual2_z32` | Two modulated blocks and latent 32 | `residual2` and `latent32` |
 | `mlp_h8` | 8 weeks, dynamics off | `mlp_h12` |
 | `mlp_h12` | 12 weeks, dynamics off | `anchor` for the dynamics effect |
@@ -194,14 +193,14 @@ Unsupervised auxiliary outputs in `flu_only` are not trained auxiliary forecasts
 
 Scenario defaults: width 64, 50 epochs, learning rate .001, batch size 8, and 8
 training draws. Experiment defaults: 2,048 evaluation draws, seeds 42/43/44, four
-horizons, and the existing three seasons. Parameter counts are saved for every fold.
+horizons, and three seasons. Parameter counts are saved for every fold.
 History changes MLP input size; convolution reuses its filters across weeks. These
 are fixed-width recipe comparisons, not parameter-count-matched experiments.
 
 For a literal full factorial comparison, `--suite grid` crosses 3 histories ×
 2 dynamics settings × 3 losses × 2 encoders × 2 head choices × 2 decoder choices ×
 2 latent sizes = **288 configurations**, with fourth-root/geography fixed. Adding
-the historical baseline gives **289 configurations, 867 CV runs, 2,601 fits**.
+the baseline gives **289 configurations, 867 CV runs, 2,601 fits**.
 The focused 14 are a subset of this grid. The grid is available but is not the
 recommended first round. A later combined candidate adds **3 runs / 9 fits**.
 
@@ -221,18 +220,15 @@ recommended first round. A later combined candidate adds **3 runs / 9 fits**.
   geography, and optional dynamics enter after temporal encoding.
 - Frozen EpiBench comparisons report target, season, states/DC versus US, and
   horizon separately, including WIS, bias, dispersion, and 50%/95% coverage.
-  Current repository exports use five quantiles, not the earlier 23-quantile
-  historical protocol. Raw six-channel CV diagnostics are also retained.
+  Exports use five quantiles. Raw six-channel CV diagnostics are also saved.
 - No calibration or holdout-driven stopping is implemented. Any future calibration
   needs inner out-of-sample predictions and inner-fold scalers; its extra fits
   are not included in these counts. A blanket interval multiplier is not used.
-- Spatial attention is deferred to B1 under the instruction to remain in B0.
-  Once implemented, one isolated spatial candidate at three seeds would add
-  **3 CV runs / 9 season fits** against an already-run matched control. It is not
-  part of either executable B0 suite. Shared randomness does not transmit other
+- Spatial attention is deferred to B1. One isolated spatial candidate at three
+  seeds would add **3 CV runs / 9 season fits** against its matched control. It is
+  not part of either executable B0 suite. Shared randomness does not transmit other
   locations' observed histories.
 
-All three seasons have already informed development. These comparisons remain
-exploratory finalized-data CV, with later seasons in the fitting set for the first
-two folds; they are not prospective validation. No performance improvement is
-claimed by implementing the manager or running a smoke test.
+All three seasons inform development. These comparisons are exploratory
+finalized-data CV, with later seasons in the fitting set for the first two folds;
+they are not prospective validation.

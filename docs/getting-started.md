@@ -35,13 +35,13 @@ uv run python -m epibench --help
 The sync command creates `.venv`, installs Tapestry in editable mode, and fetches
 EpiBenchmark from GitHub `main`. No sibling checkout is required.
 The default `dev` group includes training, evaluation, exploration and pytest;
-the existing package extras remain available for smaller installs. Use `uv run`
+package extras are available for smaller installs. Use `uv run`
 before commands to use this environment without shell activation or `PYTHONPATH`.
 Alternatively, after syncing, `source .venv/bin/activate` enables the plain
 `python` commands without the `uv run` prefix.
 
 `pyproject.toml` declares dependencies and `.python-version` selects Python 3.11.
-User preference: track upstream EpiBenchmark rather than commit a fixed revision.
+Tapestry tracks upstream EpiBenchmark rather than a fixed revision.
 Run `uv sync --upgrade-package epibenchmark` whenever setting up or updating the
 environment. Plain `uv run` uses the currently installed/resolved revision; it does
 **not** check GitHub for a new commit every time.
@@ -68,25 +68,8 @@ uv run --no-dev --extra docs mkdocs serve
 
 Keep those flags on subsequent `uv run` commands for that profile; a plain
 `uv run` restores the default research dependencies. Standard
-`python -m pip install -e '.[model]'` also remains supported without EpiBenchmark.
-
-### Migrating the old local environment
-
-The original `.venv/pyvenv.cfg` had `include-system-site-packages = true` and used
-Anaconda Python 3.11.0. It inherited global packages, so a successful import did
-not imply that dependencies were installed in the project. On a checkout that
-still has that old environment, stop running jobs and move it aside once:
-
-```bash
-mkdir -p tmp
-mv .venv tmp/venv-before-uv  # Choose a fresh backup name if this already exists.
-uv sync --upgrade-package epibenchmark --python-preference only-managed
-```
-
-This preserves the old directory and creates an isolated environment using
-uv-managed Python. The backup must be moved back to `.venv` to restore it; virtual
-environment entrypoints contain absolute paths. No global Anaconda packages are
-changed. Do not create the new environment with `--system-site-packages`.
+`python -m pip install -e '.[model]'` is also supported without EpiBenchmark.
+Do not create the environment with `--system-site-packages`.
 
 ### R for EpiBenchmark scoring
 
@@ -111,10 +94,9 @@ loaded. Re-run it after installing a new R version. It does not update already
 available packages. On systems without CRAN binaries, installing R packages from
 source may require the compiler and development libraries supplied by your system.
 
-The existing Mac installation was R 4.5.0 with scoringutils 2.1.1. The current
-workflow uses the selected R installation and its libraries; it does not lock R
+The workflow uses the selected R installation and its libraries; it does not lock R
 or CRAN versions with `renv`. Evaluation records R, scoringutils and purrr versions
-in its output. Exact historical reproduction requires restoring those recorded
+in its output. Exact reproduction requires restoring those recorded
 versions as well as Python dependencies and EpiBenchmark source. Training and
 exploration do not need R. Tests needing R/EpiBenchmark skip when those prerequisites
 are absent; an installed R missing its packages causes the scoring tests to fail.

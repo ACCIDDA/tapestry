@@ -49,10 +49,7 @@ uv run python scripts/pull_covariates.py --data-root data pull cdc_nhsn_final cd
 ```
 
 These are the two CDC sources required by the current training dataset.
-Broader acquisition is optional. The September 14, 2026 setup downloaded
-21,306 NHSN rows and 657,758 NSSP rows, with three files per source. These counts
-come from the downloader's completion output; no additional data audit was run.
-Downloading sources does not build the processed training tensor; see
+Broader acquisition is optional. Downloading sources does not build the processed training tensor; see
 [the dataset workflow](data/build-b-finalized.md) for that next step.
 
 ## R scoring
@@ -74,11 +71,6 @@ Check that R is also accessible through uv:
 uv run Rscript -e 'library(scoringutils); library(purrr); sessionInfo()'
 ```
 
-Verified on September 14, 2026: R 4.5.0, `scoringutils` 2.2.0, and `purrr`
-1.0.4 loaded successfully through uv. The setup installed `scoringutils` and
-`scoringRules` 1.1.3 in `~/R/x86_64-pc-linux-gnu-library/4.5`; `purrr` was already
-available from the module.
-
 Repeat `module load r/4.5.0` in new shells and Slurm job scripts that run scoring,
 along with the Python environment exports above. If a noninteractive Bash shell
 does not define `module`, initialize it with
@@ -90,11 +82,10 @@ does not request a GPU or submit a training job.
 ## Build the frozen inputs
 
 Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The essential suite has
-14 configurations × three seeds = 42 CV runs and 126 season fits. The rebuilt CDC data define a new frozen experiment; historical
-observations may differ from the original September 4 snapshots. These are
+14 configurations × three seeds = 42 CV runs and 126 season fits. These are
 exploratory finalized-data comparisons, not prospective validation.
 
-The existing editable installation is sufficient. Skip acquisition above when
+Skip acquisition above when
 both CDC sources are already downloaded, then build the tensor:
 
 ```bash
@@ -103,9 +94,9 @@ both CDC sources are already downloaded, then build the tensor:
   --output data/processed/build_b_finalized.npz
 ```
 
-The adjacent JSON records input provenance. The current build uses NHSN snapshot
-`20260914T201316.612613Z` and NSSP snapshot `20260914T201420.344071Z`, with shape
-`[157, 6, 2, 52]` and weekly dates September 2, 2023–August 29, 2026.
+The adjacent JSON records input provenance, including the NHSN and NSSP snapshot
+IDs. The tensor has shape `[157, 6, 2, 52]` with weekly dates September 2,
+2023–August 29, 2026.
 
 Restore the pinned hub commits and population table before registering the
 experiment:

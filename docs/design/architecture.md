@@ -1,13 +1,11 @@
 # Tapestry — Architecture
 
-Research and implementation plan · 14 September 2026 · Proposed work, not an implemented or evaluated model.
+Research and implementation plan · Proposed work, not an implemented or evaluated model.
 
-**Acquisition update, 11 September 2026:** Delphi pulls now use only V5 NHSN,
-NSSP, NWSS, and inpatient/outpatient claims. The dated
-local audit below records previously downloaded data; its ILINet/FluView/FluSurv
-entries are no longer active acquisition sources. Transfer experiments that need
-those feeds remain conditional on a future V5 addition. See the
-[current catalog](../data/sources.md).
+**Active sources:** Delphi pulls use only V5 NHSN, NSSP, NWSS, and
+inpatient/outpatient claims. ILINet/FluView/FluSurv entries in the local audit
+below are not acquisition sources. Transfer experiments that need those feeds
+are conditional on a V5 adapter. See the [source catalog](../data/sources.md).
 
 **Design recommendation:** build a small conditional sample generator with a shared forecasting function across surveillance signals, explicit availability and revision information, and one spatial attention block. Train its influenza hospitalization predictions with fair CRPS in count units. Select it using actual FluSight WIS on forecasts reconstructed from historical information states. Start without simulations or an extra observation-noise layer; add complexity through controlled experiments.
 
@@ -44,7 +42,7 @@ There is no defensible prospective rank prediction. The model remains a research
 
 ## 2. What is borrowed from each paper
 
-This table restores the paper-to-design mapping. It distinguishes the methods proposed for Tapestry from findings established in the source papers. The active B0–B3 stages above remain the implementation scope: historical-source transfer, alternative encoders, simulations, joint losses, and seasonal rollouts are conditional or later experiments. The [reference inventory](#references) below lists the archived filenames; the project-root `references/` folder contains the PDFs, extracted text, bibliography, and checksummed manifest.
+This table maps papers to the design. It distinguishes the methods proposed for Tapestry from findings established in the source papers. The active B0–B3 stages above remain the implementation scope: historical-source transfer, alternative encoders, simulations, joint losses, and seasonal rollouts are conditional or later experiments. The [reference inventory](#references) below lists the archived filenames; the project-root `references/` folder contains the PDFs, extracted text, bibliography, and checksummed manifest.
 
 | Paper | Contribution used here | What Tapestry borrows or adapts | Boundary and experiment |
 |---|---|---|---|
@@ -101,7 +99,7 @@ For example, an issuance may see a preliminary count of 80 for the prior week. A
 
 Use an explicit cutoff timestamp `d` in UTC, derived from the local submission deadline, and an epidemiological reference Saturday `r`. Never use event date alone to decide availability. CDC epiweeks run Sunday–Saturday and require proper handling of 53-week years.
 
-The currently published [FluSight hub specification](https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/README.md) is still labeled **2025–2026** when checked on 5 September 2026. It specifies horizons 0–3, optional −1, integer admission quantiles, and 23 quantile levels. Samples are optional; if supplied, exactly 100 temporally connected samples per task are required for horizons 0–3. Reference date is the Saturday following the Wednesday deadline. Use this as the provisional contract, and pin the new season's configuration when published.
+The [FluSight hub specification](https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/README.md) used here is labeled **2025–2026**. It specifies horizons 0–3, optional −1, integer admission quantiles, and 23 quantile levels. Samples are optional; if supplied, exactly 100 temporally connected samples per task are required for horizons 0–3. Reference date is the Saturday following the Wednesday deadline. Use this as the provisional contract, and pin the new season's configuration when published.
 
 Proposed internal horizon list: **`[-1, 0, 1, 2, 3, 4, 5, 6]`**, eight outputs, with `target_end_date = r + 7h days`. This resolves the ambiguity in “H=8.” The last four horizons are developmental, not established submission requirements.
 
@@ -111,9 +109,9 @@ The geographic request list is explicit: 50 states, DC, PR, and US where require
 
 ### 4.1 Local evidence
 
-The existing code implements acquisition, immutable raw snapshots, geographic metadata, and an explorer. It has no training materializer or model package. Reuse `RawDataRepository` and source manifests; build model data from raw records. The explorer stores a latest-vintage view and is unsuitable as a historical training database.
+The acquisition layer provides immutable raw snapshots, geographic metadata, and an explorer. Reuse `RawDataRepository` and source manifests; build model data from raw records. The explorer stores a latest-vintage view and is unsuitable as a historical training database.
 
-The following is an inventory observation from the local 4 September snapshots, audited on 5 September. Date envelopes describe indexed events across each dataset, not continuous coverage of every pathogen, state, or historical release. The machine-readable audit is `references/local-data-coverage-2026-09-05.json`.
+The following inventory describes the local raw snapshots. Date envelopes describe indexed events across each dataset, not continuous coverage of every pathogen, state, or historical release. The machine-readable audit is `references/local-data-coverage-2026-09-05.json`.
 
 | Data family / local dataset keys | Observed event-history envelope | Role and constraints |
 |---|---|---|
@@ -219,7 +217,7 @@ For bounded proportions, use an explicit bounded inverse such as logistic with a
 
 ### 6.2 Focal-signal transfer: making the old data contribute
 
-The original six-output sketch does not specify how an ILI-only window produces any loss. Masking all six hospitalization/ED outputs would create an example with no learning signal. Resolve this with a **shared source-query decoder**:
+A fixed six-output design does not specify how an ILI-only window produces any loss. Masking all six hospitalization/ED outputs would create an example with no learning signal. Resolve this with a **shared source-query decoder**:
 
 ```text
 training query = (native geography, focal signal, horizon)
@@ -299,7 +297,7 @@ The modulation maps are shared over locations and horizon/source queries. Hidden
 
 Compute the deterministic context encoder once, then expand the stochastic decoder over `M` draws. This amortizes expensive context processing and is a design simplification of full-network functional modulation. Compare injecting noise before the spatial block if decoder-only perturbation proves too restrictive.
 
-Start with one global 32-vector. If regional idiosyncratic variation is insufficient, compare global + regional + local latent components with small dimensions and the same total training budget. This extension relaxes the original dependence bias and must improve joint diagnostics, not only interval width.
+Start with one global 32-vector. If regional idiosyncratic variation is insufficient, compare global + regional + local latent components with small dimensions and the same total training budget. This extension relaxes the single-latent dependence bias and must improve joint diagnostics, not only interval width.
 
 ### 7.3 Output support and observation noise
 
@@ -396,7 +394,7 @@ Use rolling issuance forecasts inside season-based partitions. Never randomly sp
 
 Use a documented season boundary, initially CDC epiweek 31 through the next year's week 30, to assign training windows. Score official challenge reference dates per season separately from a prespecified year-round evaluation. For each fold, remove training labels that land inside the held-out target period, even if their input windows begin earlier.
 
-The final retrospective season is only “untouched” if it has not already been used for project-specific model choices. The existing note discusses published 2025 results, so record all prior exposure. If 2025–26 has already informed model selection, label it a historical evaluation and reserve 2026–27 as the true prospective test. Looking at date coverage here is not a model-skill evaluation, but the exposure log should say so.
+The final retrospective season is only “untouched” if it has not already been used for project-specific model choices. Record all prior exposure, including to published 2025 results. If 2025–26 has already informed model selection, label it a historical evaluation and reserve 2026–27 as the true prospective test. Looking at date coverage here is not a model-skill evaluation, but the exposure log should say so.
 
 Use two fitting modes with clear names:
 
@@ -412,7 +410,7 @@ A test protocol may learn from labels that become available earlier in that test
 3. Available real-time FluSight ensemble and original model submissions on common targets. Report missing submissions and operational fallback coverage.
 4. InfluPaint and a matched conditional-flow head as later generative comparisons. Refit using eligible data; existing pretrained weights cannot be assumed free of held-out-season exposure.
 
-The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. The Flusion-style same-data GBQR comparison was dropped on 2026-09-14, so no controlled same-data comparator remains: any margin over the ensemble mixes architecture with the design's finalized-data and retrospective advantages and must be reported that way.
+The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. There is no Flusion-style same-data GBQR comparison, so no controlled same-data comparator exists: any margin over the ensemble mixes architecture with the design's finalized-data and retrospective advantages and must be reported that way.
 
 ### 10.3 Metrics
 
@@ -531,21 +529,17 @@ Read Flusion §5/§7 for the transfer task and baseline, FGN §2 for the stochas
 
 The archive contains source PDFs where downloads succeeded, extracted text for local search, a download script, a checksummed manifest, a reading index, a bibliography, the checked hub README, and the local coverage audit. The preprint PDFs are the archived versions; journal publication year/title can differ. The manifest, rather than a bare arXiv identifier, establishes which bytes were read.
 
-## 17. Active pilot scope — 13 September 2026
+## 17. Active pilot scope
 
-The user now requests an initial finalized-data experiment beginning September
-2023, without wastewater: NHSN admissions and NSSP ED proportions for flu,
-COVID-19, and RSV. History length is configurable, initially **8 weeks**.
-The [six-channel pilot](../data/build-b-finalized.md) implements materialization
-and window/season/location queries. This overrides the earlier first-build
-12-week and historical auxiliary-source scope for this experiment. The neural
-model and fitting pipeline are not yet implemented. Historical release handling,
-revision nowcasts, and operational evaluation remain later work; the earlier
-fold assignments must be revised before fitting on September 2023 onward.
-
-**Working B0 skeleton:** [Run the pilot](../workflows/training.md) documents the small
-shared MLP, stochastic decoder, masked fair-CRPS fit, and sample/quantile prediction
-commands now implemented. B1 spatial attention and evaluation remain future work.
+The active experiment uses finalized data beginning September 2023, without
+wastewater: NHSN admissions and NSSP ED proportions for flu, COVID-19, and RSV.
+History length is configurable, by default **8 weeks**. The
+[six-channel dataset](../data/build-b-finalized.md) implements materialization
+and window/season/location queries, and [training](../workflows/training.md)
+documents the shared MLP, stochastic decoder, masked fair-CRPS fit, and
+sample/quantile prediction. This scope takes precedence over the 12-week and
+historical auxiliary-source design above. Historical release handling, revision
+nowcasts, B1 spatial attention, and operational evaluation remain later work.
 
 ## References
 

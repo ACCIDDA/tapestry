@@ -47,9 +47,7 @@ valid only in archive mode. `--snapshot-date` is valid only in snapshot mode.
 Both modes retain `reference_time` observation dates and full `report_time`
 timestamps. Requests select the full observation history and all published fill
 variants by default. Use `--fill-method source` only for a source that publishes
-that variant; claims currently return blank labels.
-The former `--report-time-query` flag is now `--report-time` to match epidatpy;
-`--location`, `--start-year`, and `--end-year` have been removed.
+that variant; claims return blank labels.
 
 The `delphi` group contains `delphi_nhsn`, `delphi_nssp`, `delphi_nwss`,
 `delphi_claims_inpatient`, and `delphi_claims_outpatient`.
@@ -62,8 +60,7 @@ python scripts/pull_covariates.py pull delphi_claims_inpatient \
 
 Resume requires identical query selectors and a matching saved `request.json`.
 Use the original command with `--resume-from` added; `--workers` can change.
-Staging directories created before this migration lack the query record and
-must be restarted.
+Staging directories without a query record must be restarted.
 
 ### Hub historical state
 

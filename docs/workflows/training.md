@@ -1,7 +1,7 @@
 # Run the Build B0 pilot
 
-This is a working, small PyTorch model for the accepted finalized six-channel
-dataset. It trains and predicts; it does not yet run a model-selection backtest.
+B0 is a small PyTorch model for the finalized six-channel dataset. `train` and
+`predict` fit and sample one model; season cross-validation is described below.
 Use the repository root as the working directory and run `uv sync --upgrade-package epibenchmark`
 first; see [environment setup](../getting-started.md).
 
@@ -25,7 +25,7 @@ Defaults are eight history weeks, four future weeks, all six channels, 52 native
 locations, CPU, and seed 42. `--lookback 12` changes the training history length;
 `--horizons 1 2 3 4 5 6 7 8` trains eight future weeks. Prediction reads those
 settings from the checkpoint. `--locations NY NJ` restricts prediction locations.
-`--device mps` or `--device cuda` is optional; the verified smoke run used CPU.
+`--device mps` or `--device cuda` is optional.
 There is no implied train/test assignment: choose training dates explicitly.
 Avoid comparing in-sample predictions as evidence of generalization.
 
@@ -44,7 +44,7 @@ Quantiles are in native units: nonnegative real-valued admission counts and ED
 proportions between zero and one. This is a research NPZ, not a Hub submission;
 admission quantiles have not been rounded to integers or exported to Hub schema.
 
-## Implemented model and deliberate shortcuts
+## Model and deliberate shortcuts
 
 B0 uses one shared context MLP and one shared focal-history MLP across locations
 and channels, source embeddings, horizon offsets, and sine/cosine calendar
@@ -52,13 +52,13 @@ features. A single 16-dimensional Gaussian draw per member/episode modulates
 its shared decoder through an affine scale and shift. The decoder predicts a
 residual around the latest valid focal observation, using softplus for admissions
 and sigmoid for ED proportions. Missing anchors use a small fixed starting prior.
-Default width is 64, totaling 22,785 parameters. No spatial attention or location
-embedding is included in this first B0 implementation. Cross-channel context is
-included; cross-location information exchange is deferred to B1.
+Default width is 64, totaling 22,785 parameters. B0 has no spatial attention or
+location embedding. Cross-channel context is included; cross-location information
+exchange is deferred to B1.
 
-In the original baseline, values are divided by each channel's training-only
-95th percentile. Population transforms and geographic/dynamics features are now
-optional experiment switches (below); the default reproduces the baseline. No
+By default, values are divided by each channel's training-only 95th percentile.
+Population transforms and geographic/dynamics features are optional experiment
+switches (below). No
 learned zero-history prior or separate observation-noise layer is added. The loss is
 masked fair CRPS in native units divided by each channel's fixed training scale,
 with weights `[1,.1,.1,.1,.1,.1]` so influenza admissions are primary. Dividing the
@@ -73,35 +73,19 @@ and scaling statistics stop at `--train-end`; labels beyond it are masked even
 for windows that start earlier. Earlier history may be used if a later
 `--train-start` is selected. The checkpoint includes the model, fitted scales,
 training dates, seed, dataset hash, channel/location registry, and loss history.
-This remains a finalized-data retrospective experiment, with the previously
-accepted NSSP finality and geography assumptions.
+This is a finalized-data retrospective experiment, with the NSSP finality and
+geography assumptions of the [dataset contract](../data/build-b-finalized.md).
 
-The [named experiment manager](experiment-manager.md) now organizes scenarios,
+The [named experiment manager](experiment-manager.md) organizes scenarios,
 three-seed comparisons, and resume of completed runs. There is no scheduler,
 early stopping, calibration, ensemble, optimizer resume, or performance claim.
 Training minibatches are shuffled within
 the explicitly bounded fitting period; there is no random train/test split.
 
-## Verified local smoke run
+## Experiment switches
 
-An eight-epoch CPU fit through July 27, 2024 reduced training loss from 0.20585 to
-0.13748. The saved `data/processed/b0_smoke.pt` checkpoint loaded successfully and
-generated `data/processed/b0_smoke_predictions.npz` at context end August 3, 2024:
-256 members × 4 horizons × 6 channels × 52 locations, with nonzero sample spread.
-This is a functionality check, not a generalization result.
-
-Six focused model/data tests pass. Model tests cover fair CRPS against the
-explicit pairwise formula, exclusion of missing/NaN targets and masked inputs,
-nonnegative/bounded outputs, nonzero latent gradients and spread, and preservation
-of location ordering under the local shared model.
-
-## First three experiments: implemented switches
-
-Experiments 1–3 are implemented, along with optional decoder, separate-head, and
-temporal-convolution switches below. Spatial attention remains a B1 proposal.
-Existing defaults and old checkpoints
-retain the original B0 behavior. Completed comparisons are in the
-[canonical B0 results](../results/b0-configuration-comparison.md); defaults remain unchanged.
+Defaults give the baseline B0 behavior. Spatial attention is a B1 proposal.
+Comparisons are in the [canonical B0 results](../results/b0-configuration-comparison.md).
 
 | Switch | Values / behavior |
 |---|---|
@@ -154,17 +138,12 @@ uv run python -m tapestry.models.season_cv \
 Compare this with `fourth_root` and the unchanged raw baseline. Next vary only
 lookback across 8/12/26, then toggle `--dynamics`. Finally vary `--loss-weights`
 while keeping the selected representation and history fixed. Use the same seeds,
-fit/evaluation dates, and existing ensemble-supported scoring sets. These same
+fit/evaluation dates, and ensemble-supported scoring sets. These same
 switches are accepted by `python -m tapestry.models train`; prediction reads
 all feature settings from its checkpoint and supports reordered location subsets.
-The CV runner continues to report states/DC and native US separately.
-
-Validation: 15 focused model/data/CV tests, one-epoch three-fold smoke execution
-(sqrt, geography, dynamics, 12 weeks, flu-only), and a fourth-root 26-week balanced
-training/prediction smoke. Smoke runs test execution only; they do not establish
-forecast improvements. Full training and ensemble scoring are complete; see
-[the canonical report](../results/b0-configuration-comparison.md) for 14 variants,
-42 runs, and 126 fits, with all variants evaluated at three seeds. The report records state/US tradeoffs and does not change defaults.
+The CV runner reports states/DC and native US separately. See
+[the canonical report](../results/b0-configuration-comparison.md) for the
+14-variant, three-seed comparison.
 
 ## Saved three-season CV forecasts and evaluation
 
@@ -172,7 +151,7 @@ Season folds are 2023–24, 2024–25 and 2025–26 (CDC epiweeks 31–30).
 Every fold excludes the held-out season from fitting contexts, labels and scales.
 Evaluation conditions on already observed past context, including within that
 season, and scores only target weeks in the held-out season. Weekly origins use
-four future leads; the default history is eight weeks. New forecast files retain five
+four future leads; the default history is eight weeks. Forecast files retain five
 quantiles (0.025, 0.25, 0.5, 0.75, 0.975) from 2,048 draws and 100 complete sample members per origin. Admissions
 are rounded half-up for the CV export; ED values remain proportions.
 
@@ -180,8 +159,7 @@ Only training on 2023–24 and 2024–25 to evaluate 2025–26 is chronological.
 other folds train on later seasons. All inputs are finalized and all folds have
 been examined during exploratory selection; none is an untouched final test set.
 
-The old season-CV persistence report and its generator have been removed. Raw
-checkpoints, forecasts, training manifests and historical diagnostic `scores.csv`
-files are preserved for reproducibility. Those Python diagnostics are not used
-in the current report or configuration ranking. Use the
-[full EpiBench evaluation](configuration-evaluation.md) on the saved forecasts.
+Each fold saves its checkpoint, forecasts, training manifest, and a diagnostic
+`scores.csv`. Those Python diagnostics are not used in the report or configuration
+ranking. Use the [full EpiBench evaluation](configuration-evaluation.md) on the
+saved forecasts.

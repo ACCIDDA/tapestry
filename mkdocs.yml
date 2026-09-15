@@ -77,4 +77,4 @@ nav:
       - Frozen hub support: workflows/hub-evaluation.md
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
-  - Code and tests review: maintenance.md
+  - Features and tests: maintenance.md

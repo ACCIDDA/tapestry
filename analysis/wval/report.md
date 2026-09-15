@@ -1,6 +1,6 @@
 # CDC state WVAL, Delphi wastewater, and state-level forecasting
 
-Research date: **September 13, 2026**. This analysis now lives under `analysis/wval/`; CDC's metric is **WVAL** (wastewater viral activity level).
+Research date: **September 13, 2026**. CDC's metric is **WVAL** (wastewater viral activity level).
 
 ## Findings
 

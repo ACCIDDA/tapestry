@@ -41,8 +41,8 @@ EpiBenchmark from GitHub `main`, training, evaluation, explorer and tests.
 The sync command above checks for EpiBenchmark updates; `uv.lock` stays local.
 R is separate: scoring requires `Rscript` on `PATH`. After installing R, run
 `Rscript scripts/setup_r.R` to install missing `scoringutils` and `purrr` packages.
-See [environment setup](docs/getting-started.md) for fresh-machine R installation,
-migrating the old Anaconda-backed `.venv`, and lighter Python installs.
+See [environment setup](docs/getting-started.md) for fresh-machine R installation
+and lighter Python installs.
 
 ## Start with the canonical training dataset
 
@@ -102,13 +102,13 @@ Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 | `scripts/` | Small checkout launchers and CSV conversion utility |
 | `docs/workflows/` | Current commands and behavior |
 | `docs/results/` | Completed experiment findings |
-| `docs/design/` | Proposals and design history |
+| `docs/design/` | Research proposals |
 | `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
 
-Downloaded data, checkpoints, and generated results remain in their existing
-`data/`, `output/`, and `tmp/` locations. The [experiment manager](docs/workflows/experiment-manager.md)
+Downloaded data, checkpoints, and generated results live in `data/`, `output/`,
+and `tmp/`. The [experiment manager](docs/workflows/experiment-manager.md)
 plans, runs, and scores named B0 experiments. See [development](docs/development.md) and
-[the feature and test review](docs/maintenance.md) for further simplification candidates.
+[features and tests](docs/maintenance.md).
 
 ## Tests
 
@@ -128,6 +128,6 @@ See [what the tests do](docs/maintenance.md#what-the-tests-do).
 
 Git excludes surveillance data, processed panels, checkpoints, generated output
 folders, downloaded analysis evidence, reference PDFs/extracted text, and credentials.
-The source catalog remains in `src/tapestry/data/catalog.py`; all acquisition
-sources are retained. Download/build the data separately using the commands above.
+The source catalog is `src/tapestry/data/catalog.py`. Download/build the data
+separately using the commands above.
 The supported dataset command is `python -m tapestry.model_data build`.

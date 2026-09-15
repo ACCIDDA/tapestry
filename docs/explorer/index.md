@@ -54,7 +54,7 @@ Builds report time and revision rows per artifact. Failed partial Parquet writes
 abort the build and preserve the previous pair. Local file locks reject competing
 builders. Stop the server before rebuilding: replacing the two files is not
 atomic as a pair. Matching build IDs detect interrupted publication; rebuild to
-recover. Schema 13 and selection policy 4 require rebuilding older indexes.
+recover. Indexes built with a different schema or selection policy are rebuilt.
 
 `status` and `validate` emit JSON. Storage errors cause a nonzero exit; stale
 indexes and source errors are reported separately. Validation checks SQLite

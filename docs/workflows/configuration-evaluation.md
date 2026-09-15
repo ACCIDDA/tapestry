@@ -6,8 +6,8 @@ The canonical `b0-rebuilt` experiment includes 14 configurations, all at seeds
 42/43/44, evaluated against pinned hub ensembles on rebuilt frozen inputs.
 See [Longleaf setup](../longleaf-setup.md) for the complete execution workflow.
 
-Our challenges remain **unversioned custom scoring configs**, with the existing
-finalized, non-vintaged evaluation truth. They are not registered as versioned
+Our challenges are **unversioned custom scoring configs**, with finalized,
+non-vintaged evaluation truth. They are not registered as versioned
 library challenges. Source/data hashes record reproducibility, not challenge versions.
 Emily’s challenge ground truth is not used.
 
@@ -16,7 +16,7 @@ The default evaluation runs the complete installed EpiBenchmark command:
 EpiBench loads and validates forecasts, loads truth, calls R scoringutils, computes
 relative WIS, and writes `EpiBenchmark_scores.csv` and `summary.md`. All candidates
 and the official ensemble are freshly scored together. The local R bridge is
-retained only for reproducing the historical frozen-support comparison.
+used only by the [frozen hub support](hub-evaluation.md) workflow.
 
 Install the research environment and R packages before registering an experiment;
 keep dependencies fixed during execution. See [Longleaf setup](../longleaf-setup.md).
@@ -40,9 +40,9 @@ Each `epibench/<target-season>/` directory contains the runnable `score.yaml`,
 model CSV inputs, a local `hub/` snapshot, EpiBench output and log, and provenance.
 The snapshot contains the exact frozen tasks and one frozen truth release; it
 has no `.git` directory, so EpiBench cannot pull newer hub data. Hub schemas are
-read from the original pinned mirror commit. Tapestry checks complete support
+read from the pinned mirror commit. Tapestry checks complete support
 before scoring and checks returned task keys, finite metrics and relative WIS
-afterwards. This preparation preserves the existing experiment definition.
+afterwards.
 
 The publisher copies rankings and diagnostic figures and regenerates projection
 fans from the saved EpiBench forecast inputs (72 SVG figures in total). Full
@@ -51,20 +51,19 @@ submitted-model loader currently accepts CSV only.
 
 ## Five-quantile output policy
 
-Scoring and all new saved predictions use `[0.025, 0.25, 0.5, 0.75, 0.975]`:
+Scoring and saved predictions use `[0.025, 0.25, 0.5, 0.75, 0.975]`:
 median plus the bounds of the central 50% and 95% intervals. The CV and prediction
 NPZ writers, Hubverse CSV/Parquet exports, and EpiBench inputs all use this grid.
-Historical training archives retain their original 23 quantiles for provenance;
-the exporter selects the exact five stored values, with no interpolation or
-resampling. The current archive contains only five quantiles per forecast unit.
+When an archive stores 23 quantiles, the exporter selects the exact five stored
+values, with no interpolation or resampling.
 
 WIS is recomputed for candidates and reference ensembles. Five-quantile WIS is
-not numerically interchangeable with the former 23-quantile WIS. Five-quantile WIS is the mean of the five scaled quantile losses. The current
+not numerically interchangeable with 23-quantile WIS. Five-quantile WIS is the mean of the five scaled quantile losses. The
 report uses saved EpiBench scores and the pipeline's built-in support and relative-WIS checks.
 
 [Emily’s configs](emily-configs.md) define vintage inputs and origin calendars.
-They are tested separately; this report still uses the nine existing frozen
-evaluation task sets and the already-fitted finalized-data B0 models.
+They are separate from this evaluation, which uses the nine frozen evaluation
+task sets and finalized-data B0 models.
 
 ## Identifiers
 
@@ -78,9 +77,7 @@ from different commits. `configurations.csv` lists each ID, seed, label, run pat
 (relative to the comparison folder), and scenario fields. An ID is a readable
 configuration key, not an ordinal rank or performance label.
 
-The published report below predates scenario-string IDs: it uses the earlier
-`B0-<12 hex>-s42` hash IDs of the discarded `b0-rebuilt` experiment until a new
-comparison is published.
+The published report uses `B0-<12 hex>-s42` hash IDs rather than scenario strings.
 
 ## Forecasts and support
 
@@ -100,15 +97,14 @@ leads 1–4; reference date equals context end plus seven days. Admission roundi
 from the saved forecasts is unchanged; ED forecasts remain proportions.
 Malformed/crossing quantiles, duplicate units, invalid target dates, and missing
 scoring tasks raise errors. Season-boundary targets outside their held-out fold
-remain excluded according to the existing CV protocol.
+are excluded by the CV protocol.
 
 All candidate runs and the official ensemble are freshly scored through the full
-EpiBench config pipeline on the exact frozen `units.parquet` from the original
-comparison. No previously computed ensemble scores are reused. No arbitrary
+EpiBench config pipeline on the exact frozen `units.parquet` task sets. No arbitrary
 missing-date allowance is used: each candidate must cover every scoring task.
-New runs with narrower support stop explicitly rather than receiving an easier
+Runs with narrower support stop explicitly rather than receiving an easier
 ranking. The frozen hub commits, truth releases and unavailable target/seasons
-remain documented in the original comparison manifest.
+are documented in the frozen comparison manifest.
 
 ## Rankings and plots
 
@@ -127,8 +123,8 @@ remain documented in the original comparison manifest.
 - `REPORT.md`: linked ranking summary and graph index.
 
 Relative WIS in diagnostic plots uses the **official ensemble** as reference,
-matching the existing B0 experiment objective, whereas the original InfluPaint
-paper used FluSight-baseline. The mean of individual WIS ratios is not the ratio
+matching the B0 experiment objective, whereas the InfluPaint paper used
+FluSight-baseline. The mean of individual WIS ratios is not the ratio
 of mean WIS; both are named separately in the leaderboard. Zero reference WIS
 produces an undefined per-task ratio and is counted explicitly.
 
@@ -140,8 +136,8 @@ rank configurations. The report, ranking downloads, and fans share this rule.
 The secondary influenza objective is the geometric mean of mean-WIS/ensemble-mean-WIS
 ratios, weighting each available season/geography cell equally. The admissions
 objective first averages log ratios within each target and then equally weights
-admission targets. These retain the earlier admission-focused diagnostics;
-they do not select the overall winner.
+admission targets. These are admission-focused diagnostics; they do not select
+the overall winner.
 No absolute WIS is pooled across hospitalization and ED units. Configuration
 scores average individual seed objectives and report their spread; three seeds and exploratory model selection do not establish a controlled
 significance claim.

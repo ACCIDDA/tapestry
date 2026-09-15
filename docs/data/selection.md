@@ -34,8 +34,8 @@ Publisher → intake → immutable raw snapshots
 
 These are catalog definitions, not claims that every source has been downloaded
 or every geography is displayable. The selection summary reports missing
-acquisitions. Migrated, retired Delphi FluView/clinical/FluSurv snapshots may
-remain on disk; they are excluded from the selected inventory.
+acquisitions. Delphi FluView/clinical/FluSurv snapshots on disk are excluded
+from the selected inventory.
 
 A **signal** is a meaningful measure within a logical group. A **variant** retains
 its acquisition source, cadence, release product, geography, units, smoothing,
@@ -46,10 +46,9 @@ variant with another provider's values. Finalized native-state CDC NHSN is the
 preferred display variant when available. Native-state support is the default
 UI filter; change it to see national context.
 
-The earlier planning estimate of 685 choices was based on an old, unfiltered
-explorer index and preceded NSSP/NWSS grouping. It is superseded by the actual
-`indexed_signal_choices` and `indexed_variants` counts from `/api/catalog` after
-a rebuild. Counts vary with local acquisitions and publisher schema changes.
+Choice counts are reported as `indexed_signal_choices` and `indexed_variants`
+from `/api/catalog` after a rebuild. Counts vary with local acquisitions and
+publisher schema changes.
 
 ## NHSN: CDC measures and Delphi mirrors
 
@@ -148,8 +147,8 @@ replace the conflict. Other observations remain available. Conflicts appear in
 the source audit as `quarantined`.
 
 Missing canonical files and Git LFS pointers are explicitly unavailable. There
-is no fallback to USAFacts, NYTimes, or another truth provider. In the audited
-local legacy COVID export, all six primary files were LFS pointers. Intake must
+is no fallback to USAFacts, NYTimes, or another truth provider. In the local
+legacy COVID export, all six primary files are LFS pointers. Intake must
 retrieve their payloads before those choices can be plotted.
 
 ## Downstream API

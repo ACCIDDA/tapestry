@@ -1,24 +1,16 @@
 # Mac and Longleaf execution
 
-For the current 22,785-parameter Build B0, the local Apple M2 Max with 32 GiB RAM
-is sufficient. A short synchronized warm-up/timing check measured about 0.027
-seconds per training step on CPU (two threads), versus 0.030 on MPS. The three
-season experiment therefore runs locally on CPU, with no transfer or cluster job.
-These timings are specific to batch size 8, eight stochastic training members,
-eight history weeks, and 52 locations.
-
-The initial MPS trial hit an Apple rank-5 sorting assertion in fair CRPS. Flattening
-the independent task axes before sorting fixed that limitation without changing
-the score; both CPU and MPS completed the repeated timing check afterward.
-MPS offers no measured advantage for this small configuration. Larger B1 models
-or larger searches may justify a Longleaf GPU.
+For the 22,785-parameter Build B0, an Apple M2 Max with 32 GiB RAM is sufficient.
+A synchronized warm-up/timing check gives about 0.027 seconds per training step
+on CPU (two threads), versus 0.030 on MPS, at batch size 8, eight stochastic
+training members, eight history weeks, and 52 locations. The three-season
+experiment therefore runs locally on CPU, with no transfer or cluster job.
+MPS offers no advantage for this small configuration. Larger B1 models or larger
+searches may justify a Longleaf GPU.
 
 ## Connect to the patron node
 
-The user supplied the hostname and node below. The neighboring InfluPaint repo's
-`docs/getting-started/cluster.md` independently records partition **`jlessler`**
-(without a hyphen) for the UNC-IDD patron allocation. The node name and its current
-availability have not been checked remotely in this run.
+The UNC-IDD patron allocation uses partition **`jlessler`** (without a hyphen).
 
 From the Mac:
 
@@ -41,10 +33,8 @@ nvidia-smi
 cd ~/Tapestry
 ```
 
-These commands are documented for later use; no SSH session or allocation was
-started for the local experiment. Authentication/MFA follows the account's usual
-SSH setup. The remote checkout directory `~/Tapestry` is an explicit proposed
-location, not an observed existing directory.
+Authentication/MFA follows the account's usual SSH setup. `~/Tapestry` is the
+suggested remote checkout directory.
 
 ## Transfer just the code and frozen tensor
 
@@ -62,12 +52,11 @@ rsync -av /Users/chadi/Research/Tapestry/data/processed/build_b_finalized.npz \
 ```
 
 This file list omits the local virtual environment, credentials, raw archives,
-and older results. Raw data are unnecessary for fitting the already built tensor.
+and results. Raw data are unnecessary for fitting the already built tensor.
 
-Use a CUDA-enabled PyTorch environment on Longleaf. The neighboring InfluPaint
-job launcher records `/nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python`;
-confirm that environment still exists before using it. For example, on the
-allocated node:
+Use a CUDA-enabled PyTorch environment on Longleaf, for example
+`/nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python`; confirm that
+environment exists before using it. On the allocated node:
 
 ```bash
 /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python -c \
@@ -78,9 +67,9 @@ PYTHONPATH=src /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python 
 ```
 
 NumPy and PyTorch are sufficient to train/query this prebuilt panel through
-`PYTHONPATH=src`. Acquisition is not run on the cluster. If that recorded
-environment is missing or incompatible, create/select a current CUDA PyTorch
-environment before running; do not assume that a Mac environment can be copied.
+`PYTHONPATH=src`. Acquisition is not run on the cluster. If that environment is
+missing or incompatible, create/select a current CUDA PyTorch environment before
+running; do not assume that a Mac environment can be copied.
 
 Retrieve results from the Mac:
 
@@ -89,7 +78,7 @@ rsync -av chadi@longleaf.unc.edu:~/Tapestry/data/experiments/b0_season_cv_longle
   /Users/chadi/Research/Tapestry/data/experiments/b0_season_cv_longleaf/
 ```
 
-## Repeat the local experiment
+## Run locally
 
 From `/Users/chadi/Research/Tapestry`:
 

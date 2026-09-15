@@ -29,8 +29,6 @@ Native support is never silently relabeled:
 - Catchment/network data are not treated as statewide values.
 - Wastewater site and sewershed rows remain in raw storage but are excluded from
   the selected stream and explorer. No site-to-state average is computed.
-- The old 52-wide model canvas contains 51 locations plus padding; padding is
-  an architecture choice, not a geography.
 
 This distinction is essential for the later mask: native state availability,
 parent context, and unavailable state data need not share the same mask policy.

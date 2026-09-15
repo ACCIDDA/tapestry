@@ -1,19 +1,14 @@
 # B0 definition and implementation: finalized six-channel pilot
 
-Implemented 13 September 2026. The existing intake and `SelectedData` were already
-coded; the tensor materializer and window querier were added for this pilot.
-B0, transforms, the stochastic decoder, losses, training, and canonical scoring
-are implemented; see [training and prediction](../workflows/training.md) and the
+This page defines the finalized six-channel dataset used by B0: intake through
+`SelectedData`, the tensor materializer, and the window querier. For the model,
+see [training and prediction](../workflows/training.md) and the
 [scored results](../results/b0-configuration-comparison.md). The
 [architecture](../design/architecture.md) records the broader proposals.
 
-Implemented and scored in B0: finalized retrospective NHSN/NSSP inputs, six channels,
-configurable lookback windows, masked stochastic prediction, the configuration
-comparison, three seeds, and hub/scoringutils evaluation.
-
 ## Contract and assumptions
 
-User requirements: Build B, no wastewater, six channels, configurable history
+Scope: Build B, no wastewater, six channels, configurable history
 length starting at 8 (12 is supported), values plus masks, locations, season
 queries, and data beginning September 2023.
 
@@ -34,9 +29,9 @@ smoothing, wastewater, or real-time vintage reconstruction is involved.
 The manifest records source snapshot IDs and the original manifests, plus hashes
 of those manifests (which themselves record raw artifact checksums).
 
-Geography assumption: use the existing selector's 50 states + DC + native US,
+Geography assumption: use the selector's 50 states + DC + native US,
 ordered alphabetically by postal code with US last. No national/state broadcast
-or sum is calculated. Territories are not supported by the current selector.
+or sum is calculated. Territories are not supported by the selector.
 All six series can serve as focal targets for the shared decoder described in B;
 select a channel slice of X for its focal history and retain X for context.
 The dataset builder supplies tensors; B0 implements the shared decoder and source embeddings.
@@ -54,8 +49,7 @@ this groups respiratory seasons and does not assert official FluSight challenge
 issuance dates. Training data begin in September, not at the August season boundary.
 Windows may use prior-season context. The season filter applies to the context
 end; explicit target bounds mask labels outside the permitted fitting period.
-No train/development/holdout roles are silently assigned: the old plan's 2023–24
-validation fold needs revisiting now that training starts in September 2023.
+The dataset assigns no train/development/holdout roles.
 
 ## Build and query
 
@@ -82,9 +76,9 @@ for episode in ds.windows(season_id='2023-2024', target_end='2024-07-27'):
 `context_end` must be a Saturday and is included in X. Default future offsets
 are `(1,2,3,4)` weeks after context end. These correspond to FluSight horizons
 0–3 if the reference Saturday is one week after context end. For eight future
-weeks, pass `horizons=tuple(range(1,9))`. This is explicitly different from the
-old plan's revision-aware `[-1,0,...,6]` reference-date offsets: finalized inputs
-would expose those recent finalized labels. Revision nowcasts are deferred.
+weeks, pass `horizons=tuple(range(1,9))`. Revision-aware `[-1,0,...,6]`
+reference-date offsets are not used: finalized inputs would expose those recent
+finalized labels. Revision nowcasts are deferred.
 `query` includes date/channel/location labels; unknown locations raise an error,
 and absent dates are masked. `windows` omits episodes with no supervised labels.
 
@@ -96,9 +90,7 @@ through August 29, 2026. Of 8,164 possible cells per channel, observed counts ar
 the three ED proportions. Sparse RSV coverage remains masked, never imputed.
 This is a corpus, not a declaration that all its seasons are training data.
 
-22 focused tests passed across model data, source selection, and geography.
-Checks include zero versus missing, percent-to-proportion conversion, invalid
-values, conflicting duplicates, 8/12-week windows, date alignment, season
-boundaries including a 53-week year, round-trip loading, and target-bound masks.
-The dataset and model-data checks passed locally. Model fitting and evaluation are
-reported in the canonical B0 results page linked above.
+Tests across model data, source selection, and geography cover zero versus
+missing, percent-to-proportion conversion, invalid values, conflicting duplicates,
+8/12-week windows, date alignment, season boundaries including a 53-week year,
+round-trip loading, and target-bound masks.

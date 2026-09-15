@@ -1,8 +1,8 @@
 # Solution B reference archive
 
-Prepared 5 September 2026 for the [detailed plan](../docs/design/solution-b-plan.md).
+Papers cited by the [architecture](../docs/design/architecture.md).
 
-16 PDFs downloaded and validated with `pdfinfo`; the Scheuerer–Hamill PDF was read through the web tool but its local download returned HTTP 403. Its official source link remains available below. Preprints and published versions may differ. File hashes and detected arXiv versions are recorded in [manifest.json](manifest.json). Papers retain their original licenses.
+16 PDFs are validated with `pdfinfo`; the Scheuerer–Hamill PDF cannot be downloaded (HTTP 403), so only its source link is listed. Preprints and published versions may differ. File hashes and detected arXiv versions are recorded in [manifest.json](manifest.json). Papers retain their original licenses.
 
 Downloaded PDFs, extracted text, and local data audit files are excluded from Git.
 Local PDF links below work after running the downloader; the source links work

@@ -1,8 +1,8 @@
 # Local measure inventory by pathogen
 
-Updated 2026-09-13 after selection policy 4. This supersedes the earlier inventory. Frequency means observation cadence. Publisher display names come from the saved CDC API metadata. Columns below are selected measures; Delphi signals and Hub targets identify measures stored in long-form tables.
+Frequency means observation cadence. Publisher display names come from the saved CDC API metadata. Columns below are selected measures; Delphi signals and Hub targets identify measures stored in long-form tables.
 
-25 acquisition datasets; 23 downloaded; 17 with indexed series; 12 logical origin groups (including groups not currently available). NHSN now has 14 all-age measures. Adult, pediatric, individual age-band, and unknown-age NHSN fields are excluded from selection. Raw downloads retain their native schemas.
+25 acquisition datasets; 23 downloaded; 17 with indexed series; 12 logical origin groups (including groups not currently available). NHSN has 14 all-age measures. Adult, pediatric, individual age-band, and unknown-age NHSN fields are excluded from selection. Raw downloads retain their native schemas.
 
 Delphi is orange and Hub green in the explorer’s signal list; plotted lines each have a distinct color. Current Hub hospitalization and ED targets join NHSN and NSSP respectively. Hub ED values are 0–1 proportions; CDC/Delphi ED values are percentages. Grouping preserves values and provider variants. Smoothed and reported columns remain separate.
 

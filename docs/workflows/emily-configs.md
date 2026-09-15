@@ -2,7 +2,7 @@
 
 Yes: these ten configs provide explicit forecast calendars and data-vintage rules for influenza, COVID-19 and RSV. They are **`epibench create` inputs**, not scoring configs or complete library scorecards.
 
-All ten were executed successfully with the actual `epibench create --config-path` command against pinned local hub snapshots: **345 reference dates and 345 vintage-history files**. Per the user’s instruction, these files are parked and are not used for B0 training or scoring. Their data-quality review is deferred.
+Running all ten with `epibench create --config-path` against pinned local hub snapshots produces **345 reference dates and 345 vintage-history files**. These files are not used for B0 training or scoring; their data-quality review is deferred.
 
 ## What they define
 
@@ -21,16 +21,16 @@ Every file uses `vintaging: TRUE`, `vintaging_method: as_of`, and `vintaging_off
 | `rsv_inchosp_25-26.yaml` | wk inc rsv hosp | 2025-11-01 | 2026-05-30 | 31 |
 | `rsv_propedvisits_25-26.yaml` | wk inc rsv prop ed visits | 2025-11-01 | 2026-05-30 | 31 |
 
-Our current challenges remain unversioned custom configs for `epibench score`, using
-the existing finalized evaluation truth. Emily’s created artifacts stay separate.
+B0 challenges are unversioned custom configs for `epibench score`, using
+finalized evaluation truth. Emily’s created artifacts are separate.
 
-## Consequences for the current B0 report
+## Consequences for the B0 report
 
-The current [B0 report](../results/b0-configuration-comparison.md) uses the full EpiBench scoring command with exactly **0.025, 0.25, 0.5, 0.75, 0.975**. Its nine frozen evaluation task sets are unchanged. All new predictions and current Hubverse exports save only those five quantiles. Historical source forecasts retain their original quantiles for reproducibility.
+The [B0 report](../results/b0-configuration-comparison.md) uses the full EpiBench scoring command with exactly **0.025, 0.25, 0.5, 0.75, 0.975** on nine frozen evaluation task sets. Predictions and Hubverse exports save only those five quantiles.
 
-The user explicitly requested that challenge ground truth not be used yet. Emily’s origins have not replaced the scoring calendar. In particular, the RSV 2024–25 config successfully creates historical inputs, but that alone does not supply an official-ensemble comparison on the current frozen task set. Switching B0 to these provisional inputs would require constructing and fitting a vintage-aware experiment; the existing B0 fits use finalized data.
+Challenge ground truth is not used, and Emily’s origins do not define the scoring calendar. For example, the RSV 2024–25 config creates historical inputs, but that alone does not supply an official-ensemble comparison on the frozen task set. Switching B0 to these provisional inputs would require constructing and fitting a vintage-aware experiment; B0 fits use finalized data.
 
-These configs do not set forecast horizons, locations, quantiles, baseline/ensemble reference, scoring-truth releases, or scorecard functions. Those choices still need a scoring definition. The five quantiles are now shared with the bundled EpiBench challenges, while dates and reference models can still differ.
+These configs do not set forecast horizons, locations, quantiles, baseline/ensemble reference, scoring-truth releases, or scorecard functions. Those choices still need a scoring definition. The five quantiles are shared with the bundled EpiBench challenges, while dates and reference models can differ.
 
 ## Details to reconcile
 
@@ -40,7 +40,7 @@ These configs do not set forecast horizons, locations, quantiles, baseline/ensem
 
 ## Local artifacts and reproduction
 
-Original files under `fromEmily/configs/` are unchanged. Only hub and output paths are adapted in `data/epibench/emily/configs/`. Full source hashes, commands, pinned commits, statuses and task-list paths are recorded in `data/epibench/emily/summary.json`; each config has a corresponding log. The initial path-check outputs are kept separately under `unvalidated_created/`; the canonical results are under `created/`.
+Original files under `fromEmily/configs/` are unchanged. Only hub and output paths are adapted in `data/epibench/emily/configs/`. Full source hashes, commands, pinned commits, statuses and task-list paths are recorded in `data/epibench/emily/summary.json`; each config has a corresponding log. Path-check outputs are under `unvalidated_created/`; canonical results are under `created/`.
 
 `scripts/prepare_emily_challenges.py` prepares snapshots and invokes all ten configs. EpiBench refuses to overwrite an existing challenge output, so choose a fresh output root in that recipe for a repeat. No hub downloads or modifications to Emily’s originals are required.
 
