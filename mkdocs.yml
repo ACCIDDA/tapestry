@@ -76,9 +76,7 @@ nav:
           - COVID ED 2025–2026: results/b0-comparison/covid_covid_prop_ed_visits_2025-2026.md
           - RSV admissions 2025–2026: results/b0-comparison/rsv_rsv_hosp_2025-2026.md
           - RSV ED 2025–2026: results/b0-comparison/rsv_rsv_prop_ed_visits_2025-2026.md
-  - Design proposals:
-      - Architecture candidates: design/old LLM things/architecture-candidates.md
-      - Solution B detailed plan: design/solution-b-plan.md
-      - Solution B references: design/solution-b-references.md
+  - Architecture:
+      - Architecture: design/architecture.md
       - Further experiments: design/b0-next-experiments.md
   - Code and tests review: maintenance.md

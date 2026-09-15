@@ -144,7 +144,7 @@ test now also exercises the canonical CLI's saved panel and metadata.
 The Python distribution/import package is now `tapestry`, with installed commands
 `tapestry-data`, `tapestry-model-data`, `tapestry-select`, and `tapestry-explore`.
 Module commands use `python -m tapestry...`. The checkout folder stays named
-`influpaintX`. This is a direct rename without an old-package compatibility alias.
+`Tapestry`. This is a direct rename without an old-package compatibility alias.
 Existing saved datasets, checkpoints, scores, and their historical metadata remain
 unchanged; stored checkpoints contain configuration and state dictionaries rather
 than pickled model classes. New source hashes and new default report/model labels
@@ -153,6 +153,5 @@ reflect the rename.
 To update an existing environment:
 
 ```bash
-python -m pip uninstall -y influpaintx
 python -m pip install -e '.[model,explorer,evaluation]'
 ```

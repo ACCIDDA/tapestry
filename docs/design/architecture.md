@@ -1,6 +1,6 @@
-# Tapestry — Solution B: a windowed stochastic respiratory forecaster
+# Tapestry — Architecture
 
-Research and implementation plan · 5 September 2026 · Proposed work, not an implemented or evaluated model.
+Research and implementation plan · 14 September 2026 · Proposed work, not an implemented or evaluated model.
 
 **Acquisition update, 11 September 2026:** Delphi pulls now use only V5 NHSN,
 NSSP, NWSS, and inpatient/outpatient claims. The dated
@@ -9,9 +9,22 @@ entries are no longer active acquisition sources. Transfer experiments that need
 those feeds remain conditional on a future V5 addition. See the
 [current catalog](../data/sources.md).
 
-**Recommendation:** build a small conditional sample generator with a shared forecasting function across surveillance signals, explicit availability and revision information, and one spatial attention block. Train its influenza hospitalization predictions with fair CRPS in count units. Select it using actual FluSight WIS on forecasts reconstructed from historical information states. Start without simulations or an extra observation-noise layer; add complexity through controlled experiments.
+**Design recommendation:** build a small conditional sample generator with a shared forecasting function across surveillance signals, explicit availability and revision information, and one spatial attention block. Train its influenza hospitalization predictions with fair CRPS in count units. Select it using actual FluSight WIS on forecasts reconstructed from historical information states. Start without simulations or an extra observation-noise layer; add complexity through controlled experiments.
 
-This expands Solution B in [Architecture candidates](old%20LLM%20things/architecture-candidates.md). It supersedes that note's B-specific claims about guaranteed coherence, expected leaderboard rank, automatic transfer from masked historical inputs, and mandatory sample submissions. The design and numerical defaults below are **proposals**. Paper findings are attributed separately; weather results are not evidence that this model will beat an epidemic forecasting baseline.
+The design and numerical defaults below are **proposals**. Paper findings are attributed separately; weather results are not evidence that this model will beat an epidemic forecasting baseline.
+
+## My staged plan
+
+The work proceeds from a small, finalized-data pilot to the full vintage-aware, multi-channel architecture. The six-channel set is NHSN admissions and NSSP ED proportions for influenza, COVID-19, and RSV.
+
+| Stage | Data | Purpose |
+|---|---|---|
+| **B0** | Non-vintaged data; six channels (NHSN + NSSP) | Establish the baseline and decide most of the architecture. |
+| **B1** | Vintaged data; six channels (NHSN + NSSP) | Add release-time information and measure the value of revision-aware training. |
+| **B2** | Non-vintaged data; more channels (NHSN + NSSP + wastewater) | Test whether wastewater adds signal before introducing vintage complexity. |
+| **B3** | Vintaged data; more channels (NHSN + NSSP + wastewater) | Combine the selected architecture with the broader vintage-aware input panel. |
+
+B0 is the decision point for the model architecture. B1–B3 extend the same design while isolating the effects of vintages and additional channels.
 
 ## 1. Objective and scientific questions
 
@@ -29,30 +42,7 @@ Specific questions:
 
 There is no defensible prospective rank prediction. The model remains a research candidate if it fails the comparison in question 5.
 
-## 2. What is borrowed from each paper
-
-The reference archive is in the project-root `references/` folder. The [reading index](solution-b-references.md) maps the citations below to source URLs, archive filenames, versions, and download status; `references/README.md` also provides local PDF links. Section names refer to the archived paper or its linked full text.
-
-| Paper | Verified contribution used here | Exact borrowing or adaptation for B | Boundary and experiment |
-|---|---|---|---|
-| **[Flusion — Ray et al.](https://arxiv.org/html/2407.19054v1)**, §5.1–5.2, §7 | Joint training across surveillance signals and locations; transformed residual targets; ablations separating these effects | Shared focal-signal forecasting task; population conversion for counts; fourth-root candidate; last-observation residual; calendar features | Historical ILI is an auxiliary target, not a hospitalization label. Contemporary covariate fusion is an extension. Toggle transfer and covariates separately. |
-| **[InfluPaint — Lemaitre & Lessler](https://arxiv.org/html/2604.24913v1)**, training-data ablation and Methods §4.2 | Mixed surveillance/simulation training was valuable in its diffusion experiments; 30/70 performed best among tested mixtures; calibration remained an issue | Test synthetic pretraining and mixture weights; compare square-root preprocessing; inspect trajectory quality and coverage | The 70% simulation fraction is not a default for B. Do not import its unconditional denoising/inpainting objective. |
-| **[FGN — Alet et al.](https://arxiv.org/html/2506.10772v1)**, §2.2–2.4, Appendix A.3 | Globally shared low-dimensional noise modulates normalization; fair-CRPS training; independent model ensembles | A 32-dimensional draw changes a shared forecast decoder through conditional normalization; fair CRPS; eventual three-seed mixture | FGN uses two training draws and a much larger weather model. B proposes eight draws and a direct horizon block. Joint skill requires separate validation. |
-| **[GenCast — Price et al.](https://arxiv.org/abs/2312.15796)**, model and forecast generation | Conditional stochastic state transitions composed into trajectories | Optional rollout extension with sampled histories retained within each member | No spherical mesh, weather weights, or diffusion sampler in core B. The short-range model predicts its whole horizon block directly. |
-| **[CSDI — Tashiro et al.](https://arxiv.org/abs/2107.03502)**, conditioning and training strategy | Explicit observed conditioning and held-out target sets for conditional time-series generation | Distinct input-availability and target-supervision masks; forecast-shaped missingness during training | The diffusion objective is not borrowed. Random interpolation masks alone do not reproduce a forecasting information boundary. |
-| **[FiLM — Perez et al.](https://arxiv.org/abs/1709.07871)**, conditioning layer | Feature-wise learned affine modulation | Define and implement the noise-dependent scale and shift in the decoder | FiLM is a mechanism, not a probabilistic loss or calibration guarantee. |
-| **[Pacchiardi et al.](https://jmlr.org/papers/v25/23-0038.html)**, generative forecasting and scoring-rule minimization | Conditional generative networks can be fitted directly through scoring rules; multivariate scores are supported | Treat B as an implicit conditional distribution; compare marginal-only training with a small joint-score term | This is prior art for the central learning approach. “Neural generator trained with a proper score” is not a novelty claim. |
-| **[Ferro](https://doi.org/10.1002/qj.2270)**, fair ensemble scores | Finite ensembles require care when estimating the score of the underlying distribution | Use the off-diagonal `M(M−1)` correction with independent draws within one model during training | Distinguish that estimate from scoring the delivered empirical ensemble or its quantiles. |
-| **[Bracher et al.](https://arxiv.org/abs/2005.12881)**, WIS and quantile representation | Interval/quantile forecasts can be evaluated with WIS, connected to CRPS | Exact submission-grid WIS, interval coverage, and count-scale model selection | A finite quantile grid and nonlinear transformation mean training CRPS is not literally identical to submission WIS. |
-| **[Scheuerer & Hamill](https://doi.org/10.1175/MWR-D-14-00269.1)**, variogram score | Pairwise-difference scores help diagnose incorrect dependence | Temporal and neighboring-location variogram diagnostics, optionally a training term | Standardize heterogeneous variables. Variogram score alone does not identify the whole joint distribution. |
-| **[Deep ensembles — Lakshminarayanan et al.](https://arxiv.org/abs/1612.01474)** | Independently trained networks provide a practical ensemble uncertainty method | Combine samples from three independently initialized models if validation supports the cost | This is an approximate uncertainty method, not an exact Bayesian posterior. Keep model identity fixed through a trajectory. |
-| **[TSMixer — Chen et al.](https://arxiv.org/html/2303.06053v5)**, §4 | Alternating time and feature MLP mixing, with auxiliary inputs | B2 temporal encoder alternative for longer windows | Retain B's masks and stochastic head. Forecasting benchmark success does not establish benefit here. |
-| **[Flow matching — Lipman et al.](https://arxiv.org/abs/2210.02747)** and **[rectified flow — Liu et al.](https://arxiv.org/abs/2209.03003)** | Learn a vector field transporting noise to data | Conditional flow head on the same input representation as an objective/sampler comparator | No flow objective or ODE solver is needed by core B. A finite-step sampler still has numerical error and step-count sensitivity. |
-| **[DDPM — Ho et al.](https://arxiv.org/abs/2006.11239)**, **[RePaint — Lugmayr et al.](https://arxiv.org/abs/2201.09865)**, **[CoPaint — Zhang et al.](https://arxiv.org/abs/2304.03322)** | Diffusion and image-inpainting machinery underlying the predecessor | Background for interpreting InfluPaint and the A/B comparison | Nothing is copied into B's training or sampler from these three papers. They are archived to make the architectural lineage explicit. |
-
-The B-specific synthesis is the source-query transfer mechanism, native-geography handling, operational vintage construction, and the resulting controlled epidemic experiments. Any scientific contribution should be stated at that level and supported by results.
-
-## 3. Concepts and the forecast contract
+## 2. Concepts and the forecast contract
 
 ### 3.1 A conditional sample generator
 
@@ -227,18 +217,18 @@ If no focal history exists, use a learned source/calendar prior with an explicit
 
 Features beyond the default 12-week window include calendar sine/cosine, weeks relative to Christmas, log population where meaningful, source/geography identifiers, recent slopes, valid-observation counts, and causal season-to-date summaries with coverage. An onset feature must be generated by a fixed online rule and can be unknown. Include a longer trailing summary for off-season pathogens; do not force every pathogen to follow a flu-season reset.
 
-## 7. Architecture candidates inside B
+## 7. Architecture
 
 All candidates use the same records, split, output queries, transforms, loss, and evaluation. The following sizes are **engineering budgets**, not measured parameter counts or runtime claims.
 
 | Candidate | Encoder and spatial treatment | Why test it | Proposed budget / order |
 |---|---|---|---|
-| **B0: shared local MLP** | Flatten each 12-week focal/context panel; two residual MLP blocks; shared decoder; no information exchange between locations | Establish whether the transfer task and stochastic loss work with minimal structure | 0.15–0.4M parameters; build first |
-| **B1: MLP + spatial attention — recommended** | B0 encoder plus one 4-head attention block over native location tokens; shared conditional decoder | Allows contemporaneous cross-location information while remaining small | 0.3–0.8M; main candidate |
-| **B2: temporal mixer + spatial attention** | Replace flattening with 2–4 temporal/feature mixing blocks; same spatial block and decoder | Better temporal parameter sharing when expanding the lookback to 26 or 52 weeks | 0.4–1.2M; test if longer context helps |
-| **B3: typed source/geography tokens** | Shared per-series encoder; attention over typed `(source, native geography)` tokens and target queries | Handles irregular source coverage and native catchments without fixed broadcasts | 0.5–1.5M; defer until support handling limits B1 |
+| **Minimal shared MLP** | Flatten each 12-week focal/context panel; two residual MLP blocks; shared decoder; no information exchange between locations | Establish whether the transfer task and stochastic loss work with minimal structure | 0.15–0.4M parameters; build first |
+| **MLP + spatial attention — recommended** | MLP encoder plus one 4-head attention block over native location tokens; shared conditional decoder | Allows contemporaneous cross-location information while remaining small | 0.3–0.8M; main candidate |
+| **Temporal mixer + spatial attention** | Replace flattening with 2–4 temporal/feature mixing blocks; same spatial block and decoder | Better temporal parameter sharing when expanding the lookback to 26 or 52 weeks | 0.4–1.2M; test if longer context helps |
+| **Typed source/geography tokens** | Shared per-series encoder; attention over typed `(source, native geography)` tokens and target queries | Handles irregular source coverage and native catchments without fixed broadcasts | 0.5–1.5M; defer until support handling limits spatial attention |
 
-Only B1 is the initial production candidate. Do not search all widths, depths, masks, and data mixtures across all four models at once.
+The MLP plus spatial-attention design is the initial candidate. Do not search all widths, depths, masks, and data mixtures at once.
 
 ### 7.1 B1 data flow and tensor contract
 
@@ -281,7 +271,7 @@ gamma_k, beta_k = small learned linear maps or MLPs of a shared z embedding
 
 The modulation maps are shared over locations and horizon/source queries. Hidden context differs across queries, so the same `z` can produce different local effects. Inject noise in both decoder blocks, not only into a final scalar output. Initialize modulation with small nonzero weights so the model can learn to use noise without destabilizing the initial forecast.
 
-Compute the deterministic context encoder once, then expand the stochastic decoder over `M` draws. This amortizes expensive context processing and is a B-specific simplification of full-network functional modulation. Compare injecting noise before the spatial block if decoder-only perturbation proves too restrictive.
+Compute the deterministic context encoder once, then expand the stochastic decoder over `M` draws. This amortizes expensive context processing and is a design simplification of full-network functional modulation. Compare injecting noise before the spatial block if decoder-only perturbation proves too restrictive.
 
 Start with one global 32-vector. If regional idiosyncratic variation is insufficient, compare global + regional + local latent components with small dimensions and the same total training budget. This extension relaxes the original dependence bias and must improve joint diagnostics, not only interval width.
 
@@ -396,7 +386,7 @@ A test protocol may learn from labels that become available earlier in that test
 3. Available real-time FluSight ensemble and original model submissions on common targets. Report missing submissions and operational fallback coverage.
 4. InfluPaint and a matched conditional-flow head as later generative comparisons. Refit using eligible data; existing pretrained weights cannot be assumed free of held-out-season exposure.
 
-The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. The Flusion-style same-data GBQR comparison was dropped on 2026-09-14, so no controlled same-data comparator remains: any margin over the ensemble mixes architecture with B's finalized-data and retrospective advantages and must be reported that way.
+The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. The Flusion-style same-data GBQR comparison was dropped on 2026-09-14, so no controlled same-data comparator remains: any margin over the ensemble mixes architecture with the design's finalized-data and retrospective advantages and must be reported that way.
 
 ### 10.3 Metrics
 
@@ -504,10 +494,10 @@ Each run records code/config hashes, source snapshot/file hashes, release and fi
 | Model ignores latent noise | Inspect sample spread and score terms, modulation initialization, and gradients; compare more draws or broader modulation before adding ad hoc noise |
 | Good marginal WIS, poor trajectory changes/aggregates | Add validated joint objective or revise latent structure; withhold joint-derived targets until their own gates pass |
 | Large states improve while small states become miscalibrated | Inspect source scale, subgroup coverage, and calibration; report both absolute and normalized skill |
-| B does not beat the ensemble on identical tasks | Keep B as an experimental or separately validated ensemble component; with no GBQR floor the submission fallback is the hub baseline |
+| The design does not beat the ensemble on identical tasks | Keep it as an experimental or separately validated ensemble component; with no GBQR floor the submission fallback is the hub baseline |
 | A required feed is late at an issuance | Apply trained missingness policy; if minimum target history is absent, use a tested baseline fallback and log it |
 
-**First implementation:** deliver the source-query dataset and B0/B1 with 12-week context, eight explicit horizons, historical ILI/ILI+/FluSurv auxiliary targets, count-scale fair CRPS, one global latent, and audited NHSN/NSSP inputs where historical releases are recoverable. Establish D1/D2 baseline and ensemble comparisons before adding wastewater, synthetic trajectories, the other pathogens, or long rollouts. Freeze the chosen protocol, run the final retrospective evaluation, and retain every prospective forecast for the following season.
+**First implementation:** deliver B0 with the six NHSN/NSSP channels, an eight-week context, explicit horizons, count-scale fair CRPS, one global latent, and baseline comparisons. Use the B0 results to choose the architecture, then add vintage handling in B1, wastewater in B2, and the combined vintage-plus-wastewater setup in B3. Freeze each protocol before the next stage and retain every prospective forecast for the following season.
 
 ## 16. Reading order and evidence files
 
@@ -530,3 +520,28 @@ fold assignments must be revised before fitting on September 2023 onward.
 **Working B0 skeleton:** [Run the pilot](../workflows/training.md) documents the small
 shared MLP, stochastic decoder, masked fair-CRPS fit, and sample/quantile prediction
 commands now implemented. B1 spatial attention and evaluation remain future work.
+
+## References
+
+The project-root `references/` directory contains the downloaded papers, extracted text, checksummed manifest, and reading index. The inventory below records the sources used by this page.
+
+| Paper | Role | Source | Archive |
+|---|---|---|---|
+| Flusion — Ray et al. (2024) | Transfer across signals, locations, transforms, and baseline | [paper](https://arxiv.org/abs/2407.19054v1) | `ray2024_flusion.pdf` |
+| Generative diffusion models for spatiotemporal influenza forecasting — Lemaitre & Lessler (2026) | Simulation mixing and calibration context | [paper](https://arxiv.org/abs/2604.24913v1) | `lemaitre2026_influpaint.pdf` |
+| FGN — Alet et al. (2025) | Shared noise and fair CRPS | [paper](https://arxiv.org/abs/2506.10772v1) | `alet2025_fgn.pdf` |
+| GenCast — Price et al. (2023) | Conditional transitions and rollout context | [paper](https://arxiv.org/abs/2312.15796v2) | `price2023_gencast.pdf` |
+| CSDI — Tashiro et al. (2021) | Conditioning and target masks | [paper](https://arxiv.org/abs/2107.03502v2) | `tashiro2021_csdi.pdf` |
+| FiLM — Perez et al. (2018) | Feature-wise affine modulation | [paper](https://arxiv.org/abs/1709.07871v2) | `perez2018_film.pdf` |
+| Pacchiardi et al. (2024) | Generative forecasting via scoring-rule minimization | [paper](https://jmlr.org/papers/v25/23-0038.html) | `pacchiardi2024_scoring_rules.pdf` |
+| Ferro (2014) | Fair finite-ensemble scores | [paper](https://doi.org/10.1002/qj.2270) | `ferro2014_fair_scores.pdf` |
+| Bracher et al. (2021) | WIS, quantile loss, and calibration | [paper](https://arxiv.org/abs/2005.12881v3) | `bracher2021_interval_scores.pdf` |
+| Scheuerer & Hamill (2015) | Dependence-sensitive diagnostics | [paper](https://doi.org/10.1175/MWR-D-14-00269.1) | No local PDF |
+| Lakshminarayanan et al. (2017) | Deep ensemble uncertainty | [paper](https://arxiv.org/abs/1612.01474v3) | `lakshminarayanan2017_deep_ensembles.pdf` |
+| TSMixer — Chen et al. (2023) | Temporal and feature mixing alternative | [paper](https://arxiv.org/abs/2303.06053v5) | `chen2023_tsmixer.pdf` |
+| Flow Matching — Lipman et al. (2023) | Conditional generative comparator | [paper](https://arxiv.org/abs/2210.02747v2) | `lipman2023_flow_matching.pdf` |
+| Rectified Flow — Liu et al. (2023) | Straight interpolation comparator | [paper](https://arxiv.org/abs/2209.03003v1) | `liu2023_rectified_flow.pdf` |
+| DDPM — Ho et al. (2020) | Diffusion background | [paper](https://arxiv.org/abs/2006.11239v2) | `ho2020_ddpm.pdf` |
+| RePaint — Lugmayr et al. (2022) and CoPaint — Zhang et al. (2023) | Inpainting background | [RePaint](https://arxiv.org/abs/2201.09865v4), [CoPaint](https://arxiv.org/abs/2304.03322v1) | `lugmayr2022_repaint.pdf`, `zhang2023_copaint.pdf` |
+
+The checked FluSight README is `references/flusight-hub-readme-2026-09-05.md`. The local event-date inventory is `references/local-data-coverage-2026-09-05.json`; it summarizes the explorer and must not be mistaken for historical vintage eligibility.

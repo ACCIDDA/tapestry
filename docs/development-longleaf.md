@@ -38,12 +38,12 @@ Wait for Slurm allocation before starting training. On the allocated node:
 ```bash
 hostname
 nvidia-smi
-cd ~/influpaintX
+cd ~/Tapestry
 ```
 
 These commands are documented for later use; no SSH session or allocation was
 started for the local experiment. Authentication/MFA follows the account's usual
-SSH setup. The remote checkout directory `~/influpaintX` is an explicit proposed
+SSH setup. The remote checkout directory `~/Tapestry` is an explicit proposed
 location, not an observed existing directory.
 
 ## Transfer just the code and frozen tensor
@@ -51,14 +51,14 @@ location, not an observed existing directory.
 From the Mac, prepare the destination and transfer only the necessary files:
 
 ```bash
-ssh chadi@longleaf.unc.edu 'mkdir -p ~/influpaintX/data/processed'
-rsync -av /Users/chadi/Research/influpaintX/src \
-  /Users/chadi/Research/influpaintX/pyproject.toml \
-  /Users/chadi/Research/influpaintX/README.md \
-  chadi@longleaf.unc.edu:~/influpaintX/
-rsync -av /Users/chadi/Research/influpaintX/data/processed/build_b_finalized.npz \
-  /Users/chadi/Research/influpaintX/data/processed/build_b_finalized.json \
-  chadi@longleaf.unc.edu:~/influpaintX/data/processed/
+ssh chadi@longleaf.unc.edu 'mkdir -p ~/Tapestry/data/processed'
+rsync -av /Users/chadi/Research/Tapestry/src \
+  /Users/chadi/Research/Tapestry/pyproject.toml \
+  /Users/chadi/Research/Tapestry/README.md \
+  chadi@longleaf.unc.edu:~/Tapestry/
+rsync -av /Users/chadi/Research/Tapestry/data/processed/build_b_finalized.npz \
+  /Users/chadi/Research/Tapestry/data/processed/build_b_finalized.json \
+  chadi@longleaf.unc.edu:~/Tapestry/data/processed/
 ```
 
 This file list omits the local virtual environment, credentials, raw archives,
@@ -85,13 +85,13 @@ environment before running; do not assume that a Mac environment can be copied.
 Retrieve results from the Mac:
 
 ```bash
-rsync -av chadi@longleaf.unc.edu:~/influpaintX/data/experiments/b0_season_cv_longleaf/ \
-  /Users/chadi/Research/influpaintX/data/experiments/b0_season_cv_longleaf/
+rsync -av chadi@longleaf.unc.edu:~/Tapestry/data/experiments/b0_season_cv_longleaf/ \
+  /Users/chadi/Research/Tapestry/data/experiments/b0_season_cv_longleaf/
 ```
 
 ## Repeat the local experiment
 
-From `/Users/chadi/Research/influpaintX`:
+From `/Users/chadi/Research/Tapestry`:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m tapestry.models.season_cv \

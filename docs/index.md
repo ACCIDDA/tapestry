@@ -1,7 +1,7 @@
 # Tapestry
 
 Tapestry is a research pipeline for multi-disease epidemic forecasting. The
-Python package and commands are named `tapestry`; the checkout folder remains `influpaintX`.
+Python package and commands are named `tapestry`.
 
 ```text
 Raw snapshots → shared selection → canonical weekly dataset → B0 → evaluation
@@ -30,6 +30,6 @@ by mean all-target WIS ratio across seeds, including admissions and ED visits.
 `residual2` ranks first, followed by `latent32` and `balanced`. Its score is
 1.0197 ± 0.0103, about 2.0% above ensemble parity. The report includes seed
 variability, matched controls, coverage, and fans using middle-performing seeds.
-[Design proposals](design/solution-b-plan.md) describe possible extensions.
+[Architecture](design/architecture.md) describes the proposed extensions.
 The [code and test review](maintenance.md) distinguishes current needs from
 optional features.

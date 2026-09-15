@@ -4,7 +4,7 @@ Implemented 13 September 2026. The existing intake and `SelectedData` were alrea
 coded; the tensor materializer and window querier were added for this pilot.
 B0, transforms, the stochastic decoder, losses, and training are now implemented;
 see [training and prediction](../workflows/training.md). The
-[model-choice plan](../design/solution-b-plan.md) records the broader proposals.
+[architecture](../design/architecture.md) records the broader proposals.
 
 ## Contract and assumptions
 
