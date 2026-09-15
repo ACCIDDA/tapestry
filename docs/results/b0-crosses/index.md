@@ -191,6 +191,129 @@ US score by ~0.06. This is why the suite crosses three recipes rather than one.
 Family placement, by rank: `anchor` median 18 (range 1–35), `conv` median 31.5
 (2–55), `raw` median 46.5 (16–60).
 
+## Per-season ranking, and the ensemble placed among the configurations
+
+The combined score averages three seasons that do not contain the same targets:
+2023-2024 has influenza admissions only, 2024-2025 adds COVID admissions, and
+only 2025-2026 has all six. Scoring each season separately shows how much of the
+ranking survives that aggregation.
+
+![Weighting comparison and per-season ranks](figures/weighting-and-seasons.png)
+
+Score, with rank within that season in brackets (60 configurations):
+
+| Configuration | 2023-2024 | 2024-2025 | 2025-2026 | Overall |
+|---|---|---|---|---|
+| `anchor__stopping_300_0` | 1.688 (51) | 0.832 (7) | 0.837 (1) | 0.8924 (1) |
+| `conv__decoder_leg` | 1.145 (21) | 0.811 (3) | 0.925 (3) | 0.9069 (2) |
+| `anchor__stopping_100_0` | 1.229 (30) | 0.865 (13) | 0.889 (2) | 0.9150 (3) |
+| `conv` | 0.966 (10) | 0.865 (12) | 0.969 (28) | 0.9215 (4) |
+| `conv__us_error_shf` | 1.107 (20) | 0.846 (8) | 0.962 (17) | 0.9291 (5) |
+| `anchor__stopping_300_20` | 0.946 (5) | 0.778 (1) | 0.960 (14) | 0.9293 (6) |
+| `anchor__us_error_shf` | 0.985 (12) | 0.848 (11) | 0.965 (22) | 0.9445 (7) |
+| `anchor__decoder_res2` | 0.879 (1) | 0.905 (21) | 0.960 (15) | 0.9518 (8) |
+| `conv__encoder_mlp` | 1.213 (27) | 0.830 (6) | 0.967 (23) | 0.9518 (9) |
+| `conv__stopping_300_20` | 1.172 (26) | 0.848 (10) | 1.014 (45) | 0.9530 (10) |
+| `anchor__ed_transform_4rt` | 0.896 (2) | 0.976 (45) | 0.972 (30) | 0.9604 (11) |
+| `conv__count_transform_log1p` | 1.514 (39) | 0.925 (25) | 0.927 (4) | 0.9613 (12) |
+
+**Season ranks are essentially uncorrelated with each other.** Spearman ρ between
+season rankings: 2023-24 vs 2024-25 **−0.016**, 2023-24 vs 2025-26 **0.130**,
+2024-25 vs 2025-26 **0.024**. Each correlates with the overall rank only because
+each contributes to it (0.57, 0.40, 0.66). A configuration's rank in one season
+carries almost no information about its rank in another.
+
+### Where the ensemble falls
+
+The hub ensemble scores 1.0 by construction, so it can be inserted directly into
+each ranking:
+
+| Ranking | Ensemble position | Configurations beating it |
+|---|---:|---:|
+| 2023-2024 | 15 of 61 | 14 of 60 |
+| 2024-2025 | **51 of 61** | 50 of 60 |
+| 2025-2026 | 41 of 61 | 40 of 60 |
+| Overall (WIS-sum) | 38 of 61 | 37 of 60 |
+| Overall (equal-weight 52) | **10 of 61** | **9 of 60** |
+
+The ensemble is easy to beat in 2024-2025 and hard to beat in 2023-2024 — the
+same season asymmetry that drives the overfit above. **Only 11 of 60
+configurations beat the ensemble in all three seasons**, and none of the top
+three do it:
+
+| Configuration | 2023-2024 | 2024-2025 | 2025-2026 | Overall |
+|---|---:|---:|---:|---:|
+| `conv` | 0.966 | 0.865 | 0.969 | 0.9215 |
+| `anchor__stopping_300_20` | 0.946 | 0.778 | 0.960 | 0.9293 |
+| `anchor__us_error_shf` | 0.985 | 0.848 | 0.965 | 0.9445 |
+| `anchor__decoder_res2` | 0.879 | 0.905 | 0.960 | 0.9518 |
+| `anchor__ed_transform_4rt` | 0.896 | 0.976 | 0.972 | 0.9604 |
+| `anchor__latent_32` | 0.993 | 0.964 | 0.948 | 0.9615 |
+| `anchor__heads_su` | 0.943 | 0.941 | 0.964 | 0.9669 |
+| `anchor__dynamics_0` | 0.911 | 0.995 | 0.964 | 0.9671 |
+| `anchor` | 0.961 | 0.949 | 0.974 | 0.9701 |
+| `anchor__lookback_8` | 0.964 | 0.978 | 0.969 | 0.9750 |
+| `anchor__encoder_conv` | 0.947 | 0.956 | 0.980 | 0.9781 |
+
+Nine of the eleven are `anchor` variants, and `anchor__stopping_300_20` — the
+patience configuration — is the best of them. **This list is a better shortlist
+than the combined-score top three**, because every member is above the ensemble
+everywhere rather than on average.
+
+## Weighting the US as one location among 52
+
+The combined score sums WIS without reweighting by location, so the US carries
+**47.2%** of influenza-admissions WIS despite being 1 location in 52. Scoring
+each location separately and averaging the 52 per-location WIS ratios equally
+gives the US a 1.9% share instead. Computed by
+`scripts/score_b0_per_location.py`; the states/DC and US sums it produces
+reproduce `season_scores.csv` to 1e-14.
+
+| Configuration | Equal-weight 52 (± seed SD) | Rank | WIS-sum | Rank | Shift |
+|---|---|---:|---:|---:|---:|
+| `conv__decoder_leg` | 0.9591 ± 0.0201 | 1 | 0.9069 | 2 | +1 |
+| `conv` | 0.9601 ± 0.0253 | 2 | 0.9215 | 4 | +2 |
+| `anchor__stopping_300_0` | 0.9620 ± 0.0255 | 3 | 0.8924 | 1 | −2 |
+| `conv__count_transform_log1p` | 0.9832 ± 0.0500 | 4 | 0.9613 | 12 | +8 |
+| `conv__stopping_300_20` | 0.9844 ± 0.0370 | 5 | 0.9530 | 10 | +5 |
+| `anchor__stopping_100_0` | 0.9870 ± 0.0177 | 6 | 0.9150 | 3 | −3 |
+| `conv__stopping_300_0` | 0.9938 ± 0.0323 | 7 | 0.9939 | 36 | **+29** |
+| `conv__us_error_shf` | 0.9957 ± 0.0702 | 8 | 0.9291 | 5 | −3 |
+| `conv__stopping_100_0` | 0.9996 ± 0.0661 | 9 | 0.9666 | 18 | +9 |
+| `conv__encoder_mlp` | 1.0006 ± 0.0270 | 10 | 0.9518 | 9 | −1 |
+
+Two things change. **Every score moves toward 1** — the suite's apparent margin
+over the ensemble was substantially a US effect, and only 9 of 60 configurations
+beat the ensemble once locations are equally weighted, against 37 under the
+WIS-sum. And the `conv` family rises: it holds 7 of the top 10 here against 4
+under the WIS-sum, because its state-level strength is no longer diluted by the
+US penalty. Spearman between the two orderings is 0.844, so the rankings agree
+broadly, but `conv__stopping_300_0` moves 29 places.
+
+Per-season, equal-weight-52:
+
+| Configuration | 2023-2024 | 2024-2025 | 2025-2026 | Overall |
+|---|---|---|---|---|
+| `conv__decoder_leg` | 1.205 (28) | 0.836 (2) | 0.968 (3) | 0.9591 (1) |
+| `conv` | 0.986 (7) | 0.875 (9) | 1.000 (7) | 0.9601 (2) |
+| `anchor__stopping_300_0` | 1.774 (60) | 0.828 (1) | 0.908 (1) | 0.9620 (3) |
+| `conv__count_transform_log1p` | 1.376 (39) | 0.928 (27) | 0.962 (2) | 0.9832 (4) |
+| `conv__stopping_300_20` | 1.160 (25) | 0.872 (7) | 1.025 (22) | 0.9844 (5) |
+| `anchor__stopping_100_0` | 1.257 (34) | 0.881 (10) | 0.969 (4) | 0.9870 (6) |
+
+Under equal weighting `anchor__stopping_300_0` ranks **60th of 60** in 2023-2024
+while ranking 1st in both other seasons — the overfit is starker here than under
+the WIS-sum. **No configuration beats the ensemble in all three seasons under
+equal weighting** (against 11 under the WIS-sum), which is the most sobering
+number on this page.
+
+!!! note "Which weighting is right depends on the question"
+    The WIS-sum is the §10.3 selection score and is the right answer if national
+    forecasts matter proportionally to their magnitude. Equal weighting is the
+    right answer if each jurisdiction's forecast matters equally. They disagree
+    enough (ρ = 0.844, one 29-place move) that a chosen model should be checked
+    under both, and this page now reports both rather than picking.
+
 ## Geography
 
 | Target | US | States/DC |
