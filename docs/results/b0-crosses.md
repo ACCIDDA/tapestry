@@ -122,23 +122,43 @@ dot sits left of both nominal lines.
 
 ## Fan plots
 
-One figure per season, **United States on the left, North Carolina on the
-right**, one row per target scored in that season. Lines are the median of the
-three best configurations plus the hub ensemble (dashed); bands are the 50%
-interval; every third forecast origin is drawn. Each configuration is shown at
-its median-scoring seed (42, 44, 44).
+One figure per season and target. **United States on the left, North Carolina
+on the right**, and three rows:
 
-### 2023-2024
+1. **Medians only** — the hub ensemble and the three best configurations, so the
+   central paths can be compared without overlapping bands.
+2. **Fan of the rank-1 configuration** (`conv__heads_sh`) — median with 50% and
+   95% intervals.
+3. **Fan of the hub ensemble** — the same, for comparison.
 
-![2023-2024 fans, US and North Carolina](figures/fans-season-2023-2024.png)
+Every third forecast origin is drawn; each configuration is shown at its
+median-scoring seed (42, 44, 44). Truth is the frozen black line.
 
-### 2024-2025
+### Influenza admissions
 
-![2024-2025 fans, US and North Carolina](figures/fans-season-2024-2025.png)
+![Influenza admissions 2023-2024](figures/fans-flu_hosp-2023-2024.png)
 
-### 2025-2026
+![Influenza admissions 2024-2025](figures/fans-flu_hosp-2024-2025.png)
 
-![2025-2026 fans, US and North Carolina](figures/fans-season-2025-2026.png)
+![Influenza admissions 2025-2026](figures/fans-flu_hosp-2025-2026.png)
+
+### COVID-19 admissions
+
+![COVID-19 admissions 2024-2025](figures/fans-covid_hosp-2024-2025.png)
+
+![COVID-19 admissions 2025-2026](figures/fans-covid_hosp-2025-2026.png)
+
+### RSV admissions
+
+![RSV admissions 2025-2026](figures/fans-rsv_hosp-2025-2026.png)
+
+### ED visits, 2025-2026
+
+![Influenza ED visits 2025-2026](figures/fans-flu_prop_ed_visits-2025-2026.png)
+
+![COVID-19 ED visits 2025-2026](figures/fans-covid_prop_ed_visits-2025-2026.png)
+
+![RSV ED visits 2025-2026](figures/fans-rsv_prop_ed_visits-2025-2026.png)
 
 Rendered from saved `forecasts.npz` via `tapestry.evaluation.hubs.export_b0`
 against the frozen truth, rather than through `manager compare`. Both
@@ -147,6 +167,10 @@ R 4.5.0 with `scoringutils` 2.2.0 at `/nas/longleaf/rhel9/apps/r/4.5.0` — but
 running the full EpiBench pipeline was a deliberate scope decision: the §10.3
 selection score is the total-WIS ratio `rank` already computes. EpiBench
 relative WIS and the standard diagnostic plot set are not included here.
+
+The third row against the second also shows the calibration gap directly: the
+ensemble's bands are visibly wider than the rank-1 configuration's at the same
+origins, which is the 0.819 US dispersion ratio seen as a picture.
 
 ### The model is fooled by a second peak
 
