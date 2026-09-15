@@ -45,7 +45,8 @@ nav:
   - Longleaf setup: longleaf-setup.md
   - B0:
       - Definition and implementation: data/build-b-finalized.md
-      - Crosses calibration results: results/b0-crosses.md
+      - Crosses calibration results: results/b0-crosses/index.md
+      - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md

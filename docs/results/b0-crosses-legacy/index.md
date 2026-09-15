@@ -1,4 +1,19 @@
-# B0 calibration: the `crosses` experiment
+# B0 calibration: the `crosses` experiment (legacy, superseded)
+
+!!! danger "Superseded — kept only as a historical record"
+    This page describes `b0-crosses`, fitted **before** the per-location input
+    scaling fix (commit `11a23ea`). Under the single pooled scale documented
+    here, the US sat at roughly 40× a state's model units, which collapsed its
+    intervals — that is the cause of the "US looks wrong" section below, and it
+    is now fixed. The replacement experiment is
+    [the `us-cross-4` crosses calibration](../b0-crosses/index.md), and its
+    conclusions differ materially: the leading recipe is no longer a `conv`
+    variant, and the state/US disagreement largely disappears.
+
+    The fit artifacts for this experiment have been **deleted** to reclaim disk
+    (`data/experiments/` now holds only `b0-us-cross-4`), so nothing on this page
+    can be regenerated or re-ranked. The numbers below are the only surviving
+    record, and they should not be quoted as current B0 performance.
 
 **Experiment:** `b0-crosses` · **Suite:** `crosses` · **Status:** complete —
 51 configurations × 3 seeds = 153 season-CV runs, 459 season fits.
@@ -18,7 +33,7 @@ choices, not winners picked from the partial sweep.
 
 ## Score definition
 
-The selection score follows [architecture §10.3](../design/architecture.md) and is
+The selection score follows [architecture §10.3](../../design/architecture.md) and is
 computed by `tapestry.evaluation.totals` from each run's `totals.csv`:
 
 1. **Per target and season:** total model WIS ÷ total ensemble WIS over identical
