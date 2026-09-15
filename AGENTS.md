@@ -1,32 +1,15 @@
 # Agent Instructions
 
-## Project context
+This is a research project. Optimize for fast iterations. No need to test everything or run test. We run, we check, we evaluate. Compute is cheap.
+Prefer simpler solutions, do not over-engineer or introduce unnecessary abstractions, frameworks, dependencies, or infrastructure.
+Keep code simple and easy to change. 
 
-- This is a research project.
-- Optimize for learning, iteration, and a working result—not production-grade architecture.
-- Prefer the simplest solution that answers the current research question.
+Do not spend tokens inspecting images or browsing/viewing websites just to check results, except if ask. The user checks. Provide him with the graphs.
+Do not take shortcut or hidden assumptions.  State every material assumption explicitly in your response and add them to the documentation.
+Do not keep stuff around for fear of failure. A rewrote module -> the old one is discarded. even if that creates some problems, everything (calibrations, runs) will anyway be fully rerun with the latest version of the code. In writing and code, do keep track of the history behind a decision. Just describe the things. If something is important add it to the documentation's log.
 
-## Engineering scope
-
-- Do not over-engineer or introduce unnecessary abstractions, frameworks, dependencies, or infrastructure.
-- Keep implementations small and easy to change.
-- Avoid solving hypothetical future requirements unless the user explicitly asks for them.
-- Spend effort on the requested behavior and useful experiments rather than polish that does not support the research.
-
-## Images and websites
-
-- Do not spend tokens inspecting images or browsing/viewing websites just to infer what should be built.
-- Build a reasonable first pass from the user’s written request and available project context, then let the user inspect it and say what should change.
-- Only inspect an image or website when the user explicitly asks for that inspection or when it is strictly necessary to complete a specific, stated requirement.
-
-## Assumptions and documentation
-
-- State every material assumption explicitly in task notes, code comments, or the final response as appropriate.
-- When requirements are ambiguous, make the smallest reasonable assumption that keeps work moving and document it.
-- Distinguish clearly between user-provided requirements, observed project facts, and agent assumptions.
-- Record important tradeoffs, shortcuts, and intentionally out-of-scope work so they are not mistaken for omissions.
-
-## Delivery
-
-- Implement the smallest useful version, run proportionate checks, and report what was built.
-- Tell the user what assumptions were made and invite concrete feedback for the next iteration.
+When running on longleaf, we have two choices:
+- regular GPUs partitions (you have one example)
+- our patron nodes in a hidden partition named jlessler. We will run mostly on this, parallelizing runs in a single GPUs. we have
+  - g1803jles01.ll.unc.edu:  512GB ram 56 physical CPU cores Quantity 4 of Nvidia L40, 48GB
+  - g1803jles02.ll.unc.edu: 64 physical CPU cores 2Tb RAM 2x Nvidia H100, 96 GB
