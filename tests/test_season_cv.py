@@ -62,17 +62,3 @@ def test_select_five_quantiles_from_historical_archive():
         select_quantiles(values[:-2], old_levels[:-2])
     with pytest.raises(ValueError, match='exactly one saved quantile'):
         select_quantiles(np.vstack([values, values[1]]), np.append(old_levels, .025))
-
-
-def test_cv_writer_saves_only_five_quantiles(tmp_path):
-    from types import SimpleNamespace
-    from tapestry.models.b0 import B0
-    from tapestry.models.season_cv import evaluate
-    days = tuple((date(2025, 9, 6) + timedelta(weeks=i)).isoformat() for i in range(13))
-    ds = FinalizedDataset(np.ones((13, 6, 2, 2), dtype=np.float32), days, ('AL', 'US'), {})
-    rows = evaluate(B0(width=8), [ds.query(days[8])], SimpleNamespace(device='cpu', eval_members=4), tmp_path)
-    with np.load(tmp_path / 'forecasts.npz') as data:
-        np.testing.assert_array_equal(data['quantile_levels'], LEVELS)
-        assert data['quantiles'].shape == (5, 1, 4, 6, 2)
-    assert 'coverage50' in rows[0] and 'coverage95' in rows[0]
-    assert 'coverage80' not in rows[0]

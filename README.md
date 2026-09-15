@@ -104,7 +104,7 @@ Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 | `docs/workflows/` | Current commands and behavior |
 | `docs/results/` | Completed experiment findings |
 | `docs/design/` | Proposals and design history |
-| `tests/` | Scientific correctness, data integrity and interface checks |
+| `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
 
 Downloaded data, checkpoints, and generated results remain in their existing
 `data/`, `output/`, and `tmp/` locations. The [B0 experiment guide](experiments/b0/README.md)
@@ -118,11 +118,12 @@ uv sync --upgrade-package epibenchmark
 uv run pytest -q
 ```
 
-Use pytest: it runs both the original unittest classes and newer pytest functions.
-The old `unittest discover` command omits the latter. Tests use fixtures and
-local temporary files; integration tests exercise local R scoring and/or
-EpiBench and skip when their prerequisite executable/packages are absent.
-See [which tests to run](docs/maintenance.md#what-the-tests-do).
+The suite only keeps tests that protect reported results. GitHub Actions runs it
+on pushes and pull requests to `main`, with R `scoringutils` installed. Tests use
+fixtures and local temporary files; integration tests exercise R scoring and/or
+EpiBench and skip when `Rscript` is absent (run `Rscript scripts/setup_r.R` if
+`Rscript` exists but `scoringutils` does not).
+See [what the tests do](docs/maintenance.md#what-the-tests-do).
 
 ## Files kept locally
 

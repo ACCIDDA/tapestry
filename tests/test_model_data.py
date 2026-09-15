@@ -76,27 +76,3 @@ def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
     rows['cdc_nhsn_final'].append(dict(rows['cdc_nhsn_final'][0], totalconfflunewadm='8'))
     with pytest.raises(ValueError, match='Conflicting'):
         build_dataset(tmp_path)
-
-
-def test_cli_exports_query_and_season_batch(tmp_path, capsys):
-    from tapestry.model_data.cli import main
-
-    panel = np.ones((3, 6, 2, 2), dtype=np.float32)
-    dataset = tmp_path / 'dataset.npz'
-    output = tmp_path / 'query.npz'
-    FinalizedDataset(panel, ('2023-09-02', '2023-09-09', '2023-09-16'), ('AL', 'US'), {}).save(dataset)
-    main(['query', '--dataset', str(dataset), '--context-end', '2023-09-02',
-          '--locations', 'US', '--lookback', '12', '--output', str(output)])
-    with np.load(output, allow_pickle=False) as result:
-        assert result['X'].shape == (12, 6, 2, 1)
-        assert result['Y'].shape == (4, 6, 2, 1)
-        assert result['locations'].tolist() == ['US']
-        assert result['target_dates'][0] == '2023-09-09'
-    main(['windows', '--dataset', str(dataset), '--season', '2023-2024',
-          '--target-end', '2023-09-09', '--output', str(output)])
-    with np.load(output, allow_pickle=False) as result:
-        assert result['X'].shape == (1, 8, 6, 2, 2)
-        assert not result['Y'][0, 1:].any()
-    with pytest.raises(SystemExit):
-        main(['query', '--dataset', str(dataset), '--context-end', '2023-09-02', '--output', str(dataset)])
-    assert FinalizedDataset.load(dataset).panel.shape == panel.shape

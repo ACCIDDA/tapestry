@@ -63,25 +63,21 @@ recipes small; do not turn them into an experiment framework just to reduce file
 
 ## What the tests do
 
-You do not need every test for every edit. Keeping the suite is currently cheap:
-the pre-refactor local baseline was **86 passing tests in 8.85 seconds**, including
-available R/EpiBench integration checks. The following counts describe that baseline;
-parameterized model tests count as separate cases.
+Simplified September 14, 2026: the suite keeps only tests that protect reported
+results. Downloader (`test_repository`, `test_socrata`, `test_delphi`, `test_hubverse`),
+explorer, selection, catalog and experiment-manager tests were removed, along with
+CLI-plumbing and file-format checks. They remain in Git history (commit
+"simplify test") if those features need coverage again. GitHub Actions
+(`.github/workflows/tests.yml`) runs the suite on pushes and pull requests to `main`.
 
-| Files | Cases | What they catch | Priority |
-|---|---:|---|---|
-| `test_model_data.py`, `test_season_cv.py` | 6 | Window/target alignment, masks, season boundaries, save/load, held-out values changing training inputs/scales, independently checked WIS | Essential for research validity |
-| `test_b0.py` | 9 | Fair CRPS mathematics, missing-label exclusion, gradients, stochastic output, population-transform inversion, location ordering, feature masking | Essential while B0 is used |
-| `test_hub_evaluation.py`, `test_evaluation_sweep.py` | 9 | Correct horizon/channel export, quantile validity, equal scoring support, stable configuration identities, agreement with R scoring, end-to-end ranking/plots | Essential for reported comparisons |
-| `test_selection.py` | 17 | Native geography, conflict/retraction handling, source labels, release cutoffs, canonical hub observations and provider identity | Keep while building from raw sources |
-| `test_repository.py`, `test_socrata.py`, `test_delphi.py`, `test_hubverse.py` | 17 | Immutable commits, failed pulls, complete pagination, partial-stream retries, resume matching, API parameters, read-only Git history | Keep for supported downloaders |
-| `test_explorer.py`, `test_explorer_versions.py` | 23 | HTTP queries, indexing, revision cutoffs, suppression, SQLite/Parquet consistency, interrupted and concurrent rebuilds | Optional only if explorer features are retired |
-| `test_catalog.py`, `test_geography.py` | 5 | Catalog metadata/revision semantics and HHS membership/broadcast semantics | Small; exact catalog-count assertions and unused HHS coverage are the first candidates to reconsider |
-
-The catalog's hard-coded count of 25 is an inventory assertion, not a scientific
-invariant. It can create busywork when intentionally changing the source list.
-The two HHS tests were removed with their helper API in the follow-up cleanup. Most remaining tests
-check externally meaningful behavior rather than just repeating code structure.
+| File | What it catches |
+|---|---|
+| `test_model_data.py` | Window/target alignment, masks, observed zeros versus missing values, season boundaries, builder units and conflicting rows |
+| `test_season_cv.py` | Held-out season values cannot change training inputs, labels or scales; WIS; five-quantile selection from saved archives |
+| `test_b0.py` | Fair CRPS mathematics, missing-label exclusion, masked inputs not changing predictions, location ordering, population-transform inversion, checkpoint round trip, separate state/US head gradients |
+| `test_hub_evaluation.py` | Invalid quantile tasks excluded, agreement with R `scoringutils`, equal scoring support for best-model selection, horizon/channel/FIPS export, ranking on identical tasks |
+| `test_evaluation_sweep.py` | Seed averaging and target weighting in configuration ranking, stable configuration identities, Hubverse round trip, frozen-task and truth matching, equal-geography objective, end-to-end R/EpiBench sweep |
+| `test_epibench_pipeline.py` | EpiBench scoring with numeric FIPS and a zero reference, WIS values, refusal to reuse scores for changed inputs or missing tasks |
 
 The holdout audit in `experiments/b0/` overlaps unit tests intentionally: unit tests
 use small synthetic examples; the audit checks the actual canonical dataset and
@@ -91,28 +87,23 @@ those are observations at the time, not the current suite size.
 
 ### Focused commands
 
-Run from the repository root after installing model/explorer/evaluation dependencies
-and pytest. Pytest also runs unittest classes; `unittest discover` omits the newer
-function-style tests and should not be the documented full-suite command.
+Run from the repository root after `uv sync`.
 
 ```bash
 # All tests; local fixtures, no publisher downloads.
-PYTHONPATH=src python -m pytest -q
+uv run pytest -q
 
 # Model/data changes: scientific correctness and leakage.
-PYTHONPATH=src python -m pytest -q tests/test_model_data.py tests/test_b0.py tests/test_season_cv.py
-
-# Explorer changes.
-PYTHONPATH=src python -m pytest -q tests/test_explorer.py tests/test_explorer_versions.py tests/test_selection.py
+uv run pytest -q tests/test_model_data.py tests/test_b0.py tests/test_season_cv.py
 
 # Scoring/export changes.
-PYTHONPATH=src python -m pytest -q tests/test_hub_evaluation.py tests/test_evaluation_sweep.py
+uv run pytest -q tests/test_hub_evaluation.py tests/test_evaluation_sweep.py tests/test_epibench_pipeline.py
 ```
 
-Three existing integration tests invoke R scoring and/or the sibling EpiBench
-checkout. They skip if Rscript or the required checkout is absent; an installed
-Rscript without required R packages still fails and needs its dependencies fixed.
-Tests use temporary fixtures and do not train the full research sweep.
+Four integration tests invoke R `scoringutils` and/or EpiBench. They skip if
+Rscript or EpiBench is absent; an installed Rscript without `scoringutils` and
+`purrr` still fails, so run `Rscript scripts/setup_r.R`. Tests use temporary
+fixtures and do not train the full research sweep.
 
 ## Validation of this reorganization
 
