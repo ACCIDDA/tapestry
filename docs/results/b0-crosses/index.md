@@ -114,12 +114,40 @@ early stopping removes the collapse** (`stopping_300_20`: 0.946 on 2023-2024)
 and gives up much of the gain elsewhere, landing at rank 6.
 
 !!! danger "Do not read rank 1 as 'train longer'"
-    The honest reading is: 300 epochs without early stopping overfits to the
-    seasons that dominate the objective. `anchor__stopping_300_20` — 300 epochs
-    *with* patience 20 — is the configuration that is good everywhere without a
-    catastrophic season, and it is the safer default despite ranking 6th.
-    Patience was set to 0 in the references, so this is a defect of the
-    reference design, not of long training as such.
+    300 epochs without early stopping overfits the **training seasons**, and the
+    cost lands on whichever held-out season is least like them.
+    `anchor__stopping_300_20` — 300 epochs *with* patience 20 — is good
+    everywhere without a catastrophic season, and is the safer default despite
+    ranking 6th. Patience was 0 in all three references, so this is a defect of
+    the reference design, not of long training as such.
+
+!!! note "This is not leakage — the cross-validation is clean"
+    The held-out season is excluded from fit context, labels **and** scalers
+    (`fold_data`), and the early-stopping validation hides three weeks out of
+    every sixteen **inside the two training seasons only** (`validation_split`).
+    Patience never sees the scored season; the run manifest records
+    `no holdout tuning`. The 2023-2024 collapse is genuine out-of-sample
+    failure, not a model scoring data it trained on.
+
+    The mechanism is distribution shift across folds. Training loss on the
+    2023-2024 fold (seed 42) falls 0.2469 → **0.1698** going from 50 to 300
+    epochs, while patience stops at epoch **68** — its own inner validation says
+    the generalizing learning ends around there. That fold trains on the two
+    *largest* seasons and is scored on the smallest:
+
+    | Season | US peak admissions | Peak week |
+    |---|---:|---|
+    | 2023-2024 | 21,720 | 2023-12-30 |
+    | 2024-2025 | 55,718 | 2025-02-08 |
+    | 2025-2026 | 42,626 | 2026-01-03 |
+
+    A model driven hard onto two big, late-peaking seasons extrapolates badly
+    onto a small, early-peaking one. The other two folds contain 2023-2024 in
+    their training set and do not have this problem, which is why the damage is
+    one-sided — and it repeats across all three seeds (1.539 / 1.875 / 1.650),
+    so it is not seed noise. With only three seasons, one fold will always be
+    the odd one out; the combined score rewards `pat0` because the two
+    favourable folds gain more than the unfavourable one loses.
 
 ![Training-length ladder by reference family](figures/epoch-ladder.png)
 
@@ -494,11 +522,16 @@ keep crossing at least two contrasting references.
 
 **Training regime.** This is the largest single lever in the suite (−0.078 on
 `anchor`) and the most dangerous. 50 epochs underfits the MLP; 300 epochs
-without early stopping overfits to the two seasons carrying most of the
-objective and destroys 2023-2024 flu (1.688). Early stopping with patience 20
-fixes that season at the cost of the gains. **Patience 0 in all three references
-was a design error** — the ladder should be rerun with patience as the default
-and epochs as the free parameter, not the reverse.
+without early stopping overfits the **training seasons** — training loss falls
+0.2469 → 0.1698 on the 2023-2024 fold while that season's score degrades to
+1.688. This is genuine out-of-sample failure, not leakage: the held-out season
+is excluded from context, labels and scalers, and patience validates only inside
+the training seasons. The 2023-2024 fold trains on the two largest seasons and
+is scored on the smallest, so a model driven hard onto the training distribution
+extrapolates badly. Patience 20 stops at epoch ~68–79 and avoids this using only
+inner-fold information. **Patience 0 in all three references was a design
+error** — the ladder should be rerun with patience as the default and epochs as
+the free parameter, not the reverse.
 
 **Lookback windows.** Small and reference-dependent, and no longer a
 simplification story. 8 → 12 weeks is the best change to `raw` (−0.056), but
@@ -561,8 +594,16 @@ level against a nominal 50; (3) more seeds before any further selection;
   first two folds have later seasons in the fitting set. These are finalized
   retrospective CV results on assumed-truth NSSP values.
 - **Selection on the same folds** used for ranking; the leaders are chosen on the
-  data that scores them. The 2023-2024 overfit is visible *because* that season
-  is in the objective, and would not have been caught by a held-out design.
+  data that scores them. Each individual fold is nonetheless clean — the scored
+  season is excluded from that fold's context, labels and scalers — so the
+  2023-2024 collapse is genuine out-of-sample failure. What selection-on-folds
+  costs here is the ability to trust the *choice* of rank 1, not the validity of
+  any single fold's score.
+- **Three seasons means one fold is always the odd one out.** Fold scores are
+  therefore not exchangeable: 2023-2024 trains on the two largest seasons and is
+  scored on the smallest. A configuration can win the combined score by gaining
+  on the two favourable folds more than it loses on the unfavourable one, which
+  is exactly what rank 1 does.
 - **Three seeds** cannot resolve the differences separating the leading group.
 - **One-factor screen only.** Interactions were explicitly out of scope; the
   family-reversing effects documented above are evidence that interactions
@@ -596,8 +637,11 @@ deleted to reclaim disk.
 
 Headline changes from the rerun: the leading family moved from `conv` to
 `anchor`, best US score improved from 1.19 to 0.888, horizon profile reversed
-(now best at the nowcast), and the winning configuration turns out to be a
-season-specific overfit caused by `patience=0` in the reference designs.
+(now best at the nowcast), and the winning configuration turns out to overfit
+the training seasons — `patience=0` in the reference designs lets 300 epochs
+drive training loss to 0.170 while the least-similar held-out fold degrades to
+1.688. The cross-validation itself is clean; the failure is distribution shift
+between folds, not leakage.
 
 ## Reproducing
 
@@ -611,6 +655,10 @@ season-specific overfit caused by `patience=0` in the reference designs.
 
 ```bash
 .venv/bin/python scripts/plot_b0_crosses.py -e b0-us-cross-4 -r ranking-2739af8db682
+```
+
+```bash
+.venv/bin/python scripts/score_b0_per_location.py -e b0-us-cross-4 -r ranking-2739af8db682 -o per_location.parquet
 ```
 
 `rank` regenerates `ranking-2739af8db682/` (it warns about the mixed commit
