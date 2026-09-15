@@ -1,5 +1,6 @@
 """Exercise EpiBench itself at the FIPS/zero-reference boundary of the adapter."""
 import importlib.util
+from pathlib import Path
 import shutil
 
 import numpy as np
@@ -14,12 +15,14 @@ from tapestry.models.season_cv import LEVELS
 def test_full_command_numeric_fips_and_zero_reference(tmp_path):
     if not shutil.which('Rscript') or importlib.util.find_spec('epibench') is None:
         pytest.skip('Requires local R and EpiBench')
+    if not Path('data/mirrors/hub_flusight_current.git').is_dir():
+        pytest.skip('Requires local FluSight hub mirror')
     units = pd.DataFrame(dict(reference_date=['2025-01-04', '2025-01-11'],
         target_end_date=['2025-01-04', '2025-01-11'], location=['01', '01'], horizon=[0, 0], observed=[0., 0.]))
     ensemble = units.assign(model='FluSight-ensemble')
     ensemble[QCOLS] = 0.
     candidate = units.assign(model='candidate')
-    values = np.arange(5)
+    values = np.arange(len(QCOLS))
     candidate[QCOLS] = values
     case = dict(hub='flusight', target='wk inc flu hosp', ensemble='FluSight-ensemble')
     wide = pd.concat([ensemble, candidate], ignore_index=True)
