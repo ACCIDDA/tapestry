@@ -45,6 +45,7 @@ nav:
   - Longleaf setup: longleaf-setup.md
   - B0:
       - Definition and implementation: data/build-b-finalized.md
+      - Crosses calibration results: results/b0-crosses.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md
@@ -66,6 +67,4 @@ nav:
       - Frozen hub support: workflows/hub-evaluation.md
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
-  - Results:
-      - B0 crosses calibration: results/b0-crosses.md
   - Features and tests: maintenance.md

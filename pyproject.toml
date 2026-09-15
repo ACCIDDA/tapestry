@@ -15,7 +15,7 @@ dependencies = ["epidatpy>=0.6.0,<0.7"]
 [project.optional-dependencies]
 model-data = ["numpy>=1.24"]
 model = ["numpy>=1.24", "torch>=2.1"]
-evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "reportlab>=4", "pypdf>=4", "PyYAML>=6"]
+evaluation = ["numpy>=1.24", "pandas>=2", "pyarrow>=10", "torch>=2.1", "matplotlib>=3.7", "seaborn>=0.13", "reportlab>=4", "pypdf>=4", "PyYAML>=6"]
 explorer = ["pyarrow>=10"]
 docs = [
   "mkdocs>=1.6,<2",

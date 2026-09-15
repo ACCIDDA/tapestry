@@ -57,17 +57,92 @@ All three are one-factor changes on the `conv` reference. Per-target means:
     parity. Treat these three as an indistinguishable leading group, not an
     ordering. Three seeds cannot resolve differences this small.
 
+## Model ranking plots
+
+One dot per model, one column per metric, models sharing rows across columns —
+the hub ensemble is ranked in among the configurations rather than set apart,
+so its row shows where it actually falls. Ordered by pooled per-task mean WIS,
+**best on top**. WIS components are per-task means; coverage is the fraction of
+frozen tasks inside the interval, with the nominal level marked in red.
+
+### Total WIS across all six targets
+
+Columns are the six targets' total WIS, each on its own scale — raw WIS spans
+roughly 10² to 10⁵ between admissions and ED proportions, so they cannot share
+an axis. Rows are ordered by each configuration's mean WIS ratio to the
+ensemble across all six targets, which is scale-free.
+
+![Total WIS by target, all 51 configurations and the hub ensemble](figures/ranking-all-targets.png)
+
+The ensemble lands at row 28 of 52 on that combined ordering: about half the
+configurations beat it overall, which is the same result the selection score
+reports, seen per target.
+
+### Per target
+
+Six columns each: WIS, underprediction, overprediction, dispersion, 50% and 90%
+coverage — the metric set used by the influpaint component plots.
+
+![Influenza admissions ranking](figures/ranking-flu_hosp.png)
+
+![COVID-19 admissions ranking](figures/ranking-covid_hosp.png)
+
+![RSV admissions ranking](figures/ranking-rsv_hosp.png)
+
+![Influenza ED visits ranking](figures/ranking-flu_prop_ed_visits.png)
+
+![COVID-19 ED visits ranking](figures/ranking-covid_prop_ed_visits.png)
+
+![RSV ED visits ranking](figures/ranking-rsv_prop_ed_visits.png)
+
+Where the ensemble falls among the 52 rows, by target:
+
+| Target | Ensemble rank | Configurations beating it |
+|---|---:|---:|
+| Influenza admissions | 27 / 52 | 26 of 51 |
+| COVID-19 admissions | 27 / 52 | 26 of 51 |
+| RSV admissions | 33 / 52 | 32 of 51 |
+| Influenza ED visits | 37 / 52 | 36 of 51 |
+| COVID-19 ED visits | **1 / 52** | **0 of 51** |
+| RSV ED visits | **52 / 52** | **51 of 51** |
+
+The two extremes are the clearest signals here: no configuration beats the
+ensemble on COVID-19 ED visits, and every configuration beats it on RSV ED
+visits. The coverage columns show the calibration defect directly — nearly every
+dot sits left of both nominal lines.
+
+!!! note "This ordering is not the selection score"
+    These figures rank by pooled per-task mean WIS within a target, which
+    weights a season by how many tasks it contributes. The selection score in
+    the table above instead averages season ratios equally, then weights
+    admissions twice ED. The two orderings therefore differ — on influenza
+    admissions this figure puts `anchor__stopping_300_20` first, while the
+    selection score puts `conv__heads_sh` first. Neither is wrong; they answer
+    different questions.
+
 ## Fan plots
 
 Median with 50% and 95% intervals, every fourth forecast origin, against frozen
 truth. Each panel is the median-scoring seed for that configuration (42, 44, 44),
 with the official ensemble as the bottom panel.
 
-| Target / season | US | North Carolina |
-|---|---|---|
-| Influenza admissions 2024-2025 | [US fans](figures/fans-flusight_flu_hosp_2024-2025-US.svg) | [NC fans](figures/fans-flusight_flu_hosp_2024-2025-37.svg) |
-| COVID-19 admissions 2025-2026 | [US fans](figures/fans-covid_covid_hosp_2025-2026-US.svg) | [NC fans](figures/fans-covid_covid_hosp_2025-2026-37.svg) |
-| RSV admissions 2025-2026 | [US fans](figures/fans-rsv_rsv_hosp_2025-2026-US.svg) | [NC fans](figures/fans-rsv_rsv_hosp_2025-2026-37.svg) |
+### Influenza admissions, 2024-2025
+
+![Influenza admissions 2024-2025, US](figures/fans-flusight_flu_hosp_2024-2025-US.svg)
+
+![Influenza admissions 2024-2025, North Carolina](figures/fans-flusight_flu_hosp_2024-2025-37.svg)
+
+### COVID-19 admissions, 2025-2026
+
+![COVID-19 admissions 2025-2026, US](figures/fans-covid_covid_hosp_2025-2026-US.svg)
+
+![COVID-19 admissions 2025-2026, North Carolina](figures/fans-covid_covid_hosp_2025-2026-37.svg)
+
+### RSV admissions, 2025-2026
+
+![RSV admissions 2025-2026, US](figures/fans-rsv_rsv_hosp_2025-2026-US.svg)
+
+![RSV admissions 2025-2026, North Carolina](figures/fans-rsv_rsv_hosp_2025-2026-37.svg)
 
 These were rendered directly from saved `forecasts.npz` via
 `tapestry.evaluation.hubs.export_b0` and the frozen truth, reusing the
