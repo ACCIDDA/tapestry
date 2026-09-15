@@ -1,30 +1,7 @@
 # Tapestry
-
-Tapestry is a research project for multi-disease epidemic forecasting. The Python
-package and commands are named `tapestry`.
-
-The working pipeline downloads surveillance data, builds a canonical six-channel
-weekly dataset, trains the stochastic B0 model, runs season cross-validation,
-and compares saved forecasts with hub models. A local explorer lets you inspect
-source series and publisher revisions.
-
-```text
-CDC / Delphi / Hubverse
-          ↓
-data/ raw snapshots → shared selection ──→ explorer
-                              ↓
-                         model_data/
-                    weekly values + masks
-                              ↓
-                           models/
-                   B0 → training / season CV
-                              ↓
-                         evaluation/
-                 frozen tasks → scores / reports
-```
+influpaint v2, or maybe not too much like influpaint.  Tapestry is a research project for multi-disease epidemic forecasting. In alpha, not ready, changing.
 
 Documentation: [accidda.github.io/tapestry](https://accidda.github.io/tapestry/).
-GitHub Actions builds and deploys the MkDocs site from an uploaded Pages artifact.
 
 ## Environment
 
