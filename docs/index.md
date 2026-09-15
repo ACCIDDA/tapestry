@@ -25,10 +25,11 @@ snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
 The [canonical B0 report](results/b0-configuration-comparison.md) covers
-14 variants and 42 runs. The best aggregate model, `conv_h12`, has 10.8% lower
-influenza WIS and 8.1% lower three-admission WIS relative to ensemble parity
-on the balanced selection objectives. The report includes seed variability,
-matched controls, coverage, and projection fans.
+14 configurations, each evaluated at three seeds (42 runs). Configurations rank
+by mean all-target WIS ratio across seeds, including admissions and ED visits.
+`residual2` ranks first, followed by `latent32` and `balanced`. Its score is
+1.0197 ± 0.0103, about 2.0% above ensemble parity. The report includes seed
+variability, matched controls, coverage, and fans using middle-performing seeds.
 [Design proposals](design/solution-b-plan.md) describe possible extensions.
 The [code and test review](maintenance.md) distinguishes current needs from
 optional features.

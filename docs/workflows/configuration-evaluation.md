@@ -114,9 +114,11 @@ remain documented in the original comparison manifest.
 - `leaderboard.csv`: WIS, median AE, 50/95% coverage, bias and WIS components,
   split by target, season, geography (US or states/DC), and horizon; within-cell
   WIS ranks, counts, relative WIS and its valid denominator counts.
-- `run_ranking.csv`: two exploratory objectives and ranks for individual seeds.
+- `run_ranking.csv`: primary all-target scores and ranks for individual seeds,
+  plus secondary influenza/admissions objectives.
 - `configuration_ranking.csv`: objective means, sample SD and seed counts by
-  configuration. One-seed SD is undefined, not zero.
+  configuration, ordered by `all_target_rank`, with middle-seed identifiers.
+  One-seed SD is undefined, not zero.
 - `plots/<target-season>/`: EpiBench WIS components, relative-WIS heatmap and
   reference-date time series, independently for US and states/DC; compatible
   score CSVs; projection fan SVGs for US and NC by default.
@@ -128,10 +130,16 @@ paper used FluSight-baseline. The mean of individual WIS ratios is not the ratio
 of mean WIS; both are named separately in the leaderboard. Zero reference WIS
 produces an undefined per-task ratio and is counted explicitly.
 
-The influenza objective is the geometric mean of mean-WIS/ensemble-mean-WIS
+The primary all-target objective gives each of the six targets equal weight,
+then available season/geography cells equal weight within a target. Compute a
+geometric mean WIS ratio for each seed, then an arithmetic mean across seeds to
+rank configurations. The report, ranking downloads, and fans share this rule.
+
+The secondary influenza objective is the geometric mean of mean-WIS/ensemble-mean-WIS
 ratios, weighting each available season/geography cell equally. The admissions
 objective first averages log ratios within each target and then equally weights
-admission targets. These reproduce the existing sweep's selection objectives.
+admission targets. These retain the earlier admission-focused diagnostics;
+they do not select the overall winner.
 No absolute WIS is pooled across hospitalization and ED units. Configuration
 scores average individual seed objectives and report their spread; three seeds and exploratory model selection do not establish a controlled
 significance claim.
@@ -151,8 +159,7 @@ Identical representative runs appear once; if the same configuration has differe
 middle seeds under the two objectives, both are shown. Ties use seed number;
 an even seed count uses the upper middle. The report includes the all-target
 configuration ranking with mean seed scores, sample SD, and representative seeds.
-This selection includes ED targets and is separate from the report's
-influenza/admissions rankings.
+This selection includes ED targets and matches the report's primary ranking.
 
 Panel labels show variant names and seed numbers; the report's
 [model differences table](../results/b0-configuration-comparison.md#model-differences)

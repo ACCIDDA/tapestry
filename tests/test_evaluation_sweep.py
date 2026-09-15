@@ -31,7 +31,7 @@ def test_fan_selection_weights_targets_and_selects_local_winner():
 
 
 def test_fan_ranking_averages_seed_scores_and_uses_middle_performance():
-    from tapestry.evaluation.sweep import fan_ranking, fan_selection
+    from tapestry.evaluation.sweep import fan_ranking, fan_selection, ranking_tables
 
     rows, runs = [], []
     # A lucky seed must not put configuration a in the overall top three.
@@ -50,6 +50,13 @@ def test_fan_ranking_averages_seed_scores_and_uses_middle_performance():
     top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))
     assert top == ['b-44', 'c-43', 'd-43']
     assert best == 'b-44'
+    exported_runs, exported_configs = ranking_tables(frame, runs,
+        pd.DataFrame(index=pd.Index(list('abcd'), name='config_id')))
+    assert exported_configs.index.tolist() == ranking.config_id.tolist()
+    assert exported_configs.loc['b', 'all_target_mean'] == pytest.approx(.8)
+    assert exported_configs.loc['a', 'all_target_mean'] == pytest.approx(11.01 / 3)
+    assert exported_configs.loc['b', 'middle_model'] == top[0]
+    assert exported_runs.iloc[0].model == 'a-42'  # Best single seed is not the winning configuration.
     # The seasonal middle seed can differ from the overall representative.
     frame.loc[frame.target.eq('hosp') & frame.model.str.startswith('b-'), 'wis_ratio'] = [.6, .7, .8]
     top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))

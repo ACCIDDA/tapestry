@@ -42,13 +42,18 @@ def hubverse(frames, model, output, csv=False):
     return count
 
 
-def fan_ranking(leaderboard, runs, case=None):
-    """Average seed objectives arithmetically; illustrate the median-scoring seed."""
+def seed_objectives(leaderboard, runs, case=None):
+    """Equal-target geometric WIS ratios for each seed, including ED targets."""
     cells = leaderboard[leaderboard.horizon.astype(str).eq('all') & leaderboard.model.isin(runs.model)].copy()
     if case is not None:
         cells = cells[cells.target.eq(case['target']) & cells.season.eq(case['season'])]
     cells['log_ratio'] = np.log(cells.wis_ratio.clip(lower=1e-12))
-    scores = np.exp(cells.groupby(['model', 'target']).log_ratio.mean().groupby('model').mean())
+    return np.exp(cells.groupby(['model', 'target']).log_ratio.mean().groupby('model').mean())
+
+
+def fan_ranking(leaderboard, runs, case=None):
+    """Average seed objectives arithmetically; illustrate the median-scoring seed."""
+    scores = seed_objectives(leaderboard, runs, case)
     seeds = runs[['model', 'config_id', 'seed', 'label']].merge(scores.rename('score'), on='model')
     rows = []
     for config, part in seeds.groupby('config_id'):
@@ -57,6 +62,21 @@ def fan_ranking(leaderboard, runs, case=None):
         rows.append(dict(config_id=config, label=middle.label, mean=part.score.mean(),
                          sd=part.score.std(), seeds=len(part), model=middle.model, seed=middle.seed))
     return pd.DataFrame(rows).sort_values(['mean', 'config_id']).reset_index(drop=True)
+
+
+def ranking_tables(leaderboard, runs, configs):
+    """Use the same all-target objective for exports, report selection, and fans."""
+    runs = runs.copy()
+    runs['all_target_objective'] = runs.model.map(seed_objectives(leaderboard, runs))
+    runs['all_target_rank'] = runs.all_target_objective.rank(method='min')
+    overall = fan_ranking(leaderboard, runs).set_index('config_id')
+    configs = configs.copy()
+    for column, source in [('all_target_mean', 'mean'), ('all_target_sd', 'sd'),
+                           ('middle_model', 'model'), ('middle_seed', 'seed')]:
+        configs[column] = overall[source]
+    configs['all_target_rank'] = configs.all_target_mean.rank(method='min')
+    return (runs.sort_values(['all_target_rank', 'model']),
+            configs.sort_values(['all_target_rank', 'config_id']))
 
 
 def fan_selection(leaderboard, runs, case):
@@ -159,7 +179,7 @@ def main():
     scores.to_parquet(args.output / 'scores.parquet', index=False)
     leaderboard = rank(scores)
     leaderboard.to_csv(args.output / 'leaderboard.csv', index=False)
-    # Same exploratory objective as the existing sweep. No raw-score pooling across units.
+    # Retain admission-focused secondary diagnostics; all-target scores set the ranking below.
     selected = leaderboard[leaderboard.horizon.eq('all') & leaderboard.target.str.endswith('hosp') & leaderboard.model.isin([r['model_id'] for r in records])]
     objectives = []
     for model, part in selected.groupby('model'):
@@ -168,11 +188,12 @@ def main():
     objective = pd.DataFrame(objectives).merge(pd.DataFrame(records)[['model_id', 'config_id', 'seed', 'label']], left_on='model', right_on='model_id')
     objective['flu_rank'] = objective.flu_objective.rank(method='min')
     objective['admissions_rank'] = objective.admissions_objective.rank(method='min')
-    objective.sort_values('flu_rank').to_csv(args.output / 'run_ranking.csv', index=False)
     configs = objective.groupby('config_id').agg(seeds=('seed','count'), flu_mean=('flu_objective','mean'), flu_sd=('flu_objective','std'), admissions_mean=('admissions_objective','mean'), admissions_sd=('admissions_objective','std'))
     configs['flu_rank'] = configs.flu_mean.rank(method='min')
     configs['admissions_rank'] = configs.admissions_mean.rank(method='min')
-    configs.sort_values('flu_rank').to_csv(args.output / 'configuration_ranking.csv')
+    objective, configs = ranking_tables(leaderboard, objective, configs)
+    objective.to_csv(args.output / 'run_ranking.csv', index=False)
+    configs.to_csv(args.output / 'configuration_ranking.csv')
     module_path = package_source(args.epibench) / 'build_plots.py'
     spec = importlib.util.spec_from_file_location('epibench_plots', module_path)
     plots = importlib.util.module_from_spec(spec)
@@ -221,16 +242,18 @@ def write_report(output, records, cases, objective, configs):
              'Scores come from the full EpiBench config pipeline (including R scoringutils and relative WIS); '
              'the diagnostic plots call EpiBench plotting code. '
              'These are finalized retrospective CV results and exploratory selections, not prospective rankings.', '',
-             'Lower is better. The influenza objective is the geometric mean of WIS/ensemble-WIS '
+             'Configurations rank by the arithmetic mean of all-target seed objectives, including ED. '
+             'Each seed objective is the geometric WIS ratio with equal target weight, then equal season/geography weight. '
+             'Fans use the middle-performing seed. Lower is better. The secondary influenza objective is the geometric mean of WIS/ensemble-WIS '
              'ratios, equally weighting each season and US versus states/DC. The admissions objective '
              'first gives each admission target equal weight. Configuration results average the run objectives; '
              'different seed counts and selection on these folds limit comparisons. '
              'The plotted relative WIS is the mean of per-task ratios, a different statistic.', '',
-             '| Configuration | Example run | Seeds | Flu objective | Admissions objective |',
-             '|---|---|---:|---:|---:|']
-    for config_id, row in configs.sort_values('flu_rank').iterrows():
+             '| Configuration | Variant | Seeds | All-target mean ± SD | Middle seed | Flu objective | Admissions objective |',
+             '|---|---|---:|---:|---:|---:|---:|']
+    for config_id, row in configs.sort_values('all_target_rank').iterrows():
         label = next(r['label'] for r in records if r['config_id'] == config_id)
-        lines.append(f'| {config_id} | {label} | {int(row.seeds)} | {row.flu_mean:.4f} | {row.admissions_mean:.4f} |')
+        lines.append(f'| {config_id} | {label} | {int(row.seeds)} | {row.all_target_mean:.4f} ± {row.all_target_sd:.4f} | {int(row.middle_seed)} | {row.flu_mean:.4f} | {row.admissions_mean:.4f} |')
     lines += ['', link('Configuration ranking (means and seed SD)', Path('configuration_ranking.csv')),
               '', link('Individual run ranking and identifiers', Path('run_ranking.csv')),
               '', link('Detailed target/season/geography/horizon leaderboard', Path('leaderboard.csv')),

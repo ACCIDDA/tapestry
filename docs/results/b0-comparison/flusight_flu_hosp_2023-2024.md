@@ -6,6 +6,27 @@ All models use the same frozen tasks. US is the native national prediction; stat
 
 Overall top three (middle seeds): `residual2 · seed 44`, `latent32 · seed 43`, `balanced · seed 44`. Target/season best (middle seed): `conv_h12 · seed 42`. See the [model differences table](../b0-configuration-comparison.md#model-differences) and the canonical report’s equal-target WIS-ratio selection rule.
 
+## Target/season configuration ranking
+
+Arithmetic mean across seeds of each seed’s geometric WIS ratio across US and states/DC. All four horizons are included. Lower is better; 1 is ensemble parity.
+
+| Variant | Mean seed score ± SD | Middle seed |
+| --- | --- | --- |
+| conv_h12 | 0.8684 ± 0.1332 | 42 |
+| mlp_h8 | 0.8773 ± 0.0304 | 44 |
+| balanced | 0.8813 ± 0.0367 | 43 |
+| residual2 | 0.9037 ± 0.0379 | 42 |
+| residual2_z32 | 0.9184 ± 0.1075 | 42 |
+| mlp_h12 | 0.9453 ± 0.0952 | 42 |
+| anchor | 0.9615 ± 0.0655 | 44 |
+| state_us | 0.9734 ± 0.0901 | 44 |
+| flu_only | 1.0547 ± 0.1294 | 44 |
+| latent32 | 1.0633 ± 0.0334 | 43 |
+| conv_h26 | 1.1306 ± 0.0781 | 43 |
+| mlp_h26 | 1.2206 ± 0.2771 | 43 |
+| baseline | 1.3023 ± 0.0542 | 42 |
+| mlp_h26_dynamics | 1.3824 ± 0.2129 | 43 |
+
 ## US projection fans
 
 [![Influenza admissions · 2023-2024: US projection fans](../../assets/b0_configuration_comparison/flusight_flu_hosp_2023-2024/fans-US.svg){ loading=lazy }](../../assets/b0_configuration_comparison/flusight_flu_hosp_2023-2024/fans-US.svg)
