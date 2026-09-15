@@ -420,6 +420,22 @@ SD: shared heads (−0.055), 8-week history (−0.051), and dropping geography
   recorded as `failed`, the rest as `planned`); it has been rebuilt from the
   attempt records and now reads 153 `complete`.
 
+## Log
+
+**2026-09-15 — state scaling.** Current data: very decent performance except in
+the US, due to a common scaling across all locations. That has been changed.
+
+The `us-cross-4` experiment is running with that fix. The earlier write-ups of
+the `us-cross-2` rerun and the proposed follow-up experiment have been removed
+from these docs; this page is the surviving record of the `crosses` calibration.
+
+!!! warning "Fit artifacts for this experiment are being cleared"
+    The older experiment directories under `data/experiments/` — including
+    `b0-crosses` — are slated for deletion to reclaim disk. Once that happens the
+    `ranking-66c35025d66c/` artifacts referenced above are gone, and the
+    *Reproducing* commands below require refitting from scratch rather than
+    re-ranking existing runs. The numbers on this page are the record.
+
 ## Reproducing
 
 ```bash

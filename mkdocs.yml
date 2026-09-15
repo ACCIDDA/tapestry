@@ -46,8 +46,6 @@ nav:
   - B0:
       - Definition and implementation: data/build-b-finalized.md
       - Crosses calibration results: results/b0-crosses.md
-      - "Crosses rerun: epochs and US error": results/b0-us-cross-2.md
-      - Proposed follow-up experiment: design/b0-crosses-followup.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md

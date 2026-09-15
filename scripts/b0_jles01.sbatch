@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=6
 #SBATCH --mem=64G
 #SBATCH --time=12:00:00
 #SBATCH --output=output/slurm/b0-jles01-%A_%a.log
@@ -33,17 +33,23 @@
 # `manager status -e <experiment>` prints the remaining task numbers; put them in
 # TASKS (default: the 6-59 that remain in b0-us-cross-3).
 #
-# Sizing, from job 1218975 measured on this node: a fit resides in ~1.8 GiB, not
-# the ~6 GiB the heaviest configuration peaks at while training, so 10 lanes need
-# only ~18 GiB of the L40's 44. Memory is not the limit here; cores are. The card
-# reports 100% utilization at 24% memory, i.e. it is launch-latency-bound, so a fit
-# gains nothing from a second BLAS thread -- OMP_NUM_THREADS=1 lets 10 lanes fit in
-# 10 of the 56 cores (4 jobs use 40). Raise LANES further only with cores to spare.
+# Sizing, measured on this node during job 1218975. Per-fit GPU memory is NOT
+# uniform: light `raw` configurations sit at ~1.8 GiB, but the conv family ranges
+# over 2.8, 4.0 and up to 6.9 GiB. Sampling only the light ones suggests 10 lanes
+# fit in ~18 GiB; that is wrong. A card holding several conv lanes is the binding
+# case -- slot 2 measured 19.2 GiB with a single conv fit resident alongside five
+# light ones, and 8 conv lanes would want ~55 GiB against the L40's 44.
+#
+# 6 lanes is the proven setting and already drives the card to 100% utilization,
+# so more lanes buy little. Raise LANES only after checking the conv share of the
+# remaining work (`manager status` + grep conv); 7-8 is the realistic ceiling on a
+# mixed card, and only 10 if the remaining work is conv-free.
+# Each fit pins one torch thread, so 6 lanes want 6 of the 56 cores; 4 jobs use 24.
 # Walltime is 12h: a lane is now the sum of its seeds, and it holds several
 # configurations in a row.
 set -euo pipefail
 experiment=${1:?usage: sbatch --array=0-3 scripts/b0_jles01.sbatch EXPERIMENT}
-lanes=${LANES:-10}
+lanes=${LANES:-6}
 gpus=${GPUS:-4}
 # Stride over the task list so heavy conv configurations spread across cards
 # instead of clumping onto whichever slice happens to hold them.
