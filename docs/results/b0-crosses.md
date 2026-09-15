@@ -122,38 +122,69 @@ dot sits left of both nominal lines.
 
 ## Fan plots
 
-Median with 50% and 95% intervals, every fourth forecast origin, against frozen
-truth. Each panel is the median-scoring seed for that configuration (42, 44, 44),
-with the official ensemble as the bottom panel.
+One figure per season, **United States on the left, North Carolina on the
+right**, one row per target scored in that season. Lines are the median of the
+three best configurations plus the hub ensemble (dashed); bands are the 50%
+interval; every third forecast origin is drawn. Each configuration is shown at
+its median-scoring seed (42, 44, 44).
 
-### Influenza admissions, 2024-2025
+### 2023-2024
 
-![Influenza admissions 2024-2025, US](figures/fans-flusight_flu_hosp_2024-2025-US.svg)
+![2023-2024 fans, US and North Carolina](figures/fans-season-2023-2024.png)
 
-![Influenza admissions 2024-2025, North Carolina](figures/fans-flusight_flu_hosp_2024-2025-37.svg)
+### 2024-2025
 
-### COVID-19 admissions, 2025-2026
+![2024-2025 fans, US and North Carolina](figures/fans-season-2024-2025.png)
 
-![COVID-19 admissions 2025-2026, US](figures/fans-covid_covid_hosp_2025-2026-US.svg)
+### 2025-2026
 
-![COVID-19 admissions 2025-2026, North Carolina](figures/fans-covid_covid_hosp_2025-2026-37.svg)
+![2025-2026 fans, US and North Carolina](figures/fans-season-2025-2026.png)
 
-### RSV admissions, 2025-2026
+Rendered from saved `forecasts.npz` via `tapestry.evaluation.hubs.export_b0`
+against the frozen truth, rather than through `manager compare`. Both
+dependencies are available — EpiBenchmark (`epibench`, commit `ed418962`) and
+R 4.5.0 with `scoringutils` 2.2.0 at `/nas/longleaf/rhel9/apps/r/4.5.0` — but
+running the full EpiBench pipeline was a deliberate scope decision: the §10.3
+selection score is the total-WIS ratio `rank` already computes. EpiBench
+relative WIS and the standard diagnostic plot set are not included here.
 
-![RSV admissions 2025-2026, US](figures/fans-rsv_rsv_hosp_2025-2026-US.svg)
+### The model is fooled by a second peak
 
-![RSV admissions 2025-2026, North Carolina](figures/fans-rsv_rsv_hosp_2025-2026-37.svg)
+The 2024-2025 influenza panels show the failure directly. National admissions
+rise to about 40,000 in early January, **fall back to about 33,000**, then climb
+to a higher second peak near 55,000 at the end of February. Forecasting from
+origins around that dip, all three configurations project continued decline:
+the fans point down from roughly 35,000 while truth more than doubles away from
+them. North Carolina shows the same shape.
 
-These were rendered directly from saved `forecasts.npz` via
-`tapestry.evaluation.hubs.export_b0` and the frozen truth, reusing the
-`tapestry.evaluation.sweep.fans` convention, rather than through
-`manager compare`. Both dependencies are in fact available — EpiBenchmark
-(`epibench`, commit `ed418962`, matching `uv.lock`) and R 4.5.0 with
-`scoringutils` 2.2.0 at `/nas/longleaf/rhel9/apps/r/4.5.0`. Running the full
-EpiBench pipeline was a deliberate scope decision, not a blocker: the selection
-score in §10.3 is the total-WIS ratio that `rank` already computes, and
-`compare` would not change it. EpiBench relative WIS and the standard
-diagnostic plot set are therefore not included here.
+Measured over every origin where truth had fallen for a week and then rose more
+than 10% within four weeks (896 such origin-locations):
+
+| Influenza 2024-2025 rebounds, **states/DC** | B0 | Hub ensemble |
+|---|---:|---:|
+| Predicted *down* into the rebound | **77.7%** | 56.2% |
+| Four-week truth inside the 95% interval | **31.9%** | 41.6% |
+| Median miss at four weeks (admissions) | 226 | 203 |
+
+These counts are state-level: 94 of the 95 influenza 2024-2025 rebound episodes
+are states/DC. The national series contributes a **single** rebound origin, at
+which both B0 and the ensemble predicted down and neither covered the outturn
+(B0 missing by 38,545 admissions, the ensemble by 28,582). The national double
+peak is therefore clear in the figure and in that one origin, but it is not
+something these counts establish on their own.
+
+!!! warning "This is season-specific, not a general defect"
+    Pooled over all six admissions cases, B0 actually handles rebounds *better*
+    than the ensemble: it calls the direction down at 24.3% of rebound origins
+    versus the ensemble's 29.1%, with a smaller median miss (7 vs 15) and better
+    four-week coverage (90.1% vs 85.1%). Influenza 2023-2024 is the opposite
+    extreme — B0 calls down at 2.2% of rebounds against the ensemble's 32.6%.
+    The double-peak failure is real and severe in 2024-2025; it is not a
+    property of the model everywhere.
+
+    A single-peak prior is the natural suspect: the training seasons rarely show
+    a within-season rebound, and nothing in the six input channels marks one as
+    possible. That is a hypothesis this experiment does not test.
 
 ## Performance against the ensemble
 
@@ -213,6 +244,69 @@ right *width* — dispersion ratios run 0.77–1.08 of the ensemble's — so the
 shortfall is misplacement rather than gross overconfidence. No calibration has
 been applied, and the saved early-stopping validation forecasts remain available
 for one.
+
+## How much of this is the United States?
+
+US is **one location in 52** but carries roughly **half of all admissions WIS**,
+because its per-task WIS is about fifty times a state's (influenza: 3,078 versus
+62). The selection score sums WIS without reweighting by location, so for
+admissions the headline ranking is close to half a national ranking.
+
+| Target | US share of total WIS | US share of tasks |
+|---|---:|---:|
+| Influenza admissions | 49.4% | 1.9% |
+| RSV admissions | 47.1% | 1.9% |
+| COVID-19 admissions | 44.7% | 1.9% |
+| ED-visit targets | 1.1–2.0% | ~2% |
+
+ED visits are proportions, so magnitude is comparable across locations and US
+carries no extra weight there.
+
+### Without the US, a different configuration wins
+
+| Rank | States/DC only | Combined | US only |
+|---:|---|---:|---:|
+| 1 | `conv__lookback_8` | 0.9256 | 1.2197 |
+| 2 | `conv__count_transform_log1p` | 0.9383 | 1.1929 |
+| 3 | `conv__geography_0` | 0.9382 | 1.2387 |
+
+`conv__lookback_8` leads the states/DC ranking at **0.9185**; the combined
+winner `conv__heads_sh` falls to sixth there (0.9453). The orderings genuinely
+disagree — **Spearman ρ between the states-only and US-only rankings is
+−0.324**, i.e. slightly *negative*. What helps states tends to hurt the US.
+Forty of 51 configurations beat the ensemble on states/DC; only six do at US.
+
+### Why the US looks wrong
+
+It is not a magnitude problem but an overconfidence problem:
+
+| | US | States/DC |
+|---|---:|---:|
+| 50% coverage | **37.5%** | 41.3% |
+| 90% coverage | **73.1%** | 77.0% |
+| Dispersion vs ensemble | **0.819** | 1.008 |
+| Overprediction share of WIS | 32.1% | 22.2% |
+
+At state level the intervals are about the right width; at US they are roughly
+18% too narrow, and the error is flat across horizons (ratio 1.07 → 1.10 from
+horizon 0 to 3) rather than growing, which points at level and calibration
+rather than accumulating dynamics.
+
+The mechanism is visible in the architecture: the global latent draw is shared
+across locations, so state-level errors cancel when the national prediction is
+formed, and US uncertainty ends up closer to an average of state uncertainties
+than to a genuinely correlated national error.
+
+What the experiment already rules out: **separate state/US heads make it
+worse.** Turning them off on the `conv` reference improves US by −0.288; turning
+them on at the `anchor` reference costs +0.109. The switch designed for this
+problem backfires, plausibly because the US head sees 1/52 of the data. Spatial
+attention is inconsistent (−0.092 on `conv`, +0.081 on `anchor`).
+
+The untried directions are to form US as an aggregate of state predictions with
+an explicit correlated national error, or to calibrate interval width per
+geography using the saved early-stopping validation forecasts, which already
+exist and are unused. Neither is tested here.
 
 ## Performance against the wider hub field
 
