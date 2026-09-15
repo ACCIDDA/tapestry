@@ -53,8 +53,8 @@ Revised ordering, and the single most consequential change this plan makes to th
 1. **Weeks 1-2 — Layer 0 (vintage data) and Layer 1 (evaluation harness).** Both are prerequisites
    for every model and neither is model-specific. The harness is built *before* the first model, not
    after, so that no model is ever evaluated by ad-hoc code.
-2. **Week 3 — the floor and the free baseline.** GBQR `[FLU]` reproduction and foundation-model
-   zero-shot `[C]`. Both are cheap and both bound expectations for B.
+2. **Week 3 — the free baseline.** Foundation-model zero-shot `[C]`, alongside the hub baseline
+   and trend comparators already in the harness. All are cheap and all bound expectations for B.
 3. **Weeks 3-6 — B, then B's ablations.** The ablations are the deliverable, not the architecture.
    Both reference papers found their gains in ablation (`[FLU]` §ablation table; `[IP]` levers
    table), and B's minutes-scale backtest is the only thing that makes 50+ ablations affordable.
@@ -66,9 +66,9 @@ Revised ordering, and the single most consequential change this plan makes to th
 
 ### 1.2 What gets submitted in November
 
-The quantile average of whatever clears gate G3 (§14), from: B (seed-ensembled), GBQR `[FLU]`, C.
-If nothing clears, GBQR alone. This is a deliberate floor: `[FLU]` is a published, reproducible,
-top-of-leaderboard method, and shipping it is never a failure state.
+The quantile average of whatever clears gate G3 (§14), from: B (seed-ensembled) and C. If nothing
+clears, the hub baseline. Dropping the GBQR floor (§9) removed the project's published,
+top-of-leaderboard hedge, so B is now on the critical path for having anything worth submitting.
 
 Note the tension the design doc already flags: `[FLU]`'s own ablation found ensembling contributed
 almost nothing (0.625 → 0.622). The ensemble is therefore included on the evidence of the
@@ -173,7 +173,6 @@ src/tapestry/
     b_crps/        # windowed CRPS forecaster
     a_flow/        # flow-matching block/canvas model
     c_foundation/  # foundation-model adapters
-    gbqr/          # Flusion-style LightGBM quantile regression floor
   losses/
     crps.py        # fair / almost-fair CRPS
     flow.py        # rectified-flow velocity loss
@@ -474,7 +473,6 @@ interesting-looking results, which is the point.
 |---|---|---|
 | FluSight-baseline | hub | Absolute floor; also the harness validation target |
 | Trend baseline | `[NEW]` | Sanity: last value + linear extrapolation with empirical quantiles |
-| GBQR, Flusion-style | reichlab/flusion, reimplemented on **our** covariate table | The real floor (§9) |
 | Flusion, as published | reichlab/flusion | Reference point |
 | InfluPaint, published weights | ACCIDDA/Influpaint | Reference point for A |
 | FluSight-ensemble | hub | The thing to beat |
@@ -773,22 +771,18 @@ signals), which `[IP]` demonstrated qualitatively and which the theoretical inpa
 
 ---
 
-## 9. The GBQR floor
+## 9. No same-data floor
 
-A `[FLU]`-style LightGBM quantile regression, **fed our covariate table**, not theirs `[NEW]`.
+**Decided 2026-09-14: the GBQR floor is not built.** The plan originally called for a `[FLU]`-style
+LightGBM quantile regression fed our own covariate table, serving two purposes: a controlled
+same-data comparison that isolates the architecture from the data, and a fast, published, shippable
+hedge. It is dropped on time grounds.
 
-This is the crucial experimental-design point: comparing our neural models to published Flusion
-confounds the model with the data. Feeding GBQR the identical vintage-aware, multi-signal,
-cross-location covariate table isolates the architecture. If B cannot beat GBQR on the same table,
-the neural machinery is not earning its place — and the design doc says as much ("suspect the
-implementation, not the idea"), which is only actionable if the comparison is controlled.
-
-Configuration from `[FLU]`: quantile objective, ~100 bags, feature set built from the same
-transformed/scaled channels plus season week and weeks-from-Christmas. Two variants, GBQR and
-GBQR-no-level, per their ablation.
-
-GBQR also **hedges the whole project**: it is fast, robust, published, and top-of-leaderboard. If
-the schedule slips, it ships.
+Two consequences are worth recording rather than rediscovering. There is no same-data control, so
+every model comparison is against external benchmarks built on different information — the hub
+baseline and the FluSight ensemble — and any margin over them mixes architecture with data and
+retrospective advantages. And there is no fast fallback if B misses its gates; the fallback is now
+the hub baseline.
 
 ---
 
@@ -814,7 +808,7 @@ Wednesday, data released midday; submission due Wednesday; reference date is the
 14:00 ET  pull all sources           scripts/pull_covariates.py (exists)
 14:20     integrity checks           checksums, row-count deltas, staleness alarms
 14:30     materialize as-of frame    fails loudly rather than silently dropping a source
-14:40     forecast: B-ensemble, GBQR, C
+14:40     forecast: B-ensemble, C
 14:50     combine, post-process, write hubverse output
 15:00     validate                   local hubValidations + our own format tests
 15:10     diagnostics                spread-skill, PIT, coherence, vs. last week's forecast
@@ -866,7 +860,7 @@ would be the most likely way this project produces a finding that does not repli
 | Thin COVID/RSV simulation pools | Multitask channels degrade flu | `w_c` down-weighting; drop the channel | Flu-only training |
 | NHSN reporting completeness / mandate changes | `pct_hospitals_reporting` drift | The feature itself is the defence; revision atlas quantifies it | — |
 | Puerto Rico instability | Per-location WIS outliers | Train weight 0.5, forecast always | — |
-| Schedule slip past 24 Oct | Gate G3 | Ship GBQR + C | GBQR alone |
+| Schedule slip past 24 Oct | Gate G3 | Ship C + hub baseline | Hub baseline alone |
 | Foundation-model API drift | Import fails | Pin versions; verify interfaces before committing (§7) | Drop C; it is the least load-bearing component |
 
 ---
@@ -879,7 +873,7 @@ Nine weeks, 2026-09-07 to 2026-11-08.
 |---|---|---|
 | 1 | Sep 7-13 | Vintage store, as-of materializer, leakage tripwire green, **revision atlas** (§4.11) |
 | 2 | Sep 14-20 | Transforms (as-of), Dataset/window construction, corpora + mixing, **evaluation harness validated against hub scores** |
-| 3 | Sep 21-27 | GBQR floor on our table; C zero-shot; B v0 end-to-end on one reference date |
+| 3 | Sep 21-27 | C zero-shot; B v0 end-to-end on one reference date |
 | 4 | Sep 28-Oct 4 | B v1; first full LOSO backtest; diagnostics wired in |
 | 5 | Oct 5-11 | Ablations 2-5. **A stage 1 begins in parallel** |
 | 6 | Oct 12-18 | Ablations 6-10; calibration repair; seed ensembling |
@@ -891,12 +885,14 @@ Nine weeks, 2026-09-07 to 2026-11-08.
 ### Gates
 
 - **G1 — Sep 20.** Leakage suite green; revision atlas delivered; harness reproduces published
-  FluSight-baseline WIS. *Fail → cut scope to a GBQR-only submission path and spend the remaining
-  time on the data layer, which is the reusable asset.*
+  FluSight-baseline WIS. *Fail → cut scope to a baseline-only submission path and spend the
+  remaining time on the data layer, which is the reusable asset.*
 - **G2 — Oct 4.** B produces hub-valid output end-to-end for a historical reference date, all
   output types. *Fail → B is descoped to quantile targets only.*
-- **G3 — Oct 18.** B (seed-ensembled) beats the GBQR floor on LOSO relative WIS by ≥3%, with the
-  margin exceeding the across-seed SE. *Fail → submit GBQR + C; continue B as research.*
+- **G3 — Oct 18.** B (seed-ensembled) beats the FluSight ensemble on LOSO relative WIS by ≥3% on
+  the frozen ensemble-supported tasks, with the margin exceeding the across-seed SD and no severe
+  calibration failure. With no GBQR floor (§9) this is an external, not a same-data, comparison.
+  *Fail → submit C + hub baseline; continue B as research.*
 - **G4 — Oct 25.** Stack frozen. Bugfixes only after this date. No architecture changes during the
   season.
 - **G5 — Dec 15.** A clears §8.4. *Pass → mid-season swap for secondary targets. Fail → A is the

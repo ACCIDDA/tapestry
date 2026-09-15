@@ -25,7 +25,7 @@ Specific questions:
 2. Does cross-signal conditioning add value beyond sharing training examples across signals?
 3. Does training on provisional inputs improve forecasts against later evaluation truth?
 4. Can functional noise yield useful temporal and spatial dependence with relatively few epidemic seasons?
-5. Does a generative neural model improve on a strong GBQR model with the same information?
+5. Does a generative neural model improve on the hub ensemble and on simple same-data baselines?
 
 There is no defensible prospective rank prediction. The model remains a research candidate if it fails the comparison in question 5.
 
@@ -35,7 +35,7 @@ The reference archive is in the project-root `references/` folder. The [reading 
 
 | Paper | Verified contribution used here | Exact borrowing or adaptation for B | Boundary and experiment |
 |---|---|---|---|
-| **[Flusion — Ray et al.](https://arxiv.org/html/2407.19054v1)**, §5.1–5.2, §7 | Joint training across surveillance signals and locations; transformed residual targets; ablations separating these effects | Shared focal-signal forecasting task; population conversion for counts; fourth-root candidate; last-observation residual; calendar features; strong GBQR comparison | Historical ILI is an auxiliary target, not a hospitalization label. Contemporary covariate fusion is an extension. Toggle transfer and covariates separately. |
+| **[Flusion — Ray et al.](https://arxiv.org/html/2407.19054v1)**, §5.1–5.2, §7 | Joint training across surveillance signals and locations; transformed residual targets; ablations separating these effects | Shared focal-signal forecasting task; population conversion for counts; fourth-root candidate; last-observation residual; calendar features | Historical ILI is an auxiliary target, not a hospitalization label. Contemporary covariate fusion is an extension. Toggle transfer and covariates separately. |
 | **[InfluPaint — Lemaitre & Lessler](https://arxiv.org/html/2604.24913v1)**, training-data ablation and Methods §4.2 | Mixed surveillance/simulation training was valuable in its diffusion experiments; 30/70 performed best among tested mixtures; calibration remained an issue | Test synthetic pretraining and mixture weights; compare square-root preprocessing; inspect trajectory quality and coverage | The 70% simulation fraction is not a default for B. Do not import its unconditional denoising/inpainting objective. |
 | **[FGN — Alet et al.](https://arxiv.org/html/2506.10772v1)**, §2.2–2.4, Appendix A.3 | Globally shared low-dimensional noise modulates normalization; fair-CRPS training; independent model ensembles | A 32-dimensional draw changes a shared forecast decoder through conditional normalization; fair CRPS; eventual three-seed mixture | FGN uses two training draws and a much larger weather model. B proposes eight draws and a direct horizon block. Joint skill requires separate validation. |
 | **[GenCast — Price et al.](https://arxiv.org/abs/2312.15796)**, model and forecast generation | Conditional stochastic state transitions composed into trajectories | Optional rollout extension with sampled histories retained within each member | No spherical mesh, weather weights, or diffusion sampler in core B. The short-range model predicts its whole horizon block directly. |
@@ -392,13 +392,11 @@ A test protocol may learn from labels that become available earlier in that test
 ### 10.2 Required comparators
 
 1. Hub baseline and a local last-value/trend probabilistic baseline, with archived eligibility recorded.
-2. Flusion reproduction or carefully labeled Flusion-style GBQR, including its historical source-transfer task.
-3. GBQR with **the same as-of covariates** used by B, including engineered neighboring/region summaries. This is the main practical comparison.
-4. B0, B1 without auxiliary-history transfer, and B1 without current auxiliary covariates.
-5. Available real-time FluSight ensemble and original model submissions on common targets. Report missing submissions and operational fallback coverage.
-6. InfluPaint and a matched conditional-flow head as later generative comparisons. Refit using eligible data; existing pretrained weights cannot be assumed free of held-out-season exposure.
+2. B0, B1 without auxiliary-history transfer, and B1 without current auxiliary covariates.
+3. Available real-time FluSight ensemble and original model submissions on common targets. Report missing submissions and operational fallback coverage.
+4. InfluPaint and a matched conditional-flow head as later generative comparisons. Refit using eligible data; existing pretrained weights cannot be assumed free of held-out-season exposure.
 
-The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. A GBQR model trained directly on quantiles need not manufacture joint samples to serve as the primary WIS comparator.
+The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. The Flusion-style same-data GBQR comparison was dropped on 2026-09-14, so no controlled same-data comparator remains: any margin over the ensemble mixes architecture with B's finalized-data and retrospective advantages and must be reported that way.
 
 ### 10.3 Metrics
 
@@ -412,7 +410,7 @@ The primary metric is WIS on integer admission quantiles at the official grid:
 
 For a central `(1−alpha)` interval `[l,u]`, the interval score is its width plus `2/alpha` times the miss below/above the interval. With `K=11` central intervals, conventional WIS combines median absolute error with weight `1/2` and interval scores with weights `alpha/2`, then divides by `K+1/2`. Verify against the scoring implementation used by the hub. See [Bracher et al.](https://arxiv.org/abs/2005.12881).
 
-Report paired mean WIS differences/ratios to the matched GBQR, and tournament relative WIS when comparing incomplete submission archives; freeze the comparison pool. Include MAE, 50/80/90/95% coverage, interval width, quantile reliability, submission completeness, and by-horizon revision/nowcast performance. Fair sample CRPS is a useful diagnostic, not a replacement for actual exported-quantile WIS.
+Report paired mean WIS differences/ratios to the hub baseline and ensemble, and tournament relative WIS when comparing incomplete submission archives; freeze the comparison pool. Include MAE, 50/80/90/95% coverage, interval width, quantile reliability, submission completeness, and by-horizon revision/nowcast performance. Fair sample CRPS is a useful diagnostic, not a replacement for actual exported-quantile WIS.
 
 Stratify by season, horizon, location size, epidemic growth/decline, peak proximity, low-count weeks, reporting completeness, and covariate coverage. Retrospectively defined peak proximity is an evaluation stratum only. Also report revision-size sensitivity rather than dropping difficult revised outcomes from the main score.
 
@@ -428,7 +426,7 @@ Stress cases: remove NSSP; remove NWSS; remove all auxiliary signals; delay NHSN
 
 ### 10.5 Selection and acceptance
 
-Prespecify mean primary WIS across D1/D2 with equal season weight, subject to submission completeness and no severe calibration failure, as the main selection criterion. Use a small number of finalists and identical scored tasks. A provisional adoption threshold is at least **3% lower pooled development WIS** than same-data GBQR with improvement in both seasons; this is a project decision threshold, not a statistical guarantee. If results are within paired uncertainty, prefer the smaller/faster model or validate a simple ensemble.
+Prespecify mean primary WIS across D1/D2 with equal season weight, subject to submission completeness and no severe calibration failure, as the main selection criterion. Use a small number of finalists and identical scored tasks. A provisional adoption threshold is at least **3% lower pooled development WIS** than the FluSight ensemble on identical frozen tasks, with improvement in both seasons; this is a project decision threshold, not a statistical guarantee, and with no same-data floor it does not isolate the architecture. If results are within paired uncertainty, prefer the smaller/faster model or validate a simple ensemble.
 
 Freeze architecture, feature registry, data eligibility, hyperparameters, training/refit cadence, calibrator, random-seed policy, and export procedure before the final holdout. Publish its outcome even if unfavorable. Do not retune against 2025–26 and continue calling it a final holdout.
 
@@ -463,7 +461,7 @@ First diagnose undercoverage by horizon and subgroup. If calibration helps, fit 
 
 Keep raw and calibrated forecasts. A conformal or quantile correction would need its own dependence/coverage assumptions; do not claim finite-sample coverage guarantees for correlated epidemic time series by default.
 
-For GBQR+B ensembling, distinguish quantile averaging from a mixture of predictive distributions. Quantile averaging can be a validated primary-target output but does not uniquely define sample trajectories. Either omit the optional sample target for that quantile-only ensemble or define and validate a genuine joint mixture with its quantiles recomputed from the same distribution.
+For ensembling B with any quantile-only model, distinguish quantile averaging from a mixture of predictive distributions. Quantile averaging can be a validated primary-target output but does not uniquely define sample trajectories. Either omit the optional sample target for that quantile-only ensemble or define and validate a genuine joint mixture with its quantiles recomputed from the same distribution.
 
 ## 13. Peak targets and longer rollouts
 
@@ -483,7 +481,7 @@ All paths below are **proposed** additions. Existing acquisition files remain th
 |---|---|---|---|
 | M0: experiment contract | `configs/b/data.yaml`, `splits.yaml`, target/date registry, source exposure log | Explicit target units, horizons, geographic support, and holdout rules | 1–2 working days |
 | M1: model data | `src/tapestry/model_data/{normalize,vintages,features,windows,splits}.py`; normalized columnar store; coverage and leakage report | Fixed-cutoff invariance and valid source-query episodes; counts by season/source/support | 4–7 days, longer if archive gaps emerge |
-| M2: baselines | `src/tapestry/baselines/`; vintage-aware baseline/GBQR forecasts | Exported baseline WIS reproduces an independent scorer; same tasks and covariates documented | 2–4 days |
+| M2: baselines | `src/tapestry/baselines/`; vintage-aware hub-baseline and trend forecasts | Exported baseline WIS reproduces an independent scorer; same tasks and covariates documented | 2–4 days |
 | M3: stochastic B0/B1 | `src/tapestry/models/{encoders,spatial,stochastic,decoder}.py`; `losses/`; train/predict scripts | Gradients through scores; correct masks/units; nonzero spread; finite samples; measured runtime | 3–5 days |
 | M4: controlled evaluation | `src/tapestry/evaluation/`; D1/D2 forecasts and ablation report | Leakage audit passes; same-data comparisons, calibration, dependence, and outage results | 4–7 days plus measured compute |
 | M5: freeze and holdout | Frozen manifest; complete 2025–26 forecast/score artifact | No model selection on holdout; full failure/coverage accounting | 2–3 days plus compute |
@@ -506,10 +504,10 @@ Each run records code/config hashes, source snapshot/file hashes, release and fi
 | Model ignores latent noise | Inspect sample spread and score terms, modulation initialization, and gradients; compare more draws or broader modulation before adding ad hoc noise |
 | Good marginal WIS, poor trajectory changes/aggregates | Add validated joint objective or revise latent structure; withhold joint-derived targets until their own gates pass |
 | Large states improve while small states become miscalibrated | Inspect source scale, subgroup coverage, and calibration; report both absolute and normalized skill |
-| B does not beat same-data GBQR | Use GBQR for the primary target; keep B as an experimental or separately validated ensemble component |
+| B does not beat the ensemble on identical tasks | Keep B as an experimental or separately validated ensemble component; with no GBQR floor the submission fallback is the hub baseline |
 | A required feed is late at an issuance | Apply trained missingness policy; if minimum target history is absent, use a tested baseline fallback and log it |
 
-**First implementation:** deliver the source-query dataset and B0/B1 with 12-week context, eight explicit horizons, historical ILI/ILI+/FluSurv auxiliary targets, count-scale fair CRPS, one global latent, and audited NHSN/NSSP inputs where historical releases are recoverable. Establish D1/D2 GBQR comparisons before adding wastewater, synthetic trajectories, the other pathogens, or long rollouts. Freeze the chosen protocol, run the final retrospective evaluation, and retain every prospective forecast for the following season.
+**First implementation:** deliver the source-query dataset and B0/B1 with 12-week context, eight explicit horizons, historical ILI/ILI+/FluSurv auxiliary targets, count-scale fair CRPS, one global latent, and audited NHSN/NSSP inputs where historical releases are recoverable. Establish D1/D2 baseline and ensemble comparisons before adding wastewater, synthetic trajectories, the other pathogens, or long rollouts. Freeze the chosen protocol, run the final retrospective evaluation, and retain every prospective forecast for the following season.
 
 ## 16. Reading order and evidence files
 

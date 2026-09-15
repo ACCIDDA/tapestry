@@ -120,5 +120,4 @@ All three seasons have already been examined, so subsequent comparisons are
 exploratory development, not a new untouched final test. A prospective season is
 needed for clean confirmation. Retain the FGN-style generator for these experiments;
 wastewater, simulations, diffusion, and more source acquisitions remain outside
-this accepted pilot round. A matched-data GBQR remains a useful later control, as
-specified in the design, but is not a substitute for testing the five changes above.
+this accepted pilot round.
