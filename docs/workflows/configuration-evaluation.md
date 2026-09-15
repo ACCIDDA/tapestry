@@ -2,10 +2,9 @@
 
 Read the [completed report with inline figures and rankings](../results/b0-configuration-comparison.md).
 
-This extends the existing frozen B0 comparison without model training. The user
-confirmed that “B-10” meant B0. All 14 runs in the completed September 14 sweep
-and the original September 13 CV run are included. Smoke tests under `tmp/` are
-intentionally excluded.
+The canonical `b0-rebuilt` experiment includes 14 configurations, all at seeds
+42/43/44, evaluated against pinned hub ensembles on rebuilt frozen inputs.
+See [Longleaf setup](../longleaf-setup.md) for the complete execution workflow.
 
 Our challenges remain **unversioned custom scoring configs**, with the existing
 finalized, non-vintaged evaluation truth. They are not registered as versioned
@@ -19,32 +18,23 @@ relative WIS, and writes `EpiBenchmark_scores.csv` and `summary.md`. All candida
 and the official ensemble are freshly scored together. The local R bridge is
 retained only for reproducing the historical frozen-support comparison.
 
-Sync the research environment (including current EpiBenchmark from GitHub `main`):
+Install the research environment and R packages before registering an experiment;
+keep dependencies fixed during execution. See [Longleaf setup](../longleaf-setup.md).
+
+To score the collected B0 runs and publish the completed report:
 
 ```bash
-uv sync --upgrade-package epibenchmark
+sbatch scripts/b0_evaluation_parallel.sbatch
+# After successful completion:
+.venv/bin/python scripts/publish_evaluation_docs.py
+.venv/bin/python -m mkdocs build --strict
 ```
 
-R packages `scoringutils` and `purrr` are also required; see
-[environment setup](../getting-started.md#r-for-epibenchmark-scoring).
-Reproduce the current report:
-
-```bash
-uv run python -m tapestry.evaluation.sweep \
-  --runs data/experiments/b0_full_20260914/*_s4? \
-         data/experiments/b0_season_cv_20260913 \
-  --csv --output data/evaluation/b0_epibench_five_quantiles
-uv run python scripts/validate_epibench_evaluation.py
-uv run python scripts/publish_evaluation_docs.py
-uv run --extra docs python -m mkdocs build --strict
-```
-
-Use `--epibench /path/to/epibench` only to override the installed package with a
-development checkout; use `--mirrors /path/to/mirrors` for another hub mirror location. Add completed saved runs with `--runs` and choose a new output
-directory when inputs change. Resuming identical inputs reuses EpiBench output
-only after matching forecast/truth content, adapter and EpiBench source hashes,
-hub schemas, and R/package versions. Two independent cases run concurrently by default; `--score-workers 1` runs serially.
-No scoring step retrains the model.
+The node launcher runs nine scoring cases concurrently. The underlying
+`tapestry.evaluation.sweep` CLI supports other collections of saved runs via
+`--runs`, `--frozen`, and `--output`; its default concurrency is two cases.
+Completed EpiBench scores are reused when their input and scorer fingerprints
+match. No scoring step retrains models.
 
 Each `epibench/<target-season>/` directory contains the runnable `score.yaml`,
 model CSV inputs, a local `hub/` snapshot, EpiBench output and log, and provenance.
@@ -54,7 +44,8 @@ read from the original pinned mirror commit. Tapestry checks complete support
 before scoring and checks returned task keys, finite metrics and relative WIS
 afterwards. This preparation preserves the existing experiment definition.
 
-The publisher copies rankings and 72 SVG figures into the documentation. Full
+The publisher copies rankings and diagnostic figures and regenerates projection
+fans from the saved EpiBench forecast inputs (72 SVG figures in total). Full
 Hubverse exports stay in `data/`. CSV companions are supported because EpiBench's
 submitted-model loader currently accepts CSV only.
 
@@ -68,9 +59,8 @@ the exporter selects the exact five stored values, with no interpolation or
 resampling. The current archive contains only five quantiles per forecast unit.
 
 WIS is recomputed for candidates and reference ensembles. Five-quantile WIS is
-not numerically interchangeable with the former 23-quantile WIS. The audit now
-checks every score against an independent five-quantile pinball calculation;
-median AE and 50/95% coverage must remain unchanged on the same tasks.
+not numerically interchangeable with the former 23-quantile WIS. Five-quantile WIS is the mean of the five scaled quantile losses. The current
+report uses saved EpiBench scores and the pipeline's built-in support and relative-WIS checks.
 
 [Emily’s configs](emily-configs.md) define vintage inputs and origin calendars.
 They are tested separately; this report still uses the nine existing frozen
@@ -124,9 +114,11 @@ remain documented in the original comparison manifest.
 - `leaderboard.csv`: WIS, median AE, 50/95% coverage, bias and WIS components,
   split by target, season, geography (US or states/DC), and horizon; within-cell
   WIS ranks, counts, relative WIS and its valid denominator counts.
-- `run_ranking.csv`: two exploratory objectives and ranks for individual seeds.
+- `run_ranking.csv`: primary all-target scores and ranks for individual seeds,
+  plus secondary influenza/admissions objectives.
 - `configuration_ranking.csv`: objective means, sample SD and seed counts by
-  configuration. One-seed SD is undefined, not zero.
+  configuration, ordered by `all_target_rank`, with middle-seed identifiers.
+  One-seed SD is undefined, not zero.
 - `plots/<target-season>/`: EpiBench WIS components, relative-WIS heatmap and
   reference-date time series, independently for US and states/DC; compatible
   score CSVs; projection fan SVGs for US and NC by default.
@@ -138,17 +130,40 @@ paper used FluSight-baseline. The mean of individual WIS ratios is not the ratio
 of mean WIS; both are named separately in the leaderboard. Zero reference WIS
 produces an undefined per-task ratio and is counted explicitly.
 
-The influenza objective is the geometric mean of mean-WIS/ensemble-mean-WIS
+The primary all-target objective gives each of the six targets equal weight,
+then available season/geography cells equal weight within a target. Compute a
+geometric mean WIS ratio for each seed, then an arithmetic mean across seeds to
+rank configurations. The report, ranking downloads, and fans share this rule.
+
+The secondary influenza objective is the geometric mean of mean-WIS/ensemble-mean-WIS
 ratios, weighting each available season/geography cell equally. The admissions
 objective first averages log ratios within each target and then equally weights
-admission targets. These reproduce the existing sweep's selection objectives.
+admission targets. These retain the earlier admission-focused diagnostics;
+they do not select the overall winner.
 No absolute WIS is pooled across hospitalization and ED units. Configuration
-scores average individual seed objectives and report their spread; unequal seed
-counts and adaptive exploration prevent a controlled significance claim.
+scores average individual seed objectives and report their spread; three seeds and exploratory model selection do not establish a controlled
+significance claim.
 
 Projection fans connect the four horizons **from the same forecast origin**;
-these are not horizon-specific quantile ribbons connected across different
-origins. Every fourth available origin is shown to reduce overlap; all origins
+only the **top three configurations across all six targets** are shown,
+plus the official ensemble in **light blue** and the best configuration for the
+displayed target/season in **light red**. Rank configurations by the arithmetic
+mean of their seed scores. Each seed score is the geometric mean WIS ratio,
+weighting targets equally, then available season/geography cells within each
+target equally. The target/season score equally weights US and states/DC.
+All four horizons contribute through the leaderboard's `all` rows.
+
+Fans use each configuration's **middle-performing seed**: the median seed by
+overall score for the top three, and by target/season score for the season winner.
+Identical representative runs appear once; if the same configuration has different
+middle seeds under the two objectives, both are shown. Ties use seed number;
+an even seed count uses the upper middle. The report includes the all-target
+configuration ranking with mean seed scores, sample SD, and representative seeds.
+This selection includes ED targets and matches the report's primary ranking.
+
+Panel labels show variant names and seed numbers; the report's
+[model differences table](../results/b0-configuration-comparison.md#model-differences)
+explains each variant's settings. Every fourth available origin is shown to reduce overlap; all origins
 are exported and scored. Median and 50/95% intervals overlay frozen truth. US and
 NC are a prespecified illustration, not selected for performance. Use
 `--locations US 37 06 36` for other native hub location codes.

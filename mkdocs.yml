@@ -65,8 +65,7 @@ nav:
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
   - Experiment results:
-      - Staged B0 experiments: results/b0-full-experiments.md
-      - Configuration evaluation:
+      - Canonical B0 experiments:
           - Report and rankings: results/b0-configuration-comparison.md
           - Influenza admissions 2023–2024: results/b0-comparison/flusight_flu_hosp_2023-2024.md
           - Influenza admissions 2024–2025: results/b0-comparison/flusight_flu_hosp_2024-2025.md

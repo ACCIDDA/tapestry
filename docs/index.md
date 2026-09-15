@@ -24,9 +24,12 @@ For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
-[Completed experiments](results/b0-full-experiments.md) record observations.
-The [configuration evaluation report](results/b0-configuration-comparison.md)
-includes rankings and projection fans for all 15 runs.
+The [canonical B0 report](results/b0-configuration-comparison.md) covers
+14 configurations, each evaluated at three seeds (42 runs). Configurations rank
+by mean all-target WIS ratio across seeds, including admissions and ED visits.
+`residual2` ranks first, followed by `latent32` and `balanced`. Its score is
+1.0197 ± 0.0103, about 2.0% above ensemble parity. The report includes seed
+variability, matched controls, coverage, and fans using middle-performing seeds.
 [Design proposals](design/solution-b-plan.md) describe possible extensions.
 The [code and test review](maintenance.md) distinguishes current needs from
 optional features.

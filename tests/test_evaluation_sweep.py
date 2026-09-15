@@ -9,6 +9,61 @@ from tapestry.evaluation.hubs import KEY, QCOLS, wide_quantiles
 from tapestry.evaluation.sweep import hubverse, matched_scores, METRICS, validate
 
 
+def test_fan_selection_weights_targets_and_selects_local_winner():
+    from tapestry.evaluation.sweep import fan_selection
+
+    rows = []
+    # Three admission seasons must not outweigh the single ED season.
+    for model, admission, ed in [('a', .5, 4), ('b', 1, 1), ('c', 1.1, 1.1), ('d', 1.2, 1.2)]:
+        for target, seasons, ratio in [('hosp', ['s1', 's2', 's3'], admission), ('ed', ['s3'], ed)]:
+            for season in seasons:
+                for geography in ['US', 'states_dc']:
+                    rows.append(dict(model=model, target=target, season=season,
+                                     geography=geography, horizon='all', wis_ratio=ratio))
+    frame = pd.DataFrame(rows)
+    # Ensemble and individual horizon rows do not enter model selection.
+    frame = pd.concat([frame, frame.assign(model='ensemble', wis_ratio=.01),
+                       frame.assign(horizon='0', wis_ratio=.01)])
+    runs = pd.DataFrame(dict(model=list('abcd'), config_id=list('abcd'), label=list('abcd'), seed=42))
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s3'))
+    assert top == ['b', 'c', 'd']
+    assert best == 'a'
+
+
+def test_fan_ranking_averages_seed_scores_and_uses_middle_performance():
+    from tapestry.evaluation.sweep import fan_ranking, fan_selection, ranking_tables
+
+    rows, runs = [], []
+    # A lucky seed must not put configuration a in the overall top three.
+    for config, scores in [('a', [.01, 5, 6]), ('b', [.9, .7, .8]),
+                           ('c', [1, 1.1, 1.2]), ('d', [1.3, 1.4, 1.5])]:
+        for seed, score in zip([42, 43, 44], scores):
+            model = f'{config}-{seed}'
+            runs.append(dict(model=model, config_id=config, label=config, seed=seed))
+            for target, value in [('hosp', score), ('ed', score)]:
+                rows.append(dict(model=model, target=target, season='s1', horizon='all', wis_ratio=value))
+    frame, runs = pd.DataFrame(rows), pd.DataFrame(runs)
+    ranking = fan_ranking(frame, runs)
+    assert ranking.config_id.tolist() == ['b', 'c', 'd', 'a']
+    assert ranking.iloc[0]['mean'] == pytest.approx(.8)
+    assert ranking.iloc[-1]['mean'] == pytest.approx(11.01 / 3)
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))
+    assert top == ['b-44', 'c-43', 'd-43']
+    assert best == 'b-44'
+    exported_runs, exported_configs = ranking_tables(frame, runs,
+        pd.DataFrame(index=pd.Index(list('abcd'), name='config_id')))
+    assert exported_configs.index.tolist() == ranking.config_id.tolist()
+    assert exported_configs.loc['b', 'all_target_mean'] == pytest.approx(.8)
+    assert exported_configs.loc['a', 'all_target_mean'] == pytest.approx(11.01 / 3)
+    assert exported_configs.loc['b', 'middle_model'] == top[0]
+    assert exported_runs.iloc[0].model == 'a-42'  # Best single seed is not the winning configuration.
+    # The seasonal middle seed can differ from the overall representative.
+    frame.loc[frame.target.eq('hosp') & frame.model.str.startswith('b-'), 'wis_ratio'] = [.6, .7, .8]
+    top, best = fan_selection(frame, runs, dict(target='hosp', season='s1'))
+    assert top[0] == 'b-42'
+    assert best == 'b-43'
+
+
 def test_identity_stable_and_future_fields_change_id(tmp_path):
     manifest = dict(config=dict(seed=42, output='old', device='cpu', width=64),
                     dataset_sha256='abc', code_sha256={'/old/model.py': 'def'})
