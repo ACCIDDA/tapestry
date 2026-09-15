@@ -19,7 +19,7 @@ From the repository root, with the existing environment:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m tapestry.evaluation.compare \
-  --run data/experiments/b0_season_cv_20260913 \
+  --run 'data/experiments/<experiment>/<scenario>/s42/attempt-001/cv' \
   --mirrors data/mirrors --cache data/evaluation/hub_cache \
   --output data/evaluation/b0_hub_comparison
 

@@ -89,9 +89,8 @@ does not request a GPU or submit a training job.
 
 ## Build the frozen inputs
 
-Run from `/proj/jlessler/projects/tapestry-all/tapestry`. Experiment `b0-rebuilt`
-uses the essential suite: 14 configurations × three seeds = 42 CV runs and
-126 season fits. The rebuilt CDC data define a new frozen experiment; historical
+Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The essential suite has
+14 configurations × three seeds = 42 CV runs and 126 season fits. The rebuilt CDC data define a new frozen experiment; historical
 observations may differ from the original September 4 snapshots. These are
 exploratory finalized-data comparisons, not prospective validation.
 
@@ -136,19 +135,20 @@ printf '%s  %s\n' \
 )
 ```
 
-Keep these inputs fixed after registration. Changed data or model code require
-a new experiment name.
+Keep these inputs fixed while an experiment runs. Experiments are not locked to a
+code version: each attempt records its git commit and whether the checkout had
+uncommitted changes, and results for the paper are rerun from a clean tree.
 
 ## Prepare evaluation support
 
 ```bash
 mkdir -p output/slurm
-sbatch scripts/b0_prepare.sbatch
+sbatch scripts/b0_prepare.sbatch b0-explore
 ```
 
 This one-GPU job loads R, runs three one-epoch bootstrap fits with eight evaluation
-members, builds `data/evaluation/b0_hub_comparison_rebuilt`, and registers the
-full suite with `--device cuda`. The bootstrap fits supply evaluation dates and
+members, builds `data/evaluation/b0_hub_comparison_rebuilt`, and plans the
+essential suite for the named experiment (default `b0`) with `--device cuda`. The bootstrap fits supply evaluation dates and
 locations; they are separate from the 126 full training fits. Completed support
 is reused. If support construction fails, inspect and archive its incomplete
 output directory before resubmitting.
@@ -164,83 +164,66 @@ Partition `jlessler` provides:
 | `g1803jles01` | 56 | 500,000 MB | 4 × L40, 48 GB each |
 | `g1803jles02` | 64 | 2,048,000 MB | 2 × H100 NVL, 96 GB each |
 
-Each array task requests one GPU, four CPUs, and 64 GiB RAM. Six concurrent tasks
-can use all six GPUs. Memory and time limits are resource allowances, not measured
+Each array task is one scenario and runs its three seeds in sequence. It requests
+one GPU, four CPUs, 64 GiB RAM, and one day. Six concurrent tasks can use all six
+GPUs. Memory and time limits are resource allowances, not measured
 requirements. Mixed GPU hardware may introduce small numerical differences;
 each task records its allocation and logs the device model.
 
-Prepare independent manager registries once, with no active manager writing the
-experiment:
+`status` prints the array tasks that still have unfinished seeds; a fresh
+14-scenario experiment reports `0,1,...,13`:
 
 ```bash
-.venv/bin/python scripts/distribute_b0.py prepare
-```
-
-The helper preserves completed runs and reports the array range for unfinished
-runs. Use its reported range; a fresh 42-run experiment reports `0-41%6`:
-
-```bash
-sbatch --gres=gpu:1 --array=0-41%6 scripts/b0_distributed.sbatch
+.venv/bin/python -m tapestry.models.manager status -e b0-explore
+sbatch --array=0-13%6 scripts/b0_array.sbatch b0-explore
 # Replace ARRAY_ID with the returned job ID.
-sbatch --dependency=afterany:ARRAY_ID --job-name=b0-collect \
-  scripts/b0_distributed.sbatch collect
-# Replace COLLECTOR_ID with the returned collector ID.
-sbatch --dependency=afterok:COLLECTOR_ID scripts/b0_evaluation_parallel.sbatch
+sbatch --dependency=afterok:ARRAY_ID scripts/b0_compare.sbatch b0-explore
 ```
 
-The collector merges the independent registries into `b0-rebuilt/runs.json`
-and fails if any runs are incomplete. Scoring starts only after collection
-succeeds. Source files under `src/tapestry` retain their registered hashes;
-cluster orchestration lives in `scripts/`.
+Array task numbers are rows of `data/experiments/b0-explore/jobs.csv`. Each seed
+attempt writes only its own folder, so there is no prepare or collect step.
+`compare` refuses to score while any planned run is incomplete.
 
 ## Monitor and resume
 
 ```bash
 squeue -u "$USER"
-.venv/bin/python scripts/distribute_b0.py status
+.venv/bin/python -m tapestry.models.manager status -e b0-explore
 sacct -j ARRAY_ID --format=JobID,State,Elapsed,ExitCode,NodeList
-tail -f output/slurm/b0-distributed-ARRAY_ID_TASK_ID.log
+tail -f output/slurm/b0-array-ARRAY_ID_TASK_ID.log
 ```
 
-Live worker status is in
-`data/experiments/b0-rebuilt/distributed/<task>/b0-rebuilt/runs.json`.
-Each record points to its attempt log. The central registry is updated during
-collection. `distributed/tasks.json` maps array indices to scenario/seed pairs.
-
-After the array and collector have ended, inspect failures and retry only the
-affected indices, for example:
+`status` rebuilds `runs.csv` (task, seed, status, attempt path, git commit) and
+prints the tasks with unfinished seeds. Each attempt folder holds `run.json` and
+`run.log`. After the array has ended, resubmit only the printed tasks, for example:
 
 ```bash
-sbatch --gres=gpu:1 --array=2,9%6 scripts/b0_distributed.sbatch
-sbatch --dependency=afterany:RETRY_ARRAY_ID --job-name=b0-collect \
-  scripts/b0_distributed.sbatch collect
-sbatch --dependency=afterok:COLLECTOR_ID scripts/b0_evaluation_parallel.sbatch
+sbatch --array=2,9%6 scripts/b0_array.sbatch b0-explore
 ```
 
-Reuse the existing shards rather than rerunning `prepare`. The manager preserves
-attempt history and restarts all three folds for interrupted or failed runs.
-Avoid overlapping workers for the same task or concurrent collectors.
+Completed seeds are skipped; failed or interrupted seeds restart all three folds in
+a new attempt folder, keeping the previous one. A killed job leaves its attempt
+marked `running`, so check `squeue` first and never run the same task twice at once.
 
 ## Score and review
 
-To score an already collected experiment:
+To score an experiment whose runs are complete:
 
 ```bash
-sbatch scripts/b0_evaluation_parallel.sbatch
-tail -F output/slurm/b0-eval-parallel-JOB_ID.log
+sbatch scripts/b0_compare.sbatch b0-explore
+tail -F output/slurm/b0-compare-JOB_ID.log
 ```
 
-The scoring job requests 36 CPU cores and 256 GiB RAM on `g1803jles01`. It loads
-saved predictions concurrently and runs nine target/season cases in parallel,
-with four numerical-library threads per worker. Existing Hubverse exports are
-assumed complete and reused; a new comparison writes them once. EpiBench reuses
-completed scores when their provenance matches. Partial scoring directories
-are archived before retrying. Rankings and plotting follow scoring.
+The scoring job requests 36 CPU cores and 256 GiB RAM on `g1803jles01`. It runs
+`manager compare --workers 9`: saved predictions load concurrently and nine
+target/season cases score in parallel, with four numerical-library threads per
+worker. Hubverse exports are rewritten each time. EpiBench reuses completed scores
+when their provenance matches; cases interrupted after writing scores are moved to
+`interrupted-scoring/` and rescored. Rankings and plotting follow scoring.
 
-`comparison.json` records status and the output directory. The execution record
-includes the launcher checksum and Slurm allocation. On failure, inspect the
-job log and resubmit the scoring script after the previous job has ended.
-
+`comparison.json` records status, output directory, host, Slurm IDs, the scoring
+commit, and the commits of the compared runs. On failure, inspect the job log and
+resubmit the scoring script after the previous job has ended.
 Review `REPORT.md`, `leaderboard.csv`, `run_ranking.csv`,
 `configuration_ranking.csv`, and `scores.parquet`. Report WIS, bias, and 50%/95%
 coverage by pathogen, horizon, season, and states/DC versus native US, including

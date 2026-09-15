@@ -17,6 +17,7 @@ from tapestry.model_data import CHANNELS, FinalizedDataset
 from tapestry.model_data.finalized import season
 from .run import calendar, fit
 from .experiments import add_experiment_args, LOSS_WEIGHTS
+from .manager import git_state
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
 from .quantiles import LEVELS
@@ -158,6 +159,7 @@ def run(args):
     manifest = {'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
                 'code_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in code_paths},
+                'git': git_state(),
                 'protocol': 'fixed 50-epoch default, three leave-one-season-out finalized-data folds; no holdout tuning',
                 'season_definition': 'CDC epiweek 31–30; season 1 begins at available September 2023 data',
                 'stride_weeks': 1, 'horizons': [1, 2, 3, 4],
@@ -205,7 +207,7 @@ def run(args):
     print(json.dumps({'output': str(output), 'elapsed_seconds': manifest['elapsed_seconds']}), flush=True)
 
 
-def main():
+def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dataset', default='data/processed/build_b_finalized.npz')
     parser.add_argument('--output', default='data/experiments/b0_season_cv')
@@ -219,6 +221,11 @@ def main():
     parser.add_argument('--lr', type=float, default=.001)
     parser.add_argument('--seed', type=int, default=42)
     add_experiment_args(parser)
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     args.horizons = [1, 2, 3, 4]
     if min(args.epochs, args.lookback, args.width, args.batch_size, args.eval_members) < 1 or args.members < 2:

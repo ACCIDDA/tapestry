@@ -48,5 +48,6 @@ if [[ ! -s "$frozen/manifest.json" ]]; then
         --cache data/evaluation/hub_cache_rebuilt --output "$frozen"
 fi
 
+# Optional first argument names the experiment to register (default b0).
 .venv/bin/python -m tapestry.models.manager plan \
-    -e b0-rebuilt --frozen "$frozen" --device cuda
+    -e "${1:-b0}" --frozen "$frozen" --device cuda

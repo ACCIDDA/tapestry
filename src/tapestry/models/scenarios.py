@@ -1,12 +1,22 @@
-"""Influpaint-style immutable scenarios, readable strings, and essential/grid sets.
+"""Influpaint-style immutable scenarios, short readable strings, and scenario suites.
 
-Adapted from the pattern in influpaint/influpaint/batch/scenarios.py:
-TrainingScenario, scenario_string, and get_essential_scenarios. No MLflow needed.
+Adapted from influpaint/influpaint/batch/scenarios.py (TrainingScenario,
+scenario_string, essential set). Stable names replace position-based numeric IDs.
 """
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from itertools import product
 
 from .experiments import LOSS_WEIGHTS
+
+# Field order fixes the string order. Categorical values use short codes.
+PREFIX = dict(lookback='h', count_transform='tr_', geography='geo', dynamics='dyn',
+              loss_weights='lw_', encoder='enc_', heads='hd_', decoder='dec_', latent='z',
+              width='w', epochs='ep', batch_size='bs', members='m', lr='lr')
+CODES = dict(count_transform={'raw': 'raw', 'sqrt': 'sqrt', 'fourth_root': '4rt'},
+             loss_weights={'influenza_first': 'first', 'balanced_admissions': 'bal', 'flu_only': 'fluonly'},
+             encoder={'mlp': 'mlp', 'conv': 'conv'}, heads={'shared': 'sh', 'state_us': 'su'},
+             decoder={'legacy': 'leg', 'residual2': 'res2'})
+assert set(CODES['loss_weights']) == set(LOSS_WEIGHTS)
 
 
 @dataclass(frozen=True)
@@ -20,43 +30,54 @@ class TrainingScenario:
     heads: str = 'shared'
     decoder: str = 'legacy'
     latent: int = 16
+    width: int = 64
+    epochs: int = 50
+    batch_size: int = 8
+    members: int = 8
+    lr: float = .001
 
     def __post_init__(self):
-        choices = dict(count_transform=('raw', 'sqrt', 'fourth_root'),
-                       loss_weights=tuple(LOSS_WEIGHTS), encoder=('mlp', 'conv'),
-                       heads=('shared', 'state_us'), decoder=('legacy', 'residual2'))
-        for key, values in choices.items():
-            if getattr(self, key) not in values:
+        for key, codes in CODES.items():
+            if getattr(self, key) not in codes:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)}')
-        if self.lookback < 1 or self.latent < 1:
-            raise ValueError('lookback and latent must be positive')
+        if min(self.lookback, self.latent, self.width, self.epochs, self.batch_size) < 1 or self.members < 2:
+            raise ValueError('Positive dimensions/epochs required; training members >= 2')
+        if not (0 < self.lr < float('inf') and float(f'{self.lr:g}') == self.lr):
+            raise ValueError(f'lr must be positive and representable in the string: {self.lr}')
 
     @property
     def scenario_string(self):
-        return 'b0::' + '::'.join(f'{key}={int(value) if isinstance(value, bool) else value}'
-                                  for key, value in asdict(self).items())
+        return 'b0:' + ':'.join(PREFIX[key] + encode(key, value) for key, value in asdict(self).items())
 
     @classmethod
     def from_string(cls, value):
         """Require a complete canonical string; typos never become defaults."""
         try:
-            prefix, *parts = value.split('::')
-            pairs = [part.split('=') for part in parts]
-            options = dict(pairs)
-            if prefix != 'b0' or len(options) != len(parts) or set(options) != set(cls.__dataclass_fields__):
+            prefix, *tokens = value.split(':')
+            if prefix != 'b0' or len(tokens) != len(PREFIX):
                 raise ValueError()
-            for key in ('lookback', 'latent'):
-                options[key] = int(options[key])
-            for key in ('geography', 'dynamics'):
-                if options[key] not in ('0', '1'):
+            options = {}
+            for field, token in zip(fields(cls), tokens):
+                if not token.startswith(PREFIX[field.name]):
                     raise ValueError()
-                options[key] = options[key] == '1'
+                text = token[len(PREFIX[field.name]):]
+                if field.name in CODES:
+                    options[field.name] = {code: name for name, code in CODES[field.name].items()}[text]
+                elif field.type is bool:
+                    options[field.name] = {'0': False, '1': True}[text]
+                else:
+                    options[field.name] = field.type(text)
             scenario = cls(**options)
             if scenario.scenario_string != value:
                 raise ValueError()
             return scenario
-        except (TypeError, ValueError) as error:
+        except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f'Invalid scenario string: {value}') from error
+
+    @classmethod
+    def from_config(cls, config):
+        """Read a saved season-CV configuration, ignoring non-scenario settings."""
+        return cls(**{field.name: config[field.name] for field in fields(cls)})
 
     def flags(self):
         flags = []
@@ -68,6 +89,20 @@ class TrainingScenario:
             else:
                 flags.extend((option, str(value)))
         return flags
+
+
+def encode(key, value):
+    if key in CODES:
+        return CODES[key][value]
+    if isinstance(value, bool):
+        return str(int(value))
+    return f'{value:g}' if isinstance(value, float) else str(value)
+
+
+def ofat(anchor, **options):
+    """One-factor-at-a-time variations around an anchor, named `<field>_<value>`."""
+    return {f'{key}_{encode(key, value)}': replace(anchor, **{key: value})
+            for key, values in options.items() for value in values if value != getattr(anchor, key)}
 
 
 ANCHOR = TrainingScenario()
@@ -93,6 +128,26 @@ ESSENTIAL = {
 }
 
 
+def grid():
+    # Full interactions, with representation and runtime fixed; spatial attention belongs to B1.
+    keys = ('lookback', 'dynamics', 'loss_weights', 'encoder', 'heads', 'decoder', 'latent')
+    values = ((8, 12, 26), (False, True), tuple(LOSS_WEIGHTS), ('mlp', 'conv'),
+              ('shared', 'state_us'), ('legacy', 'residual2'), (16, 32))
+    scenarios = {'baseline': BASELINE}
+    for setting in product(*values):
+        scenario = replace(ANCHOR, **dict(zip(keys, setting)))
+        scenarios[scenario.scenario_string] = scenario
+    return scenarios
+
+
+# Add a named suite here for each new exploration, e.g.
+#   'capacity': {'anchor': ANCHOR, **ofat(ANCHOR, width=(32, 128), epochs=(100,))},
+SUITES = {
+    'essential': lambda: {name: value[0] for name, value in ESSENTIAL.items()},
+    'grid': grid,
+}
+
+
 def get_training_scenario(name):
     if name in ESSENTIAL:
         return ESSENTIAL[name][0]
@@ -100,16 +155,6 @@ def get_training_scenario(name):
 
 
 def get_scenarios(suite='essential'):
-    if suite == 'essential':
-        return {name: value[0] for name, value in ESSENTIAL.items()}
-    if suite != 'grid':
+    if suite not in SUITES:
         raise ValueError(f'Unknown suite: {suite}')
-    # Full interactions, with representation fixed; spatial attention belongs to B1.
-    keys = ('lookback', 'dynamics', 'loss_weights', 'encoder', 'heads', 'decoder', 'latent')
-    values = ((8, 12, 26), (False, True), tuple(LOSS_WEIGHTS), ('mlp', 'conv'),
-              ('shared', 'state_us'), ('legacy', 'residual2'), (16, 32))
-    grid = {'baseline': BASELINE}
-    for setting in product(*values):
-        scenario = replace(ANCHOR, **dict(zip(keys, setting)))
-        grid[scenario.scenario_string] = scenario
-    return grid
+    return SUITES[suite]()

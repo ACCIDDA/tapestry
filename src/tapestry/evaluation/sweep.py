@@ -1,6 +1,7 @@
 """Export saved runs, score frozen tasks, and rank/plot configurations without refitting."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 import importlib.util
 import json
 from pathlib import Path
@@ -125,15 +126,17 @@ def main():
     parser.add_argument('--runs', nargs='+', required=True, type=Path)
     parser.add_argument('--frozen', type=Path, default=Path('data/evaluation/b0_hub_comparison'))
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--family', default='B0')
     parser.add_argument('--csv', action='store_true', help='Also save uncompressed Hubverse CSV files for the EpiBench CLI')
     parser.add_argument('--epibench', type=Path, help='Optional development checkout; defaults to installed EpiBenchmark')
-    parser.add_argument('--score-workers', type=int, default=2, choices=(1, 2), help='Concurrent independent EpiBench cases')
+    parser.add_argument('--score-workers', type=int, default=2,
+                        help='Concurrent run loads and EpiBench cases; the default two suits a 32 GiB machine')
     parser.add_argument('--mirrors', type=Path, default=Path('data/mirrors'))
     parser.add_argument('--locations', nargs='+', default=['US', '37'], help='Hub FIPS codes; default US and NC')
     args = parser.parse_args()
+    if args.score_workers < 1:
+        parser.error('--score-workers must be positive')
     args.output.mkdir(parents=True, exist_ok=True)
-    records = [identify(run, args.family) for run in args.runs]
+    records = [identify(run, args.output) for run in args.runs]
     if len({r['model_id'] for r in records}) != len(records):
         raise ValueError('Duplicate model identities: pass one copy of each configuration/seed')
     registry = args.output / 'configurations.json'
@@ -142,15 +145,18 @@ def main():
         if {r['model_id'] for r in previous} != {r['model_id'] for r in records}:
             raise ValueError('Use a new output directory when changing the set of compared runs')
     (args.output / 'configurations.json').write_text(json.dumps(records, indent=2) + '\n')
-    pd.DataFrame([{k:v for k,v in r.items() if k != 'identity'} for r in records]).to_csv(args.output / 'configurations.csv', index=False)
+    pd.DataFrame([{**{k: v for k, v in r.items() if k not in ('scenario', 'provenance')}, **r['scenario']}
+                  for r in records]).to_csv(args.output / 'configurations.csv', index=False)
     frozen = json.loads((args.frozen / 'manifest.json').read_text())
     cases = [c for c in frozen['cases'] if c['status'] == 'scored']
     by_case = {c['directory']: [] for c in cases}
     all_scores = []
-    for record, run in zip(records, args.runs):
+    print(f'Loading {len(args.runs)} runs with {args.score_workers} workers', flush=True)
+    with ThreadPoolExecutor(max_workers=args.score_workers) as pool:
+        exports = list(pool.map(export_b0, args.runs))
+    for record, frames in zip(records, exports):
         model = record['model_id']
-        print(f'Exporting and scoring {run.name} as {model}', flush=True)
-        frames = export_b0(run)
+        print(f'Exporting {model}', flush=True)
         record['hubverse_rows'] = hubverse(frames, model, args.output, csv=args.csv)
         for case in cases:
             units = pd.read_parquet(args.frozen / case['directory'] / 'units.parquet')
@@ -171,6 +177,15 @@ def main():
                             epibench=args.epibench, mirrors=args.mirrors, commit=hub_info['commit'])
         print(f"EpiBench complete {case['directory']} ({len(scored):,} scores)", flush=True)
         return scored.assign(target=case['target'], season=case['season'])
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    for case in cases:
+        # A killed EpiBench case can leave scores without provenance; set it aside and rescore.
+        folder = args.output / 'epibench' / case['directory']
+        if folder.is_dir() and not ((folder / 'provenance.json').is_file() and
+                                    (folder / 'output/EpiBenchmark_scores.csv').is_file()):
+            archive = args.output / 'interrupted-scoring' / stamp
+            archive.mkdir(parents=True, exist_ok=True)
+            folder.rename(archive / case['directory'])
     with ThreadPoolExecutor(max_workers=args.score_workers) as pool:
         futures = [pool.submit(evaluate_case, case) for case in cases]
         for future in as_completed(futures):
@@ -218,7 +233,7 @@ def main():
         fans(pd.concat(by_case[case['directory']], ignore_index=True), units, case, folder, args.locations,
              top_models=top_models, season_best=season_best,
              model_names={r['model_id']: f"{r['label']} · seed {r['seed']}" for r in records})
-    manifest = dict(quantile_levels=[float(q[1:]) for q in QCOLS], scoring_engine='epibench score --config-path', runs=records, frozen=str(args.frozen.resolve()), frozen_manifest_sha256=digest(frozen),
+    manifest = dict(quantile_levels=[float(q[1:]) for q in QCOLS], scoring_engine='epibench score --config-path', runs=records, frozen=str(args.frozen), frozen_manifest_sha256=digest(frozen),
                     epibench_plot_sha256=digest(module_path.read_text()), cases=cases,
                     evaluation_code_sha256={p.name: digest(p.read_text()) for p in Path(__file__).parent.glob('*') if p.suffix in {'.py', '.R'}},
                     assumptions=['Finalized retrospective CV; exploratory ranking, not prospective validation.',
@@ -235,7 +250,7 @@ def main():
 def write_report(output, records, cases, objective, configs):
     """A navigable artifact index with the assumptions alongside the rankings."""
     def link(label, path):
-        return f'[{label}]({(output / path).resolve()})'
+        return f'[{label}]({Path(path).as_posix()})'
     lines = ['# B0 configuration evaluation', '',
              f'{len(records)} saved runs; {len(configs)} configurations; {len(cases)} target/season comparisons.', '',
              'All runs use the same frozen ensemble-supported forecast tasks and truth. '

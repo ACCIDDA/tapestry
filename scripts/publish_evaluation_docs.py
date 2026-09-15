@@ -9,7 +9,6 @@ import pandas as pd
 from tapestry.evaluation.hubs import KEY
 from tapestry.evaluation.sweep import fan_ranking, fan_selection, fans, ranking_tables
 
-DEFAULT = Path('data/experiments/b0-rebuilt/comparison-da7685987135')
 NAMES = {'wk inc flu hosp': 'Influenza admissions', 'wk inc flu prop ed visits': 'Influenza ED visits',
          'wk inc covid hosp': 'COVID-19 admissions', 'wk inc covid prop ed visits': 'COVID-19 ED visits',
          'wk inc rsv hosp': 'RSV admissions', 'wk inc rsv prop ed visits': 'RSV ED visits'}
@@ -48,7 +47,7 @@ def publish(comparison, docs):
     runs = pd.read_csv(comparison / 'run_ranking.csv')
     model_names = {r.model: f'{r.label} · seed {int(r.seed)}' for r in runs.itertuples()}
     definitions = json.loads((comparison / 'configurations.json').read_text())
-    variants = {r['label']: r['identity']['config'] for r in definitions}
+    variants = {r['label']: r['scenario'] for r in definitions}
     anchor = variants['anchor']
     fields = {'encoder': 'encoder', 'lookback': 'history (weeks)', 'count_transform': 'count transform',
               'geography': 'geography features', 'dynamics': 'dynamics features', 'heads': 'prediction heads',
@@ -100,7 +99,7 @@ def publish(comparison, docs):
     n_scores = int(leaderboard[leaderboard.horizon.eq('all')].n.sum())
     lines = ['# Canonical B0 experiments', '',
         f'**{len(rankings)} variants × three seeds = {len(runs)} CV runs / {len(runs)*3} season fits.** '
-        f'Experiment `b0-rebuilt` evaluates {n_scores:,} forecast units across nine target/season comparisons, '
+        f'Experiment `{comparison.resolve().parent.name}` evaluates {n_scores:,} forecast units across nine target/season comparisons, '
         'including the official ensembles. All fits and the full EpiBench evaluation completed. '
         'These are experiment counts; the ranking compares 14 configurations by their mean scores across three seeds.', '',
         '## Best model', '',
@@ -217,7 +216,7 @@ def publish(comparison, docs):
         'Identical representative runs appear once; different middle seeds of the same configuration appear separately. '
         'Score ties use seed number; an even seed count uses the upper middle. '
         'Other figures show all 42 runs and the ensemble. Configuration IDs map to names in the ranking above; '
-        'the `-s42`, `-s43`, and `-s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. '
+        'the `:s42`, `:s43`, and `:s44` suffixes identify seeds. Projection fans illustrate US and North Carolina. '
         'Relative-WIS plots average per-task ratios, whereas the tables use ratios of mean WIS.', '',
         '### All-target configuration ranking for fans', '',
         table(['Variant', 'Mean seed score ± SD', 'Middle seed'],
@@ -278,7 +277,7 @@ def publish(comparison, docs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--comparison', type=Path, default=DEFAULT)
+    parser.add_argument('--comparison', type=Path, required=True, help='e.g. data/experiments/b0/comparison-<hash>')
     parser.add_argument('--docs', type=Path, default=Path('docs'))
     args = parser.parse_args()
     publish(args.comparison, args.docs)

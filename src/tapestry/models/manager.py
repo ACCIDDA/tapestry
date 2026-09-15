@@ -1,19 +1,28 @@
-"""Manage B0 experiments by name: list, plan, run/resume, status, and compare."""
+"""Manage B0 experiments by name: list, plan, run, status, and compare.
+
+One `jobs.csv` row (one Slurm array task) is one scenario with all of its seeds.
+Each seed attempt writes only its own folder, so tasks never share a registry;
+`status` rebuilds `runs.csv` by scanning attempts. Nothing is locked: every
+attempt records its git commit and whether the checkout had uncommitted changes.
+"""
 import argparse
-from contextlib import contextmanager
+import csv
 from dataclasses import asdict
 from datetime import datetime, timezone
-import fcntl
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import socket
 import subprocess
 import sys
 
-from .scenarios import ESSENTIAL, get_scenarios, get_training_scenario
+from .scenarios import ESSENTIAL, SUITES, TrainingScenario, get_scenarios, get_training_scenario
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
+JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
+SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')
 
 
 def save(path, value):
@@ -26,82 +35,70 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def sha256(path):
-    with Path(path).open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
+def git_state():
+    """Commit of the checkout running this code; None outside a git checkout."""
+    root = Path(__file__).resolve().parents[3]
+    try:
+        commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'],
+                                         text=True, stderr=subprocess.DEVNULL).strip()
+        changes = subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'],
+                                          text=True, stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return dict(git_commit=None, git_dirty=None)
+    return dict(git_commit=commit, git_dirty=bool(changes))
 
 
-def frozen_hashes(folder):
-    folder = Path(folder)
-    return {str(p.relative_to(folder)): sha256(p) for p in sorted(folder.rglob('*'))
-            if p.name in ('manifest.json', 'units.parquet', 'quantiles.parquet')}
+def environment():
+    return dict(host=socket.gethostname(), slurm={name: os.environ.get(name) for name in SLURM}, **git_state())
 
 
 def experiment_folder(root, name):
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,79}', name):
         raise ValueError('Experiment name must be 1–80 letters, numbers, dots, underscores or hyphens; start with a letter/number')
-    return Path(root).resolve() / name
+    # Paths stay relative to the repository root, so folders move between machines.
+    return Path(root) / name
 
 
-@contextmanager
-def locked(folder):
-    """One runner per experiment; OS releases the lock even after a killed run."""
+def read_jobs(folder):
+    if not (folder / 'jobs.csv').is_file():
+        raise ValueError(f'No jobs.csv in {folder}; run plan first')
+    with (folder / 'jobs.csv').open() as stream:
+        return [dict(row, task=int(row['task']), seeds=[int(seed) for seed in row['seeds'].split()])
+                for row in csv.DictReader(stream)]
+
+
+def write_csv(path, rows, fieldnames):
+    temporary = path.with_suffix('.tmp')
+    with temporary.open('w', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    temporary.replace(path)
+
+
+def write_jobs(folder, jobs):
+    write_csv(folder / 'jobs.csv', [dict(job, seeds=' '.join(map(str, job['seeds']))) for job in jobs], JOB_FIELDS)
+
+
+def plan(folder, scenarios, seeds, settings):
+    """Append scenarios and seeds; existing task numbers never change."""
     folder.mkdir(parents=True, exist_ok=True)
-    with (folder / '.lock').open('a') as stream:
-        try:
-            fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            raise RuntimeError(f'Another manager is writing {folder}') from error
-        try:
-            yield
-        finally:
-            fcntl.flock(stream, fcntl.LOCK_UN)
-
-
-def protocol(args):
-    package = Path(__file__).parents[1]
-    files = [p for directory in ('models', 'model_data', 'evaluation')
-             for p in (package / directory).rglob('*') if p.suffix in ('.py', '.R')]
-    return {
-        'schema': 1,
-        'dataset': str(Path(args.dataset).resolve()), 'dataset_sha256': sha256(args.dataset),
-        'population_file': str(Path(args.population_file).resolve()),
-        'population_sha256': sha256(args.population_file),
-        'frozen': str(Path(args.frozen).resolve()),
-        'frozen_files_sha256': frozen_hashes(args.frozen),
-        'code_sha256': {str(p.relative_to(package)): sha256(p) for p in sorted(files)},
-        'runtime': {key: getattr(args, key) for key in
-                    ('epochs', 'width', 'batch_size', 'members', 'eval_members', 'lr', 'device')},
-        'seasons': list(SEASONS),
-        'assumptions': [
-            'Exploratory finalized-data leave-one-season-out CV; these seasons have already been examined.',
-            'Each scenario/seed trains three folds; all seeds run every selected scenario.',
-            'Native-unit loss Q95 is fitted per fold independently of task weights.',
-            'Five saved quantiles follow the current repository scoring protocol.',
-            'No calibration or early stopping. Any future calibration requires inner out-of-sample predictions and refitted scalers.',
-            'B0 remains local. Spatial attention is a separate B1 experiment.',
-            'Failed/interrupted attempts restart all three folds; previous artifacts are retained.',
-        ],
-    }
-
-
-def prepare(folder, definition, scenarios, seeds):
-    path = folder / 'protocol.json'
-    if path.exists() and json.loads(path.read_text()) != definition:
-        raise ValueError('Experiment protocol/code/data changed; use a new experiment name')
-    save(path, definition)
-    registry = folder / 'runs.json'
-    runs = json.loads(registry.read_text()) if registry.exists() else {}
-    selected = []
+    path = folder / 'experiment.json'
+    previous = json.loads(path.read_text()) if path.exists() else {}
+    changed = sorted(key for key, value in settings.items() if key in previous and previous[key] != value)
+    if changed:
+        print(f'Updated experiment settings {changed}; each attempt records the settings it used', flush=True)
+    save(path, {**previous, **settings})
+    jobs = read_jobs(folder) if (folder / 'jobs.csv').exists() else []
+    by_scenario = {job['scenario']: job for job in jobs}
     for name, scenario in scenarios.items():
-        for seed in seeds:
-            key = f'{scenario.scenario_string}::s{seed}'
-            selected.append(key)
-            if key not in runs:
-                runs[key] = dict(name=name, scenario_string=scenario.scenario_string,
-                                 config=asdict(scenario), seed=seed, status='planned', attempts=[])
-    save(registry, runs)
-    return runs, list(dict.fromkeys(selected))
+        key = scenario.scenario_string
+        if key not in by_scenario:
+            by_scenario[key] = dict(task=len(jobs), name=name, scenario=key, seeds=[])
+            jobs.append(by_scenario[key])
+        by_scenario[key]['seeds'] = sorted(set(by_scenario[key]['seeds']) | set(seeds))
+    write_jobs(folder, jobs)
+    return jobs
 
 
 def complete_artifacts(output):
@@ -118,89 +115,136 @@ def complete_artifacts(output):
         return False
 
 
-def execute(folder, definition, runs, selected, keep_going=False):
-    failures = []
-    for key in selected:
-        record = runs[key]
-        if record['status'] == 'complete':
-            if not complete_artifacts(Path(record['output'])):
-                raise ValueError(f'Completed artifacts missing or incomplete: {key}')
-            print(f'Reusing {record["name"]}, seed {record["seed"]}', flush=True)
-            continue
-        # A stale running state indicates the previous manager exited before saving
-        # its final status. Preserve that attempt and start a fresh CV directory.
-        for previous in record['attempts']:
-            if previous['status'] == 'running':
-                previous.update(status='interrupted', finished=now())
-        attempt = folder / key / f'attempt-{len(record["attempts"]) + 1:03d}'
-        attempt.mkdir(parents=True, exist_ok=False)
-        output = attempt / 'cv'
-        command = [sys.executable, '-m', 'tapestry.models.season_cv',
-                   '--dataset', definition['dataset'], '--population-file', definition['population_file'],
-                   '--output', str(output), '--seed', str(record['seed'])]
-        for option, value in definition['runtime'].items():
-            command.extend(('--' + option.replace('_', '-'), str(value)))
-        command.extend(get_training_scenario(record['scenario_string']).flags())
-        current = dict(status='running', started=now(), command=command, output=str(output), log=str(attempt / 'run.log'))
-        record['attempts'].append(current)
-        record.update(status='running', output=str(output))
-        save(folder / 'runs.json', runs)
-        save(attempt / 'run.json', dict(scenario=record['config'], seed=record['seed'], **current))
-        print(f'Running {record["name"]}, seed {record["seed"]}: {attempt}', flush=True)
+def attempts(folder, scenario, seed):
+    return sorted((folder / scenario / f's{seed}').glob('attempt-*'))
+
+
+def seed_state(folder, scenario, seed):
+    """(attempt, record, done): the latest complete attempt, else the latest attempt."""
+    found = []
+    for attempt in attempts(folder, scenario, seed):
         try:
-            with (attempt / 'run.log').open('w') as log:
-                subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
-            if not complete_artifacts(output):
-                raise RuntimeError('CV exited without all three fitted-fold artifacts')
-            manifest = json.loads((output / 'manifest.json').read_text())
-            manifest['scenario_string'] = record['scenario_string']
-            manifest['scenario_name'] = record['name']
-            save(output / 'manifest.json', manifest)
-        except (Exception, KeyboardInterrupt) as error:
-            current.update(status='failed', error=str(error), finished=now())
-            record['status'] = 'failed'
-            save(folder / 'runs.json', runs)
-            save(attempt / 'run.json', current)
-            failures.append(key)
-            if not keep_going or isinstance(error, KeyboardInterrupt):
-                raise
-        else:
-            current.update(status='complete', finished=now())
-            record['status'] = 'complete'
-            save(attempt / 'run.json', current)
-            save(folder / 'runs.json', runs)
-            print(f'Completed {record["name"]}, seed {record["seed"]}', flush=True)
+            found.append((attempt, json.loads((attempt / 'run.json').read_text())))
+        except (OSError, ValueError):
+            found.append((attempt, dict(status='unknown')))
+    for attempt, record in reversed(found):
+        if record.get('status') == 'complete' and complete_artifacts(attempt / 'cv'):
+            return attempt, record, True
+    return found[-1] + (False,) if found else (None, dict(status='planned'), False)
+
+
+def execute(command, log):
+    subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
+
+
+def run_seed(folder, job, seed, settings):
+    if seed_state(folder, job['scenario'], seed)[2]:
+        print(f'Reusing {job["name"]}, seed {seed}', flush=True)
+        return True
+    number = len(attempts(folder, job['scenario'], seed)) + 1
+    attempt = folder / job['scenario'] / f's{seed}' / f'attempt-{number:03d}'
+    # A duplicate task running the same seed concurrently fails here instead of sharing a folder.
+    attempt.mkdir(parents=True, exist_ok=False)
+    output = attempt / 'cv'
+    scenario = TrainingScenario.from_string(job['scenario'])
+    command = [sys.executable, '-m', 'tapestry.models.season_cv',
+               '--dataset', settings['dataset'], '--population-file', settings['population_file'],
+               '--eval-members', str(settings['eval_members']), '--device', settings['device'],
+               '--seed', str(seed), '--output', str(output), *scenario.flags()]
+    record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
+                  config=asdict(scenario), settings=settings, command=command, started=now(), **environment())
+    save(attempt / 'run.json', record)
+    print(f'Running {job["name"]}, seed {seed}: {attempt}', flush=True)
+    try:
+        with (attempt / 'run.log').open('w') as log:
+            execute(command, log)
+        if not complete_artifacts(output):
+            raise RuntimeError('CV exited without all three fitted-fold artifacts')
+        manifest = json.loads((output / 'manifest.json').read_text())
+        manifest.update(scenario_string=job['scenario'], scenario_name=job['name'])
+        save(output / 'manifest.json', manifest)
+    except (Exception, KeyboardInterrupt) as error:
+        record.update(status='failed', error=str(error), finished=now())
+        save(attempt / 'run.json', record)
+        if isinstance(error, KeyboardInterrupt):
+            raise
+        print(f'Failed {job["name"]}, seed {seed}: {error}', flush=True)
+        return False
+    record.update(status='complete', finished=now())
+    save(attempt / 'run.json', record)
+    print(f'Completed {job["name"]}, seed {seed}', flush=True)
+    return True
+
+
+def run(folder, tasks=None, device=None, keep_going=False):
+    settings = json.loads((folder / 'experiment.json').read_text())
+    if device:
+        settings['device'] = device
+    jobs = read_jobs(folder)
+    if tasks is not None:
+        unknown = set(tasks) - {job['task'] for job in jobs}
+        if unknown:
+            raise ValueError(f'Unknown tasks {sorted(unknown)} in {folder / "jobs.csv"}')
+        jobs = [job for job in jobs if job['task'] in tasks]
+    failures = 0
+    for job in jobs:
+        for seed in job['seeds']:
+            if not run_seed(folder, job, seed, settings):
+                failures += 1
+                if not keep_going:
+                    return failures
     return failures
 
 
-def compare(folder):
-    """Use the existing EpiBench pipeline and all registered completed runs."""
-    definition = json.loads((folder / 'protocol.json').read_text())
-    if frozen_hashes(definition['frozen']) != definition['frozen_files_sha256']:
-        raise ValueError('Frozen scoring inputs changed since experiment planning')
-    package = Path(__file__).parents[1]
-    for name, checksum in definition['code_sha256'].items():
-        if name.startswith('evaluation/') and sha256(package / name) != checksum:
-            raise ValueError('Evaluation code changed since experiment planning')
-    runs = json.loads((folder / 'runs.json').read_text())
-    incomplete = [key for key, record in runs.items() if record['status'] != 'complete']
-    if not runs or incomplete:
-        raise ValueError(f'Complete all registered runs before comparing ({len(incomplete)} incomplete)')
-    outputs = [record['output'] for record in runs.values()]
-    if not all(complete_artifacts(Path(output)) for output in outputs):
-        raise ValueError('Missing completed CV artifacts')
+def collect(folder):
+    """Rebuild runs.csv from attempt folders. A 'running' status may be a killed job."""
+    rows = []
+    for job in read_jobs(folder):
+        scenario = TrainingScenario.from_string(job['scenario'])
+        for seed in job['seeds']:
+            attempt, record, done = seed_state(folder, job['scenario'], seed)
+            status = 'complete' if done else 'incomplete' if record.get('status') == 'complete' else record.get('status')
+            rows.append(dict(task=job['task'], name=job['name'], seed=seed, status=status,
+                             attempt=attempt.relative_to(folder).as_posix() if attempt else '',
+                             attempts=len(attempts(folder, job['scenario'], seed)),
+                             git_commit=record.get('git_commit'), git_dirty=record.get('git_dirty'),
+                             started=record.get('started'), finished=record.get('finished'),
+                             scenario=job['scenario'], **asdict(scenario)))
+    if rows:
+        write_csv(folder / 'runs.csv', rows, list(rows[0]))
+    return rows
+
+
+def pending_tasks(rows):
+    return sorted({row['task'] for row in rows if row['status'] != 'complete'})
+
+
+def compare(folder, workers=2, allow_incomplete=False):
+    """Score completed runs through the existing EpiBench sweep; warn when code versions differ."""
+    settings = json.loads((folder / 'experiment.json').read_text())
+    rows = collect(folder)
+    done = [row for row in rows if row['status'] == 'complete']
+    if not done or (len(done) < len(rows) and not allow_incomplete):
+        raise ValueError(f'{len(rows) - len(done)} of {len(rows)} runs incomplete; finish them or pass --allow-incomplete')
+    versions = {(row['git_commit'], row['git_dirty']) for row in done}
+    if len(versions) > 1 or any(row['git_dirty'] is not False for row in done):
+        print(f'Warning: runs come from {len(versions)} commit/dirty states: {sorted(versions, key=str)}', flush=True)
+    runs = sorted(row['attempt'] for row in done)
     # Different compared sets get different destinations; never mix partial rankings.
-    signature = hashlib.sha256(json.dumps(sorted(outputs)).encode()).hexdigest()[:12]
-    destination = folder / f'comparison-{signature}'
-    command = [sys.executable, '-m', 'tapestry.evaluation.sweep', '--runs', *outputs,
-               '--frozen', definition['frozen'], '--output', str(destination)]
-    save(folder / 'comparison.json', dict(status='running', command=command, output=str(destination)))
+    destination = folder / f'comparison-{hashlib.sha256(json.dumps(runs).encode()).hexdigest()[:12]}'
+    command = [sys.executable, '-m', 'tapestry.evaluation.sweep', '--runs', *[str(folder / run / 'cv') for run in runs],
+               '--frozen', settings['frozen'], '--output', str(destination), '--score-workers', str(workers)]
+    record = dict(status='running', command=command, output=destination.name, runs=len(runs),
+                  run_versions=sorted(map(list, versions), key=str), started=now(), **environment())
+    save(folder / 'comparison.json', record)
     try:
         subprocess.run(command, check=True)
     except (Exception, KeyboardInterrupt) as error:
-        save(folder / 'comparison.json', dict(status='failed', command=command, error=str(error), output=str(destination)))
+        record.update(status='failed', error=str(error), finished=now())
+        save(folder / 'comparison.json', record)
         raise
-    save(folder / 'comparison.json', dict(status='complete', command=command, output=str(destination)))
+    record.update(status='complete', finished=now())
+    save(folder / 'comparison.json', record)
     return destination
 
 
@@ -209,30 +253,30 @@ def main(argv=None):
     parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'compare'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
-    parser.add_argument('--suite', choices=['essential', 'grid'], default='essential')
+    parser.add_argument('--suite', choices=list(SUITES), default='essential')
     parser.add_argument('-s', '--scenario', nargs='+', help='Named aliases or full scenario strings; overrides suite')
     parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
     parser.add_argument('--dataset', default='data/processed/build_b_finalized.npz')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
     parser.add_argument('--frozen', default='data/evaluation/b0_hub_comparison')
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--width', type=int, default=64)
-    parser.add_argument('--batch-size', type=int, default=8)
-    parser.add_argument('--members', type=int, default=8)
     parser.add_argument('--eval-members', type=int, default=2048)
-    parser.add_argument('--lr', type=float, default=.001)
-    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default='cpu')
-    parser.add_argument('--keep-going', action='store_true', help='Run remaining scenarios after a failed CV')
+    parser.add_argument('--device', choices=['cpu', 'mps', 'cuda'],
+                        help='plan: saved default (cpu); run: override for this invocation')
+    parser.add_argument('-t', '--task', nargs='+', type=int, help='run: jobs.csv task numbers (default: all)')
+    parser.add_argument('--keep-going', action='store_true', help='run: continue with remaining seeds after a failure')
+    parser.add_argument('--workers', type=int, default=2, help='compare: concurrent EpiBench cases')
+    parser.add_argument('--allow-incomplete', action='store_true', help='compare: score only completed runs')
     args = parser.parse_args(argv)
-    if min(args.epochs, args.width, args.batch_size, args.eval_members) < 1 or args.members < 2 or not 0 < args.lr < float('inf'):
-        parser.error('Positive runtime dimensions/lr required; training members >=2')
+    if args.eval_members < 1 or args.workers < 1:
+        parser.error('eval-members and workers must be positive')
     if len(set(args.seeds)) != len(args.seeds) or min(args.seeds) < 0:
         parser.error('Seeds must be distinct nonnegative integers')
-    scenarios = ({name: get_training_scenario(name) for name in args.scenario}
-                 if args.scenario else get_scenarios(args.suite))
-    count = len(set(scenarios.values()))
-    counts = dict(configurations=count, seeds=len(args.seeds), runs=count * len(args.seeds),
-                  season_fits=count * len(args.seeds) * len(SEASONS))
+    if args.command in ('list', 'plan'):
+        scenarios = ({name: get_training_scenario(name) for name in args.scenario}
+                     if args.scenario else get_scenarios(args.suite))
+        count = len(set(scenarios.values()))
+        counts = dict(configurations=count, seeds=len(args.seeds), runs=count * len(args.seeds),
+                      season_fits=count * len(args.seeds) * len(SEASONS))
     if args.command == 'list':
         for name, scenario in scenarios.items():
             info = ESSENTIAL.get(name)
@@ -242,25 +286,30 @@ def main(argv=None):
     if not args.experiment:
         parser.error('--experiment is required')
     folder = experiment_folder(args.root, args.experiment)
-    if args.command == 'status':
-        runs = json.loads((folder / 'runs.json').read_text())
-        for key, record in runs.items():
-            print(f'{record["status"]}\t{record["name"]}\t{key}')
-        print(json.dumps({status: sum(r['status'] == status for r in runs.values())
-                          for status in ('planned', 'running', 'failed', 'complete')}))
-        return
-    with locked(folder):
-        if args.command == 'compare':
-            print(compare(folder))
-            return
-        if not (Path(args.frozen) / 'manifest.json').is_file():
-            parser.error('Frozen comparison manifest is required')
-        definition = protocol(args)
-        runs, selected = prepare(folder, definition, scenarios, args.seeds)
+    if args.command == 'plan':
+        settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
+                        eval_members=args.eval_members, device=args.device or 'cpu')
+        plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
-        if args.command == 'run':
-            if execute(folder, definition, runs, selected, args.keep_going):
-                raise SystemExit(1)
+    elif args.command == 'run':
+        if run(folder, args.task, args.device, args.keep_going):
+            raise SystemExit(1)
+        return
+    elif args.command == 'compare':
+        print(compare(folder, args.workers, args.allow_incomplete))
+        return
+    rows = collect(folder)
+    if args.command == 'status':
+        for row in rows:
+            print(f'{row["status"]}\t{row["task"]}\t{row["name"]}\ts{row["seed"]}\t{row["attempt"]}')
+        print(json.dumps({status: sum(row['status'] == status for row in rows) for status in sorted({r['status'] for r in rows})}))
+    pending = pending_tasks(rows)
+    if pending:
+        print(f'Pending tasks (check squeue before resubmitting): '
+              f'sbatch --array={",".join(map(str, pending))}%6 scripts/b0_array.sbatch {args.experiment}'
+              + ('' if args.root == 'data/experiments' else f' --root {args.root}'))
+        print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}'
+              + ('' if args.root == 'data/experiments' else f' --root {args.root}'))
 
 
 if __name__ == '__main__':

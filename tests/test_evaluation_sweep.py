@@ -64,19 +64,26 @@ def test_fan_ranking_averages_seed_scores_and_uses_middle_performance():
     assert best == 'b-43'
 
 
-def test_identity_stable_and_future_fields_change_id(tmp_path):
-    manifest = dict(config=dict(seed=42, output='old', device='cpu', width=64),
+def test_identity_is_the_scenario_string_not_code_or_paths(tmp_path):
+    from dataclasses import asdict
+    from tapestry.models.scenarios import ANCHOR
+    manifest = dict(config=dict(asdict(ANCHOR), seed=42, output='old', device='cpu'),
                     dataset_sha256='abc', code_sha256={'/old/model.py': 'def'})
     def write():
-        (tmp_path / 'manifest.json').write_text(json.dumps(manifest))
-        return identify(tmp_path)
+        (tmp_path / 'run').mkdir(exist_ok=True)
+        (tmp_path / 'run' / 'manifest.json').write_text(json.dumps(manifest))
+        return identify(tmp_path / 'run', tmp_path / 'comparison')
     a = write()
+    assert a['config_id'] == ANCHOR.scenario_string
+    assert a['model_id'] == ANCHOR.scenario_string + ':s42'
+    assert a['run'] == '../run'
     manifest['config'].update(output='new', device='cuda', seed=43)
-    manifest['code_sha256'] = {'/new/model.py': 'def'}
+    manifest['code_sha256'] = {'/new/model.py': 'changed'}
     b = write()
-    assert a['config_id'] == b['config_id']
-    assert a['model_id'] != b['model_id']
-    manifest['config']['future_option'] = True
+    assert b['config_id'] == a['config_id']
+    assert b['model_id'] == ANCHOR.scenario_string + ':s43'
+    assert b['provenance']['code_sha256'] != a['provenance']['code_sha256']
+    manifest['config']['width'] = 32
     assert write()['config_id'] != a['config_id']
 
 
@@ -126,7 +133,9 @@ def test_end_to_end_export_score_rank_and_plot(tmp_path, monkeypatch):
         pytest.skip('Integration requires local R and installed EpiBenchmark')
     run = tmp_path / 'run'
     run.mkdir()
-    (run / 'manifest.json').write_text(json.dumps(dict(config=dict(seed=42), dataset_sha256='test', code_sha256={})))
+    from dataclasses import asdict
+    from tapestry.models.scenarios import ANCHOR
+    (run / 'manifest.json').write_text(json.dumps(dict(config=dict(asdict(ANCHOR), seed=42), dataset_sha256='test', code_sha256={})))
     for year, held in zip((2023, 2024, 2025), SEASONS):
         folder = run / f'eval_{held}'
         folder.mkdir()
@@ -177,52 +186,20 @@ def test_shared_forecast_matching_rejects_missing_and_duplicate_tasks():
         match_forecasts(pd.concat([predictions, predictions.iloc[:1]]), units, 'wk inc flu hosp')
 
 
-def test_staged_runner_and_sweep_share_geographic_objective(tmp_path, monkeypatch):
+def test_objective_weights_geographies_equally():
     """Unequal state/US task counts must not change equal-geography weighting."""
-    import importlib.util
-    from pathlib import Path
     from tapestry.evaluation.scoring import aggregate_scores, objective
 
-    path = Path(__file__).resolve().parents[1] / 'experiments/b0/run_b0_experiments.py'
-    spec = importlib.util.spec_from_file_location('b0_recipe', path)
-    runner = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(runner)
-    frozen = tmp_path / 'frozen'
-    case = dict(hub='flusight', status='scored', directory='flu', target='wk inc flu hosp',
-                season='2024-2025', ensemble='official', n_units=3)
-    folder = frozen / 'flu'
-    folder.mkdir(parents=True)
-    (frozen / 'manifest.json').write_text(json.dumps(dict(cases=[case], hubs={'flusight': {'commit':'HEAD', 'truth_vintages': {'wk inc flu hosp':'2023-12-01'}}})))
+    metrics = ['wis', 'ae_median', 'interval_coverage_50', 'interval_coverage_95']
     units = pd.DataFrame(dict(reference_date=['2025-01-04'] * 3,
-        target_end_date=['2025-01-04'] * 3, location=['01', '02', 'US'], horizon=[0] * 3,
-        observed=[1., 2., 3.]))
-    units.to_parquet(folder / 'units.parquet', index=False)
-    predictions = units[KEY].copy()
-    predictions[QCOLS] = np.arange(5)
-    ensemble = units[KEY].assign(model='official')
-    ensemble[runner.METRICS] = 1.
-    ensemble.to_csv(folder / 'scores.csv', index=False)
-    ensemble[QCOLS] = np.arange(5)
-    ensemble.to_parquet(folder / 'quantiles.parquet', index=False)
-    scores = units[KEY].assign(model='flu')
-    scores[runner.METRICS] = 1.
+        target_end_date=['2025-01-04'] * 3, location=['01', '02', 'US'], horizon=[0] * 3))
+    scores = units.assign(model='candidate', target='wk inc flu hosp', season='2024-2025', ensemble_wis=1.)
+    scores[metrics] = 1.
     scores['wis'] = [2., 4., 8.]
-    monkeypatch.setattr(runner, 'FROZEN', frozen)
-    monkeypatch.setattr(runner, 'export_b0', lambda _: {(case['season'], case['target']): predictions})
-    monkeypatch.setattr(runner, 'score_case', lambda *_, **__: pd.concat([
-        scores.assign(model='candidate', observed=units.observed),
-        scores.assign(model='official', wis=1., observed=units.observed)], ignore_index=True).assign(ensemble_wis=1.))
-    run = tmp_path / 'run'
-    run.mkdir()
-    summary = runner.score_run(run)
+    summary = aggregate_scores(scores, metrics)
     pooled = summary[summary.horizon.eq('all')].set_index('geography')
     assert pooled.loc['states_dc', 'n'] == 2
     assert pooled.loc['US', 'n'] == 1
     assert pooled.loc['states_dc', 'wis_ratio'] == 3.
     assert pooled.loc['US', 'wis_ratio'] == 8.
-    assert pooled.loc['US', 'ensemble_interval_coverage_95'] == 1.
     assert objective(summary) == pytest.approx(np.sqrt(3 * 8))
-    comparable = aggregate_scores(scores.assign(target=case['target'], season=case['season'],
-        ensemble_wis=1.), runner.METRICS)
-    assert objective(comparable) == pytest.approx(objective(summary))
-    assert (run / 'hub_scores/support.json').exists()

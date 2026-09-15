@@ -16,9 +16,10 @@ forecasts, scores, source snapshots, and experiment provenance are not regenerat
   The seven-line initializer retains the public `ExplorerIndex`, `make_server`,
   `main`, and `normalize_state` imports. Indexing and query methods remain together
   in the existing class; this first split introduces no new storage abstraction.
-- B0 experiment recipes, audits, and reports moved to `experiments/b0/`.
+- B0 experiment recipes, audits, and reports moved to `experiments/b0/`; that dated
+  staged runner, audit, and report were later removed in favor of the
+  [experiment manager](workflows/experiment-manager.md) (see git history).
   `models/experiments.py` remains the small reusable model-option helper, not a runner.
-  Existing results stay under `data/experiments/`.
 - `evaluation/scoring.py` owns quantile/date validation, frozen forecast matching,
   scored-task matching, geographic/horizon aggregation, ranking, and the exploratory
   objective shared by the staged runner and configuration sweep. The runner now
@@ -77,12 +78,12 @@ CLI-plumbing and file-format checks. They remain in Git history (commit
 | `test_b0.py` | Fair CRPS mathematics, missing-label exclusion, masked inputs not changing predictions, location ordering, population-transform inversion, checkpoint round trip, separate state/US head gradients |
 | `test_hub_evaluation.py` | Invalid quantile tasks excluded, agreement with R `scoringutils`, equal scoring support for best-model selection, horizon/channel/FIPS export, ranking on identical tasks |
 | `test_evaluation_sweep.py` | Seed averaging and target weighting in configuration ranking, stable configuration identities, Hubverse round trip, frozen-task and truth matching, equal-geography objective, end-to-end R/EpiBench sweep |
+| `test_experiment_manager.py` | Short scenario strings round-trip and reject typos, CLI flags reproduce scenarios, one-factor suites, plan/run/resume/status with relative paths and commits |
 | `test_epibench_pipeline.py` | EpiBench scoring with numeric FIPS and a zero reference, WIS values, refusal to reuse scores for changed inputs or missing tasks |
 
-The holdout audit in `experiments/b0/` overlaps unit tests intentionally: unit tests
-use small synthetic examples; the audit checks the actual canonical dataset and
-saved fitted-fold artifacts. Run that audit for an experiment being reported,
-not after every small edit. Existing report prose contains historical counts;
+The former holdout audit in `experiments/b0/` checked the actual dataset and the
+dated staged run's fitted-fold artifacts; it was removed with that runner and
+remains in git history. Existing report prose contains historical counts;
 those are observations at the time, not the current suite size.
 
 ### Focused commands

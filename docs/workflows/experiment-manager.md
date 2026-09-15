@@ -1,88 +1,163 @@
 # Named B0 experiments
 
-The manager follows InfluPaint's `TrainingScenario` dataclass, readable
-`scenario_string`, and essential-versus-full-grid pattern from
-`influpaint/influpaint/batch/scenarios.py`. An experiment name groups scenarios,
-seeds, logs, checkpoints, forecasts, and comparisons. It uses local JSON files
-and the existing CV/EpiBench commands, with no new dependencies or MLflow server.
+The manager follows InfluPaint's batch pattern (`influpaint/influpaint/batch/`):
+an immutable `TrainingScenario`, a short readable scenario string, a job list whose
+rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV
+files and the existing CV/EpiBench commands, with no MLflow server.
 
-Run from the repository root in the installed environment:
+Run from the repository root in the installed environment. Stored paths are
+relative to that root or to the experiment folder, so an experiment folder can be
+copied between Longleaf and a laptop.
 
 ```bash
-# Inspect the fixed comparison and its exact number of fits; no files are written.
+# Inspect a suite and its exact number of fits; no files are written.
 .venv/bin/python -m tapestry.models.manager list
 
-# Save the protocol and planned runs without fitting anything.
-.venv/bin/python -m tapestry.models.manager plan -e b0-next
+# Register scenarios × seeds in jobs.csv and settings in experiment.json; nothing is fitted.
+.venv/bin/python -m tapestry.models.manager plan -e b0-explore
 
-# Run every scenario at seeds 42, 43, 44. Repeat this command to resume.
-.venv/bin/python -m tapestry.models.manager run -e b0-next
+# Run every task in sequence on this machine. Repeat the command to resume.
+.venv/bin/python -m tapestry.models.manager run -e b0-explore
 
-.venv/bin/python -m tapestry.models.manager status -e b0-next
+# Per-run status; also prints the pending Slurm array tasks.
+.venv/bin/python -m tapestry.models.manager status -e b0-explore
 
-# Score all completed runs on frozen ensemble-supported tasks through EpiBench.
-.venv/bin/python -m tapestry.models.manager compare -e b0-next
+# Score completed runs on frozen ensemble-supported tasks through EpiBench.
+.venv/bin/python -m tapestry.models.manager compare -e b0-explore
 ```
 
 After reinstalling the package, `tapestry-experiments` is an equivalent entrypoint.
-For a smaller first stage, use `--scenario baseline anchor state_us residual2` on
-both `plan` and `run`. Scenarios can be added under the same experiment name with
-the same protocol. A subsequent plain `run` registers the full essential suite.
-`compare` requires all registered runs to have completed, so a partial set cannot
-silently produce the planned full comparison. Training and scoring are separate
-commands; completing `run` alone produces CV diagnostics, not official rankings.
+Training and scoring are separate commands; completing `run` alone produces CV
+diagnostics, not official rankings.
 
-## Strings and saved results
+## Scenario strings
 
-Aliases such as `state_us` resolve to complete, round-trippable strings:
+A scenario fixes every training choice, including the runtime settings:
 
 ```text
-b0::lookback=12::count_transform=fourth_root::geography=1::dynamics=1::loss_weights=influenza_first::encoder=mlp::heads=state_us::decoder=legacy::latent=16
+b0:h12:tr_4rt:geo1:dyn1:lw_first:enc_mlp:hd_sh:dec_leg:z16:w64:ep50:bs8:m8:lr0.001
 ```
 
-Pass either an alias or a quoted full string to `--scenario`. The latter also
-supports explicit combinations after the individual tests. `TrainingScenario`
-and `dataclasses.replace` provide the same interface from Python. Unknown aliases,
-malformed strings, and unknown options fail rather than falling back to defaults.
-Stable names replace InfluPaint's position-based numerical IDs.
+| Token | Field | Values |
+|---|---|---|
+| `h` | history weeks (`lookback`) | integer |
+| `tr_` | count transform | `raw`, `sqrt`, `4rt` (fourth root) |
+| `geo`, `dyn` | geography and dynamics features | `0`, `1` |
+| `lw_` | loss weights | `first` (influenza first), `bal` (balanced admissions), `fluonly` |
+| `enc_` | encoder | `mlp`, `conv` |
+| `hd_` | prediction heads | `sh` (shared), `su` (separate state/US) |
+| `dec_` | decoder | `leg` (legacy), `res2` (two residual blocks) |
+| `z` | latent dimension | integer |
+| `w`, `ep`, `bs`, `m` | width, epochs, batch size, training members | integers |
+| `lr` | learning rate | number |
+
+Every token is always present, in this order. Parsing is strict: a typo, a missing
+token, or a non-canonical number (`h012`, `lr1e-3`) fails rather than falling back
+to a default. Pass an alias such as `state_us` or a quoted full string to
+`--scenario`; `TrainingScenario` and `dataclasses.replace` give the same interface
+from Python. Stable strings replace InfluPaint's position-based numeric IDs.
+
+The scenario string is the configuration ID in every comparison output, and a run
+appends its seed: `<scenario>:s42`. Code, data, and git versions are provenance,
+not part of the ID.
+
+The dataset, population file, frozen scoring inputs, evaluation draws (2,048 by
+default), and device are experiment settings in `experiment.json`, not scenario fields.
+
+## Suites
+
+`--suite essential` (the default) is the 14-configuration comparison below, and
+`--suite grid` is the full factorial. For a new exploration, add a named suite to
+`SUITES` in `src/tapestry/models/scenarios.py`. `ofat` builds one-factor-at-a-time
+variants around an anchor:
+
+```python
+SUITES = {
+    ...,
+    'capacity': lambda: {'anchor': ANCHOR, **ofat(ANCHOR, width=(32, 128), epochs=(100,))},
+}
+```
+
+This suite contains `anchor`, `width_32`, `width_128`, and `epochs_100`. Suites and
+`--scenario` selections can be added to an existing experiment at any time.
+
+## Layout and resume
 
 ```text
 data/experiments/<experiment>/
-  protocol.json
-  runs.json
-  <scenario_string>::s42/
-    attempt-001/
-      run.json
-      run.log
-      cv/
-        manifest.json
-        scores.csv
-        eval_2023-2024/{model.pt,forecasts.npz,training.json,scores.csv}
-        eval_2024-2025/...
-        eval_2025-2026/...
+  experiment.json      dataset, population file, frozen inputs, evaluation draws, device
+  jobs.csv             task,name,scenario,seeds — one row per Slurm array task
+  runs.csv             rebuilt by status/compare: one row per scenario × seed
+  <scenario>/
+    s42/
+      attempt-001/
+        run.json       status, command, settings, times, host, Slurm IDs, git commit/dirty
+        run.log
+        cv/
+          manifest.json
+          scores.csv
+          eval_2023-2024/{model.pt,forecasts.npz,training.json,scores.csv}
+          eval_2024-2025/...
+          eval_2025-2026/...
+    s43/...
   comparison.json
   comparison-<set-hash>/
-    REPORT.md
-    configuration_ranking.csv
-    run_ranking.csv
-    leaderboard.csv
-    ... EpiBench inputs, scores, Hubverse forecasts, and plots ...
+    REPORT.md, rankings, EpiBench inputs and scores, Hubverse forecasts, plots
 ```
 
-`runs.json` records planned/running/failed/complete status, seed, full scenario,
-commands, timestamps, errors, attempt paths, and logs. A completed run is reused
-only if its manifest and all three folds' required artifacts exist. Failed or
-interrupted attempts are preserved; retry restarts that scenario/seed's three
-folds in a fresh attempt directory. This is experiment resume, not optimizer or
-mid-fold checkpoint resume. Runs execute sequentially and one process can write
-an experiment at a time. `--keep-going` finishes the remaining runs after failures
-and exits unsuccessfully if any failed.
+`plan` appends scenarios and seeds to `jobs.csv`; existing task numbers never
+change. One task runs its scenario's seeds in sequence (by default three seeds,
+each fitting three season folds). A seed is complete when an attempt's `run.json`
+says so and its manifest plus all three folds' artifacts exist; `run` then skips it.
+Otherwise `run` starts the next `attempt-NNN`, preserving failed and interrupted
+attempts. This resumes whole scenario/seed runs, not optimizer state or single folds.
+`--keep-going` continues with the remaining seeds after a failure and still exits
+unsuccessfully.
 
-The protocol records code hashes, dataset/population hashes, frozen scoring
-inputs, shared runtime settings, and assumptions. Changing those requires a new
-experiment name; changing the seed/scenario selection can extend an existing
-experiment. Use a distinct name for smoke runs. Historical artifacts are not
-automatically imported because their code and scoring protocol differ.
+Each attempt writes only its own folder, and `runs.csv` is rebuilt by scanning
+attempts, so array tasks never write a shared registry. Nothing is locked: do not
+run the same task twice at once. A killed job leaves its attempt marked `running`;
+check `squeue` before resubmitting that task.
+
+## Provenance instead of locks
+
+Experiments are not locked to a code or data version, so scenarios can be added
+after changing model code. Every attempt records the git commit and whether the
+checkout had uncommitted changes (`git_dirty`), along with its settings, host,
+and Slurm IDs. `cv/manifest.json` also keeps code and dataset hashes.
+`compare` warns when compared runs span several commits or include uncommitted
+changes. Assumption: results reported in the paper will be rerun from a clean tree,
+so mixed commits are acceptable only during exploration.
+
+A later `plan` with different settings updates `experiment.json` and prints the
+changed keys; each attempt keeps the settings it actually used.
+
+## Slurm
+
+```bash
+mkdir -p output/slurm
+.venv/bin/python -m tapestry.models.manager plan -e b0-explore --device cuda
+.venv/bin/python -m tapestry.models.manager status -e b0-explore
+sbatch --array=0-13%6 scripts/b0_array.sbatch b0-explore
+# After the array has finished:
+sbatch scripts/b0_compare.sbatch b0-explore
+```
+
+`scripts/b0_array.sbatch` runs `manager run --task $SLURM_ARRAY_TASK_ID --device cuda --keep-going`
+for one `jobs.csv` row. To retry failures, resubmit only the pending task numbers
+printed by `status`. `scripts/b0_compare.sbatch` runs `manager compare --workers 9`
+on the 36-core node; the default of two workers suits a 32 GiB laptop. Arguments
+after the experiment name are passed to the manager, for example `--root`.
+
+## Comparison
+
+`compare` scores every run in `runs.csv` through `tapestry.evaluation.sweep`. It
+refuses incomplete runs unless `--allow-incomplete` is given. Each set of runs has
+its own `comparison-<hash>` folder, so partial and full rankings never mix. EpiBench
+scores are reused when their inputs and scorer match. A case interrupted after
+EpiBench wrote scores, but before provenance was saved, is moved to
+`interrupted-scoring/` and rescored. Publish a completed comparison with
+`scripts/publish_evaluation_docs.py --comparison data/experiments/<experiment>/comparison-<hash>`.
 
 ## Comparison size and controls
 
@@ -117,11 +192,11 @@ a 2×2 comparison, so any improvement from more blocks need not be attributed to
 latent size. Loss weights never change native-unit channel normalization.
 Unsupervised auxiliary outputs in `flu_only` are not trained auxiliary forecasts.
 
-Shared defaults: width 64, 50 epochs, learning rate .001, batch size 8, 8 training
-draws, 2,048 evaluation draws, seeds 42/43/44, four horizons, and the existing three
-seasons. Parameter counts are saved for every fold. History changes MLP input
-size; convolution reuses its filters across weeks. These are fixed-width recipe
-comparisons, not parameter-count-matched experiments.
+Scenario defaults: width 64, 50 epochs, learning rate .001, batch size 8, and 8
+training draws. Experiment defaults: 2,048 evaluation draws, seeds 42/43/44, four
+horizons, and the existing three seasons. Parameter counts are saved for every fold.
+History changes MLP input size; convolution reuses its filters across weeks. These
+are fixed-width recipe comparisons, not parameter-count-matched experiments.
 
 For a literal full factorial comparison, `--suite grid` crosses 3 histories ×
 2 dynamics settings × 3 losses × 2 encoders × 2 head choices × 2 decoder choices ×

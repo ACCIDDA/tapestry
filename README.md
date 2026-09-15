@@ -98,7 +98,6 @@ Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 | `src/tapestry/models/` | Model and reusable training/CV code |
 | `src/tapestry/evaluation/` | Shared scoring, hub comparison, exports and reports |
 | `src/tapestry/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
-| `experiments/b0/` | Staged B0 runner, holdout audit and experiment reports |
 | `analysis/wval/` | Standalone wastewater analysis and evidence |
 | `scripts/` | Small checkout launchers and CSV conversion utility |
 | `docs/workflows/` | Current commands and behavior |
@@ -107,8 +106,8 @@ Follow [hub comparison](docs/workflows/hub-evaluation.md), then
 | `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
 
 Downloaded data, checkpoints, and generated results remain in their existing
-`data/`, `output/`, and `tmp/` locations. The [B0 experiment guide](experiments/b0/README.md)
-explains the dated runner and reports. See [development](docs/development.md) and
+`data/`, `output/`, and `tmp/` locations. The [experiment manager](docs/workflows/experiment-manager.md)
+plans, runs, and scores named B0 experiments. See [development](docs/development.md) and
 [the feature and test review](docs/maintenance.md) for further simplification candidates.
 
 ## Tests

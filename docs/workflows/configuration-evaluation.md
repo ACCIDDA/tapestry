@@ -24,15 +24,15 @@ keep dependencies fixed during execution. See [Longleaf setup](../longleaf-setup
 To score the collected B0 runs and publish the completed report:
 
 ```bash
-sbatch scripts/b0_evaluation_parallel.sbatch
-# After successful completion:
-.venv/bin/python scripts/publish_evaluation_docs.py
+sbatch scripts/b0_compare.sbatch b0
+# After successful completion (the path is printed by compare):
+.venv/bin/python scripts/publish_evaluation_docs.py --comparison data/experiments/b0/comparison-<hash>
 .venv/bin/python -m mkdocs build --strict
 ```
 
-The node launcher runs nine scoring cases concurrently. The underlying
+The node launcher runs `manager compare --workers 9`. The underlying
 `tapestry.evaluation.sweep` CLI supports other collections of saved runs via
-`--runs`, `--frozen`, and `--output`; its default concurrency is two cases.
+`--runs`, `--frozen`, and `--output`; `--score-workers` defaults to two.
 Completed EpiBench scores are reused when their input and scorer fingerprints
 match. No scoring step retrains models.
 
@@ -68,17 +68,19 @@ evaluation task sets and the already-fitted finalized-data B0 models.
 
 ## Identifiers
 
-`B0-<12 hexadecimal characters>` identifies a configuration, and
-`B0-<12 hexadecimal characters>-s42` identifies its seed-42 realization.
-`configurations.csv` maps these strings to the original directory names;
-`configurations.json` stores the full identity and full SHA256 hash. Seeds share
-a configuration ID. Moving the run or switching execution device does not change
-it. Dataset content, model source hashes, population values, model/training/draw
-settings, and any new configuration fields do change it. Source revision changes
-are intentionally distinct, even for configurations with otherwise equal flags;
-this distinguishes the original B0 from the later baseline implementation.
-`--family B1` leaves room for another model family using the same saved schema.
-An ID is a provenance key, not an ordinal rank or performance label.
+A configuration ID is its [scenario string](experiment-manager.md#scenario-strings),
+for example `b0:h12:tr_4rt:geo1:dyn1:lw_first:enc_mlp:hd_sh:dec_leg:z16:w64:ep50:bs8:m8:lr0.001`,
+and `<scenario>:s42` identifies its seed-42 run. Seeds share a configuration ID.
+Moving the run, switching execution device, or changing code or data does not
+change it. Dataset and code hashes, the git commit, and evaluation draws are saved
+as `provenance` in `configurations.json`; the manager warns when compared runs come
+from different commits. `configurations.csv` lists each ID, seed, label, run path
+(relative to the comparison folder), and scenario fields. An ID is a readable
+configuration key, not an ordinal rank or performance label.
+
+The published report below predates scenario-string IDs: it uses the earlier
+`B0-<12 hex>-s42` hash IDs of the discarded `b0-rebuilt` experiment until a new
+comparison is published.
 
 ## Forecasts and support
 

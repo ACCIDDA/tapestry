@@ -9,7 +9,6 @@ src/tapestry/
   models/        B0, training and season CV
   evaluation/    Shared scoring, hub comparisons, exports and reports
   explorer/      Index, HTTP server, CLI and browser assets
-experiments/b0/  Staged runner, holdout audit and experiment reports
 analysis/wval/   Standalone wastewater audit and evidence
 scripts/        Small launchers and CSV utility
 docs/workflows/ Current commands
@@ -33,7 +32,7 @@ uv run pytest -q
 Syntax-only checks used during development:
 
 ```bash
-uv run python -m compileall -q src scripts experiments analysis
+uv run python -m compileall -q src scripts analysis
 node --check src/tapestry/explorer/static/app.js
 ```
 

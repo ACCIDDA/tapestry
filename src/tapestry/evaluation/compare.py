@@ -94,7 +94,8 @@ def compare_case(ours, hub, held_out, target, cache, output, model_name, rscript
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run', default='data/experiments/b0_season_cv_20260913')
+    parser.add_argument('--run', required=True,
+                        help='Saved season-CV folder, e.g. data/experiments/<experiment>/<scenario>/s42/attempt-001/cv')
     parser.add_argument('--mirrors', default='data/mirrors')
     parser.add_argument('--cache', default='data/evaluation/hub_cache')
     parser.add_argument('--output', default='data/evaluation/b0_hub_comparison')
