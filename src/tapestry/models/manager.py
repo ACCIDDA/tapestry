@@ -461,8 +461,11 @@ def main(argv=None):
                       season_fits=count * len(args.seeds) * len(SEASONS))
         if b1:
             counts.pop('season_fits')
+            # season_cv fits every configuration/seed once per held-out season, as B0 does.
+            folds = len(SEASONS) if getattr(args, 'protocol', None) == 'season_cv' else 1
+            counts['folds'] = folds
             counts['component_fits'] = sum({'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
-                                           for s in set(scenarios.values())) * len(args.seeds)
+                                           for s in set(scenarios.values())) * len(args.seeds) * folds
     if args.command == 'list':
         for name, scenario in scenarios.items():
             info = ESSENTIAL.get(name)
