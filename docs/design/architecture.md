@@ -1,352 +1,134 @@
-# Tapestry — Architecture
+# Architecture
 
-Research and implementation plan · Proposed work, not an implemented or evaluated model.
+I want a model that can use the surveillance data we have, learn across
+pathogens, and generate plausible futures. B0 is the simple version: six
+channels, finalized histories, and four-week forecasts. B1 adds historical
+reporting states and corrections for recent weeks.
 
-**Active sources:** Delphi pulls use only V5 NHSN, NSSP, NWSS, and
-inpatient/outpatient claims. ILINet/FluView/FluSurv entries in the local audit
-below are not acquisition sources. Transfer experiments that need those feeds
-are conditional on a V5 adapter. See the [source catalog](../data/sources.md).
+The [front page](../index.md) has the motivation and unicorn results. This page
+explains the model and the masks. Exact experiment settings live in
+[B0.1](b0.1.md); the vintage implementation is described in [B1](b1.md).
 
-**Design recommendation:** build a small conditional sample generator with a shared forecasting function across surveillance signals, explicit availability and revision information, and one spatial attention block. Train its influenza hospitalization predictions with fair CRPS in count units. Select it using actual FluSight WIS on forecasts reconstructed from historical information states. Start without simulations or an extra observation-noise layer; add complexity through controlled experiments.
+## Where the ideas come from {#2-what-is-borrowed-from-each-paper}
 
-The design and numerical defaults below are **proposals**. Paper findings are attributed separately; weather results are not evidence that this model will beat an epidemic forecasting baseline.
+- **[Flusion](https://arxiv.org/abs/2407.19054v1):** learn across surveillance
+  signals and locations, with useful transforms and recent-history residuals.
+- **[InfluPaint](https://arxiv.org/abs/2604.24913v1):** the modeling background,
+  simulation infrastructure, and Slurm job management I could build on.
+  B0 uses observed data and a direct sample generator; simulation training is
+  still on the wishlist.
+- **[DeepMind's Functional Generative Networks](https://arxiv.org/abs/2506.10772v1):**
+  inject random noise into a network and fit its generated samples with fair
+  CRPS. Tapestry adapts that idea to small epidemic forecasting models.
+- **EpiBenchmark:** score the exported forecasts against the hub ensembles.
 
-## My staged plan
+## The model
 
-The work proceeds from a small, finalized-data pilot to the full vintage-aware, multi-channel architecture. The six-channel set is NHSN admissions and NSSP ED proportions for influenza, COVID-19, and RSV.
+Each location gets the recent history of all six channels: influenza, COVID-19,
+and RSV admissions, plus their three ED proportions. The history includes
+values and availability masks. Calendar and population features provide context;
+recent dynamics and location embeddings are experiment options.
 
-| Stage | Data |
-|---|---|
-| **B0** | Non-vintaged data; six channels (NHSN + NSSP) |
-| **B1** | Vintaged data; six channels (NHSN + NSSP) + masking |
-| **B3** | Vintaged data; more channels (NHSN + NSSP + wastewater) |
-
-**B0.0** names the completed post-scaling crosses experiment; **B0.1** is the
-[new architecture/capability experiment specification](b0.1.md), with raw and
-rate-only input transforms excluded. B0.1 is specified, not launched.
-
-B0 is the decision point for the model architecture. B1–B3 extend the same design while isolating the effects of vintages and additional channels.
-
-## 1. Objective and scientific questions
-
-The primary deliverable is a predictive distribution for weekly laboratory-confirmed influenza admissions at each required jurisdiction, at horizons 0–3. An internal hindcast at horizon −1 learns revision correction. Longer direct horizons support development diagnostics. ED visits, COVID-19, RSV, and full-season peak predictions are staged extensions.
-
-The central hypothesis is that a compact model can improve short-horizon WIS by combining four ingredients: learning recurring dynamics from older surveillance systems; conditioning on contemporaneous signals and locations; reproducing what was available at each issuance; and directly training a distribution with a proper score. Each ingredient must survive an ablation.
-
-Specific questions:
-
-1. Does historical ILI/ILI+/FluSurv forecasting improve NHSN predictions after controlling for the data supplied to the baseline?
-2. Does cross-signal conditioning add value beyond sharing training examples across signals?
-3. Does training on provisional inputs improve forecasts against later evaluation truth?
-4. Can functional noise yield useful temporal and spatial dependence with relatively few epidemic seasons?
-5. Does a generative neural model improve on the hub ensemble and on simple same-data baselines?
-
-There is no defensible prospective rank prediction. The model remains a research candidate if it fails the comparison in question 5.
-
-## 2. What is borrowed from each paper
-
-This table maps papers to the design. It distinguishes the methods proposed for Tapestry from findings established in the source papers. The active B0–B3 stages above remain the implementation scope: historical-source transfer, alternative encoders, simulations, joint losses, and seasonal rollouts are conditional or later experiments. The [reference inventory](#references) below lists the archived filenames; the project-root `references/` folder contains the PDFs, extracted text, bibliography, and checksummed manifest.
-
-| Paper | Contribution used here | What Tapestry borrows or adapts | Boundary and experiment |
-|---|---|---|---|
-| **[Flusion — Ray et al.](https://arxiv.org/html/2407.19054v1)**, §5.1–5.2, §7 | Joint training across surveillance signals and locations; transformed residual targets; ablations separating these effects | Shared forecasting weights across signals; population conversion for counts; fourth-root candidate; last-observation residuals; calendar features | Historical ILI/FluSurv transfer is conditional on source availability and outside the initial six-channel pilot. Contemporary covariate fusion is an extension. GBQR is part of the paper's method, not a restored implementation requirement. |
-| **[InfluPaint — Lemaitre & Lessler](https://arxiv.org/html/2604.24913v1)**, training-data ablation and Methods §4.2 | Mixed surveillance/simulation training was valuable in its diffusion experiments; the tested 30/70 mixture performed best; calibration remained an issue | Later synthetic-pretraining and mixture-weight experiments; square-root preprocessing candidate; trajectory and coverage diagnostics | A 70% simulation fraction is not a default for Tapestry. Its unconditional denoising/inpainting objective is not used by the stochastic forecaster. |
-| **[FGN — Alet et al.](https://arxiv.org/html/2506.10772v1)**, §2.2–2.4, Appendix A.3 | Globally shared low-dimensional noise modulates normalization; fair-CRPS training; independently trained model ensembles | A 32-dimensional latent draw modulates the shared decoder; fair CRPS; eventual mixture of independently trained models | FGN uses two training draws and a much larger weather architecture. Decoder-only modulation and direct horizon blocks are adaptations. Shared noise encourages dependence but does not guarantee correct joint forecasts. |
-| **[GenCast — Price et al.](https://arxiv.org/abs/2312.15796v2)**, model and forecast generation | Conditional stochastic transitions composed into trajectories | Optional rollout extension that retains sampled histories within each member | No spherical mesh, weather weights, or diffusion sampler in the core model. Short-range outputs are predicted directly; long rollouts need their own training and validation. |
-| **[CSDI — Tashiro et al.](https://arxiv.org/abs/2107.03502v2)**, conditioning and training strategy | Explicit observed conditioning and held-out target sets for conditional time-series generation | Separate input-availability and target-supervision masks; forecast-shaped missingness during training | The diffusion loss is not borrowed. Random interpolation masks alone do not reproduce the forecast information boundary or historical publication delays. |
-| **[FiLM — Perez et al.](https://arxiv.org/abs/1709.07871v2)**, conditioning layer | Feature-wise learned affine modulation | Noise-dependent scale and shift applied to decoder hidden states | FiLM is the conditioning mechanism, not a probabilistic objective or a calibration guarantee. |
-| **[Pacchiardi et al.](https://jmlr.org/papers/v25/23-0038.html)**, generative forecasting and scoring-rule minimization | Conditional implicit generators can be fitted directly through scoring rules, including multivariate scores | Train a sample-generating conditional distribution with proper scores; optionally compare marginal-only and joint-score objectives | This is prior art for the learning approach. A neural generator trained with a proper score is not itself a novelty claim. |
-| **[Ferro](https://doi.org/10.1002/qj.2270)**, fair ensemble scores | Finite-ensemble correction when estimating the score of an underlying distribution | Off-diagonal `M(M−1)` correction for independent sample members during fair-CRPS fitting | Distinguish the underlying-distribution estimate from scoring a delivered empirical ensemble or its quantiles; check independence assumptions for model mixtures. |
-| **[Bracher et al.](https://arxiv.org/abs/2005.12881v3)**, WIS and quantile representation | WIS evaluates interval/quantile forecasts and connects to CRPS | Exact submission-grid WIS, interval coverage, quantile reliability, and count-scale model selection | Finite quantile grids and nonlinear transforms mean training CRPS is not literally identical to exported-quantile WIS. |
-| **[Scheuerer & Hamill](https://doi.org/10.1175/MWR-D-14-00269.1)**, variogram score | Pairwise-difference scores diagnose incorrect dependence | Temporal and neighboring-location variogram diagnostics; optional joint training term | Standardize heterogeneous variables. Variogram score alone does not identify the full joint distribution; finite-sample training estimates require care. |
-| **[Deep ensembles — Lakshminarayanan et al.](https://arxiv.org/abs/1612.01474v3)** | Independently trained networks provide a practical ensemble uncertainty method | Combine complete samples from independently initialized models if validation supports the cost | An approximate uncertainty method, not an exact Bayesian posterior. Keep model identity fixed within each trajectory. |
-| **[TSMixer — Chen et al.](https://arxiv.org/html/2303.06053v5)**, §4 | Alternating time and feature MLP mixing, with auxiliary inputs | Optional temporal-encoder alternative while retaining Tapestry's masks and stochastic decoder | An architecture experiment, not the definition of stage B2. Benefits on other forecasting datasets do not establish benefit for this pilot. |
-| **[Flow matching — Lipman et al.](https://arxiv.org/abs/2210.02747v2)** | Learn a vector field transporting noise to data | Later conditional-flow head on the same input representation for an objective/sampler comparison | No flow objective or ODE solver is required by core Tapestry. Sampling still has numerical error and step-count sensitivity. |
-| **[Rectified flow — Liu et al.](https://arxiv.org/abs/2209.03003v1)** | Learn transport using straight interpolation between source noise and target data | Optional interpolation/transport construction for the flow comparator | Comparator only; a straight training path does not guarantee exact one-step sampling from the learned model. |
-| **[DDPM — Ho et al.](https://arxiv.org/abs/2006.11239v2)** | Denoising diffusion training and iterative generation | Background for interpreting InfluPaint and a later generative-objective comparison | No DDPM training loss or reverse diffusion chain is copied into the core stochastic forecaster. |
-| **[RePaint — Lugmayr et al.](https://arxiv.org/abs/2201.09865v4)** | Conditioning a pretrained diffusion model through sampling-time inpainting | Background for the predecessor's conditioning approach | No RePaint sampling schedule is used by Tapestry, which conditions during training and direct generation. |
-| **[CoPaint — Zhang et al.](https://arxiv.org/abs/2304.03322v1)** | Coherent image inpainting using a diffusion model | Background for InfluPaint's inpainting machinery and architectural lineage | No CoPaint posterior update is copied into Tapestry's decoder or loss. |
-
-The proposed synthesis is the shared surveillance forecasting task, explicit geographic support, staged inclusion of release-time information and covariates, and controlled epidemic evaluations. Scientific claims should be made about measured results from that combination, rather than inherited from the weather or image-generation papers.
-
-## 3. Concepts and the forecast contract
-
-### 3.1 A conditional sample generator
-
-Instead of outputting a mean and a standard deviation, the network takes the available history and a random vector, then returns a possible future. Repeating the forward pass with different random vectors produces a predictive distribution:
-
-```text
-Y^(m) = G_theta(context_as_of_cutoff, requested_targets, z^(m))
-z^(m) ~ independent Normal(0, I_32)
+```mermaid
+flowchart TD
+    X["History at each location<br/>weeks × 6 channels × values and masks"] --> ENC["History encoder<br/>MLP / convolution / multiscale convolution"]
+    ENC --> MIX["Optional attention across locations and targets"]
+    MIX --> DEC["Residual decoder + random-noise modulation"]
+    Z["One fresh random draw per forecast member"] --> DEC
+    DEC --> Y["One possible four-week future<br/>Admissions in counts · ED in proportions"]
+    Y --> Q["Repeat with new draws<br/>Samples → intervals and quantiles"]
 ```
 
-This is an **implicit distribution**: sampling is straightforward, while a closed-form probability density is generally unavailable. Samples can still be trained and evaluated with CRPS.
+The MLP flattens the short history. Convolutions learn patterns over successive
+weeks; the multiscale version uses several temporal spacings. Attention mixes
+the resulting representations across locations, within pathogens or targets,
+or across all location–target pairs. These are transformer-style exchange
+blocks, not a temporal-transformer encoder.
 
-One sample is a complete array of requested locations, horizons, and outcomes. Its identity must survive aggregation, export, and any later rollout. Sampling each cell independently would define a different joint distribution.
+We tried shared output heads, separate pathogen/target heads, and fully separate
+models by pathogen or target. Even a separately fitted flu-admission model can
+use all six local histories. In B0.1 the leading configurations use separate
+fits and fairly simple encoders. The stochastic-trend decoder performed poorly
+and was removed. See the [comparisons](../results/b0-1-crosses/index.md).
 
-### 3.2 Marginals, dependence, and coherence
+A member is a sampled future, not a predicted mean with an interval added
+later. Shared noise can connect its outputs, but good marginal CRPS or WIS
+does not by itself establish correct dependence across weeks or locations.
 
-A marginal asks, “How many admissions could New York have next week?” A joint asks, “Which New York, New Jersey, and subsequent-week outcomes occur together?”
+## What the masks mean
 
-Two models can produce identical quantiles for every state and week while disagreeing completely about whether waves rise together. Their marginal CRPS and WIS would be identical. Shared noise provides a useful architectural constraint, but cannot make the marginal objective identify the correct dependence. Assess joint behavior with aggregates, changes, and explicit multivariate scores.
+A mask says whether a value is available. It is not the value itself. We store
+missing cells as zero with a false mask, so a real observed zero remains distinct:
 
-Separate three meanings of coherence: preserved member identity; empirically realistic dependence; and exact aggregation identities. The first is an implementation property. The second needs evidence. The third needs a verified geographic/accounting definition and explicit enforcement.
+| Example | Stored value | Availability mask | Meaning |
+|---|---:|---:|---|
+| Reported zero admissions | 0 | 1 | Observed zero; the model can use it |
+| No report available | 0 | 0 | Missing; the zero is only a storage placeholder |
+| Preliminary count of 80 | 80 | 1 | Available input, even if it will later be revised |
 
-### 3.3 Revisions and nowcasts
+The **input mask** controls what the model sees. The **label mask** controls what
+can contribute to the loss. They are separate: a missing or provisional input
+can still have an eventual observed value to learn from. A missing label cannot
+be treated as a zero outcome.
 
-An **event week** is when admissions occurred. A **release time** is when a particular estimate became available. A **vintage** is the value of the same event at a particular release. A recent reported value can be input while its later revision is the supervised outcome.
-
-For example, an issuance may see a preliminary count of 80 for the prior week. A later target vintage may contain 110. Training that pair teaches revision correction. Replacing the input 80 with 110 would remove precisely the uncertainty faced in operation.
-
-### 3.4 Dates, horizons, and outputs
-
-Use an explicit cutoff timestamp `d` in UTC, derived from the local submission deadline, and an epidemiological reference Saturday `r`. Never use event date alone to decide availability. CDC epiweeks run Sunday–Saturday and require proper handling of 53-week years.
-
-The [FluSight hub specification](https://raw.githubusercontent.com/cdcepi/FluSight-forecast-hub/main/README.md) used here is labeled **2025–2026**. It specifies horizons 0–3, optional −1, integer admission quantiles, and 23 quantile levels. Samples are optional; if supplied, exactly 100 temporally connected samples per task are required for horizons 0–3. Reference date is the Saturday following the Wednesday deadline. Use this as the provisional contract, and pin the new season's configuration when published.
-
-Proposed internal horizon list: **`[-1, 0, 1, 2, 3, 4, 5, 6]`**, eight outputs, with `target_end_date = r + 7h days`. This resolves the ambiguity in “H=8.” The last four horizons are developmental, not established submission requirements.
-
-The geographic request list is explicit: 50 states, DC, PR, and US where required and supportable. The explorer currently displays 51 state/DC entries; that is not evidence that the PR and US output paths have been implemented.
-
-### 3.5 Hub targets and truth sources
-
-B0 forecasts six weekly hub targets. Model selection uses all six: admissions and ED-visit proportions both matter.
-
-| Hub | Target | Source and column | Units |
-|---|---|---|---|
-| FluSight | `wk inc flu hosp` | NHSN Weekly Hospital Respiratory Data, `totalconfflunewadm` | Hospital admissions of patients with confirmed influenza in the reporting week |
-| FluSight | `wk inc flu prop ed visits` | NSSP Emergency Department Visit Trajectories (state and sub-state), `percent_visits_influenza` | Proportion of ED visits |
-| COVID-19 | `wk inc covid hosp` | NHSN Weekly Hospital Respiratory Data, `totalconfc19newadm` | New hospitalizations due to COVID-19 |
-| COVID-19 | `wk inc covid prop ed visits` | NSSP, `percent_visits_covid` | Proportion of ED visits; an optional hub target since June 18, 2025 |
-| RSV | `wk inc rsv hosp` | NHSN Hospital Respiratory Reporting, `totalconfrsvnewadm` | Confirmed RSV hospital admissions |
-| RSV | `wk inc rsv prop ed visits` | NSSP, `percent_visits_rsv` | Proportion of ED visits |
-
-The columns are those read by the [dataset builder](../data/build-b-finalized.md). NSSP reports percentages; the hubs accept and store decimal proportions (percent / 100), and the builder divides by 100.
-
-NHSN official counts are released on Fridays and preliminary counts on Wednesdays. Official counts can be revised in later updates, and backfilled data can change values week over week; the most recent week needs particular caution because hospitals report the previous day's admissions. CDC notes that data before December 1, 2020 may contain unresolved anomalies and that data before August 1, 2020 are unavailable. Influenza fields became mandatory in February 2022; the number of reporting hospitals rose afterward and then stabilized. That count of reporting hospitals is a separate NHSN column: `totalconfflunewadm`, which the FluSight description mentions in that context, is the admissions count itself. Influenza data from 2020–21 through 2024–25 also appear in the archived COVID-19 Reported Patient Impact and Hospital Capacity by State Timeseries.
-
-FluSight also defines rate-change and peak targets from the same NHSN column; B0 does not forecast them. The B0 pilot trains and scores on finalized latest values, not release vintages (§3.3, §17).
-
-## 4. Training data: what exists and what must be built
-
-### 4.1 Local evidence
-
-The acquisition layer provides immutable raw snapshots, geographic metadata, and an explorer. Reuse `RawDataRepository` and source manifests; build model data from raw records. The explorer stores a latest-vintage view and is unsuitable as a historical training database.
-
-The following inventory describes the local raw snapshots. Date envelopes describe indexed events across each dataset, not continuous coverage of every pathogen, state, or historical release. The machine-readable audit is `references/local-data-coverage-2026-09-05.json`.
-
-| Data family / local dataset keys | Observed event-history envelope | Role and constraints |
-|---|---|---|
-| NHSN: `delphi_nhsn`, `cdc_nhsn_final`, `hub_flusight_current` | Delphi and direct CDC envelopes: 2020-08-08–2026-08-29; current FluSight indexed envelope: 2022-02-05–2026-07-04 | Primary labels and inputs; audit influenza separately from COVID/RSV, reporting regime changes, and first reliable date. Use archived releases for context and a declared evaluation-vintage policy for labels. |
-| `cdc_nhsn_initial_release` | 2024-11-09–2026-08-29 | Frozen first-release product; valuable paired-revision evidence, but not a full sequence of all revisions. |
-| `delphi_fluview` | 1997-09-29–2026-08-17 in explorer | Long-history ILI auxiliary forecasting. The inspected 1997 event is retained in a 2013 release: event history is longer than real-time vintage history. |
-| `delphi_fluview_clinical` | 2016-10-03–2026-08-17 in explorer | Influenza positivity and construction of ILI+ where aligned support and releases exist. Older ILI+ is not automatically available from this feed. |
-| `delphi_flusurv` | Raw all-age non-null records span epiweeks 200340–202631; retained release dates span 2012-11-02–2026-08-14 | Historical catchment/network rate task. 236,348 non-null all-age rows include repeated revisions; they are not independent examples. This raw source is not represented in the state explorer audit. Verify incident versus cumulative rate semantics before use. |
-| NSSP: `delphi_nssp`, `cdc_nssp_daily`, `cdc_nssp_trajectories` | Weekly Delphi envelope: 2022-10-01–2026-08-29; daily CDC begins 2022-09-25 | Candidate leading covariate and later ED target. Check smoothing, denominators, publication lag, and historical report coverage. |
-| NREVSS: comprehensive plus COVID/RSV vintage feeds | Comprehensive begins 2019-07-06; COVID vintage events 2020-03-14; RSV 2020-04-11; through 2026-08-29 | Virological covariates; several products have HHS/national support rather than native state measurements. |
-| NWSS: direct pathogen feeds, `cdc_nwss_wval`, `delphi_nwss` | Direct raw envelopes begin 2020-01-14 (COVID), 2021-09-15 (flu), 2022-02-27 (RSV); through 2026-09-01 | Candidate covariates after an as-of site aggregation audit. Delphi sewershed archives are present, but their usable historical release coverage was not exhaustively measured here. |
-| COVID/RSV forecast hubs and RSV-NET | Current hub envelopes begin 2022-10-01; RSV-NET indexed envelope begins 2014-10-11 | Secondary pathogen tasks and evaluation archives. Filter truth records from model forecasts and preserve each target's definition. |
-| Scenario Modeling Hub simulations | **No dedicated simulation adapter in the 25-dataset catalog** | Additional acquisition and provenance work. Forecast-hub archives are not automatically SMH training trajectories. |
-| Weather, mobility, general-population vaccination, school schedules | **No dedicated measured feeds in the current catalog** | Do not make them prerequisites. Calendar features are immediately derivable; add external feeds only with a defined vintage protocol and validation experiment. |
-
-### 4.2 Dataset tiers
-
-**Tier 1 — historical dynamics:** ILI, ILI+ where constructible, FluSurv rates, and reliable NHSN history. Each source is supervised in its own units/support. This is the transfer corpus, not a procedure for inventing missing historical hospital counts.
-
-**Tier 2 — aligned real-time panels:** NHSN and same-cutoff covariates, initially NSSP and virology. An example may have many channels missing. Source absence is represented as part of the input.
-
-**Tier 3 — optional synthetic trajectories:** add only after a strong real-data result. Accept joint simulation draws with simulator version, calibration-data cutoff, scenario, geography, pathogen, units, round date, and member ID. Distinguish latent incidence, hospital prevalence, and incident admissions. If only marginal quantiles are available, do not fabricate a joint trajectory by independently sampling them.
-
-**Tier 4 — secondary pathogens:** introduce COVID/RSV tasks after the influenza pipeline is working. Their seasonality and reporting histories differ. Share the forecasting function with pathogen/source embeddings, and retain an influenza-only comparator for negative transfer.
-
-### 4.3 Signal definitions and geographic support
-
-The eventual context registry can include 15 signal families: three admission series, three ED proportions, three wastewater summaries, ILI, ILI+, three pathogen-positivity series, and FluSurv rate. Quality fields, ages, masks, and calendar variables are additional features. This is a registry target, not a claim that all 15 form a complete historical panel.
-
-ILI+ is the product of aligned ILI fraction and influenza positivity fraction. A 2% ILI proportion times 10% positivity is 0.002 as a fraction, or 0.2% of visits. Store units explicitly. State ILI multiplied by regional positivity is a mixed-support derived feature; preserve that metadata. Require both components to be available at the issuance cutoff.
-
-Use native HHS/national observations as parent context, with a support-type indicator. They must not become 51 independent state supervision targets. FluSurv catchments remain catchment tasks; do not divide or expand them using statewide population. Treat changing catchment membership as metadata and exclude invalid comparisons.
-
-For wastewater, aggregate compatible site metrics only: harmonize assay/units, select site records by release time, and carry site count and population-coverage diagnostics. Population-weighted summaries require valid, nonduplicated catchment weights; otherwise use a prespecified robust site summary and label its support. Do not use the explorer's unweighted state mean as a validated training feature. Avoid revised WVAL normalization in historical contexts without a recoverable vintage.
-
-For ED proportions, prefer an official weekly target. If aggregating daily data, use summed numerators divided by summed denominators. A simple mean of daily percentages is a different statistic. Overlapping smoothed daily percentages are not independent weekly observations.
-
-## 5. As-of materialization and leakage controls
-
-### 5.1 Normalized record contract
-
-```text
-dataset_key, signal_id, pathogen, geo_id, geo_type, spatial_support
-event_start, event_end, release_time, retrieved_at
-value, unit, numerator, denominator, population
-quality_fields, fill_method, source_record_key
-snapshot_id, source_commit, raw_file_sha256
+```mermaid
+flowchart LR
+    A["At Wednesday cutoff<br/>Recent count = 80<br/>Input mask = 1"] --> M["Model sees 80"]
+    B["Later reference snapshot<br/>Same event week = 110<br/>Label mask = 1"] --> L["Score sampled correction against 110"]
+    M --> P["Sample eventual count"]
+    P --> L
+    C["No later reference value<br/>Label mask = 0"] --> S["Exclude this cell from the loss"]
 ```
 
-Deduplicate multiple representations of the same publisher observation rather than treating direct CDC, Delphi, and hub copies as independent signals. Keep a provenance crosswalk and resolve disagreements visibly. Population metadata must be versioned or pinned to the relevant hub convention.
+This 80-to-110 example is illustrative, not a measured revision. The later 110
+must never replace the historical 80 in the input. In B1, hidden values are
+zeroed before transforms, anchors, and derived features, so those features do
+not reveal a masked observation. Masking arbitrary sources and adding new
+covariates still require evaluation; having mask arrays alone is not evidence
+that all missing-data patterns work well.
 
-At cutoff `d`, select the latest eligible release for each natural observation key. A recent download can supply an older vintage only when the publisher archive establishes that older release. A snapshot-only product downloaded in September 2026 cannot be used as though that exact version existed in January 2024.
+## B0 prediction and B1 nowcasting
 
-Track both event age and release age. “Weeks since first report” is known only when the first report is actually recoverable; left-censored archives require an unknown-age indicator. Missing release times must not silently be set equal to event dates. Source-specific conservative lag rules can support a separately labeled sensitivity analysis, not proof of real-time availability.
+B0 reads a saved finalized panel with axes
+`[week, channel, value_or_mask, location]`. A history window has shape
+`[lookback, 6, 2, 52]`; its four-week label window has shape `[4, 6, 2, 52]`.
+The 52 locations are states, DC, and native US. No state-to-US summation is used.
+The [B0 data page](../data/build-b-finalized.md) gives units and source details.
 
-### 5.2 Three distinct masks
+B1 instead saves the actual information available at each historical Wednesday.
+It estimates reference-final values for the two recently completed weeks,
+then forecasts four future weeks conditional on each sampled correction.
 
-1. **Availability mask `m`:** whether an eligible observed value exists at cutoff. Zero is a valid observed value when `m=1`.
-2. **Artificial conditioning-dropout mask `k`:** which eligible values are hidden during training to mimic outages. Effective input mask is `m*k`.
-3. **Target mask `q`:** which outcomes have valid supervised labels of the right definition and vintage. `q` is not the complement of the input mask; provisional inputs and finalized labels may coexist for the same event.
-
-Also store a geography-padding mask and categorical missingness reasons: not yet released, structurally unsupported, suppressed, and simulated dropout. Never calculate loss on padded cells or nonexistent historical NHSN outcomes.
-
-### 5.3 Labels versus the information used to train a historical model
-
-For forecast issuance `d`, every fitted weight, scaler, simulation calibration, and calibrator must use information available by `d`. For an older training origin `d_i`, its input comes from releases no later than `d_i`, while its supervised label can use a later release **only if that label was already available by the model-fit cutoff**.
-
-Keep three timestamps separate: example-origin cutoff, model-fit cutoff, and evaluation-truth cutoff. Evaluation may legitimately use revisions arriving after issuance. Those revisions may not influence the model that purportedly issued that forecast.
-
-Use the official hub evaluation truth policy if specified. Additionally evaluate at fixed maturities, initially 4 and 8 weeks after the target event, and on the frozen latest snapshot. Call these “evaluation vintages,” since “final” need not mean permanently immutable. Estimate revision stabilization only using the development/training data.
-
-### 5.4 Gates before any model comparison
-
-The materializer must emit a coverage matrix by source, native geography, season, event date, and available release date. It must pass these checks:
-
-- Appending a future release cannot change an already materialized earlier context, its features, or its scaler.
-- Derived covariates use the latest common eligible information boundary; ILI+ cannot borrow a future positivity revision.
-- Scalers, source-selection rules, and seasonal summaries use permitted data only. No full-season maximum or retrospectively known peak/onset feature enters an early-season example.
-- Training and validation labels do not cross a held-out target boundary. Purge using each example's explicit target-date set; a fixed lookback gap alone is insufficient.
-- Network/catchment/HHS broadcasts do not multiply the effective number of target observations.
-- Missing, suppressed, invalid, and zero observations remain distinguishable.
-- Target files are separated from model-output files in hub archives; no other model's future forecast is accidentally used as truth.
-
-The audit is a prerequisite, not an assertion that every downloaded “versioned” source already passes.
-
-## 6. Preprocessing and the actual supervised task
-
-### 6.1 Input transforms
-
-For count sources with the appropriate population, define rate `r = 100000*y/population`. For rates and proportions, preserve their native denominator. Candidate power transforms are fourth root and square root. Wastewater uses a compatible `log1p`-style or source-specific transformation; do not apply population conversion to an already normalized concentration.
-
-For nonnegative rate-like sources, a concrete starting transform is:
-
-```text
-v = r^alpha                     alpha = 1/4 initially; compare 1/2
-s = max(training-only Q95(v), source-specific positive floor)
-u = v/s - training-only mean(v/s)
+```mermaid
+flowchart TD
+    A["B0: finalized six-channel history"] --> B["Encode history → sample four future weeks"]
+    C["B1: Wednesday reports + availability masks"] --> D["Encode history → sample two recent-week corrections"]
+    D --> E["Each corrected history → sample four future weeks"]
+    B --> F["Quantiles and hub evaluation"]
+    E --> F
 ```
 
-Estimate statistics within the fitting fold. Sparse/new locations shrink to a source-level scale. Keep the original rate and count inverse transformations. A model can learn on transformed inputs while being scored on original count outputs.
+B0's latest frozen ED snapshot is treated as truth, not assumed permanently
+final. B1 reference truth is separately pinned to a cutoff. Its current input
+cutoff includes all of Wednesday, so availability before an intraday deadline
+needs a further check. B0's unicorn results do not establish B1 performance.
 
-For bounded proportions, use an explicit bounded inverse such as logistic with a small, recorded boundary treatment; verify near-zero predictions. Do not clip targets into invented positive values without preserving their original values for evaluation.
+## Fitting with CRPS
 
-### 6.2 Focal-signal transfer: making the old data contribute
-
-A fixed six-output design does not specify how an ILI-only window produces any loss. Masking all six hospitalization/ED outputs would create an example with no learning signal. Resolve this with a **shared source-query decoder**:
-
-```text
-training query = (native geography, focal signal, horizon)
-input = focal signal's observed history + eligible contextual signals + metadata
-output = a sample of that focal signal's future/revised value
-```
-
-Use a common history encoder and common decoder across focal signals, with small source/pathogen embeddings and unit-specific inverse transforms. An old ILI episode predicts future ILI. A FluSurv episode predicts the native catchment rate. A current NHSN episode predicts admissions. Shared weights receive gradients from all three tasks.
-
-The focal history occupies a **generic slot**, so the same learned dynamic mapping sees rising, falling, and turning trajectories across sources. Additional channels occupy typed context slots. Source embeddings allow differences without assigning each source a completely separate model. A source-specific inverse transform prevents unit confusion.
-
-Construct training episodes at one cutoff and geographic support level. A state episode can contain state queries plus regional context; a catchment episode contains catchment queries. Heterogeneous support tokens are a later architecture option. Regional/network labels receive one supervised contribution per actual observation.
-
-Run two independent switches: historical source-query examples on/off, and contemporary contextual signals on/off. This distinguishes transfer of dynamics from use of leading covariates.
-
-### 6.3 Residual targets and summaries
-
-The decoder predicts change from the last eligible transformed focal observation, including a feature for its staleness. This is a parameterization convenience, not an assumption that the latest observation is final. A horizon −1 query may revise that anchor.
-
-If no focal history exists, use a learned source/calendar prior with an explicit missing-anchor indicator. Train some examples in this mode and separately report performance; its existence does not establish reliable zero-history forecasting.
-
-Features beyond the default 12-week window include calendar sine/cosine, weeks relative to Christmas, log population where meaningful, source/geography identifiers, recent slopes, valid-observation counts, and causal season-to-date summaries with coverage. An onset feature must be generated by a fixed online rule and can be unknown. Include a longer trailing summary for off-season pathogens; do not force every pathogen to follow a flu-season reset.
-
-## 7. Architecture
-
-All candidates use the same records, split, output queries, transforms, loss, and evaluation. The following sizes are **engineering budgets**, not measured parameter counts or runtime claims.
-
-| Candidate | Encoder and spatial treatment | Why test it | Proposed budget / order |
-|---|---|---|---|
-| **Minimal shared MLP** | Flatten each 12-week focal/context panel; two residual MLP blocks; shared decoder; no information exchange between locations | Establish whether the transfer task and stochastic loss work with minimal structure | 0.15–0.4M parameters; build first |
-| **MLP + spatial attention — recommended** | MLP encoder plus one 4-head attention block over native location tokens; shared conditional decoder | Allows contemporaneous cross-location information while remaining small | 0.3–0.8M; main candidate |
-| **Temporal mixer + spatial attention** | Replace flattening with 2–4 temporal/feature mixing blocks; same spatial block and decoder | Better temporal parameter sharing when expanding the lookback to 26 or 52 weeks | 0.4–1.2M; test if longer context helps |
-| **Typed source/geography tokens** | Shared per-series encoder; attention over typed `(source, native geography)` tokens and target queries | Handles irregular source coverage and native catchments without fixed broadcasts | 0.5–1.5M; defer until support handling limits spatial attention |
-
-The MLP plus spatial-attention design is the initial candidate. Do not search all widths, depths, masks, and data mixtures at once.
-
-### 7.1 B1 data flow and tensor contract
+For an observed value `y` and `M` independent members from one fitted model:
 
 ```text
-Raw snapshots + release histories
-            |
-As-of materializer --> values, masks, ages, support, quality, calendar
-            |
-Shared focal/context encoder (12 weeks per native location)
-            |
-One spatial attention block (same issuance, padding masked)
-            |
-Target queries: source + horizon + anchor + geographic metadata
-            |
-Shared stochastic decoder <--- z[32], reused across locations/horizons
-            |
-Source-specific inverse transforms
-            |
-Full sample array [member, location, horizon, target]
-            |
-Count-scale CRPS during fitting; WIS/coverage/joint diagnostics in validation
+fair_CRPS = mean_m |sample_m - y|
+            - sum_{m != n} |sample_m - sample_n| / (2 M (M - 1))
 ```
 
-For a minibatch of `N` episodes, use context `[N,L,P,C,F]`, with `P=12`, a registry-defined `C`, and explicit fields `F` for normalized value, availability, event/release ages and quality. Store categorical fields separately for embeddings if cleaner. Targets and their mask have `[N,L,H,S]`. Generated draws have `[M,N,L,H,S]`. `S` enumerates requested source tasks; unavailable tasks are masked, not filled with zeros.
+The first term measures error; the second accounts for predictive spread.
+The fair correction uses distinct member pairs. We score after inverse
+transforms, in admission counts and ED proportions. B0.1 used 128 training
+members, 256 fixed validation members, and 2,048 evaluation members.
 
-To make the generic focal-history slot compatible with multiple requested sources, also construct focal histories `[N,L,S,P,F_focal]`. Apply one shared focal encoder to each source slice and a context encoder to the common panel. Fuse their embeddings, run the same spatial block separately for each focal-source panel, then decode the horizon queries. Cache these deterministic embeddings across all `M` draws. Thus the encoder weights are shared across sources, their actual histories remain distinct, and the same latent draw spans the final `S` outputs. This is source conditioning, not `S` independent models.
+### Loss scales and weights {#82-design-choices-for-b0-loss-and-weights}
 
-At state inference, `L` follows the requested geography registry rather than a hard-coded canvas. Static source/catchment training episodes may use smaller `L`, padded with a proper attention mask. No location learns from a future-time token. Attention within the observed history can be noncausal because every included observation is already available at the issuance boundary.
-
-Starting dimensions: `d_model=128`, two residual local encoder blocks with hidden width 256, one spatial block with four heads and feed-forward width 256, and two shared decoder residual blocks. Include location/support embeddings but retain metadata-based fallbacks for unseen catchments.
-
-### 7.2 Functional stochasticity
-
-For decoder hidden state `h`, layer `k` uses:
-
-```text
-h_mod = (1 + gamma_k(z)) * LayerNorm(h) + beta_k(z)
-gamma_k, beta_k = small learned linear maps or MLPs of a shared z embedding
-```
-
-The modulation maps are shared over locations and horizon/source queries. Hidden context differs across queries, so the same `z` can produce different local effects. Inject noise in both decoder blocks, not only into a final scalar output. Initialize modulation with small nonzero weights so the model can learn to use noise without destabilizing the initial forecast.
-
-Compute the deterministic context encoder once, then expand the stochastic decoder over `M` draws. This amortizes expensive context processing and is a design simplification of full-network functional modulation. Compare injecting noise before the spatial block if decoder-only perturbation proves too restrictive.
-
-Start with one global 32-vector. If regional idiosyncratic variation is insufficient, compare global + regional + local latent components with small dimensions and the same total training budget. This extension relaxes the single-latent dependence bias and must improve joint diagnostics, not only interval width.
-
-### 7.3 Output support and observation noise
-
-Admissions predictions must be nonnegative. Use a smooth positive inverse parameterization around the residual anchor, and evaluate rounding only at export. Keep scoring and positivity transforms numerically stable near zero; large-state inverse fourth powers require monitoring and gradient clipping.
-
-**Do not append independent negative-binomial noise by default.** A generator trained against observed admissions already learns variation in those observations. An extra noise layer can count that uncertainty twice and alter dependence.
-
-If a later experiment explicitly represents an unobserved latent admission intensity, define a complete observation model such as `Y|lambda ~ NB(mean=lambda, dispersion=k)` and fit the predictive observation distribution consistently. Establish how gradients pass through or integrate out discrete observations. That is a separate model candidate, not a guaranteed fix for undercoverage.
-
-## 8. Loss functions and optimization
-
-### 8.1 Fair CRPS
-
-For one valid target `y` and `M≥2` independent draws from the same fitted generator:
-
-```text
-fCRPS = (1/M) sum_m |x_m - y|
-        - [1 / (2 M (M-1))] sum_{m != n} |x_m - x_n|
-```
-
-The first term rewards closeness to the observation. The second balances that with predictive spread; under the scoring rule, the best distribution in expectation is the true conditional marginal, subject to model capacity and estimation. It is not a reward for unlimited noise. The independence requirement is between sample members, not between locations within a member. See [Ferro](https://doi.org/10.1002/qj.2270).
-
-Proposed initial `M=8`, then compare `M=2` and `M=16` at matched optimization budget. This is a gradient-variance/compute choice. Ordinary empirical CRPS uses `M²` in the denominator; it is correct for the empirical distribution itself, but estimates a different object from the fair underlying-distribution score.
-
-Use raw count-space CRPS for primary admission outputs, after inverse preprocessing. A fourth-root-space score is not count-space CRPS, and multiplying it by population cannot repair the nonlinear difference. Auxiliary sources have normalized source-specific losses because their units differ.
-
-### 8.2 Design choices for B0 loss and weights
 
 **Adopted 2026-09-15:** the six targets have weights
 `[1, 1, 1, .5, .5, .5]` in flu/COVID/RSV admissions, then flu/COVID/RSV ED
@@ -394,268 +176,38 @@ aggregation; all validation noise sources use fixed independent draws.
 
 **Q95 normalization is a training surrogate for relative skill, not relative
 WIS against an ensemble.** Q95 measures typical outcome magnitude, not baseline
-forecast difficulty. The selection objective in §10.3 instead divides model WIS
+forecast difficulty. The selection score below instead divides model WIS
 by ensemble WIS within each location. Do not divide training errors by that
 week's observed outcome or realized benchmark error. A future training-side
 baseline-error normalizer would be a separate, explicitly evaluated alternative.
 
-The fair-CRPS implementation and objective are in `models/b0.py`,
-`models/objective.py`, and `models/run.py`. Historical-source replay, extra
-horizons, and joint losses are conditional extensions, not components of the
-current six-channel B0 objective.
+## Comparing with the ensemble {#103-metrics}
 
-### 8.3 Joint-score experiment
+Export 23 quantiles and score WIS on the same frozen tasks as the hub ensemble.
+For each location, target, and season, divide the sum of model WIS by the sum
+of ensemble WIS. Average location ratios with 80% on equally weighted states/DC
+and 20% on native US. Within a season, weight admission targets 1 and ED targets
+0.5; then average the season scores equally. Missing groups renormalize over
+available support. Nonpositive ensemble denominators are errors.
 
-First evaluate joint behavior without a joint loss. If it fails, compare an auxiliary score on prespecified small groups: a state's four-week vector, neighboring-state pairs, and regional sums where compatible truth exists.
+**One means ensemble parity; lower is better.** Average scores over the three
+seeds and report their spread. Coverage and individual target/season results
+remain necessary alongside the combined score.
 
-Use a masked energy score and/or a variogram score on training-standardized variables. For example, variogram order `p=0.5` compares observed `|y_i−y_j|^p` to the predicted expectation of that difference, squared and averaged with fixed pair weights. It tests a different aspect than marginal WIS. See [Scheuerer & Hamill](https://doi.org/10.1175/MWR-D-14-00269.1) and [Pacchiardi et al.](https://jmlr.org/papers/v25/23-0038.html).
+The frozen comparison support is incomplete:
 
-Use a larger consistent member count for validation. A squared Monte Carlo expectation in a variogram loss has finite-sample bias; if used for training, use an appropriate independent-pair/U-statistic estimate or document the plug-in approximation and its sensitivity to `M`. Do not describe an arbitrary finite-member approximation as exactly proper. Tune `lambda_joint` on development data only, with primary WIS as the main gate.
-
-### 8.4 Training schedule and defaults
-
-| Setting | Initial proposal | Planned check |
-|---|---|---|
-| Framework | PyTorch in a separate model extra/environment | Keep existing standard-library acquisition install lightweight; pin versions at implementation |
-| Optimizer | AdamW, learning rate `3e-4`, weight decay `1e-3` | Small grid `{1e-4,3e-4}` × `{1e-4,1e-3}` only after correctness |
-| Batch | 16 complete native-geography episodes | Adjust to measured device memory; do not call 53 correlated states 53 independent seasons |
-| Draws | 8 per episode/query panel | Compare 2 and 16 |
-| Regularization | Hidden dropout 0.1, channel outage probability 0.2, clipped gradient norm 1 | Validate forced outages and stochastic spread |
-| Optimization budget | Pilot 10,000 updates; cap 30,000 until a measured learning curve justifies more | Evaluate every 500 updates on an inner chronological stop set; patience 8 evaluations |
-| Precision | Float32 for inverse transforms and scores | Mixed precision only after checking overflow and tail stability |
-| Seeds | One seed for screening; three for shortlisted models | Store seeds, RNG/device state, and deterministic settings |
-
-Stage A optionally pretrains the shared source-query function on eligible historical signals, including genuine finalized-history examples explicitly tagged as such. Stage B trains aligned real-data contexts with primary hospitalization loss and continued auxiliary replay. Compare this with joint training from initialization; pretraining is not assumed better.
-
-Initially sample about 60% primary NHSN episodes and 40% historical auxiliary episodes. Sample source, then season, then issuance uniformly within the source pool, with a cap on repeated versions of the same event. This avoids letting row count determine effective weights. Log realized draws and unique season/episode counts. Reduce auxiliary replay if it harms influenza validation.
-
-Outage augmentation hides whole channels, recent release blocks, or regional groups, and recomputes all derived inputs that would disclose the hidden source. Include training with no auxiliary covariates. Use real missingness first; tune artificial probabilities from development outages. Keep a minimum valid context unless intentionally training the no-history fallback.
-
-## 9. Synthetic data and unusual seasons
-
-Use no synthetic data in the first benchmark. Once the real-data model is stable, compare synthetic fractions `{0, 0.1, 0.3, 0.7}` in the episode sampler, clearly distinguished from loss weights. Also test synthetic pretraining followed by real-only fine-tuning. Use one accepted architecture for this sweep.
-
-A simulated realization and all overlapping windows from it belong to one partition. Group related trajectories by simulator, calibration run, parameter draw, and scenario round. Hold out a simulator or scenario family for synthetic diagnostics. Operational performance is always assessed on real surveillance observations.
-
-For a historical backtest, simulations calibrated using a held-out season cannot train that season's model. Accept simulations genuinely available by the model-fit date, or regenerated with strictly eligible calibration data and explicit “reconstructed” provenance. Large synthetic volume is not a large number of independent observed epidemics.
-
-Do not automatically discard 2008–10 or 2020–22 from the general respiratory corpus. Compare a prespecified conventional-flu training subset against inclusion with pandemic/reporting-regime indicators. For the primary ordinary-season task, retain the simpler exclusion policy if development WIS supports it. For COVID/RSV or off-season evaluation, assess those regimes explicitly rather than importing a flu-specific rule blindly.
-
-## 10. Validation design
-
-### 10.1 Chronological development and final evaluation
-
-Use rolling issuance forecasts inside season-based partitions. Never randomly split overlapping windows.
-
-| Role | Proposed season/data boundary | Permitted decisions |
-|---|---|---|
-| Inner stopping/pilot | Historical auxiliary rolling folds plus reliable 2022–23 NHSN windows; train before each stop block | Debugging, numerical choices, early stopping; report limited early target coverage |
-| Development fold D1 | Predict 2023–24 with fitting information available before each issuance; initially use a pre-season frozen-fit version | Architecture screening and feature ablations |
-| Development fold D2 | Predict 2024–25; earlier seasons may now train it, using historical availability constraints | Selection, robustness checks, calibration-method choice |
-| Final retrospective holdout | **2025–26**; freeze all choices before running its forecast scores | One evaluation of the selected protocol plus prespecified comparators |
-| Prospective confirmation | 2026–27 after configuration is published | Weekly stored forecasts before outcomes are known; strongest future evidence |
-
-Use a documented season boundary, initially CDC epiweek 31 through the next year's week 30, to assign training windows. Score official challenge reference dates per season separately from a prespecified year-round evaluation. For each fold, remove training labels that land inside the held-out target period, even if their input windows begin earlier.
-
-The final retrospective season is only “untouched” if it has not already been used for project-specific model choices. Record all prior exposure, including to published 2025 results. If 2025–26 has already informed model selection, label it a historical evaluation and reserve 2026–27 as the true prospective test. Looking at date coverage here is not a model-skill evaluation, but the exposure log should say so.
-
-Use two fitting modes with clear names:
-
-- **Frozen-season fit:** parameters/scalers fitted before the season; contexts update each issuance. This isolates model generalization and reduces development cost.
-- **Rolling operational fit:** weekly or monthly refitting on labels actually available at that fit time, including accrued current-season observations. Fix the cadence in development and execute it unchanged in the final evaluation.
-
-A test protocol may learn from labels that become available earlier in that test season if that online update rule was fixed in advance. It may not inspect later outcomes to change hyperparameters, select checkpoints, or change the refit rule. Use inner stopping folds or a predetermined update budget, not the final test score.
-
-### 10.2 Required comparators
-
-1. Hub baseline and a local last-value/trend probabilistic baseline, with archived eligibility recorded.
-2. B0, B1 without auxiliary-history transfer, and B1 without current auxiliary covariates.
-3. Available real-time FluSight ensemble and original model submissions on common targets. Report missing submissions and operational fallback coverage.
-4. InfluPaint and a matched conditional-flow head as later generative comparisons. Refit using eligible data; existing pretrained weights cannot be assumed free of held-out-season exposure.
-
-The archived real-time ensemble is an external operational benchmark with its own information sources, not a controlled same-data experiment. There is no Flusion-style same-data GBQR comparison, so no controlled same-data comparator exists: any margin over the ensemble mixes architecture with the design's finalized-data and retrospective advantages and must be reported that way.
-
-### 10.3 Metrics
-
-The primary metric is WIS on integer admission quantiles at the official grid:
-
-```text
-0.01, 0.025, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40,
-0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90,
-0.95, 0.975, 0.99
-```
-
-For a central `(1−alpha)` interval `[l,u]`, the interval score is its width plus `2/alpha` times the miss below/above the interval. With `K=11` central intervals, conventional WIS combines median absolute error with weight `1/2` and interval scores with weights `alpha/2`, then divides by `K+1/2`. Verify against the scoring implementation used by the hub. See [Bracher et al.](https://arxiv.org/abs/2005.12881).
-
-Report paired mean WIS differences/ratios to the hub baseline and ensemble, and tournament relative WIS when comparing incomplete submission archives; freeze the comparison pool. Include MAE, 50/80/90/95% coverage, interval width, quantile reliability, submission completeness, and by-horizon revision/nowcast performance. Fair sample CRPS is a useful diagnostic, not a replacement for actual exported-quantile WIS.
-
-**B0 selection score: equal relative skill across jurisdictions, with explicit
-national weight.** Compare native exported 23-level quantiles with the official
-hub ensembles on identical frozen tasks, horizons 0–3.
-
-1. **Per location, target, and season:** sum model WIS across eligible dates and
-   horizons and divide by the ensemble WIS sum on those same tasks. Do not
-   average individual task ratios. Nonpositive ensemble totals raise an error;
-   the code does not silently drop that location or invent a denominator.
-2. **Per target/season:** average state/DC location ratios equally (80%) and
-   add the native-US ratio (20%). Absent geography groups renormalize over
-   available groups; report the effective US weight.
-3. **Within each season:** weight each available admission target **1** and ED
-   target **.5**, dividing by the sum of available target weights. No additional
-   flu preference and no implied score for a challenge without ensemble support.
-4. **Combined:** average those season composite scores equally.
-5. **Per configuration:** mean and SD of run scores over seeds.
-
-Thus 2023–24, 2024–25, and 2025–26 each receive one third, despite different
-challenge availability. The oldest season currently measures only flu
-admissions, the middle flu/COVID admissions, and the newest all six targets.
-This intentionally emphasizes the scarce earlier-season evidence and gives flu
-more effective historical weight because it has more evaluation history. On
-this support, effective target weights are flu admissions 31/54, COVID admissions
-13/54, RSV admissions 2/27, and each ED target 1/27. Equal seasons and equal
-historical pathogen shares cannot both be obtained from this incomplete matrix
-without another explicit convention. No missing challenge is imputed.
-
-Always report all six per-target means over their available seasons, all
-per-target/season scores, the season composites, state-only and US-only scores,
-and 50/80/90/95% coverage. The six target means are diagnostics: their weighted
-average does **not** reconstruct the new season-first combined score. Coverage
-uses the same jurisdiction weights; native WIS sums and pooled ratios remain
-separate diagnostics. Ratios of seasonal sums may be averaged across locations:
-this defines equal relative jurisdiction skill, unlike the old pooled ratio,
-which implicitly weighted locations by ensemble WIS magnitude.
-
-`tapestry.evaluation.totals` stores sums by target, season, **location**,
-geography, and horizon. Rankings record the score version, weights, and full
-definition, and include `season_composite_scores.csv`. The manager includes the
-score version in the ranking directory hash. Old `totals.csv` without locations
-must be rescored from saved forecasts; no model refit is needed for rescoring.
-A new training experiment is required to evaluate the adopted training loss.
-Historical crosses scores retain their originally documented objective.
-
-Stratify by season, horizon, location size, epidemic growth/decline, peak proximity, low-count weeks, reporting completeness, and covariate coverage. Retrospectively defined peak proximity is an evaluation stratum only. Also report revision-size sensitivity rather than dropping difficult revised outcomes from the main score.
-
-### 10.4 Dependence, uncertainty, and stress tests
-
-Joint checks include within-state week-to-week changes, four-week totals, neighboring-state differences, region/national aggregates with aligned definitions, and distributions of maximum incidence over the **predicted block**. Add energy and variogram scores. Compare against a member-permuted version of the same predictions: permutations retain marginals while disrupting dependence, providing a useful diagnostic control.
-
-Shared sample indices do not make national admissions equal the sum of states. First test that the observed US target equals a specified component sum across vintages. If it does, a sample-sum output can enforce it. If definitions/reporting differ, keep the native national task separate and model or report discrepancies. Do not silently include/exclude PR to force agreement, and never sum marginal quantiles as though they were aggregate quantiles.
-
-For uncertainty in skill differences, use paired block resampling of issuance dates within season, retaining all locations/horizons in each block. Initial block length is four weeks, with 2/8-week sensitivity. Report season-level results separately: two development seasons do not justify narrow claims about future seasons. Overlapping horizons and common epidemic waves rule out treating every state-week as independent.
-
-Stress cases: remove NSSP; remove NWSS; remove all auxiliary signals; delay NHSN by one/two releases; mask one geographic region; suppress low counts; introduce a missing new-source history; shift signal amplitude within training-supported bounds for diagnostics; and evaluate out-of-season COVID/RSV. Separate operationally plausible missingness tests from hypothetical distribution-shift tests.
-
-### 10.5 Selection and acceptance
-
-Prespecify mean primary WIS across D1/D2 with equal season weight, subject to submission completeness and no severe calibration failure, as the main selection criterion. Use a small number of finalists and identical scored tasks. A provisional adoption threshold is at least **3% lower pooled development WIS** than the FluSight ensemble on identical frozen tasks, with improvement in both seasons; this is a project decision threshold, not a statistical guarantee, and with no same-data floor it does not isolate the architecture. If results are within paired uncertainty, prefer the smaller/faster model or validate a simple ensemble.
-
-Freeze architecture, feature registry, data eligibility, hyperparameters, training/refit cadence, calibrator, random-seed policy, and export procedure before the final holdout. Publish its outcome even if unfavorable. Do not retune against 2025–26 and continue calling it a final holdout.
-
-## 11. Ablation sequence and bounded experiment budget
-
-| Order | Experiment | What it resolves |
-|---|---|---|
-| 0 | Baselines and B0 on verified NHSN contexts | Data alignment, sample loss, and useful stochastic spread |
-| 1 | Shared historical source-query examples on/off | Whether Flusion-style transfer survives in this implementation |
-| 2 | Historical-as-of versus finalized-input training | Value of revision-aware fitting; finalized-input arm is explicitly an oracle/sensitivity comparison where appropriate |
-| 3 | NSSP, virology, then wastewater group additions | Benefit of contemporary signals conditional on real availability |
-| 4 | B0 versus B1 | Value of spatial exchange |
-| 5 | CRPS draw count, transform, and auxiliary-weight choices | Numerical and objective robustness |
-| 6 | Outage augmentation on/off; forced inference outages | Operational resilience |
-| 7 | B2 longer temporal window if seasonal context remains insufficient | Value of temporal encoder capacity |
-| 8 | Synthetic fraction or pretraining | Whether simulation helps B at all |
-| 9 | Global latent versus extra local noise; optional joint loss | Dependence and local residual variation |
-| 10 | One seed versus three; calibration; sample/quantile ensemble | Final reliability and cost |
-| 11 | B1 shared representation with conditional-flow head | Whether direct score training or generative objective drives differences |
-
-Start with roughly 12–20 single-seed configurations, then 3–5 finalists across three seeds and both development folds. This is a planning envelope; overlapping sequential decisions should reduce redundant fits. Record every run, including failures and excluded comparisons. Do not promise dozens of full vintage backtests in minutes without measurement.
-
-## 12. Sampling, calibration, and submission
-
-At validation/inference, generate **2,048 full trajectories** initially. Compare 512/2,048/8,192 on a fixed development subset to establish tail-quantile Monte Carlo stability. The 1% quantile is poorly estimated by a 100-member pool; the submission sample count need not limit internal generation.
-
-Compute quantiles from the large sample pool, round nonnegative admission quantiles using a fixed rule, and verify monotonicity and the hub schema. For optional trajectory output, select 100 complete member IDs once for the whole forecast, keeping the same IDs across horizons and locations. Do not independently subsample each task. Record the seed and member/model identifiers.
-
-A multi-seed forecast is a mixture: sample a model, then its latent, or use a documented stratified allocation of whole members. If estimating a fair CRPS of the mixture, draw model identities independently; fixed equal-per-seed allocations do not satisfy the simplest IID derivation. Exact submitted quantile WIS does not have that issue.
-
-First diagnose undercoverage by horizon and subgroup. If calibration helps, fit a parsimonious horizon-specific sample transform on **out-of-sample development predictions**, with shrinkage across horizons and a fixed calibration-update rule. Apply it consistently to complete samples and recompute quantiles/aggregates. A location-specific spread adjustment may affect joint structure or sum identities, so rerun joint diagnostics and any reconciliation.
-
-Keep raw and calibrated forecasts. A conformal or quantile correction would need its own dependence/coverage assumptions; do not claim finite-sample coverage guarantees for correlated epidemic time series by default.
-
-For ensembling B with any quantile-only model, distinguish quantile averaging from a mixture of predictive distributions. Quantile averaging can be a validated primary-target output but does not uniquely define sample trajectories. Either omit the optional sample target for that quantile-only ensemble or define and validate a genuine joint mixture with its quantiles recomputed from the same distribution.
-
-## 13. Peak targets and longer rollouts
-
-The initial eight-output model supports a short-block maximum, not a seasonal peak forecast. It cannot report a full-season peak simply by taking the maximum over weeks −1 through 6.
-
-A later rollout model must specify how unobserved future covariates are generated or masked, how predicted values enter subsequent contexts, and how release-age/missingness features evolve. Never feed realized future NSSP, wastewater, or admissions to a rollout. Train on its own predicted contexts for short rollouts before evaluating long ones.
-
-Use direct blocks for short-range targets. For a seasonal extension, either advance one new week with a transition-trained model or advance nonoverlapping future blocks with consistent indexing. Retain the sampled model per trajectory; draw new process noise at the chosen transition frequency. Do not splice independently generated overlapping horizons.
-
-Combine the observed season prefix, uncertainty in recent provisional weeks, and the sampled future suffix before extracting peak week/intensity. Establish the season endpoint and tie-breaking rule. Compare against a full-season conditional model or a simple seasonal baseline, and gate submission separately from hospitalization WIS. GenCast motivates the transition factorization, not the validity of this particular epidemic rollout.
-
-## 14. Implementation deliverables and milestones
-
-All paths below are **proposed** additions. Existing acquisition files remain the source of truth.
-
-| Milestone | Concrete deliverables | Acceptance gate | Planning estimate |
-|---|---|---|---|
-| M0: experiment contract | `configs/b/data.yaml`, `splits.yaml`, target/date registry, source exposure log | Explicit target units, horizons, geographic support, and holdout rules | 1–2 working days |
-| M1: model data | `src/tapestry/model_data/{normalize,vintages,features,windows,splits}.py`; normalized columnar store; coverage and leakage report | Fixed-cutoff invariance and valid source-query episodes; counts by season/source/support | 4–7 days, longer if archive gaps emerge |
-| M2: baselines | `src/tapestry/baselines/`; vintage-aware hub-baseline and trend forecasts | Exported baseline WIS reproduces an independent scorer; same tasks and covariates documented | 2–4 days |
-| M3: stochastic B0/B1 | `src/tapestry/models/{encoders,spatial,stochastic,decoder}.py`; `losses/`; train/predict scripts | Gradients through scores; correct masks/units; nonzero spread; finite samples; measured runtime | 3–5 days |
-| M4: controlled evaluation | `src/tapestry/evaluation/`; D1/D2 forecasts and ablation report | Leakage audit passes; same-data comparisons, calibration, dependence, and outage results | 4–7 days plus measured compute |
-| M5: freeze and holdout | Frozen manifest; complete 2025–26 forecast/score artifact | No model selection on holdout; full failure/coverage accounting | 2–3 days plus compute |
-| M6: operating path | Versioned inference bundle; exporter; retry/fallback policy; dry-run report | Reproducible issuance from pinned inputs; valid schema, member identity, and deadline margin | 2–3 days |
-
-Expect roughly **four to six working weeks** for a defensible first system if vintage coverage is adequate. This is an engineering estimate, not a promise. A scientific study with simulation, pathogen transfer, and seasonal rollouts is additional work. September/October work should prioritize the primary target and a reliable fallback before optional extensions.
-
-Use one available accelerator for development; measure whether CPU inference is practical. Pilot reporting must include parameter count, peak memory, time per training update, total fit time, time for 2,048 draws, full-season backtest time, and data-materialization time. Cap architecture expansion using those measurements.
-
-Necessary model tests should verify scientific failure modes rather than mirror layer definitions: future-vintage invariance, horizon/calendar alignment, inverse transform/units, masked-loss exclusion, fair-CRPS agreement with a trusted calculation, nonzero latent gradients, member-identity preservation, and geography aggregation only under a valid identity. Run existing data tests when integration changes their paths.
-
-Each run records code/config hashes, source snapshot/file hashes, release and fit cutoffs, split ID, preprocessing parameters, target-vintage policy, package versions, RNG seeds, checkpoint, member count, calibration, wall time, and per-target predictions. Save forecasts before evaluation so a later scoring correction cannot silently regenerate them.
-
-## 15. Failure decisions and the first build
-
-| Observed failure | Response within the plan |
+| Season | Targets with ensemble comparison support |
 |---|---|
-| Historical vintages missing for a signal | Mask it in the strict operational backtest; use a separately labeled finalized-data transfer/sensitivity study if justified |
-| ILI/FluSurv transfer harms NHSN | Lower auxiliary weight, reduce source-specific shortcuts, or retain only beneficial source tasks; preserve negative result |
-| Model ignores latent noise | Inspect sample spread and score terms, modulation initialization, and gradients; compare more draws or broader modulation before adding ad hoc noise |
-| Good marginal WIS, poor trajectory changes/aggregates | Add validated joint objective or revise latent structure; withhold joint-derived targets until their own gates pass |
-| Large states improve while small states become miscalibrated | Inspect source scale, subgroup coverage, and calibration; report both absolute and normalized skill |
-| The design does not beat the ensemble on identical tasks | Keep it as an experimental or separately validated ensemble component; with no GBQR floor the submission fallback is the hub baseline |
-| A required feed is late at an issuance | Apply trained missingness policy; if minimum target history is absent, use a tested baseline fallback and log it |
+| 2023–24 | Influenza admissions |
+| 2024–25 | Influenza and COVID-19 admissions |
+| 2025–26 | All six targets |
 
-**First implementation:** deliver B0 with the six NHSN/NSSP channels, an eight-week context, explicit horizons, count-scale fair CRPS, one global latent, and baseline comparisons. Use the B0 results to choose the architecture, then add vintage handling and masking in B1, and wastewater on top of vintages in B3. Freeze each protocol before the next stage and retain every prospective forecast for the following season.
+Each fold trains on the other two seasons. These are retrospective experiments
+with finalized inputs, and the same seasons informed model selection. They do
+not measure an operational information boundary or an untouched holdout.
 
-## 16. Reading order and evidence files
+## Log
 
-Read Flusion §5/§7 for the transfer task and baseline, FGN §2 for the stochastic mechanism, and Pacchiardi et al. for the broader scoring-rule framework. Then use Ferro and Bracher to implement/check the score, CSDI for mask distinctions, and Scheuerer–Hamill for joint diagnostics. InfluPaint motivates the later data-mixture experiment. FiLM and TSMixer supply architectural detail. GenCast, flow matching, rectified flow, DDPM, RePaint, and CoPaint provide comparison/lineage context.
-
-The archive contains source PDFs where downloads succeeded, extracted text for local search, a download script, a checksummed manifest, a reading index, a bibliography, the checked hub README, and the local coverage audit. The preprint PDFs are the archived versions; journal publication year/title can differ. The manifest, rather than a bare arXiv identifier, establishes which bytes were read.
-
-## 17. Active pilot scope
-
-The active experiment uses finalized data beginning September 2023, without
-wastewater: NHSN admissions and NSSP ED proportions for flu, COVID-19, and RSV.
-History length is configurable, by default **8 weeks**. The
-[six-channel dataset](../data/build-b-finalized.md) implements materialization
-and window/season/location queries, and [training](../workflows/training.md)
-documents the shared MLP, stochastic decoder, masked fair-CRPS fit, and
-sample/quantile prediction. This scope takes precedence over the 12-week and
-historical auxiliary-source design above.
-
-The B0 [architecture sweep](../workflows/experiment-manager.md#architecture-sweep)
-adds optional spatial attention across locations, per-location latent noise, count
-and ED transforms, and early stopping, and crosses them with history, dynamics,
-encoder, decoder, latent size, and heads: 4,097 configurations at three seeds,
-ranked by the selection score in §10.3. Earlier B0 comparison results were
-withdrawn and will be recreated from this sweep. Historical release handling,
-revision nowcasts, and operational evaluation remain later work.
-
-## Design log
 
 - **2026-09-15 — B0 objective:** adopted native-unit fair CRPS with training-only
   channel/location Q95 normalization, admission/ED weights 1/.5, US 20%, equal
@@ -666,27 +218,8 @@ revision nowcasts, and operational evaluation remain later work.
   See [B0 follow-up](../results/b0-crosses/next-steps.md) for rationale and
   remaining hypotheses. No new model-performance claim follows from these edits.
 
-## References
-
-The project-root `references/` directory contains the downloaded papers, extracted text, checksummed manifest, and reading index. The inventory below records the sources used by this page.
-
-| Paper | Role | Source | Archive |
-|---|---|---|---|
-| Flusion — Ray et al. (2024) | Transfer across signals, locations, transforms, and baseline | [paper](https://arxiv.org/abs/2407.19054v1) | `ray2024_flusion.pdf` |
-| Generative diffusion models for spatiotemporal influenza forecasting — Lemaitre & Lessler (2026) | Simulation mixing and calibration context | [paper](https://arxiv.org/abs/2604.24913v1) | `lemaitre2026_influpaint.pdf` |
-| FGN — Alet et al. (2025) | Shared noise and fair CRPS | [paper](https://arxiv.org/abs/2506.10772v1) | `alet2025_fgn.pdf` |
-| GenCast — Price et al. (2023) | Conditional transitions and rollout context | [paper](https://arxiv.org/abs/2312.15796v2) | `price2023_gencast.pdf` |
-| CSDI — Tashiro et al. (2021) | Conditioning and target masks | [paper](https://arxiv.org/abs/2107.03502v2) | `tashiro2021_csdi.pdf` |
-| FiLM — Perez et al. (2018) | Feature-wise affine modulation | [paper](https://arxiv.org/abs/1709.07871v2) | `perez2018_film.pdf` |
-| Pacchiardi et al. (2024) | Generative forecasting via scoring-rule minimization | [paper](https://jmlr.org/papers/v25/23-0038.html) | `pacchiardi2024_scoring_rules.pdf` |
-| Ferro (2014) | Fair finite-ensemble scores | [paper](https://doi.org/10.1002/qj.2270) | `ferro2014_fair_scores.pdf` |
-| Bracher et al. (2021) | WIS, quantile loss, and calibration | [paper](https://arxiv.org/abs/2005.12881v3) | `bracher2021_interval_scores.pdf` |
-| Scheuerer & Hamill (2015) | Dependence-sensitive diagnostics | [paper](https://doi.org/10.1175/MWR-D-14-00269.1) | No local PDF |
-| Lakshminarayanan et al. (2017) | Deep ensemble uncertainty | [paper](https://arxiv.org/abs/1612.01474v3) | `lakshminarayanan2017_deep_ensembles.pdf` |
-| TSMixer — Chen et al. (2023) | Temporal and feature mixing alternative | [paper](https://arxiv.org/abs/2303.06053v5) | `chen2023_tsmixer.pdf` |
-| Flow Matching — Lipman et al. (2023) | Conditional generative comparator | [paper](https://arxiv.org/abs/2210.02747v2) | `lipman2023_flow_matching.pdf` |
-| Rectified Flow — Liu et al. (2023) | Straight interpolation comparator | [paper](https://arxiv.org/abs/2209.03003v1) | `liu2023_rectified_flow.pdf` |
-| DDPM — Ho et al. (2020) | Diffusion background | [paper](https://arxiv.org/abs/2006.11239v2) | `ho2020_ddpm.pdf` |
-| RePaint — Lugmayr et al. (2022) and CoPaint — Zhang et al. (2023) | Inpainting background | [RePaint](https://arxiv.org/abs/2201.09865v4), [CoPaint](https://arxiv.org/abs/2304.03322v1) | `lugmayr2022_repaint.pdf`, `zhang2023_copaint.pdf` |
-
-The checked FluSight README is `references/flusight-hub-readme-2026-09-05.md`. The local event-date inventory is `references/local-data-coverage-2026-09-05.json`; it summarizes the explorer and must not be mistaken for historical vintage eligibility.
+- **2026-09-16 — Documentation:** replaced the proposal-style architecture
+  with the implemented model, masks, data flow, and scoring contract. Removed
+  research questions, data tiers, speculative experiment plans, and obsolete
+  defaults. The front page now carries the personal motivation and unicorn
+  update. Mask examples are illustrative; reported scores were not recomputed.
