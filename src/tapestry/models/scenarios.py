@@ -20,7 +20,7 @@ CODES = dict(count_transform={'raw': 'raw', 'rate': 'rate', 'sqrt': 'sqrt', 'fou
              encoder={'mlp': 'mlp', 'conv': 'conv', 'multiscale_conv': 'msc'},
              spatial={'none': 'none', 'attention': 'attn', 'pathogen_spatial': 'path',
                       'target_spatial': 'targ', 'joint_location_target': 'joint'},
-             heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2', 'stochastic_trend': 'trend'},
+             heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2'},
              noise={'global': 'glob', 'local': 'loc'},
              us_error={'none': 'none', 'shared_factor': 'shf'},
              head_sharing={'shared': 'sh', 'pathogen': 'path', 'target': 'targ'},

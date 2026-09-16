@@ -31,7 +31,7 @@ def add_experiment_args(parser):
     parser.add_argument('--spatial', choices=['none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target'], default='none',
                         help='One attention block across locations at the same forecast date')
     parser.add_argument('--heads', choices=['shared', 'state_us'], default='shared')
-    parser.add_argument('--decoder', choices=['legacy', 'residual2', 'stochastic_trend'], default='legacy')
+    parser.add_argument('--decoder', choices=['legacy', 'residual2'], default='legacy')
     parser.add_argument('--noise', choices=['global', 'local'], default='global',
                         help='Global latent only, or global plus a per-location latent')
     parser.add_argument('--us-error', choices=['none', 'shared_factor'], default='none',

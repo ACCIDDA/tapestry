@@ -50,6 +50,7 @@ nav:
       - B0.1 experiment specification: design/b0.1.md
       - B0.1 results: results/b0-1-crosses/index.md
       - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
+  - B1 masked-vintage model: design/b1.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md

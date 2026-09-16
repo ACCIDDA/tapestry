@@ -1,4 +1,4 @@
-"""Build, inspect, and export Build B pilot windows from the terminal."""
+"""Build B0 windows or use build-wednesday for B1 vintage arrays."""
 from __future__ import annotations
 
 import argparse
@@ -45,6 +45,10 @@ def save_episodes(path, episodes, dataset_path, *, batched):
 
 
 def main(argv=None):
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == 'build-wednesday':
+        from .wednesday import main as build_wednesday_main
+        return build_wednesday_main(arguments[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="Materialize the two local CDC snapshots")

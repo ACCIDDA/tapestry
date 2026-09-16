@@ -1,0 +1,261 @@
+{
+  "truth_cutoff": "2026-09-16",
+  "issuance_range": [
+    "2023-08-09",
+    "2026-09-16"
+  ],
+  "lookback": 12,
+  "locations": 52,
+  "definitions": {
+    "episode": "One issuance containing all six targets and 52 locations.",
+    "input_cell": "One issuance/context-week/channel/location; repeated weeks count in every window.",
+    "output_cell": "One issuance/output-week/channel/location with a valid label; not an independent epidemiological replicate.",
+    "target_location_example": "One issuance/channel/location with at least one valid output week.",
+    "finalized_comparator": "Same B1 pinned labels/source policy/support, used counterfactually as context. Isolates vintage availability.",
+    "masking": "Natural availability only, before artificial training dropout.",
+    "empty_history": "Missing focal histories remain trainable through other channels; even all-missing local histories are retained when the overall episode has inputs."
+  },
+  "sections": {
+    "full_requested_period": {
+      "candidate_issuances": 163,
+      "label_end": null,
+      "finalized_eligible_episodes": 163,
+      "wednesday_eligible_episodes": 156,
+      "lost_episodes": 7,
+      "lost_episode_percent": 4.294478527607362,
+      "lost_issuance_dates": [
+        "2023-08-09",
+        "2023-08-16",
+        "2023-08-23",
+        "2023-08-30",
+        "2023-09-06",
+        "2023-09-13",
+        "2023-09-20"
+      ],
+      "finalized_input_cells": 556296,
+      "unavailable_wednesday_cells": 156782,
+      "input_cell_percent_unavailable": 28.183197434459352,
+      "eligible_output_cells": 281840,
+      "output_cells_lost_with_episodes": 8534,
+      "target_location_examples": 48289,
+      "target_location_examples_lost": 1460,
+      "by_channel": [
+        {
+          "channel": "nhsn_flu_admissions",
+          "finalized_input_cells": 94988,
+          "unavailable_wednesday_cells": 17831,
+          "percent_unavailable": 18.77184486461448,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 47000,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 17
+        },
+        {
+          "channel": "nhsn_covid_admissions",
+          "finalized_input_cells": 97796,
+          "unavailable_wednesday_cells": 39660,
+          "percent_unavailable": 40.55380588163115,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 49808,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 60
+        },
+        {
+          "channel": "nhsn_rsv_admissions",
+          "finalized_input_cells": 80372,
+          "unavailable_wednesday_cells": 23775,
+          "percent_unavailable": 29.581197431941472,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 41616,
+          "output_cells_lost_with_episodes": 6,
+          "retained_episodes_without_any_focal_history": 61
+        },
+        {
+          "channel": "nssp_flu_proportion",
+          "finalized_input_cells": 95420,
+          "unavailable_wednesday_cells": 28296,
+          "percent_unavailable": 29.654160553343115,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 47216,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_covid_proportion",
+          "finalized_input_cells": 98228,
+          "unavailable_wednesday_cells": 27963,
+          "percent_unavailable": 28.467443091582847,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 50024,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_rsv_proportion",
+          "finalized_input_cells": 89492,
+          "unavailable_wednesday_cells": 19257,
+          "percent_unavailable": 21.518124525097214,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 46176,
+          "output_cells_lost_with_episodes": 0,
+          "retained_episodes_without_any_focal_history": 27
+        }
+      ]
+    },
+    "short_run_fitting_partition": {
+      "candidate_issuances": 95,
+      "label_end": "2025-05-28",
+      "finalized_eligible_episodes": 95,
+      "wednesday_eligible_episodes": 88,
+      "lost_episodes": 7,
+      "lost_episode_percent": 7.368421052631579,
+      "lost_issuance_dates": [
+        "2023-08-09",
+        "2023-08-16",
+        "2023-08-23",
+        "2023-08-30",
+        "2023-09-06",
+        "2023-09-13",
+        "2023-09-20"
+      ],
+      "finalized_input_cells": 307632,
+      "unavailable_wednesday_cells": 143903,
+      "input_cell_percent_unavailable": 46.777643418109946,
+      "eligible_output_cells": 161720,
+      "output_cells_lost_with_episodes": 8534,
+      "target_location_examples": 28009,
+      "target_location_examples_lost": 1460,
+      "by_channel": [
+        {
+          "channel": "nhsn_flu_admissions",
+          "finalized_input_cells": 55416,
+          "unavailable_wednesday_cells": 15324,
+          "percent_unavailable": 27.65266349068861,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 28852,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 17
+        },
+        {
+          "channel": "nhsn_covid_admissions",
+          "finalized_input_cells": 55416,
+          "unavailable_wednesday_cells": 38152,
+          "percent_unavailable": 68.84654251479716,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 28852,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 60
+        },
+        {
+          "channel": "nhsn_rsv_admissions",
+          "finalized_input_cells": 37992,
+          "unavailable_wednesday_cells": 22267,
+          "percent_unavailable": 58.60970730680143,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 20660,
+          "output_cells_lost_with_episodes": 6,
+          "retained_episodes_without_any_focal_history": 61
+        },
+        {
+          "channel": "nssp_flu_proportion",
+          "finalized_input_cells": 55848,
+          "unavailable_wednesday_cells": 25622,
+          "percent_unavailable": 45.87809769374015,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 29068,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_covid_proportion",
+          "finalized_input_cells": 55848,
+          "unavailable_wednesday_cells": 25622,
+          "percent_unavailable": 45.87809769374015,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 29068,
+          "output_cells_lost_with_episodes": 2132,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_rsv_proportion",
+          "finalized_input_cells": 47112,
+          "unavailable_wednesday_cells": 16916,
+          "percent_unavailable": 35.9059263032773,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 25220,
+          "output_cells_lost_with_episodes": 0,
+          "retained_episodes_without_any_focal_history": 27
+        }
+      ]
+    }
+  },
+  "source_manifests": [
+    {
+      "source": "hub_flusight_current",
+      "snapshot_id": "20260916T142845.474400Z",
+      "manifest_sha256": "a3883fd425815b95048d530a38bd2cac93825ed62d03bdcab18d24ec8bd5685b"
+    },
+    {
+      "source": "hub_covid_current",
+      "snapshot_id": "20260916T142859.672053Z",
+      "manifest_sha256": "ae59e74387b4a84ae744264eda2f2f48a3ae6ceedb7db8a30a7f3b1c0a77ce07"
+    },
+    {
+      "source": "hub_rsv_current",
+      "snapshot_id": "20260916T142901.469950Z",
+      "manifest_sha256": "542b8950222095f18ebd321a0ee2fba2280bccb5f55588a5ca336ae290dedf21"
+    },
+    {
+      "source": "delphi_nhsn",
+      "snapshot_id": "20260916T142715.158100Z",
+      "manifest_sha256": "ecbe7dacd74de4b1e885b5dc00648ee8483e2605f69e199afa7b262bc674a832"
+    },
+    {
+      "source": "delphi_nssp",
+      "snapshot_id": "20260916T142717.398812Z",
+      "manifest_sha256": "2c6204dfdaa0be89e4e98aca498590e1fbd86fc61038c0518f5d733d60101822"
+    }
+  ],
+  "rebuilt_b0_comparison": {
+    "start": "2023-09-01",
+    "interpretation": "Same four future targets and issuance dates. Rebuilt current local CDC snapshots, not original historical B0 experiment dataset. Source/support differences remain.",
+    "snapshots": [
+      {
+        "dataset": "cdc_nhsn_final",
+        "snapshot_id": "20260916T142609.954594Z"
+      },
+      {
+        "dataset": "cdc_nssp_trajectories",
+        "snapshot_id": "20260916T142656.074257Z"
+      }
+    ],
+    "sections": {
+      "full_period": {
+        "b0_episodes": 157,
+        "b1_episodes": 154,
+        "lost_episodes": 3,
+        "gained_episodes": 0,
+        "lost_percent": 1.910828025477707,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "short_run_fitting_partition": {
+        "b0_episodes": 90,
+        "b1_episodes": 87,
+        "lost_episodes": 3,
+        "gained_episodes": 0,
+        "lost_percent": 3.3333333333333335,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      }
+    }
+  },
+  "dataset_sha256": "87676e3a72b8c45b3dbff3eb2998f5e19f3784dff28a9685463974798260aa09",
+  "b0_dataset_sha256": "cc0a798644b8f5e95e157497d4d7770acbe5b1b9f1f3c4e4c61e7e6b426cac52"
+}

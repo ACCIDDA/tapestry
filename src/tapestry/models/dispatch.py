@@ -52,7 +52,7 @@ class Queue:
             components = {'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
             # Scheduling estimate only: caps are not actual selected epoch counts.
             encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2.}[s.encoder]
-            decoder = {'legacy': 1., 'residual2': 2., 'stochastic_trend': .8}[s.decoder]
+            decoder = {'legacy': 1., 'residual2': 2.}[s.decoder]
             exchange = 1.4 if s.spatial == 'joint_location_target' else 1.
             self.cost[task] = components * s.epochs * (s.width / 64)**2 * (s.lookback / 12)**.5 * encoder * decoder * exchange
         self.local = threading.Lock()

@@ -37,17 +37,9 @@ class ForecastHead(nn.Module):
                 self.local_modulate = modulation_layer(local, width)
                 self.local_scale = nn.Parameter(softplus_inverse(1))
         else:
-            # Context-only correction, damping, and positive level/growth amplitudes.
-            self.trend = nn.Linear(width + 2, 4)
-            self.residual = nn.Sequential(nn.Linear(width, width), nn.SiLU(), nn.Linear(width, 1))
-            nn.init.normal_(self.residual[-1].weight, std=.01)
-            nn.init.zeros_(self.residual[-1].bias)
-            self.global_draw = nn.Linear(latent, 2, bias=False)
-            if local:
-                self.local_draw = nn.Linear(local, 2, bias=False)
-                self.local_scale = nn.Parameter(softplus_inverse(1))
+            raise ValueError(f'Unknown forecast head: {kind}')
 
-    def forward(self, h, context, z, local_z, slope, valid, horizons):
+    def forward(self, h, z, local_z):
         if self.kind == 'residual2':
             return self.output(h, z, local_z)
         if self.kind == 'legacy':
@@ -56,16 +48,4 @@ class ForecastHead(nn.Module):
             scale = F.softplus(self.local_scale) if local is not None else None
             gamma, beta = affine(self.modulate, z, local, local_z, scale)
             return self.output(h[None] * (1 + gamma) + beta)
-        correction, damping, level_amp, growth_amp = self.trend(
-            torch.cat((context, slope[..., None], valid[..., None]), -1)).unbind(-1)
-        phi = damping.sigmoid()
-        # h=1 starts with phi**0; horizons are the actual weekly offsets.
-        damp = torch.stack([sum(phi ** k for k in range(int(horizon))) for horizon in horizons], 1)
-        draws = self.global_draw(z)[:, :, None, None, :]
-        if hasattr(self, 'local_draw'):
-            draws = draws + self.local_draw(local_z)[:, :, :, None, :] * F.softplus(self.local_scale)
-        a = draws[..., 0] * F.softplus(level_amp)[None]
-        b = draws[..., 1] * F.softplus(growth_amp)[None]
-        delta = ((slope + correction)[None, :, None] * damp[None]
-                 + self.residual(h).squeeze(-1)[None] + a[:, :, None] + damp[None] * b[:, :, None])
-        return delta[..., None]
+        raise ValueError(f'Unknown forecast head: {self.kind}')

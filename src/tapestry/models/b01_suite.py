@@ -37,7 +37,7 @@ def expand():
         unique[candidate]['memberships'].append(dict(block=block, **membership))
 
     block = 'A_reference_crosses'
-    # References first, ensuring all six keep their readable reference aliases.
+    # References first, preserving their readable aliases.
     for name, recipe in refs.items():
         add(block, name, recipe, reference=name, axis='reference')
     for name, recipe in refs.items():

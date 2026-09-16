@@ -48,6 +48,14 @@ Raw snapshots and source hashes are retained so results can be traced to the
 exact inputs. Snapshots support reproducibility; publisher revision archives
 add historical release information where the source provides it.
 
+## B1: Wednesday snapshots and masked training
+
+B1 precomputes Wednesday-vintage arrays with natural availability masks, adds
+random training masks, and samples two recent finals followed by four forecasts.
+MLP, convolution, multiscale and spatial formulations have canonical scenario
+strings, with independently configurable masking rates.
+See the [B1 implementation and commands](docs/design/b1.md).
+
 ## Explore and compare
 
 ```bash

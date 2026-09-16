@@ -1,4 +1,4 @@
-"""B0 sample models: local context, scoped spatial exchange, and residual/trend heads."""
+"""B0 sample models: local context, scoped spatial exchange, and stochastic residual heads."""
 
 import torch
 from torch import nn
@@ -186,7 +186,7 @@ class B0(nn.Module):
                  annual_calendar=True, location_embedding=0, location_ids=None):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent)
-        if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2', 'stochastic_trend')
+        if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
                 or spatial not in ('none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
             raise ValueError('Unknown B0 architecture option')
@@ -352,7 +352,6 @@ class B0(nn.Module):
                 remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
             mapping = [next(i for i, group in enumerate(groups) if c in group) for c in range(6)]
             h = h + remote[:, :, mapping]
-        context_h = self.norm(h)
         offsets = x.new_tensor(config['horizons']).reshape(-1, 1) / 4
         h = self.norm(h[:, None, :, :, :] + self.horizon(offsets)[None, :, None, None, :])
         if z is None:
@@ -363,22 +362,8 @@ class B0(nn.Module):
             if local_z.shape != (z.shape[0], n, l, LOCAL_LATENT):
                 raise ValueError('Local latent must have shape [members, episodes, locations, 4]')
 
-        # Recent growth in exactly the working space used by the inverse decoder.
-        working = values.clone()
-        positive_channels = list(range(3)) + (list(range(3, 6)) if config['ed_transform'] == 'fourth_root' else [])
-        positive = values[:, :, positive_channels].clamp_min(.001)
-        working[:, :, positive_channels] = positive + torch.log(-torch.expm1(-positive))
-        if config['ed_transform'] == 'logit':
-            working[:, :, 3:] = values[:, :, 3:] * input_scale[None, None, 3:] + offset[None, None, 3:]
-        elif config['ed_transform'] == 'linear':
-            working[:, :, 3:] = torch.logit((values[:, :, 3:] * input_scale[None, None, 3:]).clamp(*ED_BOUNDS))
-        slope_valid = mask[:, -1] * mask[:, -2] if p >= 2 else torch.zeros_like(mask[:, -1])
-        slope = torch.where(slope_valid.bool(), working[:, -1] - working[:, -2], 0) if p >= 2 else torch.zeros_like(working[:, -1])
-        slope, slope_valid = slope.permute(0, 2, 1), slope_valid.permute(0, 2, 1)
-
         def decode(heads):
-            outputs = [head(h[:, :, :, group], context_h[:, :, group], z, local_z,
-                            slope[:, :, group], slope_valid[:, :, group], config['horizons'])
+            outputs = [head(h[:, :, :, group], z, local_z)
                        for head, group in zip(heads, self.output_groups)]
             order = [channel for group in self.output_groups for channel in group]
             return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
