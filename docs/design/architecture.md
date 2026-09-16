@@ -1,7 +1,7 @@
 # Architecture
 
-I want a model that can use the surveillance data we have, learn across
-pathogens, and generate plausible futures. B0 is the simple version: six
+Tapestry uses available surveillance data to learn across pathogens and
+generate plausible futures. B0 is the simple version: six
 channels, finalized histories, and four-week forecasts. B1 adds historical
 reporting states and corrections for recent weeks.
 
@@ -14,7 +14,7 @@ explains the model and the masks. Exact experiment settings live in
 - **[Flusion](https://arxiv.org/abs/2407.19054v1):** learn across surveillance
   signals and locations, with useful transforms and recent-history residuals.
 - **[InfluPaint](https://arxiv.org/abs/2604.24913v1):** the modeling background,
-  simulation infrastructure, and Slurm job management I could build on.
+  simulation infrastructure, and Slurm job management used as a starting point.
   B0 uses observed data and a direct sample generator; simulation training is
   still on the wishlist.
 - **[DeepMind's Functional Generative Networks](https://arxiv.org/abs/2506.10772v1):**
@@ -45,10 +45,10 @@ the resulting representations across locations, within pathogens or targets,
 or across all location–target pairs. These are transformer-style exchange
 blocks, not a temporal-transformer encoder.
 
-We tried shared output heads, separate pathogen/target heads, and fully separate
-models by pathogen or target. Even a separately fitted flu-admission model can
+The experiments tested shared output heads, separate pathogen/target heads,
+and independent models by pathogen or target. Even a separately fitted flu-admission model can
 use all six local histories. In B0.1 the leading configurations use separate
-fits and fairly simple encoders. The stochastic-trend decoder performed poorly
+fits and simple encoders. The stochastic-trend decoder performed poorly
 and was removed. See the [comparisons](../results/b0-1-crosses/index.md).
 
 A member is a sampled future, not a predicted mean with an interval added
@@ -57,8 +57,8 @@ does not by itself establish correct dependence across weeks or locations.
 
 ## What the masks mean
 
-A mask says whether a value is available. It is not the value itself. We store
-missing cells as zero with a false mask, so a real observed zero remains distinct:
+A mask says whether a value is available. It is not the value itself. Missing cells are stored
+as zero with a false mask, so a real observed zero remains distinct:
 
 | Example | Stored value | Availability mask | Meaning |
 |---|---:|---:|---|
@@ -123,7 +123,7 @@ fair_CRPS = mean_m |sample_m - y|
 ```
 
 The first term measures error; the second accounts for predictive spread.
-The fair correction uses distinct member pairs. We score after inverse
+The fair correction uses distinct member pairs. Scoring follows inverse
 transforms, in admission counts and ED proportions. B0.1 used 128 training
 members, 256 fixed validation members, and 2,048 evaluation members.
 
@@ -223,3 +223,6 @@ not measure an operational information boundary or an untouched holdout.
   research questions, data tiers, speculative experiment plans, and obsolete
   defaults. The front page now carries the personal motivation and unicorn
   update. Mask examples are illustrative; reported scores were not recomputed.
+
+- **2026-09-16 — Tone:** retained first person only in the front-page opening
+  sentence; removed personal asides and tightened the unicorn definition.
