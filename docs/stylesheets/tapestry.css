@@ -35,13 +35,20 @@
 }
 
 /* Header link to the live explorer (added by javascripts/explorer-link.js):
-   logo, site name, flexible space, boxed link, search. */
+   a square box centred in the header bar. */
+.md-header__inner {
+  position: relative;
+}
+
 .md-header .tapestry-explorer-link {
-  flex: 0 0 auto;
-  margin: 0 0.8rem 0 auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
   padding: 0.25rem 0.7rem;
   border: 2px solid var(--md-accent-fg-color);
-  border-radius: 2px;
+  border-radius: 0;
   color: var(--md-primary-bg-color);
   font-size: 0.75rem;
   font-weight: 700;
@@ -54,4 +61,14 @@
 .md-header .tapestry-explorer-link:focus-visible {
   background-color: var(--md-accent-fg-color);
   color: var(--md-primary-bg-color);
+  text-decoration: none;
+}
+
+/* Narrow screens: keep it in the flow so it never covers the title or search. */
+@media screen and (max-width: 59.984em) {
+  .md-header .tapestry-explorer-link {
+    position: static;
+    margin: 0 0.4rem;
+    transform: none;
+  }
 }
