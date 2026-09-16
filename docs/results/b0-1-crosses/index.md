@@ -331,15 +331,110 @@ Skill is concentrated at the nowcast and decays outward, consistent with B0.0.
 4. **Do not tune on differences below ~0.12.** More seeds, not more
    configurations, are what would resolve the top of the table. The epoch budget
    is settled: 100 is enough, and early stopping already finds the right epoch.
-5. **Re-evaluate the shortlist rather than crowning a winner.** The leaders were
+5. **Try a shorter budget than 100.** B0.0's best score came from `ep50`, a
+   budget B0.1 never ran, and within B0.1 the shorter cap is consistently the
+   better one. A cap-50 arm on the leading independent recipes would close the
+   only gap the B0.0 comparison exposes.
+6. **Re-evaluate the shortlist rather than crowning a winner.** The leaders were
    selected on the same three seasons used to score them. Confirm the
    independent-model cluster on fresh seeds or a held-out season before treating
    any single recipe as best.
+
+## Comparison with B0.0: did we lose anything?
+
+B0.0's fits were scored under its own historical objective, so its published
+numbers are not comparable to this page. To make a like-for-like statement, all
+180 B0.0 runs were **rescored from their saved forecasts** under the current
+objective and reranked. No refits were involved, and the
+[B0.0 page](../b0-crosses/index.md) keeps its original numbers — its untouched
+totals are preserved beside each run as `totals-original-objective.csv`.
+
+| | B0.0 (rescored) | B0.1 |
+|---|---:|---:|
+| Configurations | 60 | 172 |
+| Best combined score | 0.948 | **0.883** |
+| Median combined score | **1.087** | 1.135 |
+| Beating the hub ensemble | 10 (17%) | 36 (21%) |
+| Best states/DC · US | 0.962 · 0.892 | **0.906 · 0.793** |
+
+**The short answer is no — B0.1 strictly extends B0.0's best.** No B0.0
+configuration reaches 0.883 under the common objective, and B0.1's leader is
+better on both geographies, with the US gain (0.892 → 0.793) the larger one.
+
+### Where B0.1 looks worse, and why it is not
+
+Two rows above favour B0.0, and both are artefacts worth stating plainly.
+
+*The median is worse* because B0.1 deliberately spent its budget on 172
+contrasting hypotheses, including a whole family built on the stochastic trend
+decoder. Those 32 collapsed configurations drag the median without saying
+anything about the best attainable model. Comparing like with like, the 140
+non-collapsed configurations have a median of **1.061**, slightly better than
+B0.0's 1.087.
+
+*Calibration appears to regress* on a raw average — 50% coverage 38.5% → 36.8%,
+95% coverage 80.3% → 75.1%, dispersion share 0.262 → 0.224 — but this is the same
+artefact. Excluding the collapsed arm reverses it:
+
+| States/DC | B0.0 | B0.1 (all) | B0.1 (non-collapsed) | B0.1 (top 5) |
+|---|---:|---:|---:|---:|
+| 50% coverage | 38.5% | 36.8% | **40.2%** | 40.1% |
+| 95% coverage | 80.3% | 75.1% | **82.0%** | 81.7% |
+| Dispersion share | 0.262 | 0.224 | 0.263 | **0.314** |
+
+B0.1's healthy models are *slightly better* calibrated than B0.0's, and its
+leaders are the best-dispersed models in either suite. Both suites remain far
+short of nominal, so the under-dispersion finding is not new to B0.1 — it was
+already true in B0.0 and simply was not visible under the old objective.
+
+### What did genuinely change
+
+Seven architectures appear in both suites (ignoring the epoch budget). At
+**matched** budgets B0.1 wins every time; the four that look like regressions are
+all cases where B0.0 had a short `ep50` fit that B0.1 did not run:
+
+| Architecture | B0.0 best | B0.1 best | Note |
+|---|---:|---:|---|
+| `local_mlp__epochs_100` | 1.078 | **0.968** | B0.1 better |
+| `conv_control_2` | 0.973 | **0.937** | B0.1 better |
+| `conv_control_0` | 1.010 | **0.991** | B0.1 better |
+| `local_mlp__ed_transform_linear` | **0.948** | 0.992 | B0.0 best was `ep300/pat20` |
+| `local_mlp__ed_transform_fourth_root` | **0.968** | 1.067 | B0.0 best was `ep50`, absent from B0.1 |
+| `…__count_transform_log1p` | **1.089** | 1.147 | B0.0 best was `ep50`, absent from B0.1 |
+| `…__count_transform_sqrt` | **1.060** | 1.166 | B0.0 best was `ep50`, absent from B0.1 |
+
+So the one thing arguably lost is the **`ep50` budget**. B0.0's best score came
+from a short fit, and 51 of its 60 configurations used `ep50`; B0.1 replaced it
+with caps of 100 and 300 plus patience 30. Given that B0.1 found `epochs_100`
+consistently better than `epochs_300` and that early stopping typically selects
+epoch 67–87, an even shorter budget is plausibly in the right direction, and B0.1
+cannot rule it out because it never tried one. That is a cheap gap to close: a
+cap-50 arm on the leading independent recipes would settle it.
+
+Otherwise nothing was lost. The B0.0 leaders' architectures were all carried
+forward, and every one of them scores better in B0.1 at a comparable budget.
 
 ## Reproducing
 
 The general procedure is in
 [Postprocessing an experiment](../../workflows/experiment-postprocessing.md).
+
+The B0.0 rescore under this objective, for the comparison above:
+
+```bash
+for d in data/experiments/b0-us-cross-4/*/s*/attempt-001/cv; do
+  .venv/bin/python -m tapestry.evaluation.totals score --run "$d" \
+      --frozen data/evaluation/b0_hub_comparison_q23
+done
+```
+
+then rank those runs into
+`data/experiments/b0-us-cross-4/ranking-newobjective/`. `manager rank` cannot be
+used for B0.0: its scenario strings predate six fields added for B0.1
+(`head_sharing`, `annual_calendar`, `location_embedding`, `fit_partition`,
+`validation_members`, `weight_decay`), so the runs are identified by rebuilding
+each scenario from its own `manifest.json` and filling those fields with the
+dataclass defaults, which describe what B0.0 actually did.
 
 ```bash
 .venv/bin/python -m tapestry.models.manager rank -e B0.1
