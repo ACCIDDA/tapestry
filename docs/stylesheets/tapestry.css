@@ -34,20 +34,24 @@
   text-underline-offset: 0.15em;
 }
 
-/* Header link to the published explorer (added by javascripts/explorer-link.js). */
+/* Header link to the live explorer (added by javascripts/explorer-link.js):
+   logo, site name, flexible space, boxed link, search. */
 .md-header .tapestry-explorer-link {
-  margin: 0 1rem;
-  padding: 0.2rem 0;
-  font-size: 0.8rem;
+  flex: 0 0 auto;
+  margin: 0 0.8rem 0 auto;
+  padding: 0.25rem 0.7rem;
+  border: 2px solid var(--md-accent-fg-color);
+  border-radius: 2px;
   color: var(--md-primary-bg-color);
-  font-weight: 600;
-  text-decoration-line: underline;
-  text-decoration-color: var(--md-accent-fg-color);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.25em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-.md-header .tapestry-explorer-link:hover {
-  opacity: 0.8;
+.md-header .tapestry-explorer-link:hover,
+.md-header .tapestry-explorer-link:focus-visible {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-primary-bg-color);
 }
