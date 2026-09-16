@@ -296,3 +296,30 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
             for h, day in enumerate(episode['target_dates']):
                 if episode['Y'][h, :, 1].any():
                     assert season(date.fromisoformat(str(day))) == held
+
+
+def test_b1_season_fold_hub_export_keeps_only_the_held_out_season(tmp_path):
+    """A fold's 6-week window spans seasons; only the held-out one is out-of-sample."""
+    from tapestry.models.b1_hubs import export_forecasts
+    from tapestry.models.quantiles import LEVELS
+
+    seasons = ('2023-2024', '2024-2025')
+    # Each fold's last origin reaches into the next season, as real folds do.
+    spans = {'2023-2024': ('2024-07-27', '2024-08-03'), '2024-2025': ('2025-07-26', '2025-08-02')}
+    run_id, seed = 'probe-run', 42
+    for held, (inside, outside) in spans.items():
+        folder = tmp_path / f'eval_{held}'
+        folder.mkdir()
+        np.savez_compressed(folder / f'forecasts-{run_id}-s{seed}.npz'.replace('.npz', '-natural.npz'),
+            quantiles=np.ones((len(LEVELS), 1, 4, 6, 1)), quantile_levels=LEVELS,
+            truth=np.ones((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), bool),
+            target_dates=np.array([[inside, inside, outside, outside]]),
+            issuance_dates=np.array(['2024-07-24']), locations=np.array(['US']),
+            channels=np.array(['nhsn_flu_admissions'] * 6), horizons=np.arange(4))
+    metadata = dict(run_id=run_id, seed=seed, protocol='season_cv', seasons=list(seasons))
+    frames = export_forecasts(tmp_path, metadata, dict(evaluation_start=None, evaluation_end=None))
+    assert frames, 'expected exported Hub frames'
+    # Nothing from a season the fold trained on, and no fold collides with another.
+    assert {label for label, _ in frames} <= set(seasons)
+    for (label, _), frame in frames.items():
+        assert set(frame.target_end_date) == {spans[label][0]}

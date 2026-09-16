@@ -14,27 +14,48 @@ from tapestry.evaluation.totals import case_totals, frozen_cases, quantile_score
 from .quantiles import select_quantiles
 
 
+def forecast_files(output, metadata):
+    """Natural-input forecasts with the season each file may contribute.
+
+    A fold's 6-week output window straddles season boundaries, so its forecasts
+    include target dates in seasons it trained on. Only the held-out season is
+    genuinely out-of-sample, so each fold contributes that season alone.
+    """
+    prefix = f'{metadata["run_id"]}-s{metadata["seed"]}'
+    if metadata.get('protocol') == 'season_cv':
+        return [(output / f'eval_{held}' / f'forecasts-{prefix}-natural.npz', held)
+                for held in metadata['seasons']]
+    return [(output / f'forecasts-{prefix}-natural.npz', None)]
+
+
 def export_forecasts(output, metadata, config):
     """Wednesday issuance maps to the following Saturday reference; horizons 0–3."""
-    prefix = f'{metadata["run_id"]}-s{metadata["seed"]}'
     postal = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
+    # season_cv scores each fold on its own held-out season, so the evaluation
+    # window is that season rather than an explicit date range.
+    window = (config.get('evaluation_start'), config.get('evaluation_end'))
     frames = {}
-    with np.load(output / f'forecasts-{prefix}-natural.npz', allow_pickle=False) as a:
-        quantiles = select_quantiles(a['quantiles'], a['quantile_levels'])
-        future = a['horizons'] >= 0
-        dates = a['target_dates'][:, future]
-        n, h = dates.shape
-        locations = [postal[str(loc)] for loc in a['locations']]
-        for spec in HUBS.values():
-            for target, c in spec['targets'].items():
-                frame = pd.DataFrame(dict(reference_date=np.repeat(dates[:, 0], h * len(locations)),
-                    target_end_date=np.repeat(dates.reshape(-1), len(locations)),
-                    location=np.tile(locations, n * h), horizon=np.tile(np.repeat(np.arange(h), len(locations)), n)))
-                frame[QCOLS] = quantiles[:, :, future, c, :].reshape(len(QCOLS), -1).T
-                keep = frame.target_end_date.between(config['evaluation_start'], config['evaluation_end'])
-                frame = frame[keep].copy()
-                for label, part in frame.groupby(frame.target_end_date.map(lambda d: season(date.fromisoformat(d)))):
-                    frames[(label, target)] = part.copy()
+    for path, held_out in forecast_files(output, metadata):
+        with np.load(path, allow_pickle=False) as a:
+            quantiles = select_quantiles(a['quantiles'], a['quantile_levels'])
+            future = a['horizons'] >= 0
+            dates = a['target_dates'][:, future]
+            n, h = dates.shape
+            locations = [postal[str(loc)] for loc in a['locations']]
+            for spec in HUBS.values():
+                for target, c in spec['targets'].items():
+                    frame = pd.DataFrame(dict(reference_date=np.repeat(dates[:, 0], h * len(locations)),
+                        target_end_date=np.repeat(dates.reshape(-1), len(locations)),
+                        location=np.tile(locations, n * h), horizon=np.tile(np.repeat(np.arange(h), len(locations)), n)))
+                    frame[QCOLS] = quantiles[:, :, future, c, :].reshape(len(QCOLS), -1).T
+                    if all(window):
+                        frame = frame[frame.target_end_date.between(*window)].copy()
+                    for label, part in frame.groupby(frame.target_end_date.map(lambda d: season(date.fromisoformat(d)))):
+                        if held_out is not None and label != held_out:
+                            continue  # trained-on season leaking through the output window
+                        if (label, target) in frames:
+                            raise ValueError(f'Duplicate B1 Hub export for {label}/{target}; folds must not overlap')
+                        frames[(label, target)] = part.copy()
     return frames
 
 

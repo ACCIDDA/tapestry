@@ -168,6 +168,7 @@ def score_run(output, config):
         combined = dict(metadata, protocol='season_cv', held_out_season=None, folds=folds,
                         seasons=list(SEASONS))
         save(output / 'manifest.json', combined)
+        metadata = combined  # Hub export needs the fold layout, not one fold's record.
     else:
         models, metadata = load_models(output / 'model.pt', config['device'])
         episodes = list(ds.episodes(start=config['evaluation_start'], end=config['evaluation_end'],
