@@ -377,7 +377,11 @@ def main(argv=None):
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     if args.seeds is None:
-        args.seeds = [42, 43, 44, 45, 46] if args.suite == 'B0.1' else [42, 43, 44]
+        if args.suite == 'B0.1':
+            from .b01_suite import expand
+            args.seeds = expand()[0]['seeds']
+        else:
+            args.seeds = [42, 43, 44]
     if args.eval_members < 1 or args.workers < 1:
         parser.error('eval-members and workers must be positive')
     if len(set(args.seeds)) != len(args.seeds) or min(args.seeds) < 0:

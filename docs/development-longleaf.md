@@ -10,7 +10,8 @@ searches may justify a Longleaf GPU.
 
 For measured cluster timings, see the [Longleaf CPU versus GPU benchmark](longleaf-setup.md#cpu-versus-gpu-runtime),
 including training, evaluation, overhead, and the assumptions behind the
-three-seed CPU estimate.
+three-seed CPU estimate. The adjacent [L40 concurrency benchmark](longleaf-setup.md#concurrent-fits-on-one-l40)
+compares aggregate throughput at one, four and eight simultaneous fits.
 
 ## Connect to the patron node
 

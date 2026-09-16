@@ -13,3 +13,12 @@ When running on longleaf, we have two choices:
 - our patron nodes in a hidden partition named jlessler. We will run mostly on this, parallelizing runs in a single GPUs. we have
   - g1803jles01.ll.unc.edu:  512GB ram 56 physical CPU cores Quantity 4 of Nvidia L40, 48GB
   - g1803jles02.ll.unc.edu: 64 physical CPU cores 2Tb RAM 2x Nvidia H100, 96 GB
+
+## Testing scope
+
+Keep tests only for plausible silent errors with material scientific consequences:
+loss/score mathematics, scientific weighting, leakage, and data units/alignment.
+Do not add tests for plotting, formatting, CLI strings, ordinary run failures,
+artifact existence, or broad architecture execution. No coverage target and no
+requirement to keep one test per component. Routine validation uses research runs
+and inspection; frequently rewritten code does not need a general regression suite.

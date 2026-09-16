@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import csv
 from datetime import date
 import hashlib
@@ -209,7 +210,7 @@ def evaluate(model, episodes, args, output, name=''):
 
 
 def run(args):
-    torch.set_num_threads(2)
+    torch.set_num_threads(int(os.environ.get('TAPESTRY_TORCH_THREADS', '2')))
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=False)
     ds = FinalizedDataset.load(args.dataset)
@@ -219,7 +220,7 @@ def run(args):
     stopping = (f'early stopping on inner validation blocks (patience {args.patience}, cap {args.epochs} epochs), '
                 'then a refit on all training weeks for the best epoch count' if args.patience else f'fixed {args.epochs} epochs')
     from .scenarios import TrainingScenario
-    manifest = {'scenario_string': TrainingScenario.from_config(vars(args)).scenario_string, 'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
+    manifest = {'scenario_string': TrainingScenario.from_config(vars(args)).scenario_string, 'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__), 'torch_threads': torch.get_num_threads(),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
                 'code_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in code_paths},
                 'git': git_state(),

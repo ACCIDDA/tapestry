@@ -136,3 +136,72 @@ No existing experiment plan or model implementation is changed by this review.
   architecture papers, generic CATS/ICTSP source, and Columbia repositories.
   Recorded the limits of operational reproducibility and proposed matched
   comparisons without assuming undocumented losses or dependence structures.
+
+## Learning from an ED-only year
+
+The user's intended capability includes training on a whole year with observed
+ED visits but no hospital admissions. Assume ED refers to the current model's
+pathogen-specific ED proportions, with observed future ED labels inside the
+training partition; admissions are observed in other training years. Older years
+must actually be included in the dataset and training selection (the dataset
+builder currently defaults to a 2023-09-01 start).
+
+Code inspection supports the mechanism: `FinalizedDataset.windows` retains any
+window with at least one observed target; input values carry availability masks;
+`fair_crps_cells` excludes missing labels; `loss_cell_weights` normalizes over
+available targets. An ED-only window can therefore update shared parameters from
+ED forecast errors without inventing hospitalization labels. This is not evidence
+that the capability has been evaluated end to end on an additional historical year.
+
+The hypothesis is transfer of useful dynamics from partially observed surveillance
+histories to later admissions forecasting. It assumes some transferable dynamics
+and a learnable relationship across sources using other years' supervision;
+reporting changes and missingness patterns may limit transfer. An ED-only year
+provides no direct supervision of its absent admissions, and training without any
+admissions labels anywhere does not identify their count scale without additional
+assumptions. Missing inputs at deployment are a separate robustness question.
+
+Prior art includes [Flusion](https://arxiv.org/abs/2407.19054), which expands its
+training pool across surveillance signals, and
+[CSDI](https://arxiv.org/abs/2107.03502), which learns conditional imputation with
+missing-data masks. Neither citation by itself establishes the exact six-channel
+fair-CRPS forecasting formulation. Missing-data support alone is not a first-use
+claim; useful transfer from entire missing channel-years is the more specific
+scientific question.
+
+An informative experiment holds later held-out admissions targets fixed and compares
+the same model with versus without earlier ED-only training years, controlling or
+reporting optimization budget and changed objective weights. A separate controlled
+experiment can hide complete admissions channel-years from otherwise observed
+training data. Random isolated missing points do not test this capability. Neither
+experiment was added to the execution grid or run in this review.
+
+## Prospective competitiveness
+
+“Win FluSight + RSVHub” is interpreted as leading each hub's specified prospective
+seasonal evaluation, not the internal six-target composite. No numerical probability
+of winning is supported by the evidence reviewed here. The architecture offers
+plausible advantages through incomplete-history transfer and direct distributional
+training, but improvement in later admissions forecasts remains an empirical
+hypothesis. Simultaneously leading two evaluations requires stronger evidence than
+being competitive in either.
+
+The [CDC 2024–25 FluSight evaluation](https://www.cdc.gov/flu-forecasting/evaluation/2024-2025-report.html)
+reports the ensemble first, PSI-PROF_beta best among individual submissions, and
+the top ten relative WIS values within 0.04. That report scores log-transformed
+counts and excludes national forecasts. Its ordering is not interchangeable with
+Tapestry's native-unit, six-target, national-weighted objective. Current-season
+rules must be checked before treating an internal ranking as a hub ranking; this
+observation does not change the adopted training objective.
+
+The [CDC RSV forecast page](https://www.cdc.gov/cfa-modeling-and-forecasting/rsv-data-vis/index.html)
+describes hospital-admission and ED-percentage forecast ensembles beginning in
+April 2026. No comparable completed-season RSV ranking was verified in this review;
+there is no basis here to call RSV easier to win.
+
+A useful decision criterion is consistent prospective or historically as-issued
+skill against the relevant hub ensemble, with calibration and season-level
+robustness. Finalized-data evaluation cannot establish performance under reporting
+revisions. Correlated state/week errors and a small number of seasons make close
+rankings unstable; that is a reason to quantify uncertainty, not to treat model
+quality as random. No execution settings or scientific objectives were changed.

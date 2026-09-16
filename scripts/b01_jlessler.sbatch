@@ -11,16 +11,17 @@
 #SBATCH --time=2-00:00:00
 #SBATCH --output=output/slurm/B0.1-%A_%a.log
 
-# One whole GPU per array element, six fitting processes per GPU.
+# One whole GPU per array element, configurable fitting processes per GPU.
 # All six GPUs draw from one shared queue; there are no static task slices.
 set -euo pipefail
 experiment=${1:-B0.1}
-lanes=${LANES:-6}
-if (( SLURM_CPUS_PER_TASK < 2 * lanes )); then
-    echo 'Allocate at least two CPUs per lane with --cpus-per-task.' >&2
+lanes=${LANES:-8}
+threads=${TAPESTRY_TORCH_THREADS:-1}
+if (( SLURM_CPUS_PER_TASK < threads * lanes )); then
+    echo 'Allocate at least lanes * threads CPUs with --cpus-per-task.' >&2
     exit 1
 fi
-export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS="$threads" MKL_NUM_THREADS="$threads" TAPESTRY_TORCH_THREADS="$threads" PYTHONUNBUFFERED=1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$PWD/data/experiments/$experiment/code/src${PYTHONPATH:+:$PYTHONPATH}"
 .venv/bin/python -m tapestry.models.dispatch -e "$experiment" --lanes "$lanes"

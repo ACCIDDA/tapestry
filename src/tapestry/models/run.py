@@ -1,5 +1,6 @@
 """Direct train/predict commands for the finalized Build B0 research pilot."""
 import argparse
+import os
 from datetime import date
 import hashlib
 import json
@@ -218,7 +219,7 @@ def main(argv=None):
             p.add_argument('--locations', nargs='+')
             p.add_argument('--sample-batch', type=int, default=32)
     args = parser.parse_args(argv)
-    torch.set_num_threads(2)
+    torch.set_num_threads(int(os.environ.get('TAPESTRY_TORCH_THREADS', '2')))
     if args.members < (2 if args.command == 'train' else 1):
         parser.error('Need >=2 training members or >=1 prediction member')
     if args.command == 'train' and min(args.epochs, args.batch_size, args.width, args.lookback) < 1:

@@ -221,6 +221,37 @@ For this baseline, the estimated GPU advantage is **7.6× overall**, approximate
 most CPU time is computation rather than startup. These results do not establish
 timings for other architectures, CPU types, or concurrent runs sharing one GPU.
 
+## Concurrent fits on one L40
+
+Measured 2026-09-16 UTC for B0.1. Each setting completed **the same eight-model
+workload**, once, on an L40 on `g1803jles01`. The conditions ran on three L40s
+with overlapping execution. Each allocation had eight CPU cores; each fit used
+one CPU thread. The outcome is total time to finish all eight models.
+
+| Concurrent fits per GPU | Total time, same 8 models | Models/hour | Speedup versus 1 fit |
+|---|---:|---:|---:|
+| 1 | 11m 28s | 41.8 | 1.00× |
+| 4 | 6m 30s | 73.9 | 1.77× |
+| **8** | **5m 24s** | **89.0** | **2.13×** |
+
+**Use eight concurrent fits per L40 for this workload.** Eight reduced total
+completion time by **53% versus one** and **17% versus four**. Individual fits
+can slow down while sharing a GPU, yet the full workload finishes sooner.
+Spare GPU memory and a 100% utilization reading alone did not answer this;
+measured aggregate throughput did.
+
+The panel contains the six B0.1 references, a width-128 joint multiscale model,
+and the larger conv/residual2 control. Every model used seed 42, the 2025–2026
+outer fold, **20 inner-fit epochs plus 20 refit epochs**, and 128/256/2,048
+training/validation/evaluation members. Early stopping was disabled to keep
+work equal. Timing includes process startup, fitting, validation, forecast
+export and waiting for a worker slot; Slurm queue waiting is excluded.
+
+This is a single-pass comparison of this fixed mixed workload, not a measured
+full-suite duration or an H100 concurrency result. Eight is the best of the
+three tested settings; higher concurrency was not tested. The one-off benchmark
+drivers and raw artifacts were removed after recording these results.
+
 ## Train across six GPUs
 
 Partition `jlessler` provides:

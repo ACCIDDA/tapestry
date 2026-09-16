@@ -19,12 +19,6 @@ from .manager import check_frozen, read_jobs, run_seed, save, seed_state
 from .scenarios import TrainingScenario
 
 
-def signature(s):
-    """Fields affecting tensor size; transforms share a conservative memory margin."""
-    names = ('lookback', 'width', 'latent', 'encoder', 'decoder', 'head_sharing', 'heads',
-             'spatial', 'noise', 'dynamics', 'annual_calendar', 'location_embedding', 'us_error')
-    return '|'.join(str(getattr(s, key)) for key in names)
-
 
 @contextmanager
 def queue_lock(folder):
@@ -48,8 +42,9 @@ def initialize(folder):
 
 
 class Queue:
-    def __init__(self, folder, owner):
+    def __init__(self, folder, owner, lanes=6, gpu_count=6):
         self.folder, self.owner = folder, owner
+        self.lanes, self.gpu_count = lanes, gpu_count
         self.jobs = {str(job['task']): job for job in read_jobs(folder)}
         self.cost = {}
         for task, job in self.jobs.items():
@@ -62,23 +57,45 @@ class Queue:
             self.cost[task] = components * s.epochs * (s.width / 64)**2 * (s.lookback / 12)**.5 * encoder * decoder * exchange
         self.local = threading.Lock()
         initialize(folder)
+        with queue_lock(folder):
+            state = json.loads((folder / 'dispatch.json').read_text())
+            state.setdefault('owners', {})[owner] = lanes
+            save(folder / 'dispatch.json', state)
 
     def claim(self, lane):
         with self.local, queue_lock(self.folder):
             state = json.loads((self.folder / 'dispatch.json').read_text())
             eligible = []
+            loads = {owner: 0. for owner in state['owners']}
+            counts = {owner: 0 for owner in state['owners']}
+            for task, entry in state['tasks'].items():
+                if entry['active']:
+                    owner = entry['active']['owner']
+                    loads[owner] = loads.get(owner, 0.) + self.cost[task]
+                    counts[owner] = counts.get(owner, 0) + 1
+            idle_peer = any(owner != self.owner and counts[owner] < lanes
+                            for owner, lanes in state['owners'].items())
             pending = False
             for task, entry in state['tasks'].items():
                 todo = [seed for seed, status in entry['seeds'].items() if status == 'pending']
                 pending |= bool(todo) or entry['active'] is not None
                 if not todo or entry['active']:
                     continue
+                # Give an idle peer a polling interval to take the next seed.
+                if (idle_peer and entry.get('last_owner') == self.owner
+                        and time.time() - entry.get('finished', 0) < 10):
+                    continue
                 cost = self.cost[task]
                 # Long remaining chains start first; ties start longer individual fits.
                 eligible.append((cost * len(todo), cost, -int(task), task, todo[0]))
             if not eligible:
                 return None, pending
-            _, _, _, task, seed = max(eligible)
+            # A GPU already carrying above-average work takes a light job;
+            # an underloaded GPU takes the longest chain. Missing startup GPUs
+            # count as zero load, spreading heavy jobs as allocations come up.
+            average = sum(loads.values()) / self.gpu_count
+            chosen = min(eligible) if loads.get(self.owner, 0) > average else max(eligible)
+            _, _, _, task, seed = chosen
             entry = state['tasks'][task]
             entry['active'] = dict(owner=self.owner, lane=lane, seed=seed, started=time.time())
             entry['seeds'][seed] = 'running'
@@ -90,6 +107,7 @@ class Queue:
             state = json.loads((self.folder / 'dispatch.json').read_text())
             entry = state['tasks'][task]
             entry['active'] = None
+            entry.update(last_owner=self.owner, finished=time.time())
             entry['seeds'][str(seed)] = 'complete' if success else 'failed'
             if success:
                 entry['seconds'].append(seconds)
@@ -97,7 +115,7 @@ class Queue:
 
     def reclaim(self):
         """Release seeds whose Slurm allocation disappeared; never guess from age."""
-        result = subprocess.run(['squeue', '-r', '-h', '-u', os.environ['USER'], '-o', '%i'],
+        result = subprocess.run(['squeue', '-a', '-r', '-h', '-u', os.environ['USER'], '-o', '%i'],
                                 text=True, capture_output=True)
         if result.returncode:
             return
@@ -121,6 +139,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-e', '--experiment', default='B0.1')
     parser.add_argument('--lanes', type=int, required=True)
+    parser.add_argument('--gpu-count', type=int, default=6)
     args = parser.parse_args()
     if args.lanes < 1:
         parser.error('Positive lanes required')
@@ -132,7 +151,7 @@ def main():
     check_frozen(settings['frozen'])
     owner = (os.environ['SLURM_ARRAY_JOB_ID'] + '_' + os.environ['SLURM_ARRAY_TASK_ID']
              if 'SLURM_ARRAY_JOB_ID' in os.environ else os.environ['SLURM_JOB_ID'])
-    queue = Queue(folder, owner)
+    queue = Queue(folder, owner, args.lanes, args.gpu_count)
     stop = threading.Event()
     print(json.dumps(dict(dispatch_owner=owner, host=socket.gethostname(), lanes=args.lanes)), flush=True)
 

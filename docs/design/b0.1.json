@@ -26,16 +26,14 @@
   "seeds": [
     42,
     43,
-    44,
-    45,
-    46
+    44
   ],
   "seasons": [
     "2023-2024",
     "2024-2025",
     "2025-2026"
   ],
-  "status": "implemented and prepared as manager suite B0.1; full GPU runs not launched",
+  "status": "restarted after benchmark with eight lanes and twelve CPU cores per GPU, all six patron GPUs",
   "focus": "capabilities: cross-location/cross-target information exchange, parameter sharing, temporal dynamics and uncertainty",
   "defaults": {
     "output": "samples",
@@ -387,17 +385,17 @@
     "E_independent_sharing_controls": 14
   },
   "unique_configurations": 172,
-  "cv_runs": 860,
-  "outer_evaluation_folds": 2580,
-  "outer_component_model_fits": 3210,
-  "inner_plus_refit_training_calls": 6420,
+  "cv_runs": 516,
+  "outer_evaluation_folds": 1548,
+  "outer_component_model_fits": 1926,
+  "inner_plus_refit_training_calls": 3852,
   "assumptions": [
     "Reference architectures are prespecified contrasts, not winners selected on scored seasons.",
     "The epoch request is interpreted as 100/300 caps with patience 30, consistent with keeping early stopping; actual refit epochs can be lower.",
     "The default is cap 300; cap 100 is a one-factor alternative around every reference, and both caps are used for old conv and independent sharing controls.",
     "Attention-by-sharing and transform-pair panels use the 300-epoch default; this is not an exhaustive interaction experiment.",
     "All other axes are changed one at a time around six references; identical recipes are trained only once.",
-    "All five seeds and three outer folds remain in the plan; there is no first-seed pruning.",
+    "All three seeds (42, 43, 44) and three outer folds remain in the amended plan; removing 45 and 46 is uniform across configurations, not performance-based pruning.",
     "No direct quantile model, raw/rate-only input transform, new surveillance data, augmentation, or vintage reconstruction.",
     "All models generate samples; exported quantiles for WIS are retained.",
     "Calendar-off removes annual sine/cosine and Christmas timing; dynamics-off removes the extra local-dynamics block.",
@@ -406,9 +404,9 @@
     "Calibration and sample-based mixtures remain postprocessing comparisons with training-side parameter selection; their evaluations are not model-fit counts.",
     "Trend growth uses the last two adjacent context weeks in inverse-softplus admission/root-ED or logit ED working space; missing slopes fall back to zero with an explicit validity feature.",
     "Independent component i uses seed + 10000*i, its own stopping epoch and fresh sampling draws; bundle member indices imply independence across components.",
-    "The initial patron launcher uses one configuration per GPU and two CPU threads; actual 128-member training/256-member validation shapes are profiled before fitting.",
     "Calendar-on includes annual sine/cosine and Christmas timing even when recent dynamics are disabled.",
     "Shared spatial exchange retains the existing context attention topology; pathogen/target/joint exchange adds scope-restricted history tokens with group identity and optional geography/ID features.",
-    "Source snapshots use the current working tree including uncommitted changes; new checkpoint modules replace the old module layout."
+    "Source snapshots use the current working tree including uncommitted changes; new checkpoint modules replace the old module layout.",
+    "Eight lanes and twelve allocated CPU cores per GPU on all six patron GPUs; one CPU thread per fit. L40 throughput was measured; eight lanes on H100 is the user-selected setting, not an H100 benchmark result."
   ]
 }

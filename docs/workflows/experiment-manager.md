@@ -354,11 +354,9 @@ they are not prospective validation.
 
 ## B0.1 architecture suite
 
-The implemented [B0.1 design](../design/b0.1.md#run-b01) contains 172 deduplicated
-recipes with five seeds, full contrast memberships, and canonical scenario strings.
-Prepare it with `.venv/bin/python -m tapestry.models.manager plan -e B0.1 --suite B0.1 --device cuda`.
-Launch with `sbatch --array=0-3 scripts/b01_jlessler.sbatch B0.1` from the repository
-root after creating `output/slurm`. This launcher uses the saved source snapshot,
-profiles the large models and starts with one configuration per GPU; increase
-lanes only from measured memory and throughput. The older B0.0 launcher has a
-historical hard-coded task list and must not be used for B0.1.
+The [B0.1 design](../design/b0.1.md#run-b01) contains 172 recipes and three seeds.
+`LANES=6` runs six fits per GPU. Submit four array elements on `g1803jles01` and
+two on `g1803jles02`, using `scripts/b01_jlessler.sbatch` as shown in the design.
+All six allocations draw from one shared queue; large and small jobs are spread
+by estimated workload, and each seed can move to another GPU when it starts.
+Sources are read from the prepared snapshot. Never refresh it during a run.
