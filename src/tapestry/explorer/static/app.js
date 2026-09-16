@@ -99,8 +99,11 @@
     const files = new Map();
     const lists = new Map();
     const revisions = new Map();
+    // GitHub Pages caches files for 10 minutes. The catalog is always revalidated and
+    // its export time versions every other data URL, so a refresh never mixes exports.
+    const versioned = name => `${ROOT}${name}?v=${encodeURIComponent(catalog?.meta?.exported_at || "")}`;
     const json = async name => {
-      const response = await fetch(ROOT + name);
+      const response = await fetch(versioned(name));
       if (!response.ok) throw new Error(`Missing published file ${name} (HTTP ${response.status})`);
       return response.json();
     };
@@ -108,7 +111,7 @@
     const dayString = number => isoDate(number * DAY);
 
     function available() {
-      detected ??= fetch(ROOT + "catalog.json").then(async response => {
+      detected ??= fetch(ROOT + "catalog.json", {cache: "no-cache"}).then(async response => {
         if (!response.ok || !(response.headers.get("content-type") || "").includes("json")) return false;
         catalog = await response.json();
         return true;
@@ -136,7 +139,7 @@
           hyparquet ??= import(HYPARQUET);
           // Whole-file download: GitHub Pages gzips responses, which breaks byte ranges.
           if (!files.has(id)) {
-            files.set(id, fetch(`${ROOT}revisions/${id}.parquet`).then(response => {
+            files.set(id, fetch(versioned(`revisions/${id}.parquet`)).then(response => {
               if (!response.ok) throw new Error(`Missing published revisions for series ${id} (HTTP ${response.status})`);
               return response.arrayBuffer();
             }));
