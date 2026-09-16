@@ -72,7 +72,7 @@ def quality_table(seasons, configs, geography='states_dc'):
     return table.join(configs.set_index('name')[['combined_mean', 'combined_sd', 'rank']])
 
 
-CATASTROPHIC = 2.0
+CATASTROPHIC = 1.2
 
 
 def ranking_figure(configs, runs, output):
@@ -90,7 +90,10 @@ def ranking_figure(configs, runs, output):
         color = FAMILY[family(row.name)]
         if row.combined_mean > CATASTROPHIC:
             ax.plot(CATASTROPHIC, offset, '>', ms=6, color=color, clip_on=False, zorder=3)
-            ax.annotate(f'catastrophic · {row.combined_mean:.2f}', (CATASTROPHIC, offset),
+            # Beyond ~2 the model is not merely worse, it has collapsed; say so.
+            label = (f'catastrophic · {row.combined_mean:.2f}' if row.combined_mean > 2
+                     else f'{row.combined_mean:.2f}')
+            ax.annotate(label, (CATASTROPHIC, offset),
                         textcoords='offset points', xytext=(9, 0), va='center', fontsize=5,
                         color=color, annotation_clip=False)
             continue
@@ -104,9 +107,11 @@ def ranking_figure(configs, runs, output):
     ax.set_yticklabels(order.name, fontsize=5.2)
     ax.set_xlabel('Combined score (total model WIS / total ensemble WIS; lower is better, 1 = hub ensemble)')
     beyond = int((configs.combined_mean > CATASTROPHIC).sum())
+    collapsed = int((configs.combined_mean > 2).sum())
     ax.set_title(f'B0.1 crosses: combined score, all {len(order)} configurations\n'
                  f'Filled dot = mean over three seeds, open dots = individual seeds · '
-                 f'{beyond} configurations worse than {CATASTROPHIC:g} are clipped to the right edge',
+                 f'{beyond} configurations worse than {CATASTROPHIC:g} are clipped to the right edge '
+                 f'and labelled ({collapsed} of them collapsed beyond 2)',
                  fontsize=10)
     handles = [plt.Line2D([], [], marker='o', ls='', color=c, label=f) for f, c in FAMILY.items()]
     handles.append(plt.Line2D([], [], color=ENSEMBLE, ls='--', label='Hub ensemble parity'))

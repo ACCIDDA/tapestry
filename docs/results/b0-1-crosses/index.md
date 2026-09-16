@@ -62,10 +62,11 @@ decoder — costs score at its own reference.
 
 Filled dots are the mean over seeds 42/43/44; open dots are the individual
 seeds. The ensemble parity line at 1 sits inside the upper third of the table.
-The axis stops at 2.0 so the region around parity — where the experiment is
-actually decided — is legible; the 28 configurations worse than that are clipped
-to the right edge and labelled **catastrophic** with their true score. All 28 are
-`joint_trend` variants except two (`spatial_conv__decoder_stochastic_trend` and
+The axis stops at 1.2 so the region around parity — where the experiment is
+actually decided — fills the plot. The 64 configurations beyond that are clipped
+to the right edge and labelled with their true score; the 28 that have collapsed
+past 2.0 are additionally marked **catastrophic**. All 28 are `joint_trend`
+variants except two (`spatial_conv__decoder_stochastic_trend` and
 `target_multiscale__decoder_stochastic_trend`), which is the same finding from a
 different angle: the stochastic trend decoder, wherever it appears.
 
