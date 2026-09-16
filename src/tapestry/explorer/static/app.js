@@ -45,6 +45,20 @@
     const shift = direction < 0 ? -(((weekdayIndex - 3 + 7) % 7) || 7) : (((3 - weekdayIndex + 7) % 7) || 7);
     return isoDate(time + shift * DAY);
   };
+  // Nearest Wednesday to a day, never after today (the published copy keeps Wednesday snapshots only).
+  const nearestWednesday = day => {
+    const time = dateTime(day);
+    let shift = 3 - new Date(time).getUTCDay();
+    if (shift > 3) shift -= 7;
+    if (shift < -3) shift += 7;
+    const result = isoDate(time + shift * DAY);
+    return result > today() ? isoDate(dateTime(result) - 7 * DAY) : result;
+  };
+  // A release is visible from the first Wednesday on or after it.
+  const wednesdayOnOrAfter = day => {
+    const time = dateTime(day);
+    return isoDate(time + ((3 - new Date(time).getUTCDay() + 7) % 7) * DAY);
+  };
   const versionLabel = day => day ? `${weekday(day, "short")} ${day}` : "Latest";
   const tooltip = document.getElementById("tooltip");
 
@@ -95,7 +109,7 @@
     const ROOT = "data/";
     const HYPARQUET = "https://cdn.jsdelivr.net/npm/hyparquet@1.31.0/+esm";
     const FRESHNESS_DAYS = {daily: 14, weekly: 35, monthly: 75, sample: 45};
-    let detected, catalog, ranges, hyparquet, metadata;
+    let detected, catalog, ranges, hyparquet, metadata, published = false;
     const files = new Map();
     const lists = new Map();
     const revisions = new Map();
@@ -116,6 +130,7 @@
         catalog = await response.json();
         return true;
       }).catch(() => false);
+      detected.then(value => { published = value; });
       return detected;
     }
 
@@ -230,7 +245,7 @@
       }
     }
     const exportedAt = () => (catalog?.meta?.exported_at || "").slice(0, 10);
-    return {available, request, exportedAt};
+    return {available, request, exportedAt, isPublished: () => published};
   })();
 
   function escapeHTML(value) {
@@ -297,7 +312,10 @@
       const params = new URLSearchParams({state: model.state, series: [...model.selected.keys()].join(",")});
       const payload = await requestJSON(`api/versions?${params}`);
       if (token !== model.versionRequest) return;
-      model.versionDates = payload.dates;
+      // The published copy only resolves Wednesday snapshots: step through those weeks.
+      model.versionDates = staticData.isPublished()
+        ? [...new Set(payload.dates.map(wednesdayOnOrAfter).filter(day => day <= today()))].sort()
+        : payload.dates;
       renderVersionControls();
     } catch (error) {
       if (token === model.versionRequest) showError(error);
@@ -314,7 +332,7 @@
   }
 
   function setVersion(day) {
-    model.asOf = day;
+    model.asOf = day && staticData.isPublished() ? nearestWednesday(day) : day;
     renderVersionControls();
     updatePlot();
   }
@@ -435,6 +453,28 @@
     return name;
   }
 
+  // Identical series must stay distinguishable: each selected series gets its own
+  // width (drawn widest first, so an overlap reads as a thin line inside a thick one)
+  // and its own marker shape, placed at staggered positions along the line.
+  const LINE_WIDTHS = [4, 3, 2.2, 1.5];
+  const MARKERS = ["circle", "square", "triangle", "cross", "diamond"];
+  function seriesIndex(item) { return Math.max(0, [...model.selected.keys()].indexOf(item.id)); }
+  function lineWidth(item) { return LINE_WIDTHS[seriesIndex(item) % LINE_WIDTHS.length]; }
+
+  function markerSVG(item, cx, cy) {
+    const color = seriesColor(item);
+    const fill = item.versionIndex ? "var(--paper)" : color;
+    const attrs = `stroke="${color}" stroke-width="1.4" fill="${fill}" class="series-marker"`;
+    const r = 3.4;
+    switch (MARKERS[seriesIndex(item) % MARKERS.length]) {
+      case "square": return `<rect x="${(cx - r).toFixed(1)}" y="${(cy - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" ${attrs}></rect>`;
+      case "triangle": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} L${(cx - r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} Z" ${attrs}></path>`;
+      case "cross": return `<path d="M${(cx - r).toFixed(1)},${(cy - r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r).toFixed(1)} M${(cx - r).toFixed(1)},${(cy + r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy - r).toFixed(1)}" stroke="${color}" stroke-width="1.8" fill="none" class="series-marker"></path>`;
+      case "diamond": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r + 0.6).toFixed(1)},${cy.toFixed(1)} L${cx.toFixed(1)},${(cy + r + 0.6).toFixed(1)} L${(cx - r - 0.6).toFixed(1)},${cy.toFixed(1)} Z" ${attrs}></path>`;
+      default: return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" ${attrs}></circle>`;
+    }
+  }
+
   function lineDash(item) {
     return ["none", "7 4", "2 3", "10 3 2 3", "12 5", "4 6"][item.versionIndex % 6];
   }
@@ -528,7 +568,7 @@
       const hidden = model.hidden.has(item.visibilityKey || item.key);
       const maximum = item.max == null ? "" : `max ${formatValue(item.max)}`;
       return `<button class="legend-item${item.versionIndex ? " is-revision" : ""}" type="button" data-legend-id="${item.visibilityKey || item.key}" aria-pressed="${hidden ? "false" : "true"}" title="${escapeHTML([item.details, maximum, item.parent_dataset, item.parent_column, item.parent_transform, item.version_note].filter(Boolean).join(" · "))}">
-        <svg class="swatch" viewBox="0 0 22 6" aria-hidden="true"><line x1="0" x2="22" y1="3" y2="3" stroke="${seriesColor(item)}" stroke-width="2.5" stroke-dasharray="${lineDash(item)}"></line></svg>
+        <svg class="swatch" viewBox="0 0 28 10" aria-hidden="true"><line x1="0" x2="28" y1="5" y2="5" stroke="${seriesColor(item)}" stroke-width="${lineWidth(item)}" stroke-dasharray="${lineDash(item)}"></line>${markerSVG(item, 14, 5)}</svg>
         <span class="legend-label">${escapeHTML(item.label)}</span>
       </button>`;
     }).join("")}</div>`).join("");
@@ -587,20 +627,55 @@
       markup.push(`<text x="${x(tick)}" y="${height - 25}" text-anchor="middle" class="axis">${escapeHTML(formatDate(tick, xMax - xMin))}</text>`);
     }
     markup.push(`<rect class="frame" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none"></rect>`);
-    [...visible].sort((a, b) => b.versionIndex - a.versionIndex).forEach(item => {
+    // Widest lines first, and revisions under their real data.
+    const drawOrder = [...visible].sort((a, b) => lineWidth(b) - lineWidth(a) || b.versionIndex - a.versionIndex);
+    drawOrder.forEach(item => {
       const path = item.points.map((point, index) => `${index ? "L" : "M"}${x(Date.parse(`${point[0]}T00:00:00Z`)).toFixed(2)},${y(point[1]).toFixed(2)}`).join(" ");
-      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}"></path>`);
+      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}" style="stroke-width:${lineWidth(item)}px"></path>`);
     });
+    const markerSpacing = 44;
+    const markers = [];
+    drawOrder.forEach(item => {
+      // Stagger positions by series (and revision) so overlapping markers alternate.
+      const phase = ((seriesIndex(item) * 2 + item.versionIndex) % 10) * markerSpacing / 10;
+      for (let px = margin.left + phase; px <= margin.left + innerWidth; px += markerSpacing) {
+        const time = xMin + (px - margin.left) / innerWidth * (xMax - xMin);
+        const point = nearestPoint(item.points, time);
+        if (!point) continue;
+        const pointX = x(dateTime(point[0]));
+        if (Math.abs(pointX - px) > markerSpacing / 2) continue;
+        markers.push(markerSVG(item, pointX, y(point[1])));
+      }
+    });
+    markup.push(`<g clip-path="url(#plot-clip)">${markers.join("")}</g>`);
+    if (model.asOf) {
+      // The chosen as-of date: data to its right was not yet published at that cutoff.
+      const asOfTime = dateTime(model.asOf);
+      if (asOfTime >= xMin && asOfTime <= xMax) {
+        const asOfX = x(asOfTime);
+        const anchor = asOfX > margin.left + innerWidth - 150 ? "end" : "start";
+        markup.push(`<line class="as-of-line" x1="${asOfX}" x2="${asOfX}" y1="${margin.top}" y2="${margin.top + innerHeight}"></line>`);
+        markup.push(`<text class="as-of-label" x="${asOfX + (anchor === "start" ? 6 : -6)}" y="${margin.top + 12}" text-anchor="${anchor}">As of ${escapeHTML(versionLabel(model.asOf))}</text>`);
+      }
+    }
     markup.push(`<text class="axis-title" x="${margin.left + innerWidth / 2}" y="${height - 4}" text-anchor="middle">Date</text>`);
     markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? (model.commonWindow ? `Value ÷ mean over ${model.commonWindow[0]} – ${model.commonWindow[1]}` : "Value ÷ series mean") : "Raw value (mixed units possible)"}</text>`);
     markup.push(`<g id="hover-layer" hidden><line class="hover-line" y1="${margin.top}" y2="${margin.top + innerHeight}"></line></g>`);
-    markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"></rect>`);
+    markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"><title>Click to set the as-of date</title></rect>`);
     svg.innerHTML = markup.join("");
     chart.replaceChildren(svg);
 
     const hit = svg.querySelector(".hit-area");
     hit.addEventListener("pointermove", event => showTooltip(event, svg, inRange, {x, y, xMin, xMax, margin, innerWidth}));
     hit.addEventListener("pointerleave", () => { svg.querySelector("#hover-layer").hidden = true; tooltip.hidden = true; });
+    hit.addEventListener("click", event => {
+      // Clicking the plot sets the as-of date to that day (never after today).
+      const bounds = svg.getBoundingClientRect();
+      const cursorX = (event.clientX - bounds.left) * (svg.viewBox.baseVal.width / bounds.width);
+      const time = xMin + (cursorX - margin.left) / innerWidth * (xMax - xMin);
+      const day = isoDate(Math.round(time / DAY) * DAY);
+      setVersion(day > today() ? today() : day);
+    });
   }
 
   function renderRangeControl() {
@@ -928,7 +1003,7 @@
     const text = document.querySelector("#disclaimer p");
     if (!published || !text) return;
     const exported = staticData.exportedAt();
-    const note = document.createElement("strong");
+    const note = document.createElement("span");
     note.textContent = ` This online version is not updated${exported ? ` (exported ${exported})` : ""}; use the local explorer as the ground-truth source.`;
     text.appendChild(note);
   });

@@ -256,6 +256,18 @@ def build_wednesday(data_root='data', *, start='2023-08-09', end, truth_cutoff, 
             Y_provenance=yp, Y_reason=yr))
     arrays = {key: np.stack([r[key] for r in rows]) for key in rows[0]}
     arrays['locations'] = np.asarray(locations)
+    has_inputs = arrays['X_available'].any(axis=(1, 2, 3))
+    has_labels = (arrays['Y_recent_valid'].any(axis=(1, 2, 3))
+                  | arrays['Y_future_valid'].any(axis=(1, 2, 3)))
+    if not (has_inputs & has_labels).any():
+        raise ValueError(
+            f'No usable B1 episodes for {start} through {end} '
+            f'(truth cutoff {truth_cutoff}): {int(has_inputs.sum())}/{len(rows)} '
+            f'episodes have Wednesday inputs and {int(has_labels.sum())}/{len(rows)} '
+            f'have reference labels, with no usable overlap. '
+            f'Check data root {str(data_root)!r}, source snapshots, dates and locations. '
+            f'Acquire the required Hub/Delphi archives or copy an existing precomputed '
+            f'B1 dataset. No output files were written.')
     metadata = dict(version=1, model='B1', channels=CHANNELS, units=['admissions'] * 3 + ['proportion'] * 3,
         lookback=lookback, truth_cutoff=truth_cutoff, start=start, end=end,
         offsets_from_preceding_saturday=OFFSETS, hub_offsets=[-2, -1, 0, 1, 2, 3],
@@ -279,8 +291,11 @@ def main(argv=None):
     parser.add_argument('--lookback', type=int, default=12)
     parser.add_argument('--output', default='data/processed/build_b1_wednesday.npz')
     args = parser.parse_args(argv)
-    dataset = build_wednesday(args.data_root, start=args.start, end=args.end,
-        truth_cutoff=args.truth_cutoff, lookback=args.lookback)
+    try:
+        dataset = build_wednesday(args.data_root, start=args.start, end=args.end,
+            truth_cutoff=args.truth_cutoff, lookback=args.lookback)
+    except (ValueError, FileNotFoundError) as error:
+        parser.error(str(error))
     dataset.save(args.output)
     print(json.dumps(dict(output=args.output, shape=list(dataset.arrays['X_values'].shape),
         usable_episodes=sum(1 for _ in dataset.episodes()),

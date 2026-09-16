@@ -88,7 +88,10 @@ the location title with one column per series: its real (latest) data on top and
 the as-of revision directly below, reading *data / source* (plus the as-of date).
 Revisions are also drawn underneath the real data. Hover an entry for the full
 variant, maximum, and lineage. Hub target data is fixed: black for admissions (light gray in dark mode)
-and red for ED visits. Lines are drawn at 70% opacity so overlaps stay visible.
+and red for ED visits. Lines are drawn at 70% opacity, and each selected series has its own line width
+(widest drawn first) and marker shape (circle, square, triangle, cross, diamond;
+hollow for revisions) at staggered positions, so identical series stay visible
+as a thin line inside a thicker one with alternating markers.
 Colors stay consistent across the chart, legend, overview, and hover values, and
 remain stable when other lines are added or removed. Clear resets the color allocation.
 NHSN selection currently
@@ -131,7 +134,8 @@ available values as a solid line, and values available at the selected date as a
 dashed line in the same color. "Latest" is the reference for finalized values
 here; the publisher may still revise it. The selected date's weekday is shown
 beside the picker and in the legend, so publisher release days (e.g. Wednesday)
-are easy to spot. **← Wed**
+are easy to spot. A dashed crimson line marks the as-of date on the chart;
+clicking anywhere on the chart sets the as-of date to that day. **← Wed**
 and **Wed →** step the date to the previous or next calendar Wednesday (from
 today when showing latest values); the next step stops at today.
 
@@ -172,8 +176,9 @@ The copy is a thinned export of the local index, committed to
   8 weeks after each date, plus each date's latest value.
 - Full-snapshot Hub target files become a change log that keeps removals, so an
   as-of date resolves as it does locally.
-- **As of** a Wednesday matches the local explorer; other dates show the
-  previous Wednesday's snapshot, and ← / → step through the kept releases only.
+- **As of** dates are Wednesdays only: chart clicks and typed dates snap to the
+  nearest Wednesday (never after today), and ← / → step through Wednesday weeks
+  with releases. These match the local explorer's values for that Wednesday.
 
 The published banner adds that the online version is not updated (with its export
 date) and that the local explorer is the ground-truth source. The docs header links
