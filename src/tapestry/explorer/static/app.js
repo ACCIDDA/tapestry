@@ -591,16 +591,34 @@
       const path = item.points.map((point, index) => `${index ? "L" : "M"}${x(Date.parse(`${point[0]}T00:00:00Z`)).toFixed(2)},${y(point[1]).toFixed(2)}`).join(" ");
       markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}"></path>`);
     });
+    if (model.asOf) {
+      // The chosen as-of date: data to its right was not yet published at that cutoff.
+      const asOfTime = dateTime(model.asOf);
+      if (asOfTime >= xMin && asOfTime <= xMax) {
+        const asOfX = x(asOfTime);
+        const anchor = asOfX > margin.left + innerWidth - 150 ? "end" : "start";
+        markup.push(`<line class="as-of-line" x1="${asOfX}" x2="${asOfX}" y1="${margin.top}" y2="${margin.top + innerHeight}"></line>`);
+        markup.push(`<text class="as-of-label" x="${asOfX + (anchor === "start" ? 6 : -6)}" y="${margin.top + 12}" text-anchor="${anchor}">As of ${escapeHTML(versionLabel(model.asOf))}</text>`);
+      }
+    }
     markup.push(`<text class="axis-title" x="${margin.left + innerWidth / 2}" y="${height - 4}" text-anchor="middle">Date</text>`);
     markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? (model.commonWindow ? `Value ÷ mean over ${model.commonWindow[0]} – ${model.commonWindow[1]}` : "Value ÷ series mean") : "Raw value (mixed units possible)"}</text>`);
     markup.push(`<g id="hover-layer" hidden><line class="hover-line" y1="${margin.top}" y2="${margin.top + innerHeight}"></line></g>`);
-    markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"></rect>`);
+    markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"><title>Click to set the as-of date</title></rect>`);
     svg.innerHTML = markup.join("");
     chart.replaceChildren(svg);
 
     const hit = svg.querySelector(".hit-area");
     hit.addEventListener("pointermove", event => showTooltip(event, svg, inRange, {x, y, xMin, xMax, margin, innerWidth}));
     hit.addEventListener("pointerleave", () => { svg.querySelector("#hover-layer").hidden = true; tooltip.hidden = true; });
+    hit.addEventListener("click", event => {
+      // Clicking the plot sets the as-of date to that day (never after today).
+      const bounds = svg.getBoundingClientRect();
+      const cursorX = (event.clientX - bounds.left) * (svg.viewBox.baseVal.width / bounds.width);
+      const time = xMin + (cursorX - margin.left) / innerWidth * (xMax - xMin);
+      const day = isoDate(Math.round(time / DAY) * DAY);
+      setVersion(day > today() ? today() : day);
+    });
   }
 
   function renderRangeControl() {

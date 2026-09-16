@@ -131,7 +131,8 @@ available values as a solid line, and values available at the selected date as a
 dashed line in the same color. "Latest" is the reference for finalized values
 here; the publisher may still revise it. The selected date's weekday is shown
 beside the picker and in the legend, so publisher release days (e.g. Wednesday)
-are easy to spot. **← Wed**
+are easy to spot. A dashed crimson line marks the as-of date on the chart;
+clicking anywhere on the chart sets the as-of date to that day. **← Wed**
 and **Wed →** step the date to the previous or next calendar Wednesday (from
 today when showing latest values); the next step stops at today.
 

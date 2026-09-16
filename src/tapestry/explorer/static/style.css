@@ -193,6 +193,8 @@ body.is-busy .topbar::after { content: ""; position: absolute; left: 0; bottom: 
 .hover-line { stroke: #7d8983; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
 .hover-dot { stroke: var(--surface); stroke-width: 2; pointer-events: none; }
 .hit-area { fill: transparent; cursor: crosshair; }
+.as-of-line { stroke: var(--crimson); stroke-width: 1.5; stroke-dasharray: 5 3; pointer-events: none; vector-effect: non-scaling-stroke; }
+.as-of-label { fill: var(--crimson); font-size: 11px; font-weight: 600; pointer-events: none; paint-order: stroke; stroke: var(--paper); stroke-width: 3px; }
 .tooltip {
   position: absolute;
   z-index: 10;
