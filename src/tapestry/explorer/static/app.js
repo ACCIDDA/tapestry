@@ -435,6 +435,28 @@
     return name;
   }
 
+  // Identical series must stay distinguishable: each selected series gets its own
+  // width (drawn widest first, so an overlap reads as a thin line inside a thick one)
+  // and its own marker shape, placed at staggered positions along the line.
+  const LINE_WIDTHS = [4, 3, 2.2, 1.5];
+  const MARKERS = ["circle", "square", "triangle", "cross", "diamond"];
+  function seriesIndex(item) { return Math.max(0, [...model.selected.keys()].indexOf(item.id)); }
+  function lineWidth(item) { return LINE_WIDTHS[seriesIndex(item) % LINE_WIDTHS.length]; }
+
+  function markerSVG(item, cx, cy) {
+    const color = seriesColor(item);
+    const fill = item.versionIndex ? "var(--paper)" : color;
+    const attrs = `stroke="${color}" stroke-width="1.4" fill="${fill}" class="series-marker"`;
+    const r = 3.4;
+    switch (MARKERS[seriesIndex(item) % MARKERS.length]) {
+      case "square": return `<rect x="${(cx - r).toFixed(1)}" y="${(cy - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" ${attrs}></rect>`;
+      case "triangle": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} L${(cx - r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} Z" ${attrs}></path>`;
+      case "cross": return `<path d="M${(cx - r).toFixed(1)},${(cy - r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r).toFixed(1)} M${(cx - r).toFixed(1)},${(cy + r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy - r).toFixed(1)}" stroke="${color}" stroke-width="1.8" fill="none" class="series-marker"></path>`;
+      case "diamond": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r + 0.6).toFixed(1)},${cy.toFixed(1)} L${cx.toFixed(1)},${(cy + r + 0.6).toFixed(1)} L${(cx - r - 0.6).toFixed(1)},${cy.toFixed(1)} Z" ${attrs}></path>`;
+      default: return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" ${attrs}></circle>`;
+    }
+  }
+
   function lineDash(item) {
     return ["none", "7 4", "2 3", "10 3 2 3", "12 5", "4 6"][item.versionIndex % 6];
   }
@@ -528,7 +550,7 @@
       const hidden = model.hidden.has(item.visibilityKey || item.key);
       const maximum = item.max == null ? "" : `max ${formatValue(item.max)}`;
       return `<button class="legend-item${item.versionIndex ? " is-revision" : ""}" type="button" data-legend-id="${item.visibilityKey || item.key}" aria-pressed="${hidden ? "false" : "true"}" title="${escapeHTML([item.details, maximum, item.parent_dataset, item.parent_column, item.parent_transform, item.version_note].filter(Boolean).join(" · "))}">
-        <svg class="swatch" viewBox="0 0 22 6" aria-hidden="true"><line x1="0" x2="22" y1="3" y2="3" stroke="${seriesColor(item)}" stroke-width="2.5" stroke-dasharray="${lineDash(item)}"></line></svg>
+        <svg class="swatch" viewBox="0 0 28 10" aria-hidden="true"><line x1="0" x2="28" y1="5" y2="5" stroke="${seriesColor(item)}" stroke-width="${lineWidth(item)}" stroke-dasharray="${lineDash(item)}"></line>${markerSVG(item, 14, 5)}</svg>
         <span class="legend-label">${escapeHTML(item.label)}</span>
       </button>`;
     }).join("")}</div>`).join("");
@@ -587,10 +609,27 @@
       markup.push(`<text x="${x(tick)}" y="${height - 25}" text-anchor="middle" class="axis">${escapeHTML(formatDate(tick, xMax - xMin))}</text>`);
     }
     markup.push(`<rect class="frame" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none"></rect>`);
-    [...visible].sort((a, b) => b.versionIndex - a.versionIndex).forEach(item => {
+    // Widest lines first, and revisions under their real data.
+    const drawOrder = [...visible].sort((a, b) => lineWidth(b) - lineWidth(a) || b.versionIndex - a.versionIndex);
+    drawOrder.forEach(item => {
       const path = item.points.map((point, index) => `${index ? "L" : "M"}${x(Date.parse(`${point[0]}T00:00:00Z`)).toFixed(2)},${y(point[1]).toFixed(2)}`).join(" ");
-      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}"></path>`);
+      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}" style="stroke-width:${lineWidth(item)}px"></path>`);
     });
+    const markerSpacing = 44;
+    const markers = [];
+    drawOrder.forEach(item => {
+      // Stagger positions by series (and revision) so overlapping markers alternate.
+      const phase = ((seriesIndex(item) * 2 + item.versionIndex) % 10) * markerSpacing / 10;
+      for (let px = margin.left + phase; px <= margin.left + innerWidth; px += markerSpacing) {
+        const time = xMin + (px - margin.left) / innerWidth * (xMax - xMin);
+        const point = nearestPoint(item.points, time);
+        if (!point) continue;
+        const pointX = x(dateTime(point[0]));
+        if (Math.abs(pointX - px) > markerSpacing / 2) continue;
+        markers.push(markerSVG(item, pointX, y(point[1])));
+      }
+    });
+    markup.push(`<g clip-path="url(#plot-clip)">${markers.join("")}</g>`);
     if (model.asOf) {
       // The chosen as-of date: data to its right was not yet published at that cutoff.
       const asOfTime = dateTime(model.asOf);
@@ -946,7 +985,7 @@
     const text = document.querySelector("#disclaimer p");
     if (!published || !text) return;
     const exported = staticData.exportedAt();
-    const note = document.createElement("strong");
+    const note = document.createElement("span");
     note.textContent = ` This online version is not updated${exported ? ` (exported ${exported})` : ""}; use the local explorer as the ground-truth source.`;
     text.appendChild(note);
   });

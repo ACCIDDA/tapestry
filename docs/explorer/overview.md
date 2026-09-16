@@ -88,7 +88,10 @@ the location title with one column per series: its real (latest) data on top and
 the as-of revision directly below, reading *data / source* (plus the as-of date).
 Revisions are also drawn underneath the real data. Hover an entry for the full
 variant, maximum, and lineage. Hub target data is fixed: black for admissions (light gray in dark mode)
-and red for ED visits. Lines are drawn at 70% opacity so overlaps stay visible.
+and red for ED visits. Lines are drawn at 70% opacity, and each selected series has its own line width
+(widest drawn first) and marker shape (circle, square, triangle, cross, diamond;
+hollow for revisions) at staggered positions, so identical series stay visible
+as a thin line inside a thicker one with alternating markers.
 Colors stay consistent across the chart, legend, overview, and hover values, and
 remain stable when other lines are added or removed. Clear resets the color allocation.
 NHSN selection currently
