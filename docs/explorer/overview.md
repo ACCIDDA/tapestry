@@ -64,6 +64,12 @@ errors; intentional exclusions and quarantined conflicts remain audit entries.
 
 ## Using the data
 
+A banner under the title notes that the data come from CMU Delphi, the CDC, and the
+respiratory forecast hubs, that this special-purpose explorer comes with no
+guarantee, and points to Delphi [EpiVis](https://delphi.cmu.edu/epivis/) and
+ACCIDDA [RespiLens](https://respilens.org), which inspired it, for a useful dashboard.
+Dismissing it with × lasts only for the current page load; it returns on every visit.
+
 Choose a location, search measures, and select acquisition/release, demographic,
 smoothing, or fill variants. Native-state signals are the default filter; choose
 national context to see national observations. These are candidate measurements,
@@ -75,15 +81,17 @@ variant. Current Hub hospitalizations join NHSN, and ED targets join NSSP, at
 their corresponding CDC columns. Reported and smoothed NSSP columns remain
 separate. Historical Hub measures with different origins stay separate.
 
-Delphi variants in the signal list are orange and Hub variants blue. Each variant is one line; checking it opens a card with its point count, date range, and provenance. Each
+Delphi variants in the signal list are orange and Hub variants blue. Each variant is one line named as a path (e.g. `Finalized/weekly/native state`); checking it opens a card with its point count, date range, and provenance. Each
 plotted series gets one color, shared by all its dated versions; line style
-(solid latest, dashed as-of, other patterns for pinned comparisons) marks the
-version. Hub target data is fixed: black for admissions (light gray in dark mode)
+(solid latest, dashed as-of) marks the version. The legend sits beside
+the location title with one column per series: its real (latest) data on top and
+the as-of revision directly below, reading *data / source* (plus the as-of date).
+Revisions are also drawn underneath the real data. Hover an entry for the full
+variant, maximum, and lineage. Hub target data is fixed: black for admissions (light gray in dark mode)
 and red for ED visits. Lines are drawn at 70% opacity so overlaps stay visible.
 Colors stay consistent across the chart, legend, overview, and hover values, and
 remain stable when other lines are added or removed. Clear resets the color allocation.
-Provider names remain in labels. The plot status counts **displayed
-versions**, not every available publisher release. NHSN selection currently
+NHSN selection currently
 retains 14 all-age measures and excludes adult, pediatric, age-band, and
 unknown-age fields. Raw snapshots keep those fields.
 
@@ -100,7 +108,7 @@ National-context signals explicitly selected while viewing a state remain nation
 **Hub presets** (COVID-19 Hub, FluSight, RSV Hub) replace the selection with the
 Hub's target data and its Delphi ground truth for the current location: NHSN
 weekly admissions and reported NSSP ED visit percentage, four series in all.
-They also turn on **Divide each series by its max**, since counts,
+They also turn on **Divide by mean**, since counts,
 percentages, and proportions only overlay once scaled.
 
 On desktop, the signal browser fills the viewport height and scrolls independently
@@ -118,17 +126,16 @@ updates while overlapping the available history; it resets when no longer
 applicable or when selections are cleared. These controls run locally against
 already loaded points, without rebuilding the index or adding chart dependencies.
 
-Selecting a **Data available as of** date automatically overlays two curves per
-signal: latest available values as a solid line, and values available at the
-selected date as a dashed line in its own color. "Latest" is the reference for
-finalized values here; the publisher may still revise it. **Keep for comparison**
-pins additional dated curves, while the latest reference remains included. The
-selected date's weekday is shown beside the picker and in the status, comparison
-chips, and legend, so publisher release days (e.g. Wednesday) are easy to spot. **← Wed**
+Selecting an **As of** date automatically overlays two curves per signal: latest
+available values as a solid line, and values available at the selected date as a
+dashed line in the same color. "Latest" is the reference for finalized values
+here; the publisher may still revise it. The selected date's weekday is shown
+beside the picker and in the legend, so publisher release days (e.g. Wednesday)
+are easy to spot. **← Wed**
 and **Wed →** step the date to the previous or next calendar Wednesday (from
 today when showing latest values); the next step stops at today.
 
-The **Data available as of** control uses publisher revisions already present
+The **As of** control uses publisher revisions already present
 in the selected raw snapshot. Full `as_of` releases preserve omissions and
 retractions. Unversioned data uses an event-date cutoff. Inputs without row
 publication dates are bounded by their saved snapshot/commit timestamp.
@@ -137,8 +144,55 @@ snapshot with the intake command's `--hub-as-of` option when needed.
 
 Repeated rows for a state, measure, date, and release are shown as their
 unweighted mean, with the contributing sample count. Null latest revisions do
-not resurrect earlier values. Scaling divides every displayed version by the
-same series' latest maximum, so dated versions with a shorter archived history
-(e.g. COVID-19 Hub snapshots before 2026-09-09 start at 2024-11-09) stay comparable. **Index details** lists unavailable, excluded, and malformed sources.
+not resurrect earlier values. Divide by mean divides every displayed version by
+the same series' latest mean over the common window, so dated versions with a
+shorter archived history (e.g. COVID-19 Hub snapshots before 2026-09-09 start at
+2024-11-09) stay comparable. A bar under the header and a spinner on the chart
+show while data is loading. **Index details** lists unavailable, excluded, and malformed sources.
 
 See the [local API](api.md) for catalog, series, versions, and data endpoints.
+
+## Published explorer
+
+A static copy runs on GitHub Pages at
+[accidda.github.io/tapestry/explorer/](https://accidda.github.io/tapestry/explorer/).
+It uses the same page as the local server; when `data/catalog.json` sits next to
+the page, the browser answers the catalog, series, versions, and data requests
+itself and reads revisions from one Parquet file with
+[hyparquet](https://github.com/hyparam/hyparquet) over HTTP range requests.
+
+The copy is a thinned export of the local index, committed to
+`docs/explorer/data/`. It is not updated live or by CI:
+
+- Releases collapse to one per Wednesday week (the last release on or before
+  each Wednesday), and rows that repeat the previous kept value are dropped.
+- Delphi inpatient/outpatient claims keep Wednesday snapshots only for the first
+  8 weeks after each date, plus each date's latest value.
+- Full-snapshot Hub target files become a change log that keeps removals, so an
+  as-of date resolves as it does locally.
+- **As of** a Wednesday matches the local explorer; other dates show the
+  previous Wednesday's snapshot, and ← / → step through the kept releases only.
+
+The published banner adds that the online version is not updated (with its export
+date) and that the local explorer is the ground-truth source. The docs header links
+to it as **Explorer**.
+
+The September 2026 export keeps 6.0 million of 165.5 million ledger rows
+(27 MB: a 26 MB Parquet file plus series metadata). In a sampled check against
+the local server, latest values and Wednesday as-of dates matched exactly for
+non-claims series; claims matched for dates within 8 weeks of the as-of date.
+
+To refresh it after pulling new raw data:
+
+```bash
+scripts/update_published_explorer.sh
+git add docs/explorer/data
+git commit -m "Update published explorer data"
+git push
+```
+
+The script runs `index` (a no-op when raw data is unchanged) and then
+`explore_covariates.py export --out docs/explorer/data`. On push to `main`,
+the Documentation workflow builds MkDocs, which copies the committed data, adds
+`index.html`, `app.js`, and `style.css` from `src/tapestry/explorer/static/`, and
+deploys the site.

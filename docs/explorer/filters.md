@@ -46,6 +46,9 @@ post-intake filter before indexing.
 
 ## Scaling
 
-**Divide each series by its max** scales each selected series independently for
-visual comparison, using the series' latest maximum for all displayed versions. It does not alter the index or raw data, and it is not the
+**Divide by mean** divides each selected series by its mean over the
+**common window**, the dates covered by every selected series, so all series
+average 1 there. The y-axis fits the common window; a longer series with larger
+values outside it leaves the top of the canvas. The axis title names the window.
+Revisions use the latest version's divisor. It does not alter the index or raw data, and it is not the
 normalization contract for model training.

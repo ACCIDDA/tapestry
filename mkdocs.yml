@@ -7,6 +7,9 @@ docs_dir: docs
 extra_css:
   - stylesheets/tapestry.css
 
+extra_javascript:
+  - javascripts/explorer-link.js
+
 theme:
   name: material
   features:
@@ -58,7 +61,8 @@ nav:
       - Storage and provenance: data/storage.md
       - Vintages and geography: data/vintages-and-geography.md
   - Explorer:
-      - Overview: explorer/index.md
+      - Published explorer: https://accidda.github.io/tapestry/explorer/
+      - Overview: explorer/overview.md
       - Filters and interpretation: explorer/filters.md
       - Local API: explorer/api.md
   - Reference:

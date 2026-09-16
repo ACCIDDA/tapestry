@@ -6,7 +6,6 @@
   const scaleToggle = document.getElementById("scale-toggle");
   const seriesSearch = document.getElementById("series-search");
   const seriesList = document.getElementById("series-list");
-  const seriesCount = document.getElementById("series-count");
   const versionDate = document.getElementById("version-date");
   const versionWeekday = document.getElementById("version-weekday");
   const versionPrev = document.getElementById("version-prev");
@@ -14,9 +13,6 @@
   const versionLatest = document.getElementById("version-latest");
   const versionPrevWednesday = document.getElementById("version-prev-wednesday");
   const versionNextWednesday = document.getElementById("version-next-wednesday");
-  const versionKeep = document.getElementById("version-keep");
-  const versionStatus = document.getElementById("version-status");
-  const comparisons = document.getElementById("comparisons");
   const clearButton = document.getElementById("clear-button");
   const hubPresets = document.getElementById("hub-presets");
   const signalFilters = document.getElementById("signal-filters");
@@ -28,7 +24,6 @@
   const resetFilters = document.getElementById("reset-filters");
   const plotTitle = document.getElementById("plot-title");
   const plotStatus = document.getElementById("plot-status");
-  const indexSummary = document.getElementById("index-summary");
   const indexDetails = document.getElementById("index-details");
   const legend = document.getElementById("legend");
   const chart = document.getElementById("chart");
@@ -62,7 +57,6 @@
     stateSupport: "native_state",
     locationRequest: 0,
     versionDates: [],
-    comparisons: [],
     versionRequest: 0,
     total: 0,
     available: [],
@@ -77,12 +71,158 @@
     plotRequest: 0,
   };
 
+  let pendingRequests = 0;
   async function requestJSON(path) {
-    const response = await fetch(path, {headers: {"Accept": "application/json"}});
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
-    return payload;
+    // Any outstanding API request shows the progress bar under the header.
+    document.body.classList.toggle("is-busy", ++pendingRequests > 0);
+    try {
+      if (await staticData.available()) return await staticData.request(path);
+      const response = await fetch(path, {headers: {"Accept": "application/json"}});
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+      return payload;
+    } finally {
+      document.body.classList.toggle("is-busy", --pendingRequests > 0);
+    }
   }
+
+  /* Published (GitHub Pages) mode: no server, so the four API calls are answered
+     from files written by `explore_covariates.py export` into ./data/. Revisions
+     are one Parquet change log read by row range with hyparquet. Resolution
+     mirrors ExplorerIndex.data(): per event, the latest row released on or before
+     the as-of date (versioned sources), events on or before it, null values hidden. */
+  const staticData = (() => {
+    const ROOT = "data/";
+    const HYPARQUET = "https://cdn.jsdelivr.net/npm/hyparquet@1.31.0/+esm";
+    const FRESHNESS_DAYS = {daily: 14, weekly: 35, monthly: 75, sample: 45};
+    let detected, catalog, ranges, parquet, metadata;
+    const lists = new Map();
+    const revisions = new Map();
+    const json = async name => {
+      const response = await fetch(ROOT + name);
+      if (!response.ok) throw new Error(`Missing published file ${name} (HTTP ${response.status})`);
+      return response.json();
+    };
+    const dayNumber = iso => Math.floor(dateTime(iso) / DAY);
+    const dayString = number => isoDate(number * DAY);
+
+    function available() {
+      detected ??= fetch(ROOT + "catalog.json").then(async response => {
+        if (!response.ok || !(response.headers.get("content-type") || "").includes("json")) return false;
+        catalog = await response.json();
+        return true;
+      }).catch(() => false);
+      return detected;
+    }
+
+    function list(state) {
+      if (!lists.has(state)) {
+        metadata ??= Promise.all([json("series.json"), json("locations.json")]);
+        lists.set(state, metadata.then(([series, locations]) => (locations[state] || []).map(
+          ([id, date_min, date_max, point_count, max_samples_per_point]) =>
+            ({...series[id], date_min, date_max, point_count, max_samples_per_point}))));
+      }
+      return lists.get(state);
+    }
+
+    async function rows(id, state) {
+      const key = `${id}|${state}`;
+      if (!revisions.has(key)) {
+        revisions.set(key, (async () => {
+          ranges ??= json("ranges.json");
+          const range = (await ranges)[key];
+          if (!range) return [];
+          parquet ??= import(HYPARQUET).then(async module => ({
+            module, file: await module.asyncBufferFromUrl({url: new URL(ROOT + "revisions.parquet", location.href).href}),
+          }));
+          const {module, file} = await parquet;
+          return module.parquetReadObjects({file, columns: ["event", "release", "value", "n"], rowStart: range[0], rowEnd: range[1]});
+        })());
+      }
+      return revisions.get(key);
+    }
+
+    async function seriesRows(id, state) {
+      const own = await rows(id, state);
+      return state === "US" ? own : [...own, ...await rows(id, "US")];
+    }
+
+    function freshness(item) {
+      const cutoff = isoDate(Date.now() - (FRESHNESS_DAYS[String(item.temporal_resolution).toLowerCase()] || 35) * DAY);
+      return item.date_max >= cutoff ? "current" : "lagging";
+    }
+
+    async function series(params) {
+      const state = params.get("state");
+      const needle = (params.get("q") || "").trim().toLowerCase();
+      const cadence = (params.get("cadence") || "").toLowerCase();
+      const vintage = params.get("vintage") || "";
+      const support = params.get("support") || "";
+      const fresh = params.get("freshness") || "";
+      const items = (await list(state)).map(item => ({...item, freshness: freshness(item)})).filter(item =>
+        (!needle || [item.label, item.dataset_title, item.provider, item.source_path, item.value_column]
+          .some(field => String(field || "").toLowerCase().includes(needle)))
+        && (!cadence || String(item.temporal_resolution).toLowerCase() === cadence)
+        && (!vintage || item.versioned === (vintage === "versioned"))
+        && (support !== "native_state" || !item.dimensions.spatial_support)
+        && (support !== "national" || item.dimensions.spatial_support === "national parent broadcast")
+        && (!fresh || item.freshness === fresh));
+      return {state, total: items.length, items};
+    }
+
+    async function versions(params) {
+      const state = params.get("state");
+      const ids = (params.get("series") || "").split(",").filter(Boolean).map(Number);
+      const dates = new Set();
+      for (const id of ids) {
+        for (const row of await seriesRows(id, state)) dates.add(dayString(row.release ?? row.event));
+      }
+      return {state, dates: [...dates].sort()};
+    }
+
+    async function data(params) {
+      const state = params.get("state");
+      const asOf = params.get("as_of");
+      const day = asOf && asOf !== "latest" ? asOf : null;
+      const cutoff = day ? dayNumber(day) : null;
+      const ids = (params.get("series") || "").split(",").filter(Boolean).map(Number);
+      const items = new Map((await list(state)).map(item => [item.id, item]));
+      const output = [];
+      for (const id of ids) {
+        let item = items.get(id);
+        if (!item) item = (await list("US")).find(candidate => candidate.id === id);
+        if (!item) continue;
+        const latest = new Map();
+        for (const row of await seriesRows(id, state)) {
+          if (cutoff != null && row.event > cutoff) continue;
+          if (cutoff != null && item.versioned && (row.release == null || row.release > cutoff)) continue;
+          const current = latest.get(row.event);
+          if (!current || (row.release ?? -Infinity) >= (current.release ?? -Infinity)) latest.set(row.event, row);
+        }
+        const points = [...latest.values()].filter(row => row.value != null)
+          .sort((a, b) => a.event - b.event).map(row => [dayString(row.event), row.value, row.n]);
+        const max = points.length ? Math.max(...points.map(point => point[1])) : null;
+        output.push({...item, points, max, as_of: day,
+          version_note: day && item.versioned && !points.length ? "No archived values available by this date." : undefined});
+      }
+      const location = catalog.states.find(entry => entry.code === state);
+      return {state, state_name: location ? location.name : state, as_of: day, series: output};
+    }
+
+    async function request(path) {
+      const url = new URL(path, location.href);
+      const params = url.searchParams;
+      switch (url.pathname.replace(/^.*\/api\//, "/api/")) {
+        case "/api/catalog": return catalog;
+        case "/api/series": return series(params);
+        case "/api/versions": return versions(params);
+        case "/api/data": return data(params);
+        default: throw new Error(`Unsupported request in published mode: ${path}`);
+      }
+    }
+    const exportedAt = () => (catalog?.meta?.exported_at || "").slice(0, 10);
+    return {available, request, exportedAt};
+  })();
 
   function escapeHTML(value) {
     return String(value).replace(/[&<>'"]/g, character => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"})[character]);
@@ -90,16 +230,13 @@
 
   async function initialize() {
     try {
-      const overview = await requestJSON("/api/catalog");
-      const points = overview.datasets.reduce((sum, item) => sum + item.point_count, 0);
+      const overview = await requestJSON("api/catalog");
       const selection = overview.selection;
-      indexSummary.textContent = selection
-        ? `${selection.indexed_source_groups}/${selection.logical_source_groups} source groups · ${formatNumber(selection.indexed_signal_choices)} signals · ${formatNumber(points)} indexed values`
-        : `${overview.datasets.length} datasets · ${formatNumber(points)} indexed values`;
       stateSelect.innerHTML = overview.states.map(item =>
         `<option value="${item.code}">${escapeHTML(item.name)}</option>`
       ).join("");
-      const built = overview.meta.built_at ? new Date(overview.meta.built_at).toLocaleString() : "unknown";
+      const built = overview.meta.exported_at ? `${new Date(overview.meta.exported_at).toLocaleString()} (published copy)`
+        : overview.meta.built_at ? new Date(overview.meta.built_at).toLocaleString() : "unknown";
       indexDetails.innerHTML = `<div>Built ${escapeHTML(built)} from ${escapeHTML(overview.meta.artifact_count || "0")} raw artifacts. The raw repository remains unchanged.</div><div>${escapeHTML(overview.aggregation_note)}</div>`;
       if (selection) {
         const summary = document.createElement("div");
@@ -123,7 +260,6 @@
       syncLocationSupport();
       await loadSeries(true);
     } catch (error) {
-      indexSummary.textContent = "Could not load index";
       showError(error);
     }
   }
@@ -131,10 +267,9 @@
   async function loadSeries() {
     if (!model.state) return;
     const token = ++model.listRequest;
-    seriesCount.textContent = "Loading selected signals…";
     try {
       const params = new URLSearchParams({state: model.state, q: model.search, limit: "0", ...model.filters});
-      const payload = await requestJSON(`/api/series?${params}`);
+      const payload = await requestJSON(`api/series?${params}`);
       if (token !== model.listRequest) return;
       model.total = payload.total;
       model.available = payload.items;
@@ -151,7 +286,7 @@
     if (!model.selected.size) return;
     try {
       const params = new URLSearchParams({state: model.state, series: [...model.selected.keys()].join(",")});
-      const payload = await requestJSON(`/api/versions?${params}`);
+      const payload = await requestJSON(`api/versions?${params}`);
       if (token !== model.versionRequest) return;
       model.versionDates = payload.dates;
       renderVersionControls();
@@ -167,11 +302,6 @@
     versionNext.disabled = !model.asOf;
     versionPrevWednesday.disabled = !model.selected.size;
     versionNextWednesday.disabled = !model.asOf || wednesday(model.asOf, 1) > today();
-    versionKeep.disabled = !model.asOf || !model.selected.size || model.comparisons.includes(model.asOf) || model.comparisons.length >= 5;
-    versionStatus.textContent = model.asOf ? `Solid: latest available · dashed: ${weekday(model.asOf)} ${model.asOf}` : "Latest available values · choose a date to compare";
-    comparisons.innerHTML = model.comparisons.map((day, index) =>
-      `<button type="button" data-comparison="${index}" title="Remove comparison">${escapeHTML(versionLabel(day))} <span aria-hidden="true">×</span><span class="sr-only">Remove comparison</span></button>`
-    ).join("");
   }
 
   function setVersion(day) {
@@ -185,7 +315,6 @@
       [...seriesList.querySelectorAll("details[open][data-tree-key]")]
         .map(element => element.dataset.treeKey)
     );
-    seriesCount.textContent = `${formatNumber(new Set(model.available.map(item => item.signal_key)).size)} signals · ${formatNumber(model.total)} variants`;
     if (!model.available.length) {
       seriesList.innerHTML = '<div class="empty-state"><span>No matching selected signals. Try another spatial support filter.</span></div>';
     } else {
@@ -207,7 +336,8 @@
           .sort((a, b) => a[0].signal_title.localeCompare(b[0].signal_title));
         return renderBranch({className: "series-dataset", key,
           label: items[0].source_group_title, meta: providers(items), count: signals.length,
-          open: shouldOpen(items, key, previouslyOpen), children: signals.map(renderSignal).join("")});
+          open: shouldOpen(items, key, previouslyOpen),
+          children: signals.map(variants => renderSignal(variants, key, previouslyOpen)).join("")});
       }).join("");
       return renderBranch({className: "series-pathogen", key: pathogenKey,
         label: pathogenItems[0].pathogen_title,
@@ -216,17 +346,18 @@
     }).join("");
   }
 
-  function renderSignal(variants) {
+  function renderSignal(variants, parentKey, previouslyOpen) {
     variants.sort((a, b) => {
       for (let i = 0; i < a.variant_rank.length; i++) {
         if (a.variant_rank[i] !== b.variant_rank[i]) return a.variant_rank[i] - b.variant_rank[i];
       }
       return a.variant_label.localeCompare(b.variant_label);
     });
-    return `<div class="selected-signal" data-signal-key="${escapeHTML(variants[0].signal_key)}">
-      <strong class="signal-title" title="${escapeHTML(variants[0].column_description || "")}">${escapeHTML(variants[0].signal_title)}</strong>
-      <div class="signal-variants">${variants.map(item => renderSeriesOption(item, item.variant_label)).join("")}</div>
-    </div>`;
+    const key = treeKey(parentKey, variants[0].signal_key);
+    return renderBranch({className: "series-signal", key, label: variants[0].signal_title,
+      title: variants[0].column_description, count: variants.length,
+      open: shouldOpen(variants, key, previouslyOpen),
+      children: variants.map(item => renderSeriesOption(item, item.variant_label)).join("")});
   }
 
   function providers(items) {
@@ -234,9 +365,10 @@
     return [...new Set(items.map(item => names[item.provider_kind] || item.provider_kind))].join(" · ");
   }
 
-  function renderSeriesOption(item, label) {
-    // One line per variant; provenance and coverage appear as a card once checked.
+  function renderSeriesOption(item, variantLabel) {
+    // One line per variant, named as a path; provenance and coverage appear as a card once checked.
     const checked = model.selected.has(item.id);
+    const label = variantLabel.split(" · ").join("/");
     const providerClass = item.provider_kind === "delphi" ? " delphi-option"
       : item.provider_kind === "hub" ? " hub-option" : "";
     const source = `${item.measure_id || item.value_column} · ${item.parent_dataset || ""}${item.parent_column ? ` · ${item.parent_column}` : ""}`;
@@ -251,10 +383,10 @@
     </label>`;
   }
 
-  function renderBranch({className, key, label, meta = "", count, open, children}) {
+  function renderBranch({className, key, label, meta = "", title = "", count, open, children}) {
     const metadata = meta ? `<small>${escapeHTML(meta)}</small>` : "";
     return `<details class="series-branch ${className}" data-tree-key="${escapeHTML(key)}"${open ? " open" : ""}>
-      <summary><span>${escapeHTML(label)}${metadata}</span><b>${formatNumber(count)}</b></summary>
+      <summary${title ? ` title="${escapeHTML(title)}"` : ""}><span>${escapeHTML(label)}${metadata}</span><b>${formatNumber(count)}</b></summary>
       <div class="series-children">${children}</div>
     </details>`;
   }
@@ -275,6 +407,23 @@
         || `hsl(${((index - palette.length) * 137.508 + 45) % 360} 65% 45%)`);
     }
     return model.lineColors.get(item.id);
+  }
+
+  // Legend and tooltip names: what is measured, then who publishes it.
+  function dataName(item) {
+    if (item.source_group === "nssp") return `${item.pathogen_title} ED visits`;
+    return item.signal_title || item.label;
+  }
+
+  function sourceName(item) {
+    const release = (item.variant_label || "").split(" · ")[0];
+    let name = item.provider_kind === "delphi" ? "Delphi"
+      : item.provider_kind === "hub" ? release.replace(/ target data$/, "")
+      : release.startsWith("CDC") ? release
+      : release.startsWith("cdc_") ? `CDC ${item.parent_dataset || ""}`.trim()
+      : `CDC ${item.parent_dataset || ""} ${release.toLowerCase()}`.replace(/\s+/g, " ").trim();
+    if (isNationalBroadcast(item) && model.state !== "US") name += " (national)";
+    return name;
   }
 
   function lineDash(item) {
@@ -313,40 +462,48 @@
       rangeControl.hidden = true;
       tooltip.hidden = true;
       legend.innerHTML = "";
-      plotTitle.textContent = "Choose a location and one or more columns";
+      plotTitle.textContent = "Choose a location and one or more signals";
       plotStatus.textContent = "";
       chart.innerHTML = '<div class="empty-state"><strong>No series selected</strong><span>Select signals on the left to overlay them here.</span></div>';
       return;
     }
-    plotStatus.textContent = "Loading…";
+    plotStatus.textContent = "";
     chart.classList.add("is-loading");
     try {
-      const versions = [...new Set(["", model.asOf, ...model.comparisons])];
+      const versions = [...new Set(["", model.asOf])];
       const payloads = await Promise.all(versions.map(asOf => {
         const params = new URLSearchParams({state: model.state, series: ids.join(","),
           scale: "false", as_of: asOf || "latest"});
-        return requestJSON(`/api/data?${params}`);
+        return requestJSON(`api/data?${params}`);
       }));
       if (token !== model.plotRequest) return;
       chart.classList.remove("is-loading");
-      // Every displayed version is divided by the same series' latest maximum, so a
-      // dated curve with a shorter archived history stays comparable to latest.
-      const divisors = new Map(payloads[0].series.map(item => [item.id, item.max || 1]));
+      // Divide by mean over the dates every selected series covers: each series is
+      // divided by its latest mean inside that common window, and the y-axis fits that
+      // window, so a longer series may leave the canvas elsewhere. Revisions share the divisor.
+      const withData = payloads[0].series.filter(item => item.points.length);
+      const start = withData.reduce((day, item) => item.points[0][0] > day ? item.points[0][0] : day, "");
+      const end = withData.reduce((day, item) => item.points.at(-1)[0] < day ? item.points.at(-1)[0] : day, "9999");
+      model.commonWindow = withData.length && start <= end ? [start, end] : null;
+      const divisors = new Map(payloads[0].series.map(item => {
+        const values = model.commonWindow
+          ? item.points.filter(([day]) => day >= start && day <= end).map(point => point[1]) : [];
+        const all = values.length ? values : item.points.map(point => point[1]);
+        const mean = all.length ? all.reduce((sum, value) => sum + value, 0) / all.length : 0;
+        return [item.id, mean > 0 ? mean : 1];
+      }));
       const divisor = item => scaleToggle.checked ? divisors.get(item.id) || item.max || 1 : 1;
       model.plotted = payloads.flatMap((payload, versionIndex) => payload.series.map(item => ({
         ...item, points: item.points.map(([day, value, samples]) => [day, value / divisor(item), samples]),
         key: `${item.id}@${versions[versionIndex] || "latest"}`,
-        // Visibility follows the active comparison as its date moves; pinned dates
-        // and the latest reference keep independent visibility choices.
-        visibilityKey: `${item.id}@${versions[versionIndex] && versions[versionIndex] === model.asOf
-          ? "as-of" : versions[versionIndex] || "latest"}`,
+        // Visibility follows the as-of curve as its date moves.
+        visibilityKey: `${item.id}@${versionIndex ? "as-of" : "latest"}`,
         versionIndex,
-        label: `${item.signal_title || item.label} · ${item.variant_label || ""} · ${versionLabel(versions[versionIndex])}`,
-      })));
+        label: [dataName(item), sourceName(item), versionIndex ? versionLabel(versions[versionIndex]) : ""]
+          .filter(Boolean).join(" / "),
+        details: [item.signal_title, item.variant_label, versionLabel(versions[versionIndex])].join(" · "),
+      }))).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id) || a.versionIndex - b.versionIndex);
       plotTitle.textContent = payloads[0].state_name;
-      const count = model.plotted.reduce((sum, item) => sum + item.points.length, 0);
-      const empty = model.plotted.filter(item => !item.points.length).length;
-      plotStatus.textContent = `${ids.length} signals · ${versions.length} displayed version${versions.length === 1 ? "" : "s"} · ${formatNumber(count)} points${empty ? ` · ${empty} unavailable for this location/date` : ""}${scaleToggle.checked ? " · scaled by each series' latest maximum" : ""}`;
       renderLegend();
       drawChart();
     } catch (error) {
@@ -356,14 +513,16 @@
   }
 
   function renderLegend() {
-    legend.innerHTML = model.plotted.map((item, index) => {
+    // One column per series: real (latest) data first, its revision directly below.
+    const groups = groupBy(model.plotted, item => item.id);
+    legend.innerHTML = [...groups.values()].map(items => `<div class="legend-group">${items.map(item => {
       const hidden = model.hidden.has(item.visibilityKey || item.key);
-      const maximum = item.max == null ? "" : ` · max ${formatValue(item.max)}`;
-      return `<button class="legend-item" type="button" data-legend-id="${item.visibilityKey || item.key}" aria-pressed="${hidden ? "false" : "true"}" title="${escapeHTML([item.label, item.parent_dataset, item.parent_column, item.parent_transform, item.version_note].filter(Boolean).join(" · "))}">
+      const maximum = item.max == null ? "" : `max ${formatValue(item.max)}`;
+      return `<button class="legend-item${item.versionIndex ? " is-revision" : ""}" type="button" data-legend-id="${item.visibilityKey || item.key}" aria-pressed="${hidden ? "false" : "true"}" title="${escapeHTML([item.details, maximum, item.parent_dataset, item.parent_column, item.parent_transform, item.version_note].filter(Boolean).join(" · "))}">
         <svg class="swatch" viewBox="0 0 22 6" aria-hidden="true"><line x1="0" x2="22" y1="3" y2="3" stroke="${seriesColor(item)}" stroke-width="2.5" stroke-dasharray="${lineDash(item)}"></line></svg>
-        <span class="legend-label">${escapeHTML(item.label)}${maximum}</span>
+        <span class="legend-label">${escapeHTML(item.label)}</span>
       </button>`;
-    }).join("");
+    }).join("")}</div>`).join("");
   }
 
   function drawChart() {
@@ -392,6 +551,12 @@
       chart.innerHTML = '<div class="empty-state"><strong>No observations in this range</strong><span>Widen the date range or choose All dates.</span></div>';
       return;
     }
+    if (scaleToggle.checked && model.commonWindow) {
+      // Fit the y-axis to the common window; larger values elsewhere are clipped.
+      const [start, end] = model.commonWindow;
+      const common = inRange.flatMap(item => item.points.filter(([day]) => day >= start && day <= end).map(point => point[1]));
+      if (common.length) { yMin = Math.min(0, ...common); yMax = Math.max(...common); }
+    }
     if (yMin === yMax) { const pad = Math.abs(yMin || 1) * 0.1; yMin -= pad; yMax += pad; }
     const yPad = (yMax - yMin) * 0.06;
     yMin -= yPad; yMax += yPad;
@@ -413,12 +578,12 @@
       markup.push(`<text x="${x(tick)}" y="${height - 25}" text-anchor="middle" class="axis">${escapeHTML(formatDate(tick, xMax - xMin))}</text>`);
     }
     markup.push(`<rect class="frame" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none"></rect>`);
-    visible.forEach(item => {
+    [...visible].sort((a, b) => b.versionIndex - a.versionIndex).forEach(item => {
       const path = item.points.map((point, index) => `${index ? "L" : "M"}${x(Date.parse(`${point[0]}T00:00:00Z`)).toFixed(2)},${y(point[1]).toFixed(2)}`).join(" ");
       markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}"></path>`);
     });
     markup.push(`<text class="axis-title" x="${margin.left + innerWidth / 2}" y="${height - 4}" text-anchor="middle">Date</text>`);
-    markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? "Value ÷ latest series maximum" : "Raw value (mixed units possible)"}</text>`);
+    markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? (model.commonWindow ? `Value ÷ mean over ${model.commonWindow[0]} – ${model.commonWindow[1]}` : "Value ÷ series mean") : "Raw value (mixed units possible)"}</text>`);
     markup.push(`<g id="hover-layer" hidden><line class="hover-line" y1="${margin.top}" y2="${margin.top + innerHeight}"></line></g>`);
     markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"></rect>`);
     svg.innerHTML = markup.join("");
@@ -575,7 +740,7 @@
     const step = nice * magnitude;
     const start = Math.ceil(minimum / step) * step;
     const result = [];
-    for (let value = start; value <= maximum + step * 0.001; value += step) result.push(value);
+    for (let value = start; value <= maximum + step * 0.001; value += step) result.push(value || 0);
     return result;
   }
 
@@ -616,7 +781,7 @@
     // Selections follow the location: native state series in a state, published US
     // series nationally. National context chosen deliberately in a state stays national.
     if (!model.selected.size) return true;
-    const payload = await requestJSON(`/api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
+    const payload = await requestJSON(`api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
     if (token !== model.locationRequest) return false;
     const national = model.state === "US";
     const counterparts = new Map(payload.items
@@ -627,6 +792,8 @@
       const replacement = followsLocation && counterparts.get(locationVariantKey(item));
       const selected = replacement ? {...replacement, explicitNational: false} : item;
       if (selected.id !== item.id) {
+        // The counterpart keeps the line color of the series it replaces.
+        if (model.lineColors.has(item.id)) model.lineColors.set(selected.id, model.lineColors.get(item.id));
         for (const key of [...model.hidden]) {
           if (key.startsWith(`${item.id}@`)) { model.hidden.delete(key); model.hidden.add(key.replace(`${item.id}@`, `${selected.id}@`)); }
         }
@@ -648,14 +815,14 @@
     const preset = HUB_PRESETS[name];
     const token = ++model.locationRequest;
     try {
-      const payload = await requestJSON(`/api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
+      const payload = await requestJSON(`api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
       if (token !== model.locationRequest) return;
       const datasets = new Set([preset.hub, "delphi_nhsn", "delphi_nssp"]);
       const items = payload.items.filter(item => datasets.has(item.dataset_key)
         && preset.signals.includes(item.signal_key)
         && isNationalBroadcast(item) === (model.state === "US"));
       model.selected = new Map(items.map(item => [item.id, {...item, explicitNational: false}]));
-      model.hidden.clear(); model.comparisons = []; model.lineColors.clear();
+      model.hidden.clear(); model.lineColors.clear();
       // Admissions counts and ED percentages/proportions only overlay once scaled.
       scaleToggle.checked = true;
       renderSeriesList(); renderVersionControls(); loadVersions(); updatePlot();
@@ -685,7 +852,7 @@
   });
   scaleToggle.addEventListener("change", updatePlot);
   clearButton.addEventListener("click", () => {
-    model.selected.clear(); model.hidden.clear(); model.comparisons = []; model.lineColors.clear();
+    model.selected.clear(); model.hidden.clear(); model.lineColors.clear();
     renderSeriesList(); loadVersions(); updatePlot();
   });
   versionDate.addEventListener("change", () => { if (versionDate.validity.valid) setVersion(versionDate.value); });
@@ -697,23 +864,6 @@
     if (dates.length) setVersion(dates[dates.length - 1]);
   });
   versionNext.addEventListener("click", () => setVersion(model.versionDates.find(day => day > model.asOf) || ""));
-  versionKeep.addEventListener("click", () => {
-    if (model.asOf && !model.comparisons.includes(model.asOf) && model.comparisons.length < 5) {
-      model.comparisons.push(model.asOf);
-      for (const id of model.selected.keys()) {
-        const key = `${id}@${model.asOf}`;
-        if (model.hidden.has(`${id}@as-of`)) model.hidden.add(key);
-        else model.hidden.delete(key);
-      }
-    }
-    renderVersionControls(); updatePlot();
-  });
-  comparisons.addEventListener("click", event => {
-    const button = event.target.closest("[data-comparison]");
-    if (!button) return;
-    model.comparisons.splice(Number(button.dataset.comparison), 1);
-    renderVersionControls(); updatePlot();
-  });
   let searchTimer;
   seriesSearch.addEventListener("input", () => {
     clearTimeout(searchTimer);
@@ -760,13 +910,18 @@
     if (!button) return;
     const id = button.dataset.legendId;
     if (model.hidden.has(id)) model.hidden.delete(id); else model.hidden.add(id);
-    // When the active date is also pinned, the single displayed curve represents both.
-    if (id.endsWith("@as-of") && model.comparisons.includes(model.asOf)) {
-      const pinnedKey = id.replace(/@as-of$/, `@${model.asOf}`);
-      if (model.hidden.has(id)) model.hidden.add(pinnedKey);
-      else model.hidden.delete(pinnedKey);
-    }
     renderLegend(); drawChart();
+  });
+  // Dismissal is intentionally not stored: the disclaimer returns on every visit.
+  document.getElementById("disclaimer-close").addEventListener("click", () => document.getElementById("disclaimer").remove());
+  // The published copy is a frozen export: say so, and point to the local explorer.
+  staticData.available().then(published => {
+    const text = document.querySelector("#disclaimer p");
+    if (!published || !text) return;
+    const exported = staticData.exportedAt();
+    const note = document.createElement("strong");
+    note.textContent = ` This online version is not updated${exported ? ` (exported ${exported})` : ""}; use the local explorer as the ground-truth source.`;
+    text.appendChild(note);
   });
   new ResizeObserver(() => { if (model.plotted.length) drawChart(); }).observe(chart);
   darkTheme.addEventListener("change", () => { if (model.plotted.length) { renderLegend(); drawChart(); } });

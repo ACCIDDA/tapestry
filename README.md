@@ -63,7 +63,7 @@ uv run python -m tapestry.explorer --data-root data serve
 ```
 
 The explorer builds a disposable SQLite index and Parquet revision ledger.
-See [explorer usage](docs/explorer/index.md), [selective acquisition](docs/reference/cli.md),
+See [explorer usage](docs/explorer/overview.md), [selective acquisition](docs/reference/cli.md),
 [source catalog](docs/data/sources.md), [selection policy](docs/data/selection.md),
 and [storage/provenance](docs/data/storage.md). Broad `--group all` downloads are
 optional; they are not required to train the current six-channel model.

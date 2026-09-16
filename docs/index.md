@@ -20,7 +20,7 @@ Start with [Getting started](getting-started.md) and the
 The [frozen hub support](workflows/hub-evaluation.md) page documents how the
 frozen evaluation task set is built.
 
-For data inspection, use the [explorer](explorer/index.md). Raw immutable
+For data inspection, use the [explorer](explorer/overview.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 

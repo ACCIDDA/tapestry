@@ -23,6 +23,9 @@ def _parser() -> argparse.ArgumentParser:
     for name, help_text in (("status", "Inspect saved build metadata and source errors"),
                             ("validate", "Check SQLite integrity and the Parquet footer; no raw scan")):
         subparsers.add_parser(name, help=help_text)
+    export_parser = subparsers.add_parser("export", help="Write the thinned static copy published on GitHub Pages")
+    export_parser.add_argument("--out", default="docs/explorer/data",
+                               help="Destination directory, replaced atomically (default: docs/explorer/data)")
     serve_parser = subparsers.add_parser("serve", help="Build if needed and start the local explorer")
     serve_parser.add_argument("--host", default="127.0.0.1")
     serve_parser.add_argument("--port", type=int, default=DEFAULT_PORT)
@@ -60,6 +63,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return int(bool(result["errors"]))
     if command == "index":
         index.ensure(rebuild=arguments.force)
+        return 0
+    if command == "export":
+        from .export import export_static
+        print(json.dumps(export_static(index, arguments.out), indent=2))
         return 0
     if not arguments.no_index:
         index.ensure(rebuild=arguments.rebuild)

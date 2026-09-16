@@ -33,3 +33,21 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 0.15em;
 }
+
+/* Header link to the published explorer (added by javascripts/explorer-link.js). */
+.md-header .tapestry-explorer-link {
+  margin: 0 1rem;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+  color: var(--md-primary-bg-color);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--md-accent-fg-color);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+  white-space: nowrap;
+}
+
+.md-header .tapestry-explorer-link:hover {
+  opacity: 0.8;
+}
