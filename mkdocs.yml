@@ -61,7 +61,7 @@ nav:
       - Storage and provenance: data/storage.md
       - Vintages and geography: data/vintages-and-geography.md
   - Explorer:
-      - Published explorer: https://accidda.github.io/tapestry/explorer/
+      - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md
       - Filters and interpretation: explorer/filters.md
       - Local API: explorer/api.md

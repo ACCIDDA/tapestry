@@ -77,6 +77,14 @@ On `main`, it uploads the generated `site/` directory as a Pages artifact and a
 separate deployment job submits that artifact to GitHub Pages. Pull requests
 only validate the build. Generated HTML is never committed to a publishing branch.
 
+The same build publishes the **live explorer** at `/explorer/`: MkDocs copies the
+committed export in `docs/explorer/data/`, and the workflow adds `index.html`,
+`app.js`, and `style.css` from `src/tapestry/explorer/static/`. CI never rebuilds
+that data; refresh it locally with `scripts/update_published_explorer.sh`, commit
+`docs/explorer/data/`, and push (see
+[Published explorer](explorer/overview.md#published-explorer)). The docs header
+links to it via `docs/javascripts/explorer-link.js`.
+
 Repository Settings → Pages must use **GitHub Actions** as its publishing source.
 The deployment uses the `github-pages` environment, with `pages: write` and
 `id-token: write` permissions scoped to its deployment job. This follows

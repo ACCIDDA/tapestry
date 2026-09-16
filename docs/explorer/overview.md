@@ -175,7 +175,7 @@ The copy is a thinned export of the local index, committed to
 
 The published banner adds that the online version is not updated (with its export
 date) and that the local explorer is the ground-truth source. The docs header links
-to it as **Explorer**.
+to it as **Live explorer**.
 
 The September 2026 export keeps 6.0 million of 165.5 million ledger rows
 (27 MB: a 26 MB Parquet file plus series metadata). In a sampled check against

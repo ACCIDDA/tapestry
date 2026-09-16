@@ -89,7 +89,16 @@ python scripts/explore_covariates.py --data-root data serve --no-index
 # Bind another local port without opening a browser.
 python scripts/explore_covariates.py --data-root data serve \
   --port 8877 --no-browser
+
+# Write the thinned static copy published as the live explorer on GitHub Pages.
+python scripts/explore_covariates.py --data-root data export --out docs/explorer/data
+
+# Index, export, and optionally preview the published copy in one step.
+scripts/update_published_explorer.sh --preview
 ```
+
+See [Published explorer](../explorer/overview.md#published-explorer) for what the
+export keeps and how it is committed.
 
 ## Shared selection inventory
 
