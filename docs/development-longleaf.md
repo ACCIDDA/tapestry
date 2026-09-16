@@ -8,6 +8,10 @@ experiment therefore runs locally on CPU, with no transfer or cluster job.
 MPS offers no advantage for this small configuration. Larger B1 models or larger
 searches may justify a Longleaf GPU.
 
+For measured cluster timings, see the [Longleaf CPU versus GPU benchmark](longleaf-setup.md#cpu-versus-gpu-runtime),
+including training, evaluation, overhead, and the assumptions behind the
+three-seed CPU estimate.
+
 ## Connect to the patron node
 
 The UNC-IDD patron allocation uses partition **`jlessler`** (without a hyphen).

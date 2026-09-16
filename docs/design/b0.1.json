@@ -1,0 +1,414 @@
+{
+  "experiment": "B0.1",
+  "predecessor": {
+    "label": "B0.0",
+    "stored_id": "b0-us-cross-4"
+  },
+  "dataset": "data/processed/build_b_finalized.npz",
+  "frozen": "data/evaluation/b0_hub_comparison_q23",
+  "target_weights": [
+    1,
+    1,
+    1,
+    0.5,
+    0.5,
+    0.5
+  ],
+  "us_weight": 0.2,
+  "season_aggregation": "equal seasons, targets averaged within season",
+  "training_normalization": "native channel/location Q95 fitted only in training partition",
+  "selection": "location-relative ensemble WIS, states/DC 80% equally and US 20%",
+  "optimizer": "Adam",
+  "batch_size": 8,
+  "training_members": 128,
+  "validation_members": 256,
+  "evaluation_members": 2048,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "seasons": [
+    "2023-2024",
+    "2024-2025",
+    "2025-2026"
+  ],
+  "status": "implemented and prepared as manager suite B0.1; full GPU runs not launched",
+  "focus": "capabilities: cross-location/cross-target information exchange, parameter sharing, temporal dynamics and uncertainty",
+  "defaults": {
+    "output": "samples",
+    "encoder": "mlp",
+    "decoder": "legacy",
+    "head_sharing": "shared",
+    "exchange": "none",
+    "noise": "global",
+    "count_transform": "fourth_root",
+    "ed_transform": "logit",
+    "lookback": 12,
+    "width": 64,
+    "latent": 16,
+    "geography": true,
+    "dynamics": true,
+    "annual_calendar": true,
+    "location_embedding": 0,
+    "us_heads": "shared",
+    "shared_factor": false,
+    "epochs": 300,
+    "patience": 30,
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "fit_partition": "all"
+  },
+  "epoch_interpretation": "100 and 300 are maximum epoch budgets, with patience 30; default cap 300. No patience-zero runs.",
+  "blocks": {
+    "A_reference_crosses": {
+      "references": {
+        "local_mlp": {},
+        "spatial_conv": {
+          "encoder": "conv",
+          "exchange": "shared_spatial"
+        },
+        "pathogen_multiscale": {
+          "encoder": "multiscale_conv",
+          "head_sharing": "pathogen",
+          "exchange": "pathogen_spatial",
+          "noise": "global_local"
+        },
+        "target_multiscale": {
+          "encoder": "multiscale_conv",
+          "head_sharing": "target",
+          "exchange": "target_spatial",
+          "noise": "global_local"
+        },
+        "joint_multiscale": {
+          "encoder": "multiscale_conv",
+          "head_sharing": "target",
+          "exchange": "joint_location_target",
+          "noise": "global_local"
+        },
+        "joint_trend": {
+          "encoder": "multiscale_conv",
+          "decoder": "stochastic_trend",
+          "head_sharing": "target",
+          "exchange": "joint_location_target",
+          "noise": "global_local"
+        }
+      },
+      "axes": {
+        "encoder": [
+          "mlp",
+          "conv",
+          "multiscale_conv"
+        ],
+        "decoder": [
+          "legacy",
+          "stochastic_trend"
+        ],
+        "head_sharing": [
+          "shared",
+          "pathogen",
+          "target"
+        ],
+        "exchange": [
+          "none",
+          "shared_spatial",
+          "pathogen_spatial",
+          "target_spatial",
+          "joint_location_target"
+        ],
+        "noise": [
+          "global",
+          "global_local"
+        ],
+        "count_transform": [
+          "sqrt",
+          "fourth_root",
+          "log1p"
+        ],
+        "ed_transform": [
+          "linear",
+          "logit",
+          "fourth_root"
+        ],
+        "lookback": [
+          8,
+          12,
+          26
+        ],
+        "width": [
+          64,
+          128
+        ],
+        "dynamics": [
+          false,
+          true
+        ],
+        "annual_calendar": [
+          false,
+          true
+        ],
+        "location_embedding": [
+          0,
+          8
+        ],
+        "us_heads": [
+          "shared",
+          "separate"
+        ],
+        "shared_factor": [
+          false,
+          true
+        ],
+        "epochs": [
+          100,
+          300
+        ]
+      },
+      "method": "Each reference plus one-factor changes; globally deduplicate identical configurations."
+    },
+    "B_attention_sharing_panels": {
+      "reference_names": [
+        "local_mlp",
+        "joint_trend"
+      ],
+      "axes": {
+        "exchange": [
+          "none",
+          "shared_spatial",
+          "pathogen_spatial",
+          "target_spatial",
+          "joint_location_target"
+        ],
+        "head_sharing": [
+          "shared",
+          "pathogen",
+          "target"
+        ]
+      }
+    },
+    "C_transform_panels": {
+      "reference_names": [
+        "local_mlp",
+        "joint_trend"
+      ],
+      "axes": {
+        "count_transform": [
+          "sqrt",
+          "fourth_root",
+          "log1p"
+        ],
+        "ed_transform": [
+          "linear",
+          "logit",
+          "fourth_root"
+        ]
+      }
+    },
+    "D_conv_controls": {
+      "configurations": [
+        {
+          "output": "samples",
+          "encoder": "conv",
+          "decoder": "legacy",
+          "head_sharing": "shared",
+          "exchange": "shared_spatial",
+          "noise": "global_local",
+          "count_transform": "fourth_root",
+          "ed_transform": "logit",
+          "lookback": 12,
+          "width": 64,
+          "latent": 32,
+          "geography": true,
+          "dynamics": true,
+          "annual_calendar": true,
+          "location_embedding": 0,
+          "us_heads": "separate",
+          "shared_factor": false,
+          "epochs": 100,
+          "patience": 30,
+          "lr": 0.001,
+          "weight_decay": 0.0,
+          "fit_partition": "all"
+        },
+        {
+          "output": "samples",
+          "encoder": "conv",
+          "decoder": "legacy",
+          "head_sharing": "shared",
+          "exchange": "shared_spatial",
+          "noise": "global_local",
+          "count_transform": "fourth_root",
+          "ed_transform": "logit",
+          "lookback": 12,
+          "width": 64,
+          "latent": 32,
+          "geography": true,
+          "dynamics": true,
+          "annual_calendar": true,
+          "location_embedding": 0,
+          "us_heads": "separate",
+          "shared_factor": false,
+          "epochs": 300,
+          "patience": 30,
+          "lr": 0.001,
+          "weight_decay": 0.0,
+          "fit_partition": "all"
+        },
+        {
+          "output": "samples",
+          "encoder": "conv",
+          "decoder": "residual2",
+          "head_sharing": "shared",
+          "exchange": "shared_spatial",
+          "noise": "global_local",
+          "count_transform": "fourth_root",
+          "ed_transform": "logit",
+          "lookback": 12,
+          "width": 64,
+          "latent": 32,
+          "geography": true,
+          "dynamics": true,
+          "annual_calendar": true,
+          "location_embedding": 0,
+          "us_heads": "separate",
+          "shared_factor": false,
+          "epochs": 100,
+          "patience": 30,
+          "lr": 0.001,
+          "weight_decay": 0.0,
+          "fit_partition": "all"
+        },
+        {
+          "output": "samples",
+          "encoder": "conv",
+          "decoder": "residual2",
+          "head_sharing": "shared",
+          "exchange": "shared_spatial",
+          "noise": "global_local",
+          "count_transform": "fourth_root",
+          "ed_transform": "logit",
+          "lookback": 12,
+          "width": 64,
+          "latent": 32,
+          "geography": true,
+          "dynamics": true,
+          "annual_calendar": true,
+          "location_embedding": 0,
+          "us_heads": "separate",
+          "shared_factor": false,
+          "epochs": 300,
+          "patience": 30,
+          "lr": 0.001,
+          "weight_decay": 0.0,
+          "fit_partition": "all"
+        }
+      ]
+    },
+    "E_independent_sharing_controls": {
+      "axes": {
+        "encoder": [
+          "mlp",
+          "conv",
+          "multiscale_conv"
+        ],
+        "fit_partition": [
+          "all",
+          "pathogen",
+          "target"
+        ],
+        "epochs": [
+          100,
+          300
+        ]
+      },
+      "inputs": "All six observed channels in every component",
+      "supervision_groups": {
+        "all": [
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        ],
+        "pathogen": [
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            5
+          ]
+        ],
+        "target": [
+          [
+            0
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            5
+          ]
+        ]
+      }
+    }
+  },
+  "candidate_entries_by_block": {
+    "A_reference_crosses": 144,
+    "B_attention_sharing_panels": 30,
+    "C_transform_panels": 18,
+    "D_conv_controls": 4,
+    "E_independent_sharing_controls": 18
+  },
+  "additional_unique_configurations_by_block": {
+    "A_reference_crosses": 131,
+    "B_attention_sharing_panels": 15,
+    "C_transform_panels": 8,
+    "D_conv_controls": 4,
+    "E_independent_sharing_controls": 14
+  },
+  "unique_configurations": 172,
+  "cv_runs": 860,
+  "outer_evaluation_folds": 2580,
+  "outer_component_model_fits": 3210,
+  "inner_plus_refit_training_calls": 6420,
+  "assumptions": [
+    "Reference architectures are prespecified contrasts, not winners selected on scored seasons.",
+    "The epoch request is interpreted as 100/300 caps with patience 30, consistent with keeping early stopping; actual refit epochs can be lower.",
+    "The default is cap 300; cap 100 is a one-factor alternative around every reference, and both caps are used for old conv and independent sharing controls.",
+    "Attention-by-sharing and transform-pair panels use the 300-epoch default; this is not an exhaustive interaction experiment.",
+    "All other axes are changed one at a time around six references; identical recipes are trained only once.",
+    "All five seeds and three outer folds remain in the plan; there is no first-seed pruning.",
+    "No direct quantile model, raw/rate-only input transform, new surveillance data, augmentation, or vintage reconstruction.",
+    "All models generate samples; exported quantiles for WIS are retained.",
+    "Calendar-off removes annual sine/cosine and Christmas timing; dynamics-off removes the extra local-dynamics block.",
+    "Independent pathogen and target configurations are complete forecast bundles containing three or six component models, respectively; all retain six observed inputs.",
+    "The suite maps conceptual architecture names to executable TrainingScenario flags; jobs.csv and design.json retain exact strings and all contrast memberships.",
+    "Calibration and sample-based mixtures remain postprocessing comparisons with training-side parameter selection; their evaluations are not model-fit counts.",
+    "Trend growth uses the last two adjacent context weeks in inverse-softplus admission/root-ED or logit ED working space; missing slopes fall back to zero with an explicit validity feature.",
+    "Independent component i uses seed + 10000*i, its own stopping epoch and fresh sampling draws; bundle member indices imply independence across components.",
+    "The initial patron launcher uses one configuration per GPU and two CPU threads; actual 128-member training/256-member validation shapes are profiled before fitting.",
+    "Calendar-on includes annual sine/cosine and Christmas timing even when recent dynamics are disabled.",
+    "Shared spatial exchange retains the existing context attention topology; pathogen/target/joint exchange adds scope-restricted history tokens with group identity and optional geography/ID features.",
+    "Source snapshots use the current working tree including uncommitted changes; new checkpoint modules replace the old module layout."
+  ]
+}

@@ -1,15 +1,18 @@
 """Independent B0 representation, supervision, and architecture switches."""
+import argparse
 import csv
 from pathlib import Path
 
 import numpy as np
 
+from .objective import TARGET_WEIGHTS
+
 LOSS_WEIGHTS = {
     'influenza_first': [1, .1, .1, .1, .1, .1],
     'balanced_admissions': [1, 1, 1, .1, .1, .1],
     'flu_only': [1, 0, 0, 0, 0, 0],
-    # Matches the selection score: each admissions target counts twice an ED target.
-    'objective': [1, 1, 1, .5, .5, .5],
+    # Shared utility coefficients; Q95-normalized CRPS is a surrogate for relative WIS.
+    'objective': list(TARGET_WEIGHTS),
 }
 COUNT_TRANSFORMS = ('raw', 'rate', 'sqrt', 'fourth_root', 'log1p')
 ED_TRANSFORMS = ('linear', 'logit', 'fourth_root')
@@ -23,17 +26,23 @@ def add_experiment_args(parser):
     parser.add_argument('--geography', action='store_true', help='Include log population and native US flag')
     parser.add_argument('--dynamics', action='store_true', help='Include slopes, acceleration, observation age and Christmas timing')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
-    parser.add_argument('--loss-weights', choices=list(LOSS_WEIGHTS), default='influenza_first')
-    parser.add_argument('--encoder', choices=['mlp', 'conv'], default='mlp')
-    parser.add_argument('--spatial', choices=['none', 'attention'], default='none',
+    parser.add_argument('--loss-weights', choices=list(LOSS_WEIGHTS), default='objective')
+    parser.add_argument('--encoder', choices=['mlp', 'conv', 'multiscale_conv'], default='mlp')
+    parser.add_argument('--spatial', choices=['none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target'], default='none',
                         help='One attention block across locations at the same forecast date')
     parser.add_argument('--heads', choices=['shared', 'state_us'], default='shared')
-    parser.add_argument('--decoder', choices=['legacy', 'residual2'], default='legacy')
+    parser.add_argument('--decoder', choices=['legacy', 'residual2', 'stochastic_trend'], default='legacy')
     parser.add_argument('--noise', choices=['global', 'local'], default='global',
                         help='Global latent only, or global plus a per-location latent')
     parser.add_argument('--us-error', choices=['none', 'shared_factor'], default='none',
                         help='shared_factor adds a per-episode, per-channel common mode to every '
-                             'location, so state errors correlate instead of cancelling into the US')
+                             'location; the US forecast is decoded directly, not summed from states')
+    parser.add_argument('--head-sharing', choices=['shared', 'pathogen', 'target'], default='shared')
+    parser.add_argument('--annual-calendar', action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument('--location-embedding', type=int, default=0)
+    parser.add_argument('--fit-partition', choices=['all', 'pathogen', 'target'], default='all')
+    parser.add_argument('--validation-members', type=int, default=256)
+    parser.add_argument('--weight-decay', type=float, default=0.)
     parser.add_argument('--latent', type=int, default=16)
 
 
@@ -46,7 +55,10 @@ def model_options(episodes, args):
     options.update(encoder=getattr(args, 'encoder', 'mlp'), spatial=getattr(args, 'spatial', 'none'),
                    heads=getattr(args, 'heads', 'shared'), decoder=getattr(args, 'decoder', 'legacy'),
                    noise=getattr(args, 'noise', 'global'), us_error=getattr(args, 'us_error', 'none'),
-                   latent=getattr(args, 'latent', 16))
+                   latent=getattr(args, 'latent', 16), head_sharing=getattr(args, 'head_sharing', 'shared'),
+                   annual_calendar=getattr(args, 'annual_calendar', True),
+                   location_embedding=getattr(args, 'location_embedding', 0),
+                   location_ids=list(episodes[0]['locations']))
     populations = None
     if transform != 'raw' or geography:
         with Path(args.population_file).open() as stream:

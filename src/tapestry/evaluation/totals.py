@@ -1,15 +1,7 @@
-"""Total-WIS scores against the official ensemble on frozen hub tasks, and rankings.
+"""Location-relative WIS: states/DC 80%, US 20%, then targets within equal seasons.
 
-`score` writes one run's `totals.csv`: sums of WIS, its components, absolute
-median error, and central-interval hits for the model and the ensemble over the
-identical frozen tasks, by target, season, geography, and horizon. Sums add
-exactly, so rankings take ratios of total WIS rather than averaging per-task or
-per-location ratios, whose mean has poor statistical properties.
-
-Per run, a target's score is the mean over its seasons of
-total model WIS / total ensemble WIS within each season (each season counts
-equally). The combined score weights each admissions target twice and each ED
-target once. Configurations average run scores across seeds.
+Keep native-unit score sums by location and horizon. Divide model by ensemble
+total WIS within each target/season/location, never within individual tasks.
 """
 import argparse
 import hashlib
@@ -20,13 +12,22 @@ import numpy as np
 import pandas as pd
 
 from tapestry.models.quantiles import LEVELS
+from tapestry.models.objective import US_WEIGHT
 from .hubs import KEY, QCOLS, export_b0
 from .scoring import match_forecasts
 
 TARGET_WEIGHTS = {
-    'wk inc flu hosp': 2, 'wk inc covid hosp': 2, 'wk inc rsv hosp': 2,
-    'wk inc flu prop ed visits': 1, 'wk inc covid prop ed visits': 1, 'wk inc rsv prop ed visits': 1,
+    'wk inc flu hosp': 1., 'wk inc covid hosp': 1., 'wk inc rsv hosp': 1.,
+    'wk inc flu prop ed visits': .5, 'wk inc covid prop ed visits': .5, 'wk inc rsv prop ed visits': .5,
 }
+SCORE_VERSION = 'location-relative-season-first-us20-v1'
+SCORE_DEFINITION = ('Per target/season/location: total native-unit model WIS / total ensemble WIS '
+                    'on identical tasks, all eligible dates and horizons 0-3. States/DC ratios '
+                    'average equally with 80% weight; US ratio gets 20%. Absent geography groups '
+                    'renormalize over available groups. Within season: weighted mean of available '
+                    'targets, admissions 1 and ED .5. Combined: equal mean of seasons. '
+                    'Configurations: mean and SD across seeds. Nonpositive ensemble denominators '
+                    'raise an error; missing run support is not silently dropped.')
 COVERAGE = (50, 80, 90, 95)
 METRICS = ['wis', 'dispersion', 'underprediction', 'overprediction', 'ae_median', *[f'covered_{c}' for c in COVERAGE]]
 IDS = ['config_id', 'seed']
@@ -59,7 +60,7 @@ def quantile_scores(q, y, levels=LEVELS):
 
 
 def case_totals(model, ensemble, case):
-    """Sum model and ensemble scores over identical tasks by geography and horizon."""
+    """Sum model and ensemble scores over identical tasks by location and horizon."""
     model = model.sort_values(KEY).reset_index(drop=True)
     ensemble = ensemble.sort_values(KEY).reset_index(drop=True)
     if not model[KEY].equals(ensemble[KEY]) or not np.allclose(model.observed, ensemble.observed):
@@ -68,8 +69,9 @@ def case_totals(model, ensemble, case):
     table = pd.concat([quantile_scores(frame[QCOLS].to_numpy(), y).add_prefix(f'{who}_')
                        for who, frame in (('model', model), ('ensemble', ensemble))], axis=1)
     table['geography'] = np.where(model.location.eq('US'), 'US', 'states_dc')
+    table['location'] = model.location.to_numpy()
     table['horizon'] = model.horizon.to_numpy()
-    grouped = table.groupby(['geography', 'horizon'])
+    grouped = table.groupby(['geography', 'location', 'horizon'])
     totals = grouped.sum()
     totals.insert(0, 'n', grouped.size())
     return totals.reset_index().assign(target=case['target'], season=case['season'])
@@ -94,7 +96,7 @@ def score_run(run, frozen):
         model = match_forecasts(frames[(case['season'], case['target'])], units, case['target'])
         ensemble = match_forecasts(quantiles[quantiles.model == case['ensemble']], units, case['target'])
         parts.append(case_totals(model, ensemble, case))
-    columns = ['target', 'season', 'geography', 'horizon', 'n', *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]
+    columns = ['target', 'season', 'geography', 'location', 'horizon', 'n', *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]
     totals = pd.concat(parts, ignore_index=True)[columns]
     temporary = run / 'totals.tmp'
     totals.to_csv(temporary, index=False)
@@ -103,30 +105,61 @@ def score_run(run, frozen):
 
 
 def season_scores(totals):
-    """Total-WIS ratio and coverage per run, target, and season, for all tasks, states/DC, and US."""
+    """Location-relative scores per target/season, with pooled sums as diagnostics."""
+    if 'location' not in totals:
+        raise ValueError('totals.csv lacks locations; rerun totals score on saved forecasts before ranking')
     sums = [f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]
-    tables = []
-    for geography in ('all', 'states_dc', 'US'):
-        part = totals if geography == 'all' else totals[totals.geography == geography]
-        table = part.groupby([*IDS, 'target', 'season'])[['n', *sums]].sum().reset_index()
-        table.insert(len(IDS), 'geography', geography)
-        tables.append(table)
-    table = pd.concat(tables, ignore_index=True)
-    table['wis_ratio'] = table.model_wis / table.ensemble_wis
-    for who in ('model', 'ensemble'):
-        for coverage in COVERAGE:
-            table[f'{who}_coverage_{coverage}'] = table[f'{who}_covered_{coverage}'] / table.n
-    return table
+    keys = [*IDS, 'target', 'season']
+    locations = totals.groupby([*keys, 'location'])[['n', *sums]].sum().reset_index()
+    if ((locations.ensemble_wis <= 0) | ~np.isfinite(locations.ensemble_wis) |
+            ~np.isfinite(locations.model_wis) | (locations.n <= 0)).any():
+        raise ValueError('Relative WIS needs positive finite ensemble total WIS and valid model totals at every location')
+    rows = []
+    for values, part in locations.groupby(keys):
+        for geography in ('all', 'states_dc', 'US'):
+            group = part if geography == 'all' else part[part.location.eq('US') == (geography == 'US')]
+            if group.empty:
+                continue
+            us = group.location.eq('US').to_numpy()
+            weights = np.zeros(len(group))
+            if (~us).any():
+                weights[~us] = (1 - US_WEIGHT) / (~us).sum()
+            if us.any():
+                weights[us] = US_WEIGHT / us.sum()
+            weights /= weights.sum()
+            row = dict(zip(keys, values), geography=geography, locations=len(group),
+                       us_weight_used=float(weights[us].sum()), **group[['n', *sums]].sum().to_dict())
+            row['wis_ratio'] = float(np.dot(weights, group.model_wis / group.ensemble_wis))
+            row['pooled_wis_ratio'] = row['model_wis'] / row['ensemble_wis']
+            for who in ('model', 'ensemble'):
+                for coverage in COVERAGE:
+                    row[f'{who}_coverage_{coverage}'] = float(np.dot(weights, group[f'{who}_covered_{coverage}'] / group.n))
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def season_composites(seasons):
+    """Targets average within each season; unavailable hub targets get no weight."""
+    keys = [*IDS, 'geography', 'season']
+    wide = seasons.pivot(index=keys, columns='target', values='wis_ratio').reindex(columns=list(TARGET_WEIGHTS))
+    # Common support is shared by all runs, not chosen per model.
+    support = seasons[['season', 'target']].drop_duplicates().groupby('season').target.agg(list)
+    wide['combined'] = np.nan
+    for label, targets in support.items():
+        selected = wide.index.get_level_values('season') == label
+        weights = pd.Series({target: TARGET_WEIGHTS[target] for target in targets})
+        wide.loc[selected, 'combined'] = (wide.loc[selected, targets] * weights).sum(axis=1, min_count=len(targets)) / weights.sum()
+    return wide.reset_index()
 
 
 def run_scores(seasons):
-    """Season-equal mean ratio per target, and the weighted combined score, per run and geography."""
+    """Equal mean of season composites; per-target season means are diagnostics."""
     wide = seasons.groupby([*IDS, 'geography', 'target']).wis_ratio.mean().unstack('target')
     wide = wide.reindex(columns=list(TARGET_WEIGHTS))
-    weights = pd.Series(TARGET_WEIGHTS)
-    # A run missing any target gets no combined score rather than a partial one.
-    wide['combined'] = (wide[list(TARGET_WEIGHTS)] * weights).sum(axis=1, min_count=len(weights)) / weights.sum()
-    wide.loc[wide[list(TARGET_WEIGHTS)].isna().any(axis=1), 'combined'] = np.nan
+    composites = season_composites(seasons)
+    expected_seasons = seasons.season.nunique()
+    wide['combined'] = composites.groupby([*IDS, 'geography']).combined.agg(
+        lambda values: values.mean() if len(values) == expected_seasons and values.notna().all() else np.nan)
     return wide.reset_index()
 
 
@@ -153,18 +186,25 @@ def rank(runs, output):
     output.mkdir(parents=True, exist_ok=True)
     totals = pd.concat([pd.read_csv(Path(run['path']) / 'totals.csv').assign(config_id=run['config_id'], seed=run['seed'])
                         for run in runs], ignore_index=True)
+    if 'location' not in totals or totals.location.isna().any():
+        raise ValueError('totals.csv lacks locations; rerun totals score on saved forecasts before ranking')
+    support_keys = ['target', 'season', 'location', 'horizon', 'n']
+    supports = [part[support_keys].sort_values(support_keys).reset_index(drop=True)
+                for _, part in totals.groupby(IDS)]
+    if any(not part.equals(supports[0]) for part in supports[1:]):
+        raise ValueError('Runs have different frozen target/season/location/horizon support; rescore on identical tasks')
     seasons = season_scores(totals)
     scores = run_scores(seasons)
+    if not np.isfinite(scores.loc[scores.geography == 'all', 'combined']).all():
+        raise ValueError('Incomplete or invalid combined run scores; do not average over missing seeds')
     ranking = configuration_ranking(scores)
     seasons.to_csv(output / 'season_scores.csv', index=False)
+    season_composites(seasons).to_csv(output / 'season_composite_scores.csv', index=False)
     scores.to_csv(output / 'run_scores.csv', index=False)
     ranking.to_csv(output / 'configuration_ranking.csv', index=False)
     (output / 'manifest.json').write_text(json.dumps(dict(
         runs=[dict(run, path=str(run['path'])) for run in runs], quantile_levels=LEVELS.tolist(), target_weights=TARGET_WEIGHTS,
-        definition=('Per target and season: total model WIS / total ensemble WIS over identical frozen tasks '
-                    '(all locations including US, all reference dates, horizons 0–3). Per target: mean over its '
-                    'seasons. Combined: admissions targets weight 2, ED targets weight 1. Configurations: mean of run '
-                    'scores across seeds. states_dc and US repeat the same computation on those tasks only.'),
+        definition=SCORE_DEFINITION, score_version=SCORE_VERSION, us_weight=US_WEIGHT,
         runs_sha256=hashlib.sha256(json.dumps(sorted(str(run['path']) for run in runs)).encode()).hexdigest()),
         indent=2) + '\n')
     return ranking

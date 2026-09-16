@@ -1,10 +1,9 @@
 """Per-location WIS for every crosses run, using the same scoring path as totals.py.
 
-`manager rank` only keeps three geography aggregates (all, states_dc, US), which
-weight a location by its WIS and so let the US carry ~45% of admissions. This
-writes one row per run/target/season/location so a score can instead weight all
-52 locations equally. Verified against season_scores.csv: the states_dc/US sums
-reproduce to 1e-14.
+Current `totals.csv` already preserves location/horizon scores for the native
+ranking. This export is also useful for historical runs whose totals predate
+that schema: one row per run/target/season/location, recomputed from saved
+forecasts on frozen ensemble support.
 
     .venv/bin/python scripts/score_b0_per_location.py -o per_location.parquet
 """

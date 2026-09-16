@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 import numpy as np
 import pytest
-torch = pytest.importorskip('torch')
+pytest.importorskip('torch')
 
 from tapestry.model_data import FinalizedDataset
 from tapestry.model_data.finalized import season
@@ -78,31 +78,6 @@ def test_validation_weeks_are_hidden_from_the_inner_fit(held_out):
     assert any(not np.array_equal(a['Y'], b['Y']) for a, b in zip(validation, other_validation))
 
 
-def test_early_stopping_restores_the_best_validation_epoch():
-    from types import SimpleNamespace
-    from tapestry.models.run import fit, validation_draws, validation_loss
-    rng = np.random.default_rng(3)
-    panel = np.ones((157, 6, 2, 3), dtype=np.float32)
-    panel[:, :3, 0] = rng.uniform(10, 100, size=(157, 3, 3))
-    panel[:, 3:, 0] = rng.uniform(.01, .05, size=(157, 3, 3))
-    ds = FinalizedDataset(panel, DAYS, ('AL', 'NC', 'US'), {})
-    inner, validation, scales, _ = validation_split(ds, SEASONS[2])
-    args = SimpleNamespace(lookback=8, horizons=[1, 2, 3, 4], width=8, device='cpu', lr=.01, epochs=8,
-                           batch_size=16, members=4, seed=3, patience=2, loss_weights='objective',
-                           count_transform='raw', ed_transform='linear', geography=False, dynamics=False,
-                           encoder='mlp', spatial='none', heads='shared', decoder='residual2', noise='local', latent=4)
-    torch.manual_seed(3)
-    model, record = fit(inner, scales, args, validation=validation)
-    epochs = len(record['validation_loss'])
-    assert len(record['loss']) == epochs <= args.epochs
-    assert record['best_epoch'] == 1 + int(np.argmin(record['validation_loss']))
-    assert epochs == args.epochs or epochs - record['best_epoch'] == args.patience
-    restored = validation_loss(model, validation, args, validation_draws(model, validation, args))
-    assert restored == pytest.approx(min(record['validation_loss']), rel=1e-5)
-    with pytest.raises(ValueError, match='patience'):
-        fit(inner, scales, SimpleNamespace(**{**vars(args), 'patience': 0}), validation=validation)
-
-
 def test_wis_equals_independent_pinball_calculation():
     rng = np.random.default_rng(5)
     q = np.sort(rng.normal(size=(len(LEVELS), 10)), axis=0)
@@ -113,14 +88,3 @@ def test_wis_equals_independent_pinball_calculation():
     # Degenerate last-value distributions have WIS equal to absolute error.
     flat = np.full((len(LEVELS), 1), 3.)
     np.testing.assert_allclose(wis(flat, np.array([5.])), 2)
-
-
-def test_select_hub_quantiles_from_saved_levels():
-    from tapestry.models.quantiles import select_quantiles
-    assert len(LEVELS) == 23 and np.allclose(LEVELS + LEVELS[::-1], 1)
-    values = np.arange(23 * 2).reshape(23, 2)
-    np.testing.assert_array_equal(select_quantiles(values[::-1], LEVELS[::-1]), values)
-    with pytest.raises(ValueError, match='exactly one saved quantile'):
-        select_quantiles(values[:-2], LEVELS[:-2])
-    with pytest.raises(ValueError, match='exactly one saved quantile'):
-        select_quantiles(np.vstack([values, values[1]]), np.append(LEVELS, .025))

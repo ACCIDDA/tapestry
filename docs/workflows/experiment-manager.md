@@ -21,7 +21,7 @@ copied between Longleaf and a laptop.
 # Per-run status; also prints the pending Slurm array tasks.
 .venv/bin/python -m tapestry.models.manager status -e b0-explore
 
-# Rank completed runs by total-WIS ratios to the hub ensembles.
+# Rank by season-equal location-relative WIS, with US weight 20%.
 .venv/bin/python -m tapestry.models.manager rank -e b0-explore
 
 # Optional, for a few runs: full EpiBench scoring, diagnostic plots, and fans.
@@ -118,7 +118,7 @@ residuals and latent perturbations act; the switches are described in
 [training](training.md#experiment-switches).
 
 Earlier B0 comparisons, including the published essential-suite results, were
-withdrawn; the sweep recreates them under this protocol (23 quantiles, total-WIS
+withdrawn; the sweep recreates them under this protocol (23 quantiles, location-relative season-first
 ranking). All three seasons inform development, so the rankings are exploratory,
 not validation.
 
@@ -238,28 +238,37 @@ name are passed to the manager, for example `--root`.
 ## Ranking
 
 `rank` reads every complete run's `totals.csv` and writes `ranking-<set-hash>/`.
-It refuses incomplete runs unless `--allow-incomplete` is given, and each set of
-runs gets its own folder, so partial and full rankings never mix. The score follows
-[architecture §10.3](../design/architecture.md):
+The hash includes the scoring version and run set. It refuses incomplete runs
+unless `--allow-incomplete` is given. The score follows
+[architecture §10.3](../design/architecture.md#103-metrics):
 
-1. **Per target and season:** total model WIS ÷ total ensemble WIS over the
-   identical frozen tasks: every location including US, every reference date,
-   horizons 0–3, on the hub's 23 quantiles. No per-task or per-location ratio is
-   averaged.
-2. **Per target:** the mean of its season ratios; each season counts equally.
-3. **Combined:** `(2 × (flu + COVID + RSV admissions) + (flu + COVID + RSV ED)) / 9`.
-4. **Per configuration:** the mean and seed SD of run scores.
+1. Per target/season/location: total native model WIS / total ensemble WIS over
+   identical dates and horizons 0–3, on the hub's 23 quantiles.
+2. State/DC ratios average equally with 80% weight; native US gets 20%.
+3. Within each season, average available targets with admission weights 1 and
+   ED weights .5, normalized by available target weight.
+4. Average season composites equally, then report mean and SD across seeds.
 
 | File | Contents |
 |---|---|
-| `configuration_ranking.csv` | Rank; mean and SD of the six target scores and the combined score; seed count; states/DC-only and US-only combined means |
-| `run_scores.csv` | Per run and geography (`all`, `states_dc`, `US`): six target scores and the combined score |
-| `season_scores.csv` | Per run, geography, target, and season: task count, WIS sums and components, ratio, 50/80/90/95% coverage for model and ensemble |
-| `manifest.json` | Ranked runs, quantile levels, target weights, and the definition |
+| `configuration_ranking.csv` | Rank; six per-target means/SDs; combined mean/SD; states/DC and US combined scores |
+| `run_scores.csv` | Per-run/geography target means and season-first combined score |
+| `season_scores.csv` | Target/season location-relative ratio, pooled ratio, native sums, weighted coverage, effective US weight |
+| `season_composite_scores.csv` | Target scores and weighted composite within each season |
+| `manifest.json` | Runs, quantiles, target weights, US weight, scoring version and definition |
 
-A run missing any target gets no combined score rather than a partial one.
-`totals.csv` keeps sums by target, season, geography, and horizon, so other
-aggregations can be recomputed without rescoring.
+Missing target/season support in a run cannot silently improve its score. A
+challenge absent from the shared frozen support receives no weight in that
+season. `totals.csv` retains location/horizon sums. Nonpositive ensemble WIS
+at a location raises an error rather than creating an undefined ratio.
+Old totals without locations must first be regenerated from saved forecasts:
+
+```bash
+.venv/bin/python -m tapestry.evaluation.totals score --run '<cv-folder>' --frozen data/evaluation/b0_hub_comparison_q23
+```
+
+Rescoring old predictions evaluates the new ranking objective; it does not
+retroactively change their training loss. Use a fresh experiment for new fits.
 
 ## Comparison
 
@@ -303,7 +312,7 @@ and latent dimension 16. Neither is assumed superior at state level.
 The extra 26-week MLP with dynamics prevents confounding history, dynamics, and
 encoder in the convolution comparison. The decoder's depth and latent size form
 a 2×2 comparison, so any improvement from more blocks need not be attributed to
-latent size. Loss weights never change native-unit channel normalization.
+latent size. Loss weights never change native-unit channel/location normalization.
 Unsupervised auxiliary outputs in `flu_only` are not trained auxiliary forecasts.
 
 Scenario defaults: width 64, 50 epochs with no early stopping, learning rate .001,
@@ -342,3 +351,14 @@ experiments.
 All three seasons inform development. These comparisons are exploratory
 finalized-data CV, with later seasons in the fitting set for the first two folds;
 they are not prospective validation.
+
+## B0.1 architecture suite
+
+The implemented [B0.1 design](../design/b0.1.md#run-b01) contains 172 deduplicated
+recipes with five seeds, full contrast memberships, and canonical scenario strings.
+Prepare it with `.venv/bin/python -m tapestry.models.manager plan -e B0.1 --suite B0.1 --device cuda`.
+Launch with `sbatch --array=0-3 scripts/b01_jlessler.sbatch B0.1` from the repository
+root after creating `output/slurm`. This launcher uses the saved source snapshot,
+profiles the large models and starts with one configuration per GPU; increase
+lanes only from measured memory and throughput. The older B0.0 launcher has a
+historical hard-coded task list and must not be used for B0.1.

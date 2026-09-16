@@ -317,12 +317,13 @@ def completed_runs(folder, allow_incomplete):
 
 
 def rank(folder, allow_incomplete=False):
-    """Rank completed runs by total-WIS ratios to the ensemble (`tapestry.evaluation.totals`)."""
-    from tapestry.evaluation.totals import rank as rank_runs
+    """Rank completed runs by season-equal location-relative WIS."""
+    from tapestry.evaluation.totals import SCORE_VERSION, rank as rank_runs
     done, _ = completed_runs(folder, allow_incomplete)
     attempts_used = sorted(row['attempt'] for row in done)
     # Different ranked sets get different destinations; never mix partial rankings.
-    destination = folder / f'ranking-{hashlib.sha256(json.dumps(attempts_used).encode()).hexdigest()[:12]}'
+    fingerprint = dict(attempts=attempts_used, score_version=SCORE_VERSION)
+    destination = folder / f'ranking-{hashlib.sha256(json.dumps(fingerprint).encode()).hexdigest()[:12]}'
     runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'] / 'cv')
             for row in sorted(done, key=lambda row: row['attempt'])]
     ranking = rank_runs(runs, destination)
@@ -360,7 +361,7 @@ def main(argv=None):
     parser.add_argument('--root', default='data/experiments')
     parser.add_argument('--suite', choices=list(SUITES), default='essential')
     parser.add_argument('-s', '--scenario', nargs='+', help='Named aliases or full scenario strings; overrides suite')
-    parser.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
+    parser.add_argument('--seeds', nargs='+', type=int, default=None)
     parser.add_argument('--dataset', default='data/processed/build_b_finalized.npz')
     parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
     parser.add_argument('--frozen', default=FROZEN, help='Frozen ensemble-supported tasks on the 23-quantile grid')
@@ -375,6 +376,8 @@ def main(argv=None):
                              'seeds in sequence; every fit pins two torch threads')
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
+    if args.seeds is None:
+        args.seeds = [42, 43, 44, 45, 46] if args.suite == 'B0.1' else [42, 43, 44]
     if args.eval_members < 1 or args.workers < 1:
         parser.error('eval-members and workers must be positive')
     if len(set(args.seeds)) != len(args.seeds) or min(args.seeds) < 0:
@@ -398,6 +401,10 @@ def main(argv=None):
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
                         eval_members=args.eval_members, device=args.device or 'cpu')
         plan(folder, scenarios, args.seeds, settings)
+        if args.suite == 'B0.1' and not args.scenario:
+            from .b01_suite import manifest, prepare
+            prepare(folder, settings)
+            save(folder / 'design.json', manifest())
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
     elif args.command == 'run':
         if run(folder, args.task, args.device, args.keep_going, args.fit_workers):
@@ -416,6 +423,9 @@ def main(argv=None):
         print(json.dumps({status: sum(row['status'] == status for row in rows) for status in sorted({r['status'] for r in rows})}))
     pending = pending_tasks(rows)
     if pending:
+        if (folder / 'design.json').exists() and json.loads((folder / 'design.json').read_text()).get('experiment') == 'B0.1':
+            print(f'Patron launcher (saved source snapshot, all manifest tasks): sbatch --array=0-3 scripts/b01_jlessler.sbatch {args.experiment}')
+            return
         root = '' if args.root == 'data/experiments' else f' --root {args.root}'
         print('Pending tasks (check squeue -a before resubmitting). Sweep launcher:')
         for command in array_commands(pending, args.experiment):

@@ -1,9 +1,15 @@
-# B0 calibration: the `crosses` experiment (post-scaling-fix)
+# B0.0 — Crosses calibration (post-scaling-fix)
 
-**Experiment:** `b0-us-cross-4` · **Suite:** `crosses` · **Status:** complete —
+**Experiment label:** B0.0 · **Stored experiment ID:** `b0-us-cross-4` · **Suite:** `crosses` · **Status:** complete —
 60 configurations × 3 seeds = 180 season-CV runs, 540 season fits.
 Fitted 2026-09-15 15:39–17:52 local on the patron GPU node `g1803jles01`
 (4 × L40, six configuration lanes per card).
+
+!!! note "Historical objective"
+    These results retain the pooled, target-first score used for this experiment.
+    The subsequently adopted [loss and selection choices](../../design/architecture.md#82-design-choices-for-b0-loss-and-weights)
+    use equal seasons, location-relative WIS, and US weight 20%. This page has
+    not been reranked under that objective; new loss settings require new fits.
 
 This is the rerun of the `crosses` calibration **after the per-location input
 scaling fix** (commit `11a23ea`). The previous run is preserved, unchanged and
@@ -49,8 +55,8 @@ family, which still runs 1.16–1.37 at US while winning on states.
 
 ## Score definition
 
-The selection score follows [architecture §10.3](../../design/architecture.md)
-and is computed by `tapestry.evaluation.totals` from each run's `totals.csv`:
+The selection score used the then-current architecture §10.3 and
+`tapestry.evaluation.totals`, recorded in this experiment's ranking manifest:
 
 1. **Per target and season:** total model WIS ÷ total ensemble WIS over identical
    frozen tasks (every location including US, every reference date, horizons 0–3,
@@ -510,6 +516,10 @@ documented above.
 
 ## Takeaways
 
+For the subsequent assessment of data constraints, objective choices, known
+implementation issues, and a proposed B0 follow-up, see
+[B0 after crosses: next steps](next-steps.md).
+
 **Model formulation.** Representation still dominates architecture, but the
 scaling fix changed which architecture wins. A plain MLP (`anchor`) with correct
 per-location scaling and enough training now beats the convolutional model with
@@ -644,6 +654,12 @@ drive training loss to 0.170 while the least-similar held-out fold degrades to
 between folds, not leakage.
 
 ## Reproducing
+
+The saved ranking files preserve the historical score below. Current `rank`
+implements the new objective and requires location-level totals; regenerate
+those from saved forecasts before reranking. Its versioned destination differs
+from the historical ranking directory. Training with current code also uses the
+new loss. The historical plotting commands below refer to the saved old ranking.
 
 ```bash
 .venv/bin/python -m tapestry.models.manager status -e b0-us-cross-4

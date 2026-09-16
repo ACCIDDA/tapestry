@@ -24,10 +24,11 @@ For data inspection, use the [explorer](explorer/index.md). Raw immutable
 snapshots retain exact inputs and provenance; the explorer's derived index can
 be rebuilt. Training reads the saved canonical dataset independently.
 
-Earlier B0 comparison results were withdrawn. They are being recreated by the
-[architecture sweep](workflows/experiment-manager.md#architecture-sweep): 4,097
-configurations at three seeds, ranked by total-WIS ratios to the hub ensembles on
-all six targets, with admissions weighted twice ED visits.
+[B0.0](results/b0-crosses/index.md) reports the completed post-scaling crosses
+experiment. [B0.1](design/b0.1.md) specifies reference crosses comparing spatial and
+cross-target attention, parameter sharing, temporal representations, and
+uncertainty decoders, using the adopted season-first location-relative objective.
+B0.1 has not been launched.
 [Architecture](design/architecture.md) describes the proposed extensions.
 [Features and tests](maintenance.md) distinguishes required from optional
 features.

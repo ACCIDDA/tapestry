@@ -182,6 +182,45 @@ Logs are `output/slurm/b0-sweep-ARRAY_ID_INDEX.log`; the jobs.csv task is
 The printed folder holds `configuration_ranking.csv`, `run_scores.csv`, and
 `season_scores.csv` ([definitions](workflows/experiment-manager.md#ranking)).
 
+## CPU versus GPU runtime
+
+Benchmark recorded 2026-09-15 UTC for the raw-count B0 baseline: 50 epochs,
+eight history weeks, objective loss weights, three season folds per seed,
+2,048 evaluation samples per forecast date, and frozen 23-quantile scoring.
+The comparison below covers three seeds (42, 43, 44), or nine season fits.
+
+| Component | CPU: 3 seeds estimated | L40 GPU: 3 seeds measured |
+|---|---:|---:|
+| Training | 12m 09s | 35s |
+| Forecast evaluation | 10m 00s | 1m 50s |
+| Scoring and per-run overhead | 42s | 36s |
+| Job startup/shutdown | 1m 30s | 10s |
+| **Total** | **24m 21s** | **3m 11s** |
+
+The CPU measurement used two cores of an Intel Xeon Gold 6140 on `c0404`,
+16 GiB allocated RAM and two numerical-library threads. Its single-seed job
+(`1164287`, experiment `b0-cpu-benchmark-2core`) took **9m 07s** including
+startup, with about **3.3 GiB peak RAM**. Training took 243.03 seconds,
+evaluation 199.93 seconds, and the complete seed run 457.13 seconds.
+
+**Estimation assumption:** each additional CPU seed takes the same time as the
+measured seed; job startup is paid once. Thus the three-seed estimate is
+`3 × 457.13 + (547 − 457.13) = 1,461.26 seconds`. This is an extrapolation,
+not a measured three-seed CPU job; caching and warm-up can change subsequent
+seed times.
+
+The GPU measurement used one patron L40 on `g1803jles01`, four CPU cores and
+16 GiB allocated host RAM (`1164961_0`, experiment `b0-crosses`, raw reference).
+All three seeds completed in 191 seconds. Training and evaluation times come
+from the CV manifests; scoring and per-run overhead are the remaining seed
+runtime, and startup/shutdown is the remaining Slurm elapsed time. Queue waiting
+is excluded. Table entries are rounded.
+
+For this baseline, the estimated GPU advantage is **7.6× overall**, approximately
+**21× for training** and **5.5× for evaluation**. CPU execution is feasible, but
+most CPU time is computation rather than startup. These results do not establish
+timings for other architectures, CPU types, or concurrent runs sharing one GPU.
+
 ## Train across six GPUs
 
 Partition `jlessler` provides:

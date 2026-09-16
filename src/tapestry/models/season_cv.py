@@ -16,7 +16,9 @@ import torch
 from tapestry.model_data import CHANNELS, FinalizedDataset
 from tapestry.model_data.finalized import season
 from .run import calendar, fit
-from .experiments import add_experiment_args, LOSS_WEIGHTS
+from .bundles import GROUPS, IndependentBundle, supervision, checkpoint
+from .experiments import add_experiment_args, LOSS_WEIGHTS, model_options
+from .objective import LOSS_DEFINITION, US_WEIGHT, loss_scales
 from .manager import git_state
 from .quantiles import LEVELS
 
@@ -44,13 +46,8 @@ def masked_episodes(ds, keep, origins, lookback):
 
 
 def channel_scales(ds, keep):
-    """Native-unit Q95 per channel over the kept weeks, for loss normalization."""
-    scales = []
-    for c in range(6):
-        values = ds.panel[keep, c, 0]
-        valid = values[ds.panel[keep, c, 1].astype(bool)]
-        scales.append(max(float(np.quantile(valid, .95)) if valid.size else 0, 1 if c < 3 else .001))
-    return scales
+    """Native-unit Q95 per channel/location, using only permitted unique weeks."""
+    return loss_scales(ds.panel[keep])
 
 
 def fold_data(ds, held_out, lookback=8):
@@ -147,7 +144,7 @@ def evaluate(model, episodes, args, output, name=''):
     quantiles, retained, truths, masks, baselines, baseline_masks = [], [], [], [], [], []
     for i, episode in enumerate(episodes):
         x = torch.tensor(episode['X'][None], device=args.device)
-        cal = torch.tensor(calendar([episode['context_dates'][-1]], model.config['dynamics']), device=args.device)
+        cal = torch.tensor(calendar([episode['context_dates'][-1]], model.config.get('annual_calendar', True)), device=args.device)
         with torch.no_grad():
             samples = torch.cat([model(x, cal, min(32, args.eval_members - j), locations=episode['locations']).cpu()
                                  for j in range(0, args.eval_members, 32)], dim=0).numpy()[:, 0]
@@ -217,15 +214,17 @@ def run(args):
     output.mkdir(parents=True, exist_ok=False)
     ds = FinalizedDataset.load(args.dataset)
     started = time.perf_counter()
-    code_paths = [Path(__file__), Path(__file__).with_name('b0.py'), Path(__file__).with_name('run.py'), Path(__file__).with_name('experiments.py'), Path(__file__).with_name('quantiles.py'),
+    code_paths = [Path(__file__), Path(__file__).with_name('b0.py'), Path(__file__).with_name('run.py'), Path(__file__).with_name('experiments.py'), Path(__file__).with_name('quantiles.py'), Path(__file__).with_name('objective.py'), Path(__file__).with_name('architecture.py'), Path(__file__).with_name('bundles.py'),
                   Path(__file__).parents[1] / 'model_data' / 'finalized.py']
     stopping = (f'early stopping on inner validation blocks (patience {args.patience}, cap {args.epochs} epochs), '
                 'then a refit on all training weeks for the best epoch count' if args.patience else f'fixed {args.epochs} epochs')
-    manifest = {'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
+    from .scenarios import TrainingScenario
+    manifest = {'scenario_string': TrainingScenario.from_config(vars(args)).scenario_string, 'config': vars(args), 'platform': platform.platform(), 'torch_version': str(torch.__version__),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
                 'code_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in code_paths},
                 'git': git_state(),
                 'protocol': f'{stopping}; three leave-one-season-out finalized-data folds; no holdout tuning',
+                'loss': LOSS_DEFINITION, 'us_weight': US_WEIGHT, 'loss_weights': LOSS_WEIGHTS[args.loss_weights],
                 'season_definition': 'CDC epiweek 31–30; season 1 begins at available September 2023 data',
                 'stride_weeks': 1, 'horizons': [1, 2, 3, 4],
                 'holdout_rule': 'excluded from fit context, targets, and scalers; evaluation labels stay within held-out season',
@@ -244,32 +243,54 @@ def run(args):
                 'evaluation_context_ends': [e['context_dates'][-1] for e in evaluation],
                 'scale': scales, 'chronological': held_out == SEASONS[-1]}
         print(json.dumps(info), flush=True)
-        fit_args = args
+        groups = GROUPS[args.fit_partition]
+        models, stopped_models, components = [], [], []
         if args.patience:
             inner, validation, inner_scales, split = validation_split(ds, held_out, args.lookback, len(args.horizons))
-            torch.manual_seed(args.seed)
+        for ci, channels in enumerate(groups):
+            component_seed = args.seed + 10000 * ci
+            fit_args = argparse.Namespace(**{**vars(args), 'seed': component_seed})
+            detail = dict(channels=channels, seed=component_seed, epoch_cap=args.epochs)
+            if args.device == 'cuda':
+                torch.cuda.reset_peak_memory_stats()
+            if args.patience:
+                torch.manual_seed(component_seed)
+                before = time.perf_counter()
+                stopped, record = fit(supervision(inner, channels), inner_scales, fit_args,
+                                      options=model_options(inner, fit_args), validation=supervision(validation, channels))
+                detail['early_stopping'] = dict(split, **record, scale=inner_scales,
+                    seconds=time.perf_counter() - before, local_noise_scale=stopped.local_noise_scales())
+                fit_args = argparse.Namespace(**{**vars(fit_args), 'epochs': record['best_epoch']})
+                stopped_models.append(stopped.cpu())
+            torch.manual_seed(component_seed)
             before = time.perf_counter()
-            stopped, record = fit(inner, inner_scales, args, validation=validation)
-            split.update(record, scale=inner_scales, seconds=time.perf_counter() - before,
-                         local_noise_scale=stopped.local_noise_scales())
-            # Out-of-sample validation forecasts are kept for later calibration.
+            model, record = fit(supervision(training, channels), scales, fit_args, options=model_options(training, fit_args))
+            detail.update(train_seconds=time.perf_counter() - before, epochs=fit_args.epochs,
+                          history=record['loss'], local_noise_scale=model.local_noise_scales(),
+                          experiment=model.config, parameters=sum(p.numel() for p in model.parameters()),
+                          peak_cuda_bytes=torch.cuda.max_memory_allocated() if args.device == 'cuda' else None)
+            models.append(model.cpu())
+            components.append(detail)
+        model = models[0] if args.fit_partition == 'all' else IndependentBundle(models, groups)
+        info.update(components=components, fit_partition=args.fit_partition,
+                    train_seconds=sum(c['train_seconds'] for c in components),
+                    epochs=[c['epochs'] for c in components] if len(components) > 1 else components[0]['epochs'],
+                    parameters=sum(c['parameters'] for c in components), loss_weights=LOSS_WEIGHTS[args.loss_weights],
+                    loss=LOSS_DEFINITION, us_weight=US_WEIGHT,
+                    evaluation_seed=args.seed + 1000, evaluation_sample_batch=32)
+        if len(components) == 1:
+            info.update(components[0])
+        metadata = {**info, 'dataset_sha256': manifest['dataset_sha256'], 'channels': list(CHANNELS),
+                    'locations': list(ds.locations), 'seed': args.seed}
+        torch.save(checkpoint(model, metadata), folder / 'model.pt')
+        if args.patience:
+            stopped = stopped_models[0] if args.fit_partition == 'all' else IndependentBundle(stopped_models, groups)
+            torch.save(checkpoint(stopped, metadata), folder / 'validation_model.pt')
             torch.manual_seed(args.seed + 1000)
-            evaluate(stopped, validation, args, folder, name='validation_')
-            info['early_stopping'] = split
-            fit_args = argparse.Namespace(**{**vars(args), 'epochs': record['best_epoch']})
-        torch.manual_seed(args.seed)
-        before = time.perf_counter()
-        model, record = fit(training, scales, fit_args)
-        info['train_seconds'] = time.perf_counter() - before
-        info['epochs'] = fit_args.epochs
-        info['history'] = record['loss']
-        info['local_noise_scale'] = model.local_noise_scales()
-        info['experiment'] = model.config
-        info['loss_weights'] = LOSS_WEIGHTS[args.loss_weights]
-        info['parameters'] = sum(p.numel() for p in model.parameters())
-        torch.save({'config': model.config, 'state_dict': {k: v.cpu() for k, v in model.state_dict().items()},
-                    'metadata': {**info, 'dataset_sha256': manifest['dataset_sha256'], 'channels': list(CHANNELS),
-                                 'locations': list(ds.locations), 'seed': args.seed}}, folder / 'model.pt')
+            evaluate(stopped.to(args.device), validation, args, folder, name='validation_')
+            stopped.cpu()
+            del stopped, stopped_models
+        model.to(args.device)
         torch.manual_seed(args.seed + 1000)
         before = time.perf_counter()
         scores = evaluate(model, evaluation, args, folder)
@@ -278,6 +299,8 @@ def run(args):
         for row in scores:
             all_scores.append({'eval_season': held_out, 'train_seasons': '+'.join(train_seasons), **row})
         manifest['folds'].append(info)
+        model.cpu()
+        del model, models
         manifest['elapsed_seconds'] = time.perf_counter() - started
         (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     with (output / 'scores.csv').open('w') as stream:
@@ -313,6 +336,8 @@ def main():
     args.horizons = [1, 2, 3, 4]
     if min(args.epochs, args.lookback, args.width, args.batch_size, args.eval_members) < 1 or args.members < 2:
         parser.error('Positive dimensions/epochs required; training members >= 2')
+    if args.validation_members < 2:
+        parser.error('validation-members must be >=2')
     if args.patience < 0:
         parser.error('patience must be nonnegative')
     run(args)

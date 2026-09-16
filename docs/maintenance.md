@@ -29,35 +29,40 @@ an API.
 
 ## What the tests do
 
-The suite keeps only tests that protect reported results. GitHub Actions
-(`.github/workflows/tests.yml`) runs it on pushes and pull requests to `main`.
+Keep tests only for plausible silent errors that would materially corrupt a
+scientific result. There is no coverage target or requirement for one test per
+module. Routine failures, CLI parsing, naming, plotting, artifact creation,
+resume mechanics and architecture execution are checked through research runs.
 
-| File | What it catches |
+| File | Consequence it guards against |
 |---|---|
-| `test_model_data.py` | Window/target alignment, masks, observed zeros versus missing values, season boundaries, builder units and conflicting rows |
-| `test_season_cv.py` | Held-out season values cannot change training inputs, labels or scales; WIS; five-quantile selection from saved archives |
-| `test_b0.py` | Fair CRPS mathematics, missing-label exclusion, masked inputs not changing predictions, location ordering, population-transform inversion, checkpoint round trip, separate state/US head gradients |
-| `test_hub_evaluation.py` | Invalid quantile tasks excluded, agreement with R `scoringutils`, equal scoring support for best-model selection, horizon/channel/FIPS export, ranking on identical tasks |
-| `test_evaluation_sweep.py` | Seed averaging and target weighting in configuration ranking, stable configuration identities, Hubverse round trip, frozen-task and truth matching, equal-geography objective, end-to-end R/EpiBench sweep |
-| `test_experiment_manager.py` | Short scenario strings round-trip and reject typos, CLI flags reproduce scenarios, one-factor suites, plan/run/resume/status with relative paths and commits |
-| `test_epibench_pipeline.py` | EpiBench scoring with numeric FIPS and a zero reference, WIS values, refusal to reuse scores for changed inputs or missing tasks |
+| `test_b0.py` | Wrong CRPS or masked-label gradients; count/proportion transforms changing native values |
+| `test_objective.py` | Missingness or batching changing scientific loss weights; incorrect native loss scales |
+| `test_season_cv.py` | Held-out or validation values leaking into training/scales; incorrect WIS |
+| `test_model_data.py` | Misaligned targets, observed zeros treated as missing, wrong season assignment or percentage units |
+| `test_totals.py` | Incorrect WIS, location/season/target/seed weighting, undefined relative scores or comparisons on different locations |
+| `test_hub_evaluation.py` | Forecasts assigned to the wrong target channel, location or week |
 
-### Focused commands
+The retained checks use local fixtures and do not invoke R or EpiBench.
+When a relevant scientific calculation changes, a focused check can be run with
+`uv run pytest -q tests/test_objective.py` (substitute the relevant file).
+GitHub Actions runs the remaining suite on pushes and pull requests to `main`.
 
-Run from the repository root after `uv sync`.
+## Test cull decision
 
-```bash
-# All tests; local fixtures, no publisher downloads.
-uv run pytest -q
+Assumption: this research code is frequently rewritten, and full reruns plus
+inspection handle ordinary execution and presentation failures. Tests are
+reserved for consequential mistakes that can survive a successful run and
+produce plausible but wrong results.
 
-# Model/data changes: scientific correctness and leakage.
-uv run pytest -q tests/test_model_data.py tests/test_b0.py tests/test_season_cv.py
+The initial cull removed broad model/report execution checks and fixed snapshots.
+The stricter cull removed the experiment-manager, evaluation-sweep and EpiBench
+adapter test files; model architecture/scaler/dynamics checks; early-stopping
+execution; export round trips; and routine malformed-input assertions. The
+remaining suite has 15 test functions in 355 lines, down from 1,238 lines before
+the cull. No replacement tests were added to preserve coverage. CI no longer
+installs R for deleted integration tests.
 
-# Scoring/export changes.
-uv run pytest -q tests/test_hub_evaluation.py tests/test_evaluation_sweep.py tests/test_epibench_pipeline.py
-```
-
-Four integration tests invoke R `scoringutils` and/or EpiBench. They skip if
-Rscript or EpiBench is absent; an installed Rscript without `scoringutils` and
-`purrr` still fails, so run `Rscript scripts/setup_r.R`. Tests use temporary
-fixtures and do not train the full research sweep.
+Validation: Python syntax parsing and whitespace review only; tests and research
+runs were not executed. This does not certify remaining tests against concurrent
+model changes.

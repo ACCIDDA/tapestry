@@ -11,15 +11,20 @@ from .experiments import COUNT_TRANSFORMS, ED_TRANSFORMS, LOSS_WEIGHTS
 PREFIX = dict(lookback='h', count_transform='tr_', ed_transform='ed_', geography='geo', dynamics='dyn',
               loss_weights='lw_', encoder='enc_', spatial='sp_', heads='hd_', decoder='dec_', noise='nz_',
               us_error='us_', latent='z', width='w', epochs='ep', patience='pat', batch_size='bs', members='m',
-              lr='lr')
+              lr='lr', head_sharing='hs_', annual_calendar='cal', location_embedding='id',
+              fit_partition='fit_', validation_members='vm', weight_decay='wd')
 CODES = dict(count_transform={'raw': 'raw', 'rate': 'rate', 'sqrt': 'sqrt', 'fourth_root': '4rt', 'log1p': 'log1p'},
              ed_transform={'linear': 'lin', 'logit': 'logit', 'fourth_root': '4rt'},
              loss_weights={'influenza_first': 'first', 'balanced_admissions': 'bal', 'flu_only': 'fluonly',
                            'objective': 'obj'},
-             encoder={'mlp': 'mlp', 'conv': 'conv'}, spatial={'none': 'none', 'attention': 'attn'},
-             heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2'},
+             encoder={'mlp': 'mlp', 'conv': 'conv', 'multiscale_conv': 'msc'},
+             spatial={'none': 'none', 'attention': 'attn', 'pathogen_spatial': 'path',
+                      'target_spatial': 'targ', 'joint_location_target': 'joint'},
+             heads={'shared': 'sh', 'state_us': 'su'}, decoder={'legacy': 'leg', 'residual2': 'res2', 'stochastic_trend': 'trend'},
              noise={'global': 'glob', 'local': 'loc'},
-             us_error={'none': 'none', 'shared_factor': 'shf'})
+             us_error={'none': 'none', 'shared_factor': 'shf'},
+             head_sharing={'shared': 'sh', 'pathogen': 'path', 'target': 'targ'},
+             fit_partition={'all': 'all', 'pathogen': 'path', 'target': 'targ'})
 assert set(CODES['loss_weights']) == set(LOSS_WEIGHTS)
 assert set(CODES['count_transform']) == set(COUNT_TRANSFORMS) and set(CODES['ed_transform']) == set(ED_TRANSFORMS)
 
@@ -31,7 +36,7 @@ class TrainingScenario:
     ed_transform: str = 'linear'
     geography: bool = True
     dynamics: bool = True
-    loss_weights: str = 'influenza_first'
+    loss_weights: str = 'objective'
     encoder: str = 'mlp'
     spatial: str = 'none'
     heads: str = 'shared'
@@ -49,6 +54,12 @@ class TrainingScenario:
     # against a few seconds of fitting, so the extra draws are close to free.
     members: int = 128
     lr: float = .001
+    head_sharing: str = 'shared'
+    annual_calendar: bool = True
+    location_embedding: int = 0
+    fit_partition: str = 'all'
+    validation_members: int = 256
+    weight_decay: float = 0.
 
     def __post_init__(self):
         for key, codes in CODES.items():
@@ -56,6 +67,8 @@ class TrainingScenario:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)}')
         if min(self.lookback, self.latent, self.width, self.epochs, self.batch_size) < 1 or self.members < 2:
             raise ValueError('Positive dimensions/epochs required; training members >= 2')
+        if self.validation_members < 2 or self.location_embedding < 0 or self.weight_decay < 0:
+            raise ValueError('Validation members >=2, nonnegative embedding and weight decay required')
         if self.patience < 0 or (self.patience and self.patience >= self.epochs):
             raise ValueError('Patience must be 0 (fixed epochs) or below the epoch cap')
         if not (0 < self.lr < float('inf') and float(f'{self.lr:g}') == self.lr):
@@ -102,6 +115,8 @@ class TrainingScenario:
             if isinstance(value, bool):
                 if value:
                     flags.append(option)
+                elif key == 'annual_calendar':
+                    flags.append('--no-annual-calendar')
             else:
                 flags.extend((option, str(value)))
         return flags
@@ -144,7 +159,7 @@ ESSENTIAL = {
 }
 
 # Levels explored around each reference. Fixed: geography features,
-# objective-matched loss weights [1,1,1,.5,.5,.5], width 64, batch 8, 8 training
+# target weights [1,1,1,.5,.5,.5], width 64, batch 8, 128 training
 # draws, learning rate .001. Add or remove a level here and `crosses` follows;
 # this is the single registry of what the experiment varies.
 AXES = dict(lookback=(8, 12), dynamics=(False, True), encoder=('mlp', 'conv'), decoder=('legacy', 'residual2'),
@@ -152,7 +167,7 @@ AXES = dict(lookback=(8, 12), dynamics=(False, True), encoder=('mlp', 'conv'), d
             count_transform=('raw', 'rate', 'sqrt', 'fourth_root', 'log1p'),
             ed_transform=('linear', 'logit', 'fourth_root'), geography=(False, True),
             # Correlated national error: a per-episode, per-channel common mode
-            # shared by every location, so state errors stop cancelling into the US.
+            # shared by every location; native US is still predicted directly.
             us_error=('none', 'shared_factor'),
             # (epochs, patience): fixed 50/100/300 epochs isolate training length;
             # patience 20 up to 300 adds validation checkpoint selection on top.
@@ -196,12 +211,15 @@ def crosses():
 SUITES = {
     'essential': lambda: {name: value[0] for name, value in ESSENTIAL.items()},
     'crosses': crosses,
+    'B0.1': lambda: __import__('tapestry.models.b01_suite', fromlist=['scenarios']).scenarios(),
 }
 
 
 def get_training_scenario(name):
     if name in ESSENTIAL:
         return ESSENTIAL[name][0]
+    if name.startswith('B0.1/'):
+        return get_scenarios('B0.1')[name]
     return TrainingScenario.from_string(name)
 
 

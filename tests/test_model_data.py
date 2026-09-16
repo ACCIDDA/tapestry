@@ -7,14 +7,12 @@ from tapestry.model_data import FinalizedDataset, build_dataset
 from tapestry.model_data.finalized import season
 
 
-def test_windows_masks_alignment_and_roundtrip(tmp_path):
+def test_windows_masks_alignment():
     panel = np.zeros((3, 6, 2, 2), dtype=np.float32)
     panel[0, 0, :, 0] = (0, 1)  # A genuine observed zero.
     panel[1, 0, :, 1] = (20, 1)
     panel[2, 0, :, 1] = (30, 1)
     ds = FinalizedDataset(panel, ('2023-09-02', '2023-09-09', '2023-09-16'), ('AL', 'US'), {})
-    ds.save(tmp_path / 'panel.npz')
-    ds = FinalizedDataset.load(tmp_path / 'panel.npz')
     result = ds.query('2023-09-02', locations=['US', 'AL'], target_end='2023-09-09')
     assert result['X'].shape == (8, 6, 2, 2)
     assert result['X'][-1, 0, :, 1].tolist() == [0, 1]
@@ -22,11 +20,6 @@ def test_windows_masks_alignment_and_roundtrip(tmp_path):
     assert result['Y'][0, 0, :, 0].tolist() == [20, 1]
     assert not result['Y'][1:].any()  # Held-out labels excluded.
     assert result['target_dates'][0] == '2023-09-09'
-    assert ds.query('2023-09-09', lookback=12)['X'].shape[0] == 12
-    with pytest.raises(ValueError):
-        ds.query('2023-09-03')
-    with pytest.raises(ValueError):
-        ds.query('2023-09-02', horizons=[0])
 
 
 def test_season_boundary_and_53_week_year():
@@ -35,7 +28,7 @@ def test_season_boundary_and_53_week_year():
     assert season(date(2021, 1, 2)) == '2020-2021'
 
 
-def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
+def test_builder_units_and_missing_values(tmp_path, monkeypatch):
     import json
     from types import SimpleNamespace
     from tapestry.model_data import finalized as module
@@ -66,13 +59,3 @@ def test_builder_units_missing_and_conflicts(tmp_path, monkeypatch):
     assert not ds.panel[0, 1:3, :, al].any()
     assert ds.panel[0, 3, 0, al] == pytest.approx(.02)
     assert not ds.panel[0, 4, :, al].any()
-    # The single supported build CLI must save the same panel and provenance.
-    from tapestry.model_data.cli import main
-    output = tmp_path / 'processed' / 'canonical.npz'
-    main(['build', '--data-root', str(tmp_path), '--output', str(output)])
-    saved = FinalizedDataset.load(output)
-    np.testing.assert_array_equal(saved.panel, ds.panel)
-    assert json.loads(output.with_suffix('.json').read_text()) == saved.metadata
-    rows['cdc_nhsn_final'].append(dict(rows['cdc_nhsn_final'][0], totalconfflunewadm='8'))
-    with pytest.raises(ValueError, match='Conflicting'):
-        build_dataset(tmp_path)

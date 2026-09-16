@@ -22,10 +22,15 @@ are intentionally excluded from version control.
 
 ## Tests
 
-Tests use local fixtures. A few integration checks require R/EpiBench:
+Use actual runs and inspection for routine research iteration. Add or run tests
+when they address a concrete scientific invariant or silent failure; there is no
+requirement to preserve a representative test for each component. See the
+[test cull decision](maintenance.md#test-cull-decision).
+
+The retained scientific checks use local fixtures:
 
 ```bash
-uv sync --upgrade-package epibenchmark
+uv sync
 uv run pytest -q
 ```
 
@@ -39,8 +44,8 @@ node --check src/tapestry/explorer/static/app.js
 Live publisher contract tests should remain separate because schemas and row
 counts change over time.
 
-Use pytest to collect both unittest classes and pytest functions. See the
-[test and feature review](maintenance.md) for focused commands and what each file protects.
+See the [test and feature review](maintenance.md) for the consequential errors
+each remaining file targets.
 
 ## Documentation
 
@@ -58,13 +63,10 @@ building documentation must not require downloaded surveillance data.
 1. Add a complete `DatasetSpec` to `data/catalog.py`.
 2. Reuse an existing fetcher or implement one under `data/sources/`.
 3. Preserve native rows and record source-specific metadata.
-4. Add offline tests for pagination, retries, version semantics, and failure
-   atomicity as applicable.
+4. Add a test only if a plausible silent error could corrupt scientific results.
 5. Document unusual missing-value or geographic-support caveats.
 
-Selection regression tests cover patient-count allowlists, canonical hub files,
-LFS unavailability, native geography, release cutoffs, and grouped signal identity.
-Change the shared policy in `data/selection.py`, not only the explorer UI.
+Change shared selection policy in `data/selection.py`, not only the explorer UI.
 
 ## GitHub Pages
 

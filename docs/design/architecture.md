@@ -22,6 +22,10 @@ The work proceeds from a small, finalized-data pilot to the full vintage-aware, 
 | **B2** | Non-vintaged data; more channels (NHSN + NSSP + wastewater) | Test whether wastewater adds signal before introducing vintage complexity. |
 | **B3** | Vintaged data; more channels (NHSN + NSSP + wastewater) | Combine the selected architecture with the broader vintage-aware input panel. |
 
+**B0.0** names the completed post-scaling crosses experiment; **B0.1** is the
+[new architecture/capability experiment specification](b0.1.md), with raw and
+rate-only input transforms excluded. B0.1 is specified, not launched.
+
 B0 is the decision point for the model architecture. B1–B3 extend the same design while isolating the effects of vintages and additional channels.
 
 ## 1. Objective and scientific questions
@@ -343,22 +347,63 @@ Proposed initial `M=8`, then compare `M=2` and `M=16` at matched optimization bu
 
 Use raw count-space CRPS for primary admission outputs, after inverse preprocessing. A fourth-root-space score is not count-space CRPS, and multiplying it by population cannot repair the nonlinear difference. Auxiliary sources have normalized source-specific losses because their units differ.
 
-### 8.2 Loss groups and weights
+### 8.2 Design choices for B0 loss and weights
 
-Compute each group as a valid-target masked average. Skip a missing group, log its absence, and never divide by zero. Do not simply average all observed cells together: the plentiful older ILI rows could dominate the hospitalization objective.
+**Adopted 2026-09-15:** the six targets have weights
+`[1, 1, 1, .5, .5, .5]` in flu/COVID/RSV admissions, then flu/COVID/RSV ED
+order. There is no extra flu preference. Native US receives **20%** of each
+target's geography objective; the **80%** state/DC component weights eligible
+jurisdictions equally. Seasons receive equal weight, with target weights
+normalized over the available targets *inside each season*.
+
+**Values being scored are untransformed.** Count preprocessing (rates,
+fourth-root, log1p, etc.) and ED preprocessing are inverted before fair CRPS.
+Admissions are scored in counts; ED is scored in 0–1 proportions. Exported WIS
+likewise uses native values, with admission quantiles rounded to integers.
+Neither loss is computed in fourth-root or logit space.
+
+For fitting, define `s[c,l]` from native observed values in the fitting partition:
+
+- With at least 26 observed unique weeks, use that channel/location's Q95.
+- With fewer observations, use `alpha * local_Q95 + (1-alpha) * pooled_channel_Q95`,
+  where `alpha = n_observed / 26`; no observations use the pooled scale.
+- Apply positive floors of **1 admission** and **.001 ED proportion** (0.1
+  percentage points). Missing placeholders do not enter the quantiles.
+
+The 26-week pooling threshold and these floors are explicit engineering
+assumptions, not tuned results. Scales are fitted independently inside every
+outer/inner fitting partition and saved in checkpoints. They are fixed across
+representation and target-weight alternatives using the same partition.
+Normalization does not modify the observations: an admission CRPS of 20 with a
+historical Q95 of 200 contributes `20/200 = .10` to the normalized mean.
 
 ```text
-L = L_flu_admissions_h0_to_h3_counts / A
-    + 0.25 * L_flu_hminus1_counts / A
-    + 0.25 * L_flu_h4_to_h6_counts / A
-    + 0.20 * L_historical_focal_sources_standardized
-    + 0.10 * L_other_pathogens_and_ED_standardized   # extension, initially 0
-    + lambda_joint * L_joint                       # initially 0
+E[s,c,l] = mean_valid_dates_and_horizons(fair_CRPS_native / scale[c,l])
+G[s,c]   = .80 * mean_states_and_DC(E[s,c,l]) + .20 * E[s,c,US]
+L[s]     = sum_available_channels(weight[c] * G[s,c]) / sum_available_channels(weight[c])
+L        = mean_available_seasons(L[s])
 ```
 
-`A` is one positive, training-fold-only scale constant for the entire primary target group; it stabilizes magnitudes without changing relative state weights. It is not a different denominator for every location. The decimal weights are starting proposals. Tune only a small auxiliary-weight grid, then freeze it before the final evaluation.
+Season membership uses the target date. Missing channels receive no weight in
+that season; valid zero observations remain eligible. Locations without labels
+are excluded from their state mean. If only one geography group is available,
+its weight renormalizes to one. The usual six-channel/52-location corpus has
+both groups. Masks and fixed per-cell weights are computed for the whole fitting
+partition before minibatching, so random batch composition does not redefine
+season/channel/location weights. Training and early stopping use this same
+aggregation; all validation noise sources use fixed independent draws.
 
-The primary average uses the location/horizon eligibility and weights prescribed by the evaluation contract. Also report state-equal normalized skill and US-only skill so count-scale gains are interpretable. Absolute WIS and tournament relative WIS are distinct summaries; a CRPS objective cannot exactly optimize the latter's model-pool-dependent ratios.
+**Q95 normalization is a training surrogate for relative skill, not relative
+WIS against an ensemble.** Q95 measures typical outcome magnitude, not baseline
+forecast difficulty. The selection objective in §10.3 instead divides model WIS
+by ensemble WIS within each location. Do not divide training errors by that
+week's observed outcome or realized benchmark error. A future training-side
+baseline-error normalizer would be a separate, explicitly evaluated alternative.
+
+The fair-CRPS implementation and objective are in `models/b0.py`,
+`models/objective.py`, and `models/run.py`. Historical-source replay, extra
+horizons, and joint losses are conditional extensions, not components of the
+current six-channel B0 objective.
 
 ### 8.3 Joint-score experiment
 
@@ -445,14 +490,49 @@ For a central `(1−alpha)` interval `[l,u]`, the interval score is its width pl
 
 Report paired mean WIS differences/ratios to the hub baseline and ensemble, and tournament relative WIS when comparing incomplete submission archives; freeze the comparison pool. Include MAE, 50/80/90/95% coverage, interval width, quantile reliability, submission completeness, and by-horizon revision/nowcast performance. Fair sample CRPS is a useful diagnostic, not a replacement for actual exported-quantile WIS.
 
-**B0 selection score.** Architecture sweeps compare exported 23-level quantiles with the official hub ensembles on identical frozen tasks: every location including US, every scored reference date, and horizons 0–3.
+**B0 selection score: equal relative skill across jurisdictions, with explicit
+national weight.** Compare native exported 23-level quantiles with the official
+hub ensembles on identical frozen tasks, horizons 0–3.
 
-1. **Per target and season:** total model WIS ÷ total ensemble WIS, each summed over all of those tasks. Relative WIS is a ratio of average WIS over the same task set; it is never computed by averaging task-level ratios (model WIS for task *i* ÷ ensemble WIS for task *i*), whose mean has poor statistical properties. Likewise, no per-state ratio is averaged.
-2. **Per target:** the mean of its season ratios, so each season counts one third where a target has three test seasons (flu admissions) and one half where it has two (COVID admissions).
-3. **Combined:** `(2 × (flu + COVID + RSV admissions) + (flu + COVID + RSV ED visits)) / 9`. Each admissions target counts twice as much as each ED target.
-4. **Per configuration:** the mean of run scores across seeds, with their SD.
+1. **Per location, target, and season:** sum model WIS across eligible dates and
+   horizons and divide by the ensemble WIS sum on those same tasks. Do not
+   average individual task ratios. Nonpositive ensemble totals raise an error;
+   the code does not silently drop that location or invent a denominator.
+2. **Per target/season:** average state/DC location ratios equally (80%) and
+   add the native-US ratio (20%). Absent geography groups renormalize over
+   available groups; report the effective US weight.
+3. **Within each season:** weight each available admission target **1** and ED
+   target **.5**, dividing by the sum of available target weights. No additional
+   flu preference and no implied score for a challenge without ensemble support.
+4. **Combined:** average those season composite scores equally.
+5. **Per configuration:** mean and SD of run scores over seeds.
 
-Always report all six target scores beside the combined score, the same computation restricted to states/DC tasks and to US tasks, every season's ratio, and 50/80/90/95% coverage for model and ensemble. The training loss weights `[1,1,1,.5,.5,.5]` mirror the 2:1 weighting. The implementation is `tapestry.evaluation.totals`; per-run sums are stored by target, season, geography, and horizon, so other aggregations need no rescoring.
+Thus 2023–24, 2024–25, and 2025–26 each receive one third, despite different
+challenge availability. The oldest season currently measures only flu
+admissions, the middle flu/COVID admissions, and the newest all six targets.
+This intentionally emphasizes the scarce earlier-season evidence and gives flu
+more effective historical weight because it has more evaluation history. On
+this support, effective target weights are flu admissions 31/54, COVID admissions
+13/54, RSV admissions 2/27, and each ED target 1/27. Equal seasons and equal
+historical pathogen shares cannot both be obtained from this incomplete matrix
+without another explicit convention. No missing challenge is imputed.
+
+Always report all six per-target means over their available seasons, all
+per-target/season scores, the season composites, state-only and US-only scores,
+and 50/80/90/95% coverage. The six target means are diagnostics: their weighted
+average does **not** reconstruct the new season-first combined score. Coverage
+uses the same jurisdiction weights; native WIS sums and pooled ratios remain
+separate diagnostics. Ratios of seasonal sums may be averaged across locations:
+this defines equal relative jurisdiction skill, unlike the old pooled ratio,
+which implicitly weighted locations by ensemble WIS magnitude.
+
+`tapestry.evaluation.totals` stores sums by target, season, **location**,
+geography, and horizon. Rankings record the score version, weights, and full
+definition, and include `season_composite_scores.csv`. The manager includes the
+score version in the ranking directory hash. Old `totals.csv` without locations
+must be rescored from saved forecasts; no model refit is needed for rescoring.
+A new training experiment is required to evaluate the adopted training loss.
+Historical crosses scores retain their originally documented objective.
 
 Stratify by season, horizon, location size, epidemic growth/decline, peak proximity, low-count weeks, reporting completeness, and covariate coverage. Retrospectively defined peak proximity is an evaluation stratum only. Also report revision-size sensitivity rather than dropping difficult revised outcomes from the main score.
 
@@ -575,6 +655,17 @@ encoder, decoder, latent size, and heads: 4,097 configurations at three seeds,
 ranked by the selection score in §10.3. Earlier B0 comparison results were
 withdrawn and will be recreated from this sweep. Historical release handling,
 revision nowcasts, and operational evaluation remain later work.
+
+## Design log
+
+- **2026-09-15 — B0 objective:** adopted native-unit fair CRPS with training-only
+  channel/location Q95 normalization, admission/ED weights 1/.5, US 20%, equal
+  state/DC weights, and season-first averaging. Selection uses location-level
+  ensemble-relative WIS. This replaces pooled channel loss scaling and the
+  target-first pooled-WIS selection score. Fixed shared-factor validation draws;
+  US is a direct forecast, so state-error cancellation is not its mechanism.
+  See [B0 follow-up](../results/b0-crosses/next-steps.md) for rationale and
+  remaining hypotheses. No new model-performance claim follows from these edits.
 
 ## References
 

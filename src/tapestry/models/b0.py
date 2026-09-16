@@ -1,5 +1,4 @@
-"""Build B0: shared focal/context encoders, optional spatial attention, modulated sample decoder."""
-import copy
+"""B0 sample models: local context, scoped spatial exchange, and residual/trend heads."""
 
 import torch
 from torch import nn
@@ -154,8 +153,8 @@ class ModulatedDecoder(nn.Module):
         return self.output(hidden)
 
 
-def fair_crps(samples, truth, mask):
-    """Return one masked score per channel; inputs [M,N,H,C,L], [N,H,C,L].
+def fair_crps_cells(samples, truth, mask):
+    """Return masked native-unit scores [N,H,C,L]; samples [M,N,H,C,L].
 
     Mask BEFORE arithmetic, including pairwise terms. Missing labels contribute
     neither score nor gradient. Members must be independent draws from one model.
@@ -171,19 +170,25 @@ def fair_crps(samples, truth, mask):
     weights = (2 * torch.arange(m, device=samples.device) - m + 1).to(samples.dtype)
     spread = (ordered * weights.reshape(m, 1, 1, 1, 1)).sum(0) / (m * (m - 1))
     score = (samples - truth).abs().mean(0) - spread
-    return (score * mask).sum((0, 1, 3)) / mask.sum((0, 1, 3)).clamp_min(1)
+    return score * mask
+
+
+def fair_crps(samples, truth, mask):
+    """Unweighted per-channel diagnostic; fitting uses explicit cell weights."""
+    return fair_crps_cells(samples, truth, mask).sum((0, 1, 3)) / mask.sum((0, 1, 3)).clamp_min(1)
 
 
 class B0(nn.Module):
     def __init__(self, lookback=8, horizons=(1, 2, 3, 4), width=64, latent=16, scale=None,
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
-                 noise='global', us_error='none', input_offset=None):
+                 noise='global', us_error='none', input_offset=None, head_sharing='shared',
+                 annual_calendar=True, location_embedding=0, location_ids=None):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent)
-        if (encoder not in ('mlp', 'conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
-                or spatial not in ('none', 'attention') or noise not in ('global', 'local')
-                or us_error not in ('none', 'shared_factor')):
+        if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2', 'stochastic_trend')
+                or spatial not in ('none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
+                or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
             raise ValueError('Unknown B0 architecture option')
         if min(lookback, width, latent) < 1:
             raise ValueError('B0 dimensions must be positive')
@@ -197,7 +202,9 @@ class B0(nn.Module):
             raise ValueError('Populations must be finite and positive')
         self.config.update(count_transform=count_transform, populations=populations,
                            geography=geography, dynamics=dynamics, encoder=encoder, heads=heads, decoder=decoder,
-                           ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error)
+                           ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error,
+                           head_sharing=head_sharing, annual_calendar=annual_calendar,
+                           location_embedding=location_embedding, location_ids=location_ids or list(populations or {}))
         # Transformed input scales, always per channel AND location, kept separate from
         # the native-unit loss normalization in `scale`. A single pooled scale put the
         # US at ~40x model units against a state's 0.8, which collapsed its intervals;
@@ -207,41 +214,44 @@ class B0(nn.Module):
         self.register_buffer('input_scale', self._per_location(input_scale, 1.))
         if ed_transform == 'logit':
             self.register_buffer('input_offset', self._per_location(input_offset, 0.))
-        self.register_buffer('scale', torch.ones(6) if scale is None else torch.as_tensor(scale).float())
-        self.context = nn.Sequential(nn.Linear((lookback * 6 * 2 if encoder == 'mlp' else width) + 2 + 2 * geography + 31 * dynamics, width), nn.SiLU(), nn.Linear(width, width))
+        self.register_buffer('scale', self._per_location(scale, 1.))
+        # Save shape and location scales so checkpoints reconstruct their buffers.
+        self.config['scale'] = self.scale.tolist()
+        self.config['input_scale'] = self.input_scale.tolist()
+        if ed_transform == 'logit':
+            self.config['input_offset'] = self.input_offset.tolist()
+        from .architecture import MultiscaleEncoder, ForecastHead
+        temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
+        extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
+        self.context = nn.Sequential(nn.Linear((lookback * 12 if encoder == 'mlp' else width) + extra_width, width),
+                                     nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * 2, width), nn.SiLU(), nn.Linear(width, width))
-                      if encoder == 'mlp' else TemporalEncoder(2, width))
-        if encoder == 'conv':
-            self.temporal_context = TemporalEncoder(12, width)
+                      if encoder == 'mlp' else temporal(2, width))
+        if encoder != 'mlp':
+            self.temporal_context = temporal(12, width)
         self.source = nn.Embedding(6, width)
         self.horizon = nn.Linear(1, width)
         self.norm = nn.LayerNorm(width)
+        if location_embedding:
+            if not self.config['location_ids']:
+                raise ValueError('Location embeddings require ordered location IDs')
+            self.location_id = nn.Embedding(len(self.config['location_ids']), location_embedding)
+        self.output_groups = ([list(range(6))] if head_sharing == 'shared' else
+                              [[0, 3], [1, 4], [2, 5]] if head_sharing == 'pathogen' else [[c] for c in range(6)])
         local = LOCAL_LATENT if noise == 'local' else 0
-        if decoder == 'legacy':
-            # Preserve module names and initialization order for old checkpoints/seeds.
-            self.modulate = nn.Linear(latent, 2 * width)
-            self.decoder = nn.Sequential(nn.Linear(width, width), nn.SiLU(), nn.Linear(width, 1))
-            nn.init.normal_(self.modulate.weight, std=.02)
-            nn.init.zeros_(self.modulate.bias)
-            nn.init.normal_(self.decoder[-1].weight, std=.01)
-            nn.init.zeros_(self.decoder[-1].bias)
-        else:
-            self.decoder = ModulatedDecoder(width, latent, local)
-        # New modules follow all original ones, so existing configurations initialize identically.
-        if decoder == 'legacy' and local:
-            self.local_modulate = modulation_layer(local, width)
-            self.local_scale = nn.Parameter(softplus_inverse(1))
+        self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
         if heads == 'state_us':
-            # Identical initial heads isolate specialization during fitting. Modulation
-            # parameters then learn separately, while random draws remain shared.
-            self.us_decoder = copy.deepcopy(self.decoder)
-            if decoder == 'legacy':
-                self.us_modulate = copy.deepcopy(self.modulate)
-                if local:
-                    self.us_local_modulate = copy.deepcopy(self.local_modulate)
-                    self.us_local_scale = copy.deepcopy(self.local_scale)
-        if spatial == 'attention':
+            self.us_output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+        if spatial != 'none':
             self.spatial = SpatialBlock(width)
+        if spatial not in ('none', 'attention'):
+            scope_channels = 2 if spatial == 'pathogen_spatial' else 1
+            # A separate, scope-restricted remote branch cannot leak other histories.
+            self.remote = (nn.Sequential(nn.Linear(lookback * scope_channels * 2, width), nn.SiLU(), nn.Linear(width, width))
+                           if encoder == 'mlp' else temporal(scope_channels * 2, width))
+            self.remote_identity = nn.Embedding(3 if spatial == 'pathogen_spatial' else 6, width)
+            if geography or location_embedding:
+                self.remote_geo = nn.Linear(2 * geography + location_embedding, width)
         if us_error == 'shared_factor':
             # Sized against the decoder residual, whose magnitude at initialization is
             # ~0.10 (abs mean 0.096, p95 0.230): softplus(-2.252) = 0.10 makes the common
@@ -266,8 +276,8 @@ class B0(nn.Module):
         """Learned magnitudes of the per-location latent term, by head."""
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
-    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None):
-        """x [N,P,C,2,L], calendar [N,2]; samples [M,N,H,C,L].
+    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None):
+        """x [N,P,C,2,L], calendar [N,3] when enabled; samples [M,N,H,C,L].
 
         Each member uses one global latent per episode shared across ALL locations,
         horizons and channels; local noise adds one latent per location. No
@@ -296,26 +306,53 @@ class B0(nn.Module):
         values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
         fields = torch.stack((values, mask), dim=-1)  # N,P,C,L,2
         context = fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)
-        if config['encoder'] == 'conv':
+        if config['encoder'] != 'mlp':
             context = self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * 2, p)).reshape(n, l, -1)
-        extras = [calendar[:, None, :2].expand(-1, l, -1)]
-        if config['geography']:
-            # Log population centered at 100,000; native US remains a separate task.
-            geo = torch.stack(((population / 100000).log(), x.new_tensor([loc == 'US' for loc in locations])), -1)
-            extras.append(geo[None].expand(n, -1, -1))
-        if config['dynamics']:
+        extras, geo_features = [], []
+        if config['annual_calendar']:
             if calendar.shape[-1] != 3:
-                raise ValueError('Dynamics requires Christmas calendar feature')
-            extras.extend((recent_dynamics(values, mask).permute(0, 2, 1),
-                           calendar[:, None, 2:].expand(-1, l, -1)))
+                raise ValueError('Calendar requires annual phase and Christmas timing')
+            extras.append(calendar[:, None, :].expand(-1, l, -1))
+        if config['geography']:
+            geo = torch.stack(((population / 100000).log(), x.new_tensor([loc == 'US' for loc in locations])), -1)
+            geo_features.append(geo[None].expand(n, -1, -1))
+        if config['location_embedding']:
+            ids = torch.tensor([config['location_ids'].index(loc) for loc in locations], device=x.device)
+            geo_features.append(self.location_id(ids)[None].expand(n, -1, -1))
+        extras.extend(geo_features)
+        if config['dynamics']:
+            extras.append(recent_dynamics(values, mask).permute(0, 2, 1))
         context = self.context(torch.cat([context, *extras], -1))
-        if config['spatial'] == 'attention':
-            context = self.spatial(context)
         if config['encoder'] == 'mlp':
             focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * 2))
         else:
             focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, 2, p)).reshape(n, l, c, -1)
+        if config['spatial'] == 'attention':
+            context = self.spatial(context)
         h = context[:, :, None, :] + focal + self.source.weight[None, None, :, :]
+        if config['spatial'] not in ('none', 'attention'):
+            scope = config['spatial']
+            groups = ([[0, 3], [1, 4], [2, 5]] if scope == 'pathogen_spatial' else [[i] for i in range(6)])
+            tokens = []
+            for gi, channels in enumerate(groups):
+                f = fields[:, :, channels]
+                remote_input = (f.permute(0, 3, 1, 2, 4).reshape(n, l, -1) if config['encoder'] == 'mlp'
+                                else f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * 2, p))
+                token = self.remote(remote_input).reshape(n, l, -1)
+                token = token + self.remote_identity.weight[gi]
+                if geo_features:
+                    token = token + self.remote_geo(torch.cat(geo_features, -1))
+                tokens.append(token)
+            remote = torch.stack(tokens, 2)  # N,L,group,W
+            if scope == 'joint_location_target':
+                remote = self.spatial(remote.reshape(n, l * len(groups), -1)).reshape_as(remote)
+            else:
+                # Batch the groups separately: exactly same-target/pathogen masking,
+                # with shared attention parameters conditioned on group identity.
+                remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
+            mapping = [next(i for i, group in enumerate(groups) if c in group) for c in range(6)]
+            h = h + remote[:, :, mapping]
+        context_h = self.norm(h)
         offsets = x.new_tensor(config['horizons']).reshape(-1, 1) / 4
         h = self.norm(h[:, None, :, :, :] + self.horizon(offsets)[None, :, None, None, :])
         if z is None:
@@ -326,27 +363,40 @@ class B0(nn.Module):
             if local_z.shape != (z.shape[0], n, l, LOCAL_LATENT):
                 raise ValueError('Local latent must have shape [members, episodes, locations, 4]')
 
-        def decode(head, prefix=''):
-            if config['decoder'] == 'residual2':
-                return head(h, z, local_z)
-            local = getattr(self, prefix + 'local_modulate', None)
-            scale = F.softplus(getattr(self, prefix + 'local_scale')) if local is not None else None
-            gamma, beta = affine(getattr(self, prefix + 'modulate'), z, local, local_z, scale)
-            return head(h[None] * (1 + gamma) + beta)
-        delta = decode(self.decoder)
+        # Recent growth in exactly the working space used by the inverse decoder.
+        working = values.clone()
+        positive_channels = list(range(3)) + (list(range(3, 6)) if config['ed_transform'] == 'fourth_root' else [])
+        positive = values[:, :, positive_channels].clamp_min(.001)
+        working[:, :, positive_channels] = positive + torch.log(-torch.expm1(-positive))
+        if config['ed_transform'] == 'logit':
+            working[:, :, 3:] = values[:, :, 3:] * input_scale[None, None, 3:] + offset[None, None, 3:]
+        elif config['ed_transform'] == 'linear':
+            working[:, :, 3:] = torch.logit((values[:, :, 3:] * input_scale[None, None, 3:]).clamp(*ED_BOUNDS))
+        slope_valid = mask[:, -1] * mask[:, -2] if p >= 2 else torch.zeros_like(mask[:, -1])
+        slope = torch.where(slope_valid.bool(), working[:, -1] - working[:, -2], 0) if p >= 2 else torch.zeros_like(working[:, -1])
+        slope, slope_valid = slope.permute(0, 2, 1), slope_valid.permute(0, 2, 1)
+
+        def decode(heads):
+            outputs = [head(h[:, :, :, group], context_h[:, :, group], z, local_z,
+                            slope[:, :, group], slope_valid[:, :, group], config['horizons'])
+                       for head, group in zip(heads, self.output_groups)]
+            order = [channel for group in self.output_groups for channel in group]
+            return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
+        delta = decode(self.output_heads)
         if config['heads'] == 'state_us':
-            us = decode(self.us_decoder, 'us_')
+            us = decode(self.us_output_heads)
             is_us = torch.tensor([loc == 'US' for loc in locations], device=x.device)
             delta = torch.where(is_us[None, None, None, :, None, None], us, delta)
         if config['us_error'] == 'shared_factor':
-            # One draw per episode, member and channel, shared by every location: a
-            # common national mode. Without it the only shared randomness is `z`,
-            # whose per-location modulation leaves state errors free to cancel when
-            # the national prediction forms, which is what makes US intervals narrow.
-            # Applied before the anchor, so in transformed space it acts proportionally.
-            # delta is [M,N,H,L,C,1] here; the channel/location swap follows below.
-            national = torch.randn(delta.shape[0], n, 1, 1, c, 1, device=x.device, dtype=delta.dtype)
-            delta = delta + national * F.softplus(self.national_scale)[None, None, None, None, :, None]
+            # A common residual perturbation per channel, shared across locations
+            # and horizons. US is decoded directly, never formed by summing states.
+            # Its effect is additive in transformed decoder space, not necessarily
+            # proportional in native units. Explicit draws keep validation fixed.
+            if national_z is None:
+                national_z = torch.randn(delta.shape[0], n, c, device=x.device, dtype=delta.dtype)
+            if national_z.shape != (delta.shape[0], n, c):
+                raise ValueError('National noise must have shape [members, episodes, channels]')
+            delta = delta + national_z[:, :, None, None, :, None] * F.softplus(self.national_scale)[None, None, None, None, :, None]
         delta = delta.squeeze(-1).permute(0, 1, 2, 4, 3)
         # Last valid focal value anchors the residual; zero-history uses a small prior.
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)

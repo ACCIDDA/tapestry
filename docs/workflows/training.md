@@ -56,17 +56,19 @@ Default width is 64, totaling 22,785 parameters. B0 has no spatial attention or
 location embedding. Cross-channel context is included; cross-location information
 exchange is deferred to B1.
 
-By default, values are divided by each channel's training-only 95th percentile.
-Population transforms and geographic/dynamics features are optional experiment
-switches (below). No
-learned zero-history prior or separate observation-noise layer is added. The loss is
-masked fair CRPS in native units divided by each channel's fixed training scale,
-with weights `[1,.1,.1,.1,.1,.1]` so influenza admissions are primary. Dividing the
-primary count score by its fixed scale changes its numerical magnitude, not its
-single-target optimum. These are explicit pilot choices, not tuned findings.
-Eight independent training members are the default. Masks exclude missing labels
-before arithmetic and retain observed zeros. Samples are sorted to compute fair
-CRPS without a quadratic pairwise member tensor.
+Input transforms are fitted per channel/location using training-only history.
+The loss is **fair CRPS on untransformed predictions**, divided by a separate
+native-unit channel/location Q95. Admission/ED weights default to
+`[1,1,1,.5,.5,.5]`; seasons are averaged equally after combining available targets
+within each season. States/DC share 80% equally and native US has 20%. Sparse
+loss scales pool toward the channel Q95 below 26 observed weeks, with floors of
+1 admission and .001 ED proportion. See
+[design choices for loss](../design/architecture.md#82-design-choices-for-b0-loss-and-weights).
+This training normalization is a surrogate for the location-relative ensemble
+WIS used in ranking, not the same denominator. Missing labels are masked before
+arithmetic; observed zeros remain eligible. Whole-partition cell weights preserve
+the objective across minibatches. Eight training draws are the direct CLI default;
+the experiment recipes use 128. Sorted samples avoid a quadratic pairwise tensor.
 
 Training uses September 2023 onward by default. Context origins, training labels,
 and scaling statistics stop at `--train-end`; labels beyond it are masked even
@@ -95,7 +97,7 @@ Defaults give the baseline B0 behavior. The
 | `--geography` | Log(population / 100000) and native-US indicator |
 | `--lookback` | Compare `8`, `12`, `26`; same MLP architecture and width |
 | `--dynamics` | Recent slope, change in slope, observation age, validity flags, Christmas timing |
-| `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]`; `objective`: `[1,1,1,.5,.5,.5]`, matching the selection score |
+| `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]`; `objective`: `[1,1,1,.5,.5,.5]`, the adopted target coefficients (training uses Q95 normalization; selection uses ensemble WIS ratios) |
 | `--population-file` | Default frozen `data/metadata/b0_locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
 | `--encoder` | `mlp` (default) or `conv`: two shared temporal convolutions |
 | `--heads` | `shared` (default) or `state_us`: separate modulation/output parameters |
@@ -112,7 +114,7 @@ unsupervised and should not be interpreted as trained forecasts.
 For the population variants, admissions become rates per 100,000, then receive the
 selected power transform and training-context Q95 scaling. The decoder inverts
 both operations to admission counts **before** fair CRPS. ED remains proportional
-with a bounded sigmoid decoder. Native-unit loss Q95 scales are fitted separately
+with a bounded decoder. Native-unit channel/location loss Q95 scales are fitted separately
 and stay identical across representation and loss-weight variants on a given fold.
 Counts are not centered, preserving a simple nonnegative transformed residual anchor.
 The transform also sets where uncertainty acts: residuals and latent perturbations
@@ -156,8 +158,9 @@ winter, and spring; 18–19 weeks per fold). Hidden weeks are removed from the i
 fit's context, labels, and scales, which keeps 80–85 of about 100 training windows;
 the refit uses all of them. Validation episodes are the origins with a hidden week
 among their targets, scored only on hidden weeks, so each hidden week is predicted
-at all four horizons. After every epoch, the weighted fair CRPS on validation
-episodes uses fixed draws (32 members).
+at all four horizons. After every epoch, the season/target/location-weighted normalized fair CRPS on validation
+episodes uses fixed draws (32 members), including global, local, and shared-factor
+noise. Validation does not consume the training RNG.
 Training stops after `--patience` epochs without improvement, restoring the best
 epoch; the model is then refit on all training weeks for that many epochs. The inner
 model's validation forecasts are saved as `validation_forecasts.npz` and

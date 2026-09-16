@@ -9,10 +9,11 @@ import numpy as np
 import torch
 
 from tapestry.model_data import CHANNELS, FinalizedDataset
-from .b0 import B0, LOCAL_LATENT, fair_crps
+from .b0 import B0, LOCAL_LATENT, fair_crps_cells
 from .experiments import LOSS_WEIGHTS, add_experiment_args, model_options
+from .objective import LOSS_DEFINITION, US_WEIGHT, loss_cell_weights, loss_scales
 
-VALIDATION_MEMBERS = 32
+VALIDATION_MEMBERS = 256
 
 
 def calendar(days, dynamics=False):
@@ -28,35 +29,41 @@ def calendar(days, dynamics=False):
 def tensors(episodes, model, device):
     x = torch.tensor(np.stack([e['X'] for e in episodes]), device=device)
     y = torch.tensor(np.stack([e['Y'] for e in episodes]), device=device)
-    cal = torch.tensor(calendar([e['context_dates'][-1] for e in episodes], model.config['dynamics']), device=device)
+    cal = torch.tensor(calendar([e['context_dates'][-1] for e in episodes], model.config.get('annual_calendar', True)), device=device)
     return x, y, cal
 
 
 def validation_draws(model, episodes, args):
     """Fixed draws per validation batch, so epochs differ only through the weights."""
     generator = torch.Generator().manual_seed(args.seed + 2000)
+    members = getattr(args, 'validation_members', VALIDATION_MEMBERS)
     draws = []
     for ids in torch.arange(len(episodes)).split(args.batch_size):
-        z = torch.randn(VALIDATION_MEMBERS, len(ids), model.config['latent'], generator=generator)
-        local = (torch.randn(VALIDATION_MEMBERS, len(ids), len(episodes[0]['locations']), LOCAL_LATENT, generator=generator)
+        z = torch.randn(members, len(ids), model.config['latent'], generator=generator)
+        local = (torch.randn(members, len(ids), len(episodes[0]['locations']), LOCAL_LATENT, generator=generator)
                  if model.config['noise'] == 'local' else None)
-        draws.append((ids, z.to(args.device), None if local is None else local.to(args.device)))
+        national = (torch.randn(members, len(ids), 6, generator=generator)
+                    if model.config['us_error'] == 'shared_factor' else None)
+        draws.append((ids, z.to(args.device), None if local is None else local.to(args.device),
+                      None if national is None else national.to(args.device)))
     return draws
 
 
-def validation_loss(model, episodes, args, draws):
+def validation_loss(model, episodes, args, draws, cell_weights=None):
     """Mean weighted fair CRPS over validation episodes, in the same units as training."""
     x, y, cal = tensors(episodes, model, args.device)
-    weights = torch.tensor(LOSS_WEIGHTS[getattr(args, 'loss_weights', 'influenza_first')], device=args.device)
+    if cell_weights is None:
+        cell_weights = torch.tensor(loss_cell_weights(episodes, LOSS_WEIGHTS[getattr(args, 'loss_weights', 'objective')]), device=args.device)
     total = 0.
+    was_training = model.training
     model.eval()
     with torch.no_grad():
-        for ids, z, local_z in draws:
-            samples = model(x[ids], cal[ids], z=z, local_z=local_z, locations=episodes[0]['locations'])
-            scores = fair_crps(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
-            total += float((weights * scores / model.scale).sum()) * len(ids)
-    model.train()
-    return total / len(episodes)
+        for ids, z, local_z, national_z in draws:
+            samples = model(x[ids], cal[ids], z=z, local_z=local_z, national_z=national_z, locations=episodes[0]['locations'])
+            scores = fair_crps_cells(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
+            total += float((cell_weights[ids] * scores / model.scale).sum())
+    model.train(was_training)
+    return total
 
 
 def fit(episodes, scales, args, options=None, validation=None):
@@ -68,13 +75,17 @@ def fit(episodes, scales, args, options=None, validation=None):
     """
     model = B0(args.lookback, args.horizons, args.width, scale=scales, **(model_options(episodes, args) if options is None else options)).to(args.device)
     x, y, cal = tensors(episodes, model, args.device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    weights = torch.tensor(LOSS_WEIGHTS[getattr(args, 'loss_weights', 'influenza_first')], device=args.device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=getattr(args, 'weight_decay', 0.))
+    weights = LOSS_WEIGHTS[getattr(args, 'loss_weights', 'objective')]
+    cell_weights = torch.tensor(loss_cell_weights(episodes, weights), device=args.device)
+    validation_weights = (torch.tensor(loss_cell_weights(validation, weights), device=args.device)
+                          if validation is not None else None)
     patience = getattr(args, 'patience', 0) if validation is not None else 0
     if validation is not None and patience < 1:
         raise ValueError('Early stopping needs a positive patience')
     draws = validation_draws(model, validation, args) if validation is not None else None
-    record = dict(loss=[], validation_loss=[], best_epoch=None)
+    record = dict(loss=[], validation_loss=[], best_epoch=None, epoch_cap=args.epochs,
+                  validation_members=getattr(args, 'validation_members', VALIDATION_MEMBERS))
     best, best_state = float('inf'), None
     for epoch in range(args.epochs):
         order = torch.randperm(len(episodes), device=args.device)
@@ -82,9 +93,9 @@ def fit(episodes, scales, args, options=None, validation=None):
         for ids in order.split(args.batch_size):
             optimizer.zero_grad()
             samples = model(x[ids], cal[ids], args.members, locations=episodes[0]['locations'])
-            scores = fair_crps(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
-            # Native-unit CRPS after inversion; fixed channel Q95 across weight ablations.
-            loss = (weights * scores / model.scale).sum()
+            scores = fair_crps_cells(samples, y[ids, :, :, 0, :], y[ids, :, :, 1, :])
+            # Uniform episode minibatches estimate the full weighted partition loss.
+            loss = (cell_weights[ids] * scores / model.scale).sum() * len(episodes) / len(ids)
             if not torch.isfinite(loss):
                 raise ValueError('Nonfinite training loss')
             loss.backward()
@@ -95,7 +106,7 @@ def fit(episodes, scales, args, options=None, validation=None):
         progress = {'epoch': epoch + 1, 'loss': record['loss'][-1]}
         if validation is not None:
             # Validation draws use their own generator, leaving the training stream unchanged.
-            current = validation_loss(model, validation, args, draws)
+            current = validation_loss(model, validation, args, draws, validation_weights)
             if not np.isfinite(current):
                 raise ValueError('Nonfinite validation loss')
             record['validation_loss'].append(current)
@@ -108,10 +119,13 @@ def fit(episodes, scales, args, options=None, validation=None):
             break
     if best_state is not None:
         model.load_state_dict(best_state)
+    record.update(epochs_run=len(record['loss']), cap_hit=len(record['loss']) == args.epochs)
     return model, record
 
 
 def train(args):
+    if args.fit_partition != 'all':
+        raise ValueError('Independent bundles use tapestry.models.season_cv --fit-partition')
     torch.manual_seed(args.seed)
     ds = FinalizedDataset.load(args.dataset)
     # Origins, labels and scale fitting stop at train_end; earlier history may be context.
@@ -121,10 +135,7 @@ def train(args):
     if not episodes:
         raise ValueError('No supervised windows in training interval')
     selected = ds.panel[[args.train_start <= day <= args.train_end for day in ds.dates]]
-    scales = []
-    for c in range(6):
-        valid = selected[:, c, 0, :][selected[:, c, 1, :].astype(bool)]
-        scales.append(max(float(np.quantile(valid, .95)) if valid.size else 0, 1 if c < 3 else .001))
+    scales = loss_scales(selected)
     # Earlier dates may supply context, but input scalers use only the fit interval.
     # Scale fitting is separate from the actual context passed to the model.
     scale_episodes = []
@@ -142,7 +153,7 @@ def train(args):
                 'seed': args.seed, 'epochs': args.epochs, 'episodes': len(episodes),
                 'dataset_sha256': hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
                 'channels': list(CHANNELS), 'locations': list(ds.locations),
-                'loss': 'fair CRPS in native units / training Q95',
+                'loss': LOSS_DEFINITION, 'us_weight': US_WEIGHT,
                 'loss_weights': LOSS_WEIGHTS[args.loss_weights], 'experiment': model.config,
                 'history': record['loss'], 'local_noise_scale': model.local_noise_scales(),
                 'torch_version': str(torch.__version__),
@@ -155,14 +166,14 @@ def train(args):
 def predict(args):
     torch.manual_seed(args.seed)
     checkpoint = torch.load(args.checkpoint, map_location='cpu', weights_only=True)
-    model = B0(**checkpoint['config'])
-    model.load_state_dict(checkpoint['state_dict'])
+    from .bundles import load_model
+    model = load_model(checkpoint)
     model.to(args.device).eval()
     ds = FinalizedDataset.load(args.dataset)
     q = ds.query(args.context_end, lookback=model.config['lookback'],
                  horizons=tuple(model.config['horizons']), locations=args.locations)
     x = torch.tensor(q['X'][None], device=args.device)
-    cal = torch.tensor(calendar([args.context_end], model.config['dynamics']), device=args.device)
+    cal = torch.tensor(calendar([args.context_end], model.config.get('annual_calendar', True)), device=args.device)
     with torch.no_grad():
         samples = torch.cat([model(x, cal, min(args.sample_batch, args.members - i), locations=q['locations']).cpu()
                              for i in range(0, args.members, args.sample_batch)], dim=0).numpy()[:, 0]
