@@ -176,8 +176,9 @@ The copy is a thinned export of the local index, committed to
   8 weeks after each date, plus each date's latest value.
 - Full-snapshot Hub target files become a change log that keeps removals, so an
   as-of date resolves as it does locally.
-- **As of** a Wednesday matches the local explorer; other dates show the
-  previous Wednesday's snapshot, and ← / → step through the kept releases only.
+- **As of** dates are Wednesdays only: chart clicks and typed dates snap to the
+  nearest Wednesday (never after today), and ← / → step through Wednesday weeks
+  with releases. These match the local explorer's values for that Wednesday.
 
 The published banner adds that the online version is not updated (with its export
 date) and that the local explorer is the ground-truth source. The docs header links

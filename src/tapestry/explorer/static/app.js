@@ -45,6 +45,20 @@
     const shift = direction < 0 ? -(((weekdayIndex - 3 + 7) % 7) || 7) : (((3 - weekdayIndex + 7) % 7) || 7);
     return isoDate(time + shift * DAY);
   };
+  // Nearest Wednesday to a day, never after today (the published copy keeps Wednesday snapshots only).
+  const nearestWednesday = day => {
+    const time = dateTime(day);
+    let shift = 3 - new Date(time).getUTCDay();
+    if (shift > 3) shift -= 7;
+    if (shift < -3) shift += 7;
+    const result = isoDate(time + shift * DAY);
+    return result > today() ? isoDate(dateTime(result) - 7 * DAY) : result;
+  };
+  // A release is visible from the first Wednesday on or after it.
+  const wednesdayOnOrAfter = day => {
+    const time = dateTime(day);
+    return isoDate(time + ((3 - new Date(time).getUTCDay() + 7) % 7) * DAY);
+  };
   const versionLabel = day => day ? `${weekday(day, "short")} ${day}` : "Latest";
   const tooltip = document.getElementById("tooltip");
 
@@ -95,7 +109,7 @@
     const ROOT = "data/";
     const HYPARQUET = "https://cdn.jsdelivr.net/npm/hyparquet@1.31.0/+esm";
     const FRESHNESS_DAYS = {daily: 14, weekly: 35, monthly: 75, sample: 45};
-    let detected, catalog, ranges, hyparquet, metadata;
+    let detected, catalog, ranges, hyparquet, metadata, published = false;
     const files = new Map();
     const lists = new Map();
     const revisions = new Map();
@@ -116,6 +130,7 @@
         catalog = await response.json();
         return true;
       }).catch(() => false);
+      detected.then(value => { published = value; });
       return detected;
     }
 
@@ -230,7 +245,7 @@
       }
     }
     const exportedAt = () => (catalog?.meta?.exported_at || "").slice(0, 10);
-    return {available, request, exportedAt};
+    return {available, request, exportedAt, isPublished: () => published};
   })();
 
   function escapeHTML(value) {
@@ -297,7 +312,10 @@
       const params = new URLSearchParams({state: model.state, series: [...model.selected.keys()].join(",")});
       const payload = await requestJSON(`api/versions?${params}`);
       if (token !== model.versionRequest) return;
-      model.versionDates = payload.dates;
+      // The published copy only resolves Wednesday snapshots: step through those weeks.
+      model.versionDates = staticData.isPublished()
+        ? [...new Set(payload.dates.map(wednesdayOnOrAfter).filter(day => day <= today()))].sort()
+        : payload.dates;
       renderVersionControls();
     } catch (error) {
       if (token === model.versionRequest) showError(error);
@@ -314,7 +332,7 @@
   }
 
   function setVersion(day) {
-    model.asOf = day;
+    model.asOf = day && staticData.isPublished() ? nearestWednesday(day) : day;
     renderVersionControls();
     updatePlot();
   }
