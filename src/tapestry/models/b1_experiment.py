@@ -12,12 +12,13 @@ import pandas as pd
 
 from .b1_scenarios import B1Scenario, PRESETS, comparison_grid
 
-SCORE_VERSION = 'b1-task-normalized-crps-v1'
+SCORE_VERSION = 'b1-task-normalized-crps-v2'
 SCORE_DEFINITION = ('Rank forecasting and nowcasting separately by native fair CRPS / fitting-only '
                     'channel-location Q95; equal target-date seasons, admission target weights 1 and ED .5, '
                     '80% equally weighted states/DC and 20% US, renormalizing absent support. '
                     'Within a location average eligible origins/horizons. Mean and sample SD across seeds. '
-                    'Natural inputs are primary; stress scenarios have separate rankings. Not Hub-relative skill.')
+                    'Natural inputs are primary; stress scenarios have separate rankings. Not Hub-relative skill. '
+                    'Score columns use B0 naming: config_id identifies the configuration, stress the input scenario.')
 DATES = ('train_end', 'validation_start', 'validation_end', 'evaluation_start', 'evaluation_end')
 
 
@@ -162,7 +163,7 @@ def validate_support(frame):
     """Match exact cells, labels, normalization and weights across seeds/configs."""
     keys = ['issuance_date', 'target_date', 'target', 'location', 'horizon']
     reference = ['observed', 'loss_scale', 'objective_weight']
-    if frame.duplicated(['variant', 'seed', 'scenario', *keys]).any():
+    if frame.duplicated(['config_id', 'seed', 'stress', *keys]).any():
         raise ValueError('Duplicate B1 scoring cells')
     if not np.isfinite(frame[['crps', 'wis', *reference]].to_numpy()).all():
         raise ValueError('Nonfinite B1 scores, weights or truth')
@@ -170,7 +171,7 @@ def validate_support(frame):
         raise ValueError('Invalid B1 normalization or weights')
     for task, part in frame.groupby('task'):
         baseline = None
-        for _, run in part.groupby(['variant', 'seed', 'scenario']):
+        for _, run in part.groupby(['config_id', 'seed', 'stress']):
             values = run[keys + reference].sort_values(keys).reset_index(drop=True)
             if baseline is not None and not values.equals(baseline):
                 raise ValueError(f'B1 {task} support/truth/scales/weights differ; use common evaluation and fitting support')
@@ -181,20 +182,21 @@ def validate_support(frame):
 
 def ranking_tables(frame):
     validate_support(frame)
-    ids = ['variant', 'configuration', 'seed', 'scenario', 'task']
+    ids = ['config_id', 'scenario_string', 'seed', 'stress', 'task']
     weighted = frame.assign(normalized_crps=frame.crps / frame.loss_scale * frame.objective_weight,
                             normalized_wis=frame.wis / frame.loss_scale * frame.objective_weight)
     runs = weighted.groupby(ids)[['normalized_crps', 'normalized_wis']].sum().reset_index()
     ranks = runs.groupby([c for c in ids if c != 'seed']).agg(
         score_mean=('normalized_crps', 'mean'), score_sd=('normalized_crps', 'std'),
         wis_mean=('normalized_wis', 'mean'), wis_sd=('normalized_wis', 'std'), seeds=('seed', 'nunique')).reset_index()
-    ranks['rank'] = ranks.groupby(['scenario', 'task']).score_mean.rank(method='min')
+    # Configurations are ranked against each other within one stress scenario and task.
+    ranks['rank'] = ranks.groupby(['stress', 'task']).score_mean.rank(method='min')
     # Native per-target scores retain their units; never pool admissions with ED.
     target = frame.assign(geography=np.where(frame.location == 'US', 'US', 'states_dc')).groupby(
         [*ids, 'target', 'season', 'geography', 'horizon']).agg(
         n=('wis', 'size'), wis=('wis', 'mean'), crps=('crps', 'mean'),
         coverage_50=('coverage_50', 'mean'), coverage_95=('coverage_95', 'mean')).reset_index()
-    return runs, ranks.sort_values(['scenario', 'task', 'rank']), target
+    return runs, ranks.sort_values(['stress', 'task', 'rank']), target
 
 
 def postprocess(folder, allow_incomplete=False, plots=False, workers=2):
@@ -222,7 +224,7 @@ def postprocess(folder, allow_incomplete=False, plots=False, workers=2):
         tasks = ('forecast',) if scenario.pipeline == 'direct' else ('forecast', 'nowcast')
         expected.update((scenario.run_id, row['seed'], stress, task)
                         for stress in ('natural', 'recent', 'gap', 'outage') for task in tasks)
-    actual = set(frame[['variant', 'seed', 'scenario', 'task']].itertuples(index=False, name=None))
+    actual = set(frame[['config_id', 'seed', 'stress', 'task']].itertuples(index=False, name=None))
     if actual != expected:
         raise ValueError('Missing or unexpected B1 run/task/stress-scenario scores')
     runs, ranks, targets = ranking_tables(frame)
@@ -243,9 +245,12 @@ def postprocess(folder, allow_incomplete=False, plots=False, workers=2):
     (destination / 'REPORT.md').write_text(
         '# B1 comparison\n\n' + SCORE_DEFINITION + '\n\n'
         'See configuration_ranking.csv, run_scores.csv, target_scores.csv and summary.csv (compare only). '
+        'Columns follow B0: config_id is the configuration (B1 run_id) and scenario_string its full b1:v2: string. '
+        'The stress column is the evaluation input scenario (natural/recent/gap/outage); configurations are ranked '
+        'against each other within one stress scenario and task. '
         'The task column separates nowcast (-2/-1) and forecast (0–3). Direct controls have no nowcast rank. '
         'Hub-relative results, when enabled, are under hub-ranking/ and use narrower matched support.\n')
-    print(ranks[ranks.scenario == 'natural'][['variant', 'task', 'score_mean', 'score_sd', 'seeds', 'rank']].to_string(index=False))
+    print(ranks[ranks.stress == 'natural'][['config_id', 'task', 'score_mean', 'score_sd', 'seeds', 'rank']].to_string(index=False))
     return destination
 
 

@@ -222,12 +222,12 @@ def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
     import pandas as pd
     from tapestry.models.b1_experiment import ranking_tables
     rows = []
-    for variant, tasks in [('direct', ['forecast']), ('two', ['forecast', 'nowcast'])]:
+    for config_id, tasks in [('direct', ['forecast']), ('two', ['forecast', 'nowcast'])]:
         for task in tasks:
             # Equal normalized errors despite different native units.
             for target, scale, weight in [('admissions', 100., 2 / 3), ('ed', .01, 1 / 3)]:
                 error = 2. if task == 'forecast' else 5.
-                rows.append(dict(variant=variant, configuration=variant, seed=42, scenario='natural', task=task,
+                rows.append(dict(config_id=config_id, scenario_string=config_id, seed=42, stress='natural', task=task,
                     issuance_date='2025-08-06', target_date='2025-08-09' if task == 'forecast' else '2025-08-02',
                     target=target, location='US', horizon=0 if task == 'forecast' else -1, season='2025-2026',
                     observed=scale, loss_scale=scale, objective_weight=weight, crps=error * scale,
@@ -238,7 +238,7 @@ def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
     np.testing.assert_allclose(ranks.loc[ranks.task == 'nowcast', 'score_mean'], 5.)
     assert ranks.score_sd.isna().all()  # One seed does not establish zero variance.
     changed = frame.copy()
-    changed.loc[changed.variant == 'direct', 'loss_scale'] *= 2
+    changed.loc[changed.config_id == 'direct', 'loss_scale'] *= 2
     with pytest.raises(ValueError, match='support/truth/scales/weights differ'):
         ranking_tables(changed)
     with pytest.raises(ValueError):
