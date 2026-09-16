@@ -15,12 +15,11 @@ The design and numerical defaults below are **proposals**. Paper findings are at
 
 The work proceeds from a small, finalized-data pilot to the full vintage-aware, multi-channel architecture. The six-channel set is NHSN admissions and NSSP ED proportions for influenza, COVID-19, and RSV.
 
-| Stage | Data | Purpose |
-|---|---|---|
-| **B0** | Non-vintaged data; six channels (NHSN + NSSP) | Establish the baseline and decide most of the architecture. |
-| **B1** | Vintaged data; six channels (NHSN + NSSP) | Add release-time information and measure the value of revision-aware training. |
-| **B2** | Non-vintaged data; more channels (NHSN + NSSP + wastewater) | Test whether wastewater adds signal before introducing vintage complexity. |
-| **B3** | Vintaged data; more channels (NHSN + NSSP + wastewater) | Combine the selected architecture with the broader vintage-aware input panel. |
+| Stage | Data |
+|---|---|
+| **B0** | Non-vintaged data; six channels (NHSN + NSSP) |
+| **B1** | Vintaged data; six channels (NHSN + NSSP) + masking |
+| **B3** | Vintaged data; more channels (NHSN + NSSP + wastewater) |
 
 **B0.0** names the completed post-scaling crosses experiment; **B0.1** is the
 [new architecture/capability experiment specification](b0.1.md), with raw and
@@ -629,7 +628,7 @@ Each run records code/config hashes, source snapshot/file hashes, release and fi
 | The design does not beat the ensemble on identical tasks | Keep it as an experimental or separately validated ensemble component; with no GBQR floor the submission fallback is the hub baseline |
 | A required feed is late at an issuance | Apply trained missingness policy; if minimum target history is absent, use a tested baseline fallback and log it |
 
-**First implementation:** deliver B0 with the six NHSN/NSSP channels, an eight-week context, explicit horizons, count-scale fair CRPS, one global latent, and baseline comparisons. Use the B0 results to choose the architecture, then add vintage handling in B1, wastewater in B2, and the combined vintage-plus-wastewater setup in B3. Freeze each protocol before the next stage and retain every prospective forecast for the following season.
+**First implementation:** deliver B0 with the six NHSN/NSSP channels, an eight-week context, explicit horizons, count-scale fair CRPS, one global latent, and baseline comparisons. Use the B0 results to choose the architecture, then add vintage handling and masking in B1, and wastewater on top of vintages in B3. Freeze each protocol before the next stage and retain every prospective forecast for the following season.
 
 ## 16. Reading order and evidence files
 

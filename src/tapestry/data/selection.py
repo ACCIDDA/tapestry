@@ -86,7 +86,47 @@ HUB_FILES = {
 RELEASE_LABELS = {
     "cdc_nhsn_final": "Finalized", "cdc_nhsn_preliminary": "Preliminary",
     "cdc_nhsn_initial_release": "First publication", "delphi_nhsn": "Delphi archive",
+    "cdc_nssp_trajectories": "CDC trajectories", "cdc_nssp_daily": "CDC daily",
+    "cdc_nssp_demographics": "CDC demographics", "delphi_nssp": "Delphi archive",
+    "hub_covid_current": "COVID-19 Hub target data",
+    "hub_flusight_current": "FluSight Hub target data",
+    "hub_rsv_current": "RSV Hub target data",
 }
+# Menu order; unlisted pathogens follow alphabetically, then non-pathogen measures.
+PATHOGEN_TITLES = {
+    "covid": "COVID-19", "influenza": "Influenza", "rsv": "RSV",
+    "combined": "Combined COVID-19, influenza, and RSV",
+    "ari": "Acute respiratory illness",
+    "adenovirus": "Adenovirus", "hcov": "Seasonal coronaviruses (HCoV)",
+    "hmpv": "Human metapneumovirus (HMPV)", "piv": "Parainfluenza (PIV)",
+    "rv/ev": "Rhinovirus/enterovirus (RV/EV)",
+}
+PATHOGEN_LAST = {"all_cause": "All-cause hospital capacity", "unspecified": "Unspecified pathogen"}
+
+
+def pathogen_of(key: str, name: str, pathogen: str = "") -> tuple[str, str, int]:
+    """Canonical pathogen key, title, and menu rank; ``unspecified`` rather than a guess."""
+    explicit = pathogen.lower()
+    text = " ".join([explicit, name.lower(), key.lower()])
+    if explicit in {"sars-cov-2", "covid-19", "c19"} or re.search(r"covid|c19|sars", text):
+        canonical = "covid"
+    elif explicit == "flu" or re.search(r"flu", text):
+        canonical = "influenza"
+    elif explicit in PATHOGEN_TITLES:
+        canonical = explicit
+    elif "rsv" in text:
+        canonical = "rsv"
+    elif re.search(r"combined|percent_visits_smoothed$", text):
+        canonical = "combined"
+    elif re.search(r"(?:^|_)ari(?:_|$)", text):
+        canonical = "ari"
+    elif "inptbeds" in text:
+        canonical = "all_cause"
+    else:
+        canonical = explicit or "unspecified"
+    order = [*PATHOGEN_TITLES, "", *PATHOGEN_LAST]  # "" ranks other named pathogens
+    title = PATHOGEN_TITLES.get(canonical) or PATHOGEN_LAST.get(canonical) or pathogen
+    return canonical, title, order.index(canonical if canonical in order else "")
 
 
 def family(key: str) -> str:
@@ -239,7 +279,9 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
             "cdc_nhsn_initial_release": 2, "delphi_nhsn": 3,
             "cdc_nssp_trajectories": 0, "cdc_nssp_daily": 1,
             "cdc_nssp_demographics": 2, "delphi_nssp": 3}.get(key, int(key.startswith("delphi_")))
+    pathogen, pathogen_title, pathogen_rank = pathogen_of(key, name, pathogen)
     return {
+        "pathogen": pathogen, "pathogen_title": pathogen_title, "pathogen_rank": pathogen_rank,
         "source_group": group,
         "source_group_title": FAMILY_TITLES.get(group, spec.title if spec else key),
         "signal_key": f"{group}:{name}", "signal_title": title,

@@ -12,7 +12,7 @@ prediction excluded. Earlier exploratory suggestions below do not override it.
 
 The six targets are flu/COVID/RSV admissions and ED proportions. Peak and
 rate-change targets are outside this objective. B0 continues to use finalized
-six-channel data; B1 adds vintages and B2 adds wastewater.
+six-channel data; B1 adds vintages and masking, and B3 adds wastewater.
 
 - Target weights: **[1,1,1,.5,.5,.5]**, with no extra flu preference.
 - Geography: **80% states/DC**, equally across eligible jurisdictions, and

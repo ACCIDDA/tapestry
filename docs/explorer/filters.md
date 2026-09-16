@@ -1,8 +1,13 @@
 # Filters and interpretation
 
-The explorer groups choices as logical source → signal, with a checkbox for each
-available release/provider/geography variant under each signal. NHSN and NSSP each combine their source
-products into one group; each hub retains its own group and target definitions.
+The explorer groups choices as pathogen → logical source → signal, with a checkbox
+for each available release/provider/geography variant under each signal. COVID-19,
+influenza, and RSV come first, then combined and ARI measures, other respiratory
+viruses, and all-cause capacity; sources and signals are alphabetical within each
+pathogen. The shared selection policy assigns the pathogen (`pathogen_of`). NHSN
+and NSSP each combine their source products into one group, whose summary lists
+the providers present (CDC, Delphi, Forecast Hub); each hub retains its own group
+and target definitions.
 See [Shared selection](../data/selection.md) for the measure and file allowlists.
 Searching covers providers, dataset titles, source paths, column names, and
 complete series labels. Search and filters can restrict the available variants.
@@ -42,5 +47,5 @@ post-intake filter before indexing.
 ## Scaling
 
 **Divide each series by its max** scales each selected series independently for
-visual comparison. It does not alter the index or raw data, and it is not the
+visual comparison, using the series' latest maximum for all displayed versions. It does not alter the index or raw data, and it is not the
 normalization contract for model training.

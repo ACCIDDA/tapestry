@@ -75,10 +75,13 @@ variant. Current Hub hospitalizations join NHSN, and ED targets join NSSP, at
 their corresponding CDC columns. Reported and smoothed NSSP columns remain
 separate. Historical Hub measures with different origins stay separate.
 
-Delphi variants in the signal list are orange and Hub variants green. Every
-plotted line, including additional dated versions, gets its own color. Colors
-stay consistent across the chart, legend, overview, and hover values, and remain
-stable when other lines are added or removed. Clear resets the color allocation.
+Delphi variants in the signal list are orange and Hub variants blue. Each variant is one line; checking it opens a card with its point count, date range, and provenance. Each
+plotted series gets one color, shared by all its dated versions; line style
+(solid latest, dashed as-of, other patterns for pinned comparisons) marks the
+version. Hub target data is fixed: black for admissions (light gray in dark mode)
+and red for ED visits. Lines are drawn at 70% opacity so overlaps stay visible.
+Colors stay consistent across the chart, legend, overview, and hover values, and
+remain stable when other lines are added or removed. Clear resets the color allocation.
 Provider names remain in labels. The plot status counts **displayed
 versions**, not every available publisher release. NHSN selection currently
 retains 14 all-age measures and excludes adult, pediatric, age-band, and
@@ -87,11 +90,18 @@ unknown-age fields. Raw snapshots keep those fields.
 Signal selections persist when switching states, including signals unavailable in
 the new state (shown with no points). **United States (US)** appears when the index
 contains native national observations; it reads those published US records only,
-never a sum of states. Its spatial support is fixed to national. When entering US,
-a selected state variant switches to a national counterpart only when source,
-measure, and non-geographic dimensions match exactly. Returning to a state restores
-the original state variant. Explicitly selected national-context signals remain
-national context when viewing a state.
+never a sum of states. Its spatial support is fixed to national. Selections follow
+the location: switching between US and states (or between states) swaps each selected
+variant for its counterpart in the new location when source, measure, and
+non-geographic dimensions match (Delphi `geo_type` files and NSSP `trend_source` are
+treated as geography). National-only products stay as labeled national context.
+National-context signals explicitly selected while viewing a state remain national.
+
+**Hub presets** (COVID-19 Hub, FluSight, RSV Hub) replace the selection with the
+Hub's target data and its Delphi ground truth for the current location: NHSN
+weekly admissions and reported NSSP ED visit percentage, four series in all.
+They also turn on **Divide each series by its max**, since counts,
+percentages, and proportions only overlay once scaled.
 
 On desktop, the signal browser fills the viewport height and scrolls independently
 beside the plot. Narrow screens retain the stacked layout.
@@ -112,7 +122,11 @@ Selecting a **Data available as of** date automatically overlays two curves per
 signal: latest available values as a solid line, and values available at the
 selected date as a dashed line in its own color. "Latest" is the reference for
 finalized values here; the publisher may still revise it. **Keep for comparison**
-pins additional dated curves, while the latest reference remains included.
+pins additional dated curves, while the latest reference remains included. The
+selected date's weekday is shown beside the picker and in the status, comparison
+chips, and legend, so publisher release days (e.g. Wednesday) are easy to spot. **← Wed**
+and **Wed →** step the date to the previous or next calendar Wednesday (from
+today when showing latest values); the next step stops at today.
 
 The **Data available as of** control uses publisher revisions already present
 in the selected raw snapshot. Full `as_of` releases preserve omissions and
@@ -123,7 +137,8 @@ snapshot with the intake command's `--hub-as-of` option when needed.
 
 Repeated rows for a state, measure, date, and release are shown as their
 unweighted mean, with the contributing sample count. Null latest revisions do
-not resurrect earlier values. Scaling divides each displayed version by its
-maximum. **Index details** lists unavailable, excluded, and malformed sources.
+not resurrect earlier values. Scaling divides every displayed version by the
+same series' latest maximum, so dated versions with a shorter archived history
+(e.g. COVID-19 Hub snapshots before 2026-09-09 start at 2024-11-09) stay comparable. **Index details** lists unavailable, excluded, and malformed sources.
 
 See the [local API](api.md) for catalog, series, versions, and data endpoints.

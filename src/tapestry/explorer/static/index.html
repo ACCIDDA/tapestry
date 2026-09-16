@@ -20,6 +20,12 @@
         <span class="sr-only">Search signals</span>
         <input id="series-search" type="search" placeholder="Search signals or sources…" autocomplete="off">
       </label>
+      <div id="hub-presets" class="hub-presets" aria-label="Hub target presets">
+        <span>Hub presets</span>
+        <button type="button" data-preset="covid">COVID-19 Hub</button>
+        <button type="button" data-preset="influenza">FluSight</button>
+        <button type="button" data-preset="rsv">RSV Hub</button>
+      </div>
       <details class="filter-panel" open>
         <summary>Signal filters <span id="filter-count"></span></summary>
         <div id="signal-filters" class="filter-grid">
@@ -83,9 +89,12 @@
     <div class="version-control">
       <label for="version-date">Data available as of</label>
       <div class="version-navigation">
+        <button id="version-prev-wednesday" type="button" title="Previous Wednesday" disabled>← Wed</button>
         <button id="version-prev" type="button" aria-label="Previous data version" disabled>←</button>
         <input id="version-date" type="date" aria-label="Data version date">
+        <span id="version-weekday" class="version-weekday" aria-live="polite"></span>
         <button id="version-next" type="button" aria-label="Next data version" disabled>→</button>
+        <button id="version-next-wednesday" type="button" title="Next Wednesday" disabled>Wed →</button>
         <button id="version-latest" type="button">Latest</button>
         <button id="version-keep" type="button" disabled>Keep for comparison</button>
       </div>

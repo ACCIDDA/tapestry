@@ -8,13 +8,17 @@
   const seriesList = document.getElementById("series-list");
   const seriesCount = document.getElementById("series-count");
   const versionDate = document.getElementById("version-date");
+  const versionWeekday = document.getElementById("version-weekday");
   const versionPrev = document.getElementById("version-prev");
   const versionNext = document.getElementById("version-next");
   const versionLatest = document.getElementById("version-latest");
+  const versionPrevWednesday = document.getElementById("version-prev-wednesday");
+  const versionNextWednesday = document.getElementById("version-next-wednesday");
   const versionKeep = document.getElementById("version-keep");
   const versionStatus = document.getElementById("version-status");
   const comparisons = document.getElementById("comparisons");
   const clearButton = document.getElementById("clear-button");
+  const hubPresets = document.getElementById("hub-presets");
   const signalFilters = document.getElementById("signal-filters");
   const cadenceFilter = document.getElementById("cadence-filter");
   const vintageFilter = document.getElementById("vintage-filter");
@@ -36,6 +40,17 @@
   const DAY = 86400000;
   const dateTime = day => Date.parse(`${day}T00:00:00Z`);
   const isoDate = time => new Date(time).toISOString().slice(0, 10);
+  const weekday = (day, style = "long") => new Date(`${day}T00:00:00Z`)
+    .toLocaleDateString(undefined, {weekday: style, timeZone: "UTC"});
+  // Calendar Wednesday strictly before/after a day (today when showing latest).
+  const today = () => new Date().toISOString().slice(0, 10);
+  const wednesday = (day, direction) => {
+    const time = dateTime(day || today());
+    const weekdayIndex = new Date(time).getUTCDay();
+    const shift = direction < 0 ? -(((weekdayIndex - 3 + 7) % 7) || 7) : (((3 - weekdayIndex + 7) % 7) || 7);
+    return isoDate(time + shift * DAY);
+  };
+  const versionLabel = day => day ? `${weekday(day, "short")} ${day}` : "Latest";
   const tooltip = document.getElementById("tooltip");
 
   const model = {
@@ -147,12 +162,15 @@
 
   function renderVersionControls() {
     versionDate.value = model.asOf;
+    versionWeekday.textContent = model.asOf ? weekday(model.asOf) : "";
     versionPrev.disabled = !model.versionDates.some(day => !model.asOf || day < model.asOf);
     versionNext.disabled = !model.asOf;
+    versionPrevWednesday.disabled = !model.selected.size;
+    versionNextWednesday.disabled = !model.asOf || wednesday(model.asOf, 1) > today();
     versionKeep.disabled = !model.asOf || !model.selected.size || model.comparisons.includes(model.asOf) || model.comparisons.length >= 5;
-    versionStatus.textContent = model.asOf ? `Solid: latest available · dashed: ${model.asOf}` : "Latest available values · choose a date to compare";
+    versionStatus.textContent = model.asOf ? `Solid: latest available · dashed: ${weekday(model.asOf)} ${model.asOf}` : "Latest available values · choose a date to compare";
     comparisons.innerHTML = model.comparisons.map((day, index) =>
-      `<button type="button" data-comparison="${index}" title="Remove comparison">${escapeHTML(day || "Latest")} <span aria-hidden="true">×</span><span class="sr-only">Remove comparison</span></button>`
+      `<button type="button" data-comparison="${index}" title="Remove comparison">${escapeHTML(versionLabel(day))} <span aria-hidden="true">×</span><span class="sr-only">Remove comparison</span></button>`
     ).join("");
   }
 
@@ -176,39 +194,60 @@
   }
 
   function renderSeriesTree(previouslyOpen) {
-    const groups = groupBy(model.available, item => item.source_group);
-    return [...groups.entries()].map(([group, items]) => {
-      const key = treeKey("source", group);
-      const signals = groupBy(items, item => item.signal_key);
-      const children = [...signals.entries()].map(([, variants]) => {
-        variants.sort((a, b) => {
-          for (let i = 0; i < a.variant_rank.length; i++) {
-            if (a.variant_rank[i] !== b.variant_rank[i]) return a.variant_rank[i] - b.variant_rank[i];
-          }
-          return a.variant_label.localeCompare(b.variant_label);
-        });
-        return `<div class="selected-signal" data-signal-key="${escapeHTML(variants[0].signal_key)}">
-          <strong class="signal-title" title="${escapeHTML(variants[0].column_description || "")}">${escapeHTML(variants[0].signal_title)}</strong>
-          <div class="signal-variants">${variants.map(item => renderSeriesOption(item, item.variant_label)).join("")}</div>
-        </div>`;
+    // Pathogen → source → signal → variants; pathogens in policy rank, the rest by title.
+    const pathogens = [...groupBy(model.available, item => item.pathogen).values()]
+      .sort((a, b) => a[0].pathogen_rank - b[0].pathogen_rank || a[0].pathogen_title.localeCompare(b[0].pathogen_title));
+    return pathogens.map(pathogenItems => {
+      const pathogenKey = treeKey("pathogen", pathogenItems[0].pathogen);
+      const sources = [...groupBy(pathogenItems, item => item.source_group).values()]
+        .sort((a, b) => a[0].source_group_title.localeCompare(b[0].source_group_title));
+      const children = sources.map(items => {
+        const key = treeKey(pathogenKey, items[0].source_group);
+        const signals = [...groupBy(items, item => item.signal_key).values()]
+          .sort((a, b) => a[0].signal_title.localeCompare(b[0].signal_title));
+        return renderBranch({className: "series-dataset", key,
+          label: items[0].source_group_title, meta: providers(items), count: signals.length,
+          open: shouldOpen(items, key, previouslyOpen), children: signals.map(renderSignal).join("")});
       }).join("");
-      return renderBranch({className: "series-dataset", key,
-        label: items[0].source_group_title, count: signals.size,
-        open: shouldOpen(items, key, previouslyOpen), children});
+      return renderBranch({className: "series-pathogen", key: pathogenKey,
+        label: pathogenItems[0].pathogen_title,
+        count: new Set(pathogenItems.map(item => item.signal_key)).size,
+        open: shouldOpen(pathogenItems, pathogenKey, previouslyOpen), children});
     }).join("");
   }
 
+  function renderSignal(variants) {
+    variants.sort((a, b) => {
+      for (let i = 0; i < a.variant_rank.length; i++) {
+        if (a.variant_rank[i] !== b.variant_rank[i]) return a.variant_rank[i] - b.variant_rank[i];
+      }
+      return a.variant_label.localeCompare(b.variant_label);
+    });
+    return `<div class="selected-signal" data-signal-key="${escapeHTML(variants[0].signal_key)}">
+      <strong class="signal-title" title="${escapeHTML(variants[0].column_description || "")}">${escapeHTML(variants[0].signal_title)}</strong>
+      <div class="signal-variants">${variants.map(item => renderSeriesOption(item, item.variant_label)).join("")}</div>
+    </div>`;
+  }
+
+  function providers(items) {
+    const names = {cdc: "CDC", delphi: "Delphi", hub: "Forecast Hub"};
+    return [...new Set(items.map(item => names[item.provider_kind] || item.provider_kind))].join(" · ");
+  }
+
   function renderSeriesOption(item, label) {
-    const checked = model.selected.has(item.id) ? " checked" : "";
-    const providerClass = item.dataset_key.startsWith("delphi_") ? " delphi-option"
-      : item.dataset_key.startsWith("hub_") ? " hub-option" : "";
-    return `<label class="series-option${providerClass}">
-      <input type="checkbox" data-series-id="${item.id}"${checked}>
-      <span>${escapeHTML(label)}
-        <small class="signal-metadata">${escapeHTML(signalMetadata(item))}</small>
-        <small>${escapeHTML(item.measure_id || item.value_column)} · ${escapeHTML(item.parent_dataset || "")}${item.parent_column ? ` · ${escapeHTML(item.parent_column)}` : ""}</small>
-        <small>${formatNumber(item.point_count)} points · ${escapeHTML(item.date_min)} to ${escapeHTML(item.date_max)}</small>
-      </span>
+    // One line per variant; provenance and coverage appear as a card once checked.
+    const checked = model.selected.has(item.id);
+    const providerClass = item.provider_kind === "delphi" ? " delphi-option"
+      : item.provider_kind === "hub" ? " hub-option" : "";
+    const source = `${item.measure_id || item.value_column} · ${item.parent_dataset || ""}${item.parent_column ? ` · ${item.parent_column}` : ""}`;
+    const card = checked ? `<span class="series-card">
+        <span>${formatNumber(item.point_count)} points · ${escapeHTML(item.date_min)} to ${escapeHTML(item.date_max)}</span>
+        <span>${escapeHTML(signalMetadata(item))}</span>
+        <span>${escapeHTML(source)}</span>
+      </span>` : "";
+    return `<label class="series-option${providerClass}${checked ? " is-checked" : ""}" title="${escapeHTML(`${label}\n${signalMetadata(item)}\n${source}\n${formatNumber(item.point_count)} points · ${item.date_min} to ${item.date_max}`)}">
+      <input type="checkbox" data-series-id="${item.id}"${checked ? " checked" : ""}>
+      <span class="series-option-label">${escapeHTML(label)}</span>${card}
     </label>`;
   }
 
@@ -220,18 +259,26 @@
     </details>`;
   }
 
+  // Hub truth has fixed colors so it reads as the reference in every plot.
+  const HUB_TRUTH_COLORS = {nhsn: "#000000", nssp: "#dc2626"};
+  const darkTheme = window.matchMedia("(prefers-color-scheme: dark)");
   function seriesColor(item) {
-    // The active comparison keeps its color as the date changes. Latest and
-    // separately pinned comparisons have their own stable identities and colors.
-    const key = item.visibilityKey || item.key;
-    if (!model.lineColors.has(key)) {
+    // A series and all of its vintages share one color; line style marks the version.
+    if (item.provider_kind === "hub" && HUB_TRUTH_COLORS[item.source_group]) {
+      return item.source_group === "nhsn" && darkTheme.matches ? "#f1f5f9" : HUB_TRUTH_COLORS[item.source_group];
+    }
+    if (!model.lineColors.has(item.id)) {
       const palette = ["#2563eb", "#e87516", "#26934b", "#9333ea", "#db2777",
-        "#0891b2", "#dc2626", "#a88708", "#64748b", "#7c3d12"];
+        "#0891b2", "#a88708", "#64748b", "#7c3d12", "#4f46e5"];
       const index = model.lineColors.size;
-      model.lineColors.set(key, palette[index]
+      model.lineColors.set(item.id, palette[index]
         || `hsl(${((index - palette.length) * 137.508 + 45) % 360} 65% 45%)`);
     }
-    return model.lineColors.get(key);
+    return model.lineColors.get(item.id);
+  }
+
+  function lineDash(item) {
+    return ["none", "7 4", "2 3", "10 3 2 3", "12 5", "4 6"][item.versionIndex % 6];
   }
 
   function signalMetadata(item) {
@@ -272,30 +319,38 @@
       return;
     }
     plotStatus.textContent = "Loading…";
+    chart.classList.add("is-loading");
     try {
       const versions = [...new Set(["", model.asOf, ...model.comparisons])];
       const payloads = await Promise.all(versions.map(asOf => {
         const params = new URLSearchParams({state: model.state, series: ids.join(","),
-          scale: scaleToggle.checked ? "true" : "false", as_of: asOf || "latest"});
+          scale: "false", as_of: asOf || "latest"});
         return requestJSON(`/api/data?${params}`);
       }));
       if (token !== model.plotRequest) return;
+      chart.classList.remove("is-loading");
+      // Every displayed version is divided by the same series' latest maximum, so a
+      // dated curve with a shorter archived history stays comparable to latest.
+      const divisors = new Map(payloads[0].series.map(item => [item.id, item.max || 1]));
+      const divisor = item => scaleToggle.checked ? divisors.get(item.id) || item.max || 1 : 1;
       model.plotted = payloads.flatMap((payload, versionIndex) => payload.series.map(item => ({
-        ...item, key: `${item.id}@${versions[versionIndex] || "latest"}`,
+        ...item, points: item.points.map(([day, value, samples]) => [day, value / divisor(item), samples]),
+        key: `${item.id}@${versions[versionIndex] || "latest"}`,
         // Visibility follows the active comparison as its date moves; pinned dates
         // and the latest reference keep independent visibility choices.
         visibilityKey: `${item.id}@${versions[versionIndex] && versions[versionIndex] === model.asOf
           ? "as-of" : versions[versionIndex] || "latest"}`,
         versionIndex,
-        label: `${item.signal_title || item.label} · ${item.variant_label || ""} · ${versions[versionIndex] || "Latest"}`,
+        label: `${item.signal_title || item.label} · ${item.variant_label || ""} · ${versionLabel(versions[versionIndex])}`,
       })));
       plotTitle.textContent = payloads[0].state_name;
       const count = model.plotted.reduce((sum, item) => sum + item.points.length, 0);
       const empty = model.plotted.filter(item => !item.points.length).length;
-      plotStatus.textContent = `${ids.length} signals · ${versions.length} displayed version${versions.length === 1 ? "" : "s"} · ${formatNumber(count)} points${empty ? ` · ${empty} unavailable for this location/date` : ""}${scaleToggle.checked ? " · scaled per displayed version" : ""}`;
+      plotStatus.textContent = `${ids.length} signals · ${versions.length} displayed version${versions.length === 1 ? "" : "s"} · ${formatNumber(count)} points${empty ? ` · ${empty} unavailable for this location/date` : ""}${scaleToggle.checked ? " · scaled by each series' latest maximum" : ""}`;
       renderLegend();
       drawChart();
     } catch (error) {
+      if (token === model.plotRequest) chart.classList.remove("is-loading");
       showError(error);
     }
   }
@@ -305,7 +360,7 @@
       const hidden = model.hidden.has(item.visibilityKey || item.key);
       const maximum = item.max == null ? "" : ` · max ${formatValue(item.max)}`;
       return `<button class="legend-item" type="button" data-legend-id="${item.visibilityKey || item.key}" aria-pressed="${hidden ? "false" : "true"}" title="${escapeHTML([item.label, item.parent_dataset, item.parent_column, item.parent_transform, item.version_note].filter(Boolean).join(" · "))}">
-        <i class="swatch" style="border-top: 3px ${item.versionIndex ? "dashed" : "solid"} ${seriesColor(item)}"></i>
+        <svg class="swatch" viewBox="0 0 22 6" aria-hidden="true"><line x1="0" x2="22" y1="3" y2="3" stroke="${seriesColor(item)}" stroke-width="2.5" stroke-dasharray="${lineDash(item)}"></line></svg>
         <span class="legend-label">${escapeHTML(item.label)}${maximum}</span>
       </button>`;
     }).join("");
@@ -360,10 +415,10 @@
     markup.push(`<rect class="frame" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none"></rect>`);
     visible.forEach(item => {
       const path = item.points.map((point, index) => `${index ? "L" : "M"}${x(Date.parse(`${point[0]}T00:00:00Z`)).toFixed(2)},${y(point[1]).toFixed(2)}`).join(" ");
-      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${["none", "7 4", "2 3", "10 3 2 3", "12 5", "4 6"][item.versionIndex % 6]}"></path>`);
+      markup.push(`<path clip-path="url(#plot-clip)" class="series-line" data-series-id="${item.id}" d="${path}" stroke="${seriesColor(item)}" stroke-dasharray="${lineDash(item)}"></path>`);
     });
     markup.push(`<text class="axis-title" x="${margin.left + innerWidth / 2}" y="${height - 4}" text-anchor="middle">Date</text>`);
-    markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? "Value ÷ series maximum" : "Raw value (mixed units possible)"}</text>`);
+    markup.push(`<text class="axis-title" transform="translate(15 ${margin.top + innerHeight / 2}) rotate(-90)" text-anchor="middle">${scaleToggle.checked ? "Value ÷ latest series maximum" : "Raw value (mixed units possible)"}</text>`);
     markup.push(`<g id="hover-layer" hidden><line class="hover-line" y1="${margin.top}" y2="${margin.top + innerHeight}"></line></g>`);
     markup.push(`<rect class="hit-area" x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}"></rect>`);
     svg.innerHTML = markup.join("");
@@ -545,41 +600,86 @@
     filterCount.textContent = active ? `(${active})` : "";
   }
 
+  // Geography facets are ignored so a national series and its state counterpart share a key.
+  const GEOGRAPHY_FACETS = new Set(["spatial_support", "trend_source", "geo_type"]);
   function locationVariantKey(item) {
     const dimensions = Object.entries(item.dimensions || {})
-      .filter(([key]) => key !== "spatial_support")
+      .filter(([key]) => !GEOGRAPHY_FACETS.has(key))
       .sort(([a], [b]) => a.localeCompare(b));
-    return JSON.stringify([item.dataset_key, item.source_path, item.value_column, dimensions]);
+    const path = item.source_path.replace(/geo_type=(?:nation|state)\b/, "geo_type=*");
+    return JSON.stringify([item.dataset_key, path, item.value_column, dimensions]);
   }
 
+  function isNationalBroadcast(item) { return Boolean(item.dimensions?.spatial_support); }
+
+  async function resolveSelectionForLocation(token) {
+    // Selections follow the location: native state series in a state, published US
+    // series nationally. National context chosen deliberately in a state stays national.
+    if (!model.selected.size) return true;
+    const payload = await requestJSON(`/api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
+    if (token !== model.locationRequest) return false;
+    const national = model.state === "US";
+    const counterparts = new Map(payload.items
+      .filter(item => isNationalBroadcast(item) === national)
+      .map(item => [locationVariantKey(item), item]));
+    model.selected = new Map([...model.selected.values()].map(item => {
+      const followsLocation = !item.explicitNational;
+      const replacement = followsLocation && counterparts.get(locationVariantKey(item));
+      const selected = replacement ? {...replacement, explicitNational: false} : item;
+      if (selected.id !== item.id) {
+        for (const key of [...model.hidden]) {
+          if (key.startsWith(`${item.id}@`)) { model.hidden.delete(key); model.hidden.add(key.replace(`${item.id}@`, `${selected.id}@`)); }
+        }
+      }
+      return [selected.id, selected];
+    }));
+    return true;
+  }
+
+  // Each Hub preset pairs the Hub's target data with the Delphi ground truth it is
+  // derived from: NHSN weekly admissions and reported (unsmoothed) NSSP ED percentage.
+  const HUB_PRESETS = {
+    covid: {hub: "hub_covid_current", signals: ["nhsn:totalconfc19newadm", "nssp:percent_visits_covid"]},
+    influenza: {hub: "hub_flusight_current", signals: ["nhsn:totalconfflunewadm", "nssp:percent_visits_influenza"]},
+    rsv: {hub: "hub_rsv_current", signals: ["nhsn:totalconfrsvnewadm", "nssp:percent_visits_rsv"]},
+  };
+
+  async function applyHubPreset(name) {
+    const preset = HUB_PRESETS[name];
+    const token = ++model.locationRequest;
+    try {
+      const payload = await requestJSON(`/api/series?${new URLSearchParams({state: model.state, limit: "0"})}`);
+      if (token !== model.locationRequest) return;
+      const datasets = new Set([preset.hub, "delphi_nhsn", "delphi_nssp"]);
+      const items = payload.items.filter(item => datasets.has(item.dataset_key)
+        && preset.signals.includes(item.signal_key)
+        && isNationalBroadcast(item) === (model.state === "US"));
+      model.selected = new Map(items.map(item => [item.id, {...item, explicitNational: false}]));
+      model.hidden.clear(); model.comparisons = []; model.lineColors.clear();
+      // Admissions counts and ED percentages/proportions only overlay once scaled.
+      scaleToggle.checked = true;
+      renderSeriesList(); renderVersionControls(); loadVersions(); updatePlot();
+    } catch (error) {
+      if (token === model.locationRequest) showError(error);
+    }
+  }
+  hubPresets.addEventListener("click", event => {
+    const button = event.target.closest("[data-preset]");
+    if (button) applyHubPreset(button.dataset.preset);
+  });
+
   stateSelect.addEventListener("change", async () => {
-    const previousState = model.state;
     const token = ++model.locationRequest;
     model.state = stateSelect.value;
     model.stateName = stateSelect.options[stateSelect.selectedIndex].text.replace(/\s+\([\d,]+ columns\)$/, "");
     syncLocationSupport();
-    // Invalidate outstanding responses immediately while resolving national equivalents.
+    // Invalidate outstanding responses immediately while resolving counterparts.
     ++model.plotRequest; ++model.versionRequest; ++model.listRequest;
-    if (model.state === "US" && model.selected.size) {
-      try {
-        const payload = await requestJSON("/api/series?state=US&limit=0");
-        if (token !== model.locationRequest) return;
-        const national = new Map(payload.items.map(item => [locationVariantKey(item), item]));
-        model.selected = new Map([...model.selected.values()].map(item => {
-          // Only substitute an exact source/measure/variant match; never sum states.
-          const replacement = !item.dimensions.spatial_support && national.get(locationVariantKey(item));
-          const selected = replacement ? {...replacement, stateSelection: item} : item;
-          return [selected.id, selected];
-        }));
-      } catch (error) {
-        if (token !== model.locationRequest) return;
-        showError(error);
-      }
-    } else if (previousState === "US") {
-      model.selected = new Map([...model.selected.values()].map(item => {
-        const selected = item.stateSelection || item;
-        return [selected.id, selected];
-      }));
+    try {
+      if (!await resolveSelectionForLocation(token)) return;
+    } catch (error) {
+      if (token !== model.locationRequest) return;
+      showError(error);
     }
     loadVersions(); updatePlot(); await loadSeries();
   });
@@ -590,6 +690,8 @@
   });
   versionDate.addEventListener("change", () => { if (versionDate.validity.valid) setVersion(versionDate.value); });
   versionLatest.addEventListener("click", () => setVersion(""));
+  versionPrevWednesday.addEventListener("click", () => setVersion(wednesday(model.asOf, -1)));
+  versionNextWednesday.addEventListener("click", () => setVersion(wednesday(model.asOf, 1)));
   versionPrev.addEventListener("click", () => {
     const dates = model.versionDates.filter(day => !model.asOf || day < model.asOf);
     if (dates.length) setVersion(dates[dates.length - 1]);
@@ -641,10 +743,15 @@
     const item = model.available.find(candidate => candidate.id === id);
     if (input.checked && item) {
       if (model.selected.size >= 100) { input.checked = false; showError(new Error("Select up to 100 columns.")); return; }
-      model.selected.set(id, item);
+      model.selected.set(id, {...item, explicitNational: model.state !== "US" && isNationalBroadcast(item)});
     } else {
       model.selected.delete(id);
       for (const key of model.hidden) if (key.startsWith(`${id}@`)) model.hidden.delete(key);
+    }
+    const option = input.closest(".series-option");
+    if (item && option) {
+      option.outerHTML = renderSeriesOption(item, item.variant_label);
+      seriesList.querySelector(`input[data-series-id="${id}"]`)?.focus();
     }
     loadVersions(); updatePlot();
   });
@@ -662,5 +769,6 @@
     renderLegend(); drawChart();
   });
   new ResizeObserver(() => { if (model.plotted.length) drawChart(); }).observe(chart);
+  darkTheme.addEventListener("change", () => { if (model.plotted.length) { renderLegend(); drawChart(); } });
   initialize();
 })();
