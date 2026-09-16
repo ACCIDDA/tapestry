@@ -72,23 +72,42 @@ def quality_table(seasons, configs, geography='states_dc'):
     return table.join(configs.set_index('name')[['combined_mean', 'combined_sd', 'rank']])
 
 
+CATASTROPHIC = 2.0
+
+
 def ranking_figure(configs, runs, output):
-    """Every configuration's combined score with its three seeds, best on top."""
+    """Every configuration's combined score with its three seeds, best on top.
+
+    The axis stops at `CATASTROPHIC` so the interesting range around parity is
+    readable; worse configurations are clipped to the edge and labelled with
+    their true score rather than compressing everything else.
+    """
     order = configs.sort_values('combined_mean')
     seeds = runs[runs.geography.eq('all')]
     fig, ax = plt.subplots(figsize=(10.5, 0.19 * len(order) + 1.8))
     y = np.arange(len(order))[::-1]
     for offset, row in zip(y, order.itertuples()):
+        color = FAMILY[family(row.name)]
+        if row.combined_mean > CATASTROPHIC:
+            ax.plot(CATASTROPHIC, offset, '>', ms=6, color=color, clip_on=False, zorder=3)
+            ax.annotate(f'catastrophic · {row.combined_mean:.2f}', (CATASTROPHIC, offset),
+                        textcoords='offset points', xytext=(9, 0), va='center', fontsize=5,
+                        color=color, annotation_clip=False)
+            continue
         points = seeds[seeds.name.eq(row.name)].combined
-        ax.plot(points, [offset] * len(points), 'o', ms=3, mfc='none',
-                mec=FAMILY[family(row.name)], alpha=.7, zorder=2)
-        ax.plot(row.combined_mean, offset, 'o', ms=5.5, color=FAMILY[family(row.name)], zorder=3)
+        ax.plot(np.clip(points, None, CATASTROPHIC), [offset] * len(points), 'o', ms=3, mfc='none',
+                mec=color, alpha=.7, zorder=2)
+        ax.plot(row.combined_mean, offset, 'o', ms=5.5, color=color, zorder=3)
     ax.axvline(1, color=ENSEMBLE, lw=1.4, ls='--', zorder=1)
+    ax.set_xlim(order.combined_mean.min() - .03, CATASTROPHIC)
     ax.set_yticks(y)
     ax.set_yticklabels(order.name, fontsize=5.2)
     ax.set_xlabel('Combined score (total model WIS / total ensemble WIS; lower is better, 1 = hub ensemble)')
+    beyond = int((configs.combined_mean > CATASTROPHIC).sum())
     ax.set_title(f'B0.1 crosses: combined score, all {len(order)} configurations\n'
-                 'Filled dot = mean over three seeds, open dots = individual seeds', fontsize=10)
+                 f'Filled dot = mean over three seeds, open dots = individual seeds · '
+                 f'{beyond} configurations worse than {CATASTROPHIC:g} are clipped to the right edge',
+                 fontsize=10)
     handles = [plt.Line2D([], [], marker='o', ls='', color=c, label=f) for f, c in FAMILY.items()]
     handles.append(plt.Line2D([], [], color=ENSEMBLE, ls='--', label='Hub ensemble parity'))
     ax.legend(handles=handles, fontsize=7.5, loc='lower right')
@@ -263,6 +282,9 @@ def seed_figure(configs, runs, output):
     ax.axvspan(top10.combined_mean.min(), top10.combined_mean.max(), color='gold', alpha=.25,
                label=f'Top-10 range = {top10.combined_mean.max() - top10.combined_mean.min():.4f}')
     ax.set_xscale('log')
+    ax.set_xticks([1, 2, 3, 5])
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%g'))
+    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax.set_xlabel('Combined score (mean over seeds)')
     ax.set_ylabel('SD across the three seeds')
     ax.set_title('Seed noise grows with the score, and swamps the top of the table', fontsize=10)

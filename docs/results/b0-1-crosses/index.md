@@ -62,6 +62,12 @@ decoder — costs score at its own reference.
 
 Filled dots are the mean over seeds 42/43/44; open dots are the individual
 seeds. The ensemble parity line at 1 sits inside the upper third of the table.
+The axis stops at 2.0 so the region around parity — where the experiment is
+actually decided — is legible; the 28 configurations worse than that are clipped
+to the right edge and labelled **catastrophic** with their true score. All 28 are
+`joint_trend` variants except two (`spatial_conv__decoder_stochastic_trend` and
+`target_multiscale__decoder_stochastic_trend`), which is the same finding from a
+different angle: the stochastic trend decoder, wherever it appears.
 
 ![Score distribution by reference family](figures/family-spread.png)
 
@@ -155,24 +161,76 @@ spatial and cross-target information exchange, pathogen-versus-target parameter
 sharing, and explicit level/growth uncertainty. Averaged over the references it
 applies to, the one-factor effect of each mechanism is:
 
-| One-factor change | Mean Δ combined | n |
-|---|---:|---:|
-| `decoder_stochastic_trend` | **+1.259** | 4 |
-| `head_sharing_target` | +0.101 | 3 |
-| `lookback_26` | +0.100 | 6 |
-| `exchange_joint_location_target` | +0.091 | 3 |
-| `epochs_100` | +0.033 | 6 |
-| `width_128` | +0.032 | 6 |
-| `location_embedding_8` | −0.022 | 6 |
-| `exchange_none` | −0.139 | 3 |
-| `encoder_mlp` | −0.259 | 4 |
-| `head_sharing_shared` | −0.626 | 4 |
+### Verdict on every factor
 
-Negative is better. Every exchange mechanism is at best neutral and
-`exchange_none` is an improvement; the multiscale encoder is worse than a plain
-MLP; sharing heads beats splitting them. The dominant term is an order of
-magnitude larger than the rest and is not an architecture-of-interest at all: it
-is the **decoder**.
+The table below gives each one-factor change, averaged over the references it
+was applied to. **`joint_trend` is excluded**: its baseline is already collapsed,
+so almost any change "improves" it by partially undoing the trend decoder, which
+would otherwise contaminate every row (`count_transform_sqrt`, for instance,
+looks like −0.45 with `joint_trend` included and −0.03 without).
+
+A factor is **clear** only when every reference moves the same direction *and*
+the mean exceeds the 0.120 median seed SD. Anything that changes sign between
+references is **complicated** — the effect depends on the architecture it is
+applied to, and this screen cannot resolve it.
+
+| Factor | Mean Δ | Range | Same sign | Verdict |
+|---|---:|---|:--:|---|
+| `decoder_stochastic_trend` | **+1.259** | +0.10 … +2.34 | 4/4 | **CLEAR — badly harmful** |
+| `encoder_mlp` | **−0.324** | −0.50 … −0.24 | 3/3 | **CLEAR — helpful** |
+| `exchange_none` | **−0.272** | −0.29 … −0.26 | 2/2 | **CLEAR — helpful** |
+| `encoder_conv` | **−0.139** | −0.22 … −0.04 | 4/4 | **CLEAR — helpful** |
+| `ed_transform_linear` | **−0.124** | −0.42 … −0.01 | 5/5 | **CLEAR — helpful** |
+| `noise_global` | −0.090 | −0.20 … −0.01 | 3/3 | consistent but under noise |
+| `epochs_100` | −0.069 | −0.11 … −0.04 | 5/5 | consistent but under noise |
+| `head_sharing_pathogen` | −0.023 | −0.02 … −0.02 | 2/2 | consistent but under noise |
+| `exchange_pathogen_spatial` | +0.054 | +0.03 … +0.08 | 2/2 | consistent but under noise |
+| `ed_transform_fourth_root` | −0.127 | −0.42 … +0.06 | 4/5 | complicated |
+| `exchange_shared_spatial` | −0.094 | −0.16 … +0.01 | 2/3 | complicated |
+| `head_sharing_shared` | −0.080 | −0.23 … +0.06 | 2/3 | complicated |
+| `us_heads_separate` | −0.068 | −0.22 … +0.04 | 4/5 | complicated |
+| `lookback_26` | −0.049 | −0.29 … +0.19 | 4/5 | complicated |
+| `count_transform_log1p` | −0.049 | −0.22 … +0.09 | 3/5 | complicated |
+| `lookback_8` | −0.046 | −0.31 … +0.17 | 3/5 | complicated |
+| `dynamics_False` | −0.041 | −0.13 … +0.03 | 4/5 | complicated |
+| `shared_factor_True` | −0.030 | −0.13 … +0.02 | 3/5 | complicated |
+| `count_transform_sqrt` | −0.028 | −0.14 … +0.15 | 3/5 | complicated |
+| `annual_calendar_False` | −0.024 | −0.30 … +0.24 | 2/5 | complicated |
+| `location_embedding_8` | −0.021 | −0.12 … +0.08 | 3/5 | complicated |
+| `encoder_multiscale_conv` | −0.017 | −0.07 … +0.03 | 1/2 | complicated |
+| `noise_global_local` | −0.009 | −0.02 … +0.00 | 1/2 | complicated |
+| `exchange_target_spatial` | +0.009 | −0.26 … +0.18 | 2/3 | complicated |
+| `width_128` | +0.014 | −0.25 … +0.37 | 2/5 | complicated |
+| `exchange_joint_location_target` | +0.091 | −0.10 … +0.33 | 2/3 | complicated |
+| `head_sharing_target` | +0.101 | −0.03 … +0.24 | 2/3 | complicated |
+
+Negative is better. Reading it:
+
+- **Five factors are clear.** One is badly harmful (the trend decoder); four are
+  helpful, and all four point the same way — *toward the simpler model*. A plain
+  MLP encoder beats multiscale convolution, turning information exchange **off**
+  beats every form of it, and the plain linear ED transform beats the fancier
+  ones. Nothing that adds machinery is clearly good.
+- **Four are consistent but too small to bank.** They never change sign, but the
+  mean is under the seed-noise floor, so they are suggestive at best. `epochs_100`
+  being mildly *better* than `epochs_300` belongs here and is discussed under
+  overfitting below.
+- **Eighteen are complicated**, i.e. the majority. Their effect flips sign
+  depending on the reference, which means the one-factor screen has done its job
+  and returned "it depends". `width_128` (−0.25 to +0.37) and
+  `annual_calendar_False` (−0.30 to +0.24) are the clearest examples: these
+  interact with the architecture and cannot be settled here.
+
+The honest summary is that **one factor dominates and four point toward
+simplicity; everything else is either noise-limited or architecture-dependent.**
+
+### The `joint_trend` crosses are rescue attempts, not effects
+
+Every cross around `joint_trend` is best read as "how much of the trend
+decoder's damage does this undo". The baseline is 4.104; the best any single
+change achieves is 1.559 (`count_transform_sqrt`, −2.545). None reach parity.
+This is why the family is excluded from the table above, and it is independent
+evidence that the decoder — not the recipe around it — is what is broken.
 
 **The stochastic trend decoder is the finding.** Swapping only the decoder onto
 an otherwise unchanged reference costs +0.99 at `local_mlp`, +1.60 at
@@ -183,6 +241,55 @@ sample trajectories, and `joint_trend` inherits it, which is the entire reason
 that family occupies its own regime. No `joint_trend` variant with a legacy
 decoder was run, so the specification confounds the trend decoder with the rest
 of the `joint_trend` recipe; that control is the obvious missing cell.
+
+### Is the leader overfitting?
+
+The leading configurations are visually appealing — the fans track the wave
+closely and the medians are well placed — which is exactly when overfitting is
+worth checking rather than assuming. Two different things could be meant, and
+they have different answers.
+
+**Overfitting the training seasons: no clear sign.** Early stopping is doing real
+work and the fits are not running away:
+
+| Diagnostic | Leaders | Whole suite |
+|---|---|---|
+| Selected epoch (mean) | 67–87 | 74 at cap 100, 114 at cap 300 |
+| Fits hitting the epoch cap | 75 of 216 folds | 4% at cap 300 |
+| Validation rebound after best epoch | 13–16% | 8.7% median |
+
+Every fit selects an interior epoch by validation loss rather than training to
+its budget, and at cap 300 only 4% of fits reach the cap at all — the models stop
+because validation stops improving, not because they run out of epochs. The
+train/validation gap at the selected epoch (~60% for the leaders) is *lower* than
+the suite median (~64%), so the leaders are not the configurations fitting their
+training data hardest.
+
+The strongest evidence is the direct experiment: **raising the budget from 100 to
+300 epochs does not help.** Across the six recipes where both caps were run, the
+mean change is +0.009 and cap 300 is worse in 4 of 6. If the leaders were
+underfitting, more epochs would help; if they were badly overfitting, more epochs
+would hurt a lot. Neither happens — they are near the flat optimum where early
+stopping is already finding the right place.
+
+Note also that the leaders are *under*-dispersed, not over-confident in the
+classic overfitting sense of memorised training points. Their failure mode is
+intervals that are too narrow everywhere, including on the training seasons.
+
+**Overfitting the model-selection process: yes, and it is the real risk.** This
+is the version that should worry you. With 172 configurations ranked on three
+outer seasons and a median seed SD of 0.120 against a top-10 spread of 0.058, the
+apparent winner is substantially a draw from noise. "Rank 1 of 172" on this
+evidence is not a reproducible claim — a fourth seed could reorder the top ten.
+The defensible statement is that the independent-model cluster sits near
+0.88–0.91, not that any single recipe is best.
+
+A structural caveat reinforces this: the outer season CV has only three folds,
+the seasons differ in which targets exist at all, and normalisers and stopping
+exclude the held-out season but the *configuration choice* is informed by all
+three. Selecting a winner on these scores and then reporting those same scores as
+its performance would be optimistic. Treat the leaders as a shortlist to
+re-evaluate, not as a measured ranking.
 
 **Seed noise limits what can be concluded at the top.** The median seed SD is
 0.120 while the whole top 10 spans 0.058. Within the leading group the ranking
@@ -222,7 +329,12 @@ Skill is concentrated at the nowcast and decays outward, consistent with B0.0.
    that baseline, and on this evidence it does not — which is a meaningful
    negative result for the B1 design, not just a null.
 4. **Do not tune on differences below ~0.12.** More seeds, not more
-   configurations, are what would resolve the top of the table.
+   configurations, are what would resolve the top of the table. The epoch budget
+   is settled: 100 is enough, and early stopping already finds the right epoch.
+5. **Re-evaluate the shortlist rather than crowning a winner.** The leaders were
+   selected on the same three seasons used to score them. Confirm the
+   independent-model cluster on fresh seeds or a held-out season before treating
+   any single recipe as best.
 
 ## Reproducing
 
