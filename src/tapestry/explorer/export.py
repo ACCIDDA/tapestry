@@ -8,10 +8,12 @@ needs into one directory:
 * ``locations.json`` — per location, ``[id, date_min, date_max, point_count,
   max_samples_per_point]`` for each series with data there; the browser rebuilds
   the unfiltered series list from both files and applies search and filters itself.
-* ``ranges.json`` — ``"<series_id>|<state>" -> [row_start, row_end)`` into the
-  revision file, so the browser reads only the rows it plots.
-* ``revisions.parquet`` — Snappy-compressed change log (float32 values, delta-encoded
-  integers), sorted by series, state, event day, and release day.
+* ``ranges.json`` — ``"<series_id>|<state>" -> [row_start, row_end)`` into that
+  series' revision file.
+* ``revisions/<series_id>.parquet`` — one Snappy-compressed change log per series
+  (float32 values, delta-encoded integers), sorted by state, event day, and release
+  day. The browser downloads a series file whole: GitHub Pages gzips responses and
+  applies byte ranges to the compressed stream, so ranged Parquet reads fail there.
 
 Every row is one observation value that became visible at ``release`` (days
 since 1970-01-01; null for sources without release dates). A null ``value``
@@ -112,7 +114,7 @@ class StaticExport:
             raise RuntimeError("The explorer index is missing or stale; run `index` first")
         staging = self.destination.with_name(self.destination.name + ".tmp")
         shutil.rmtree(staging, ignore_errors=True)
-        staging.mkdir(parents=True)
+        (staging / "revisions").mkdir(parents=True)
 
         catalog = self.index._catalog()
         ledger = ds.dataset(self.index.revision_ledger_path, format="parquet")
@@ -121,9 +123,8 @@ class StaticExport:
             ("release", pa.int32()), ("value", pa.float32()), ("n", pa.int32()),
         ])
         delta = "DELTA_BINARY_PACKED"
-        writer = pq.ParquetWriter(staging / "revisions.parquet", schema, compression="snappy",
-                                  use_dictionary=["state"], write_statistics=["series_id", "state"],
-                                  column_encoding={"series_id": delta, "event": delta, "release": delta, "n": delta})
+        parquet_options = dict(compression="snappy", use_dictionary=["state"], row_group_size=ROW_GROUP_SIZE,
+                               column_encoding={"series_id": delta, "event": delta, "release": delta, "n": delta})
         ranges: dict[str, list[int]] = {}
         offset = 0
         source_rows = 0
@@ -151,7 +152,7 @@ class StaticExport:
                     states = columns["state"]
                     starts = np.flatnonzero(np.r_[True, states[1:] != states[:-1]])
                     for start, end in zip(starts, np.r_[starts[1:], count]):
-                        ranges[f"{sid}|{states[start]}"] = [offset + int(start), offset + int(end)]
+                        ranges[f"{sid}|{states[start]}"] = [int(start), int(end)]
                     batch = pa.table({
                         "series_id": pa.array(np.full(count, sid, dtype=np.int32)),
                         "state": pa.array(states, pa.string()),
@@ -160,11 +161,10 @@ class StaticExport:
                         "value": pa.array(columns["value"].astype(np.float32), mask=np.isnan(columns["value"])),
                         "n": pa.array(columns["samples"].astype(np.int32)),
                     }, schema=schema)
-                    writer.write_table(batch, row_group_size=ROW_GROUP_SIZE)
+                    pq.write_table(batch, staging / "revisions" / f"{sid}.parquet", **parquet_options)
                     offset += count
                 if position % 25 == 0 or position == len(series):
                     self.progress(f"exported {position}/{len(series)} series · {offset:,} rows kept of {source_rows:,}")
-        writer.close()
 
         overview = self.index.overview()
         overview["meta"] = {**overview["meta"], "exported_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

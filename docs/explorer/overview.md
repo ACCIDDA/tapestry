@@ -158,8 +158,10 @@ A static copy runs on GitHub Pages at
 [accidda.github.io/tapestry/explorer/](https://accidda.github.io/tapestry/explorer/).
 It uses the same page as the local server; when `data/catalog.json` sits next to
 the page, the browser answers the catalog, series, versions, and data requests
-itself and reads revisions from one Parquet file with
-[hyparquet](https://github.com/hyparam/hyparquet) over HTTP range requests.
+itself and reads revisions with [hyparquet](https://github.com/hyparam/hyparquet)
+from one Parquet file per series, downloaded whole when that series is plotted.
+GitHub Pages gzips responses and applies byte ranges to the compressed stream, so
+ranged reads of a single large Parquet file do not work there.
 
 The copy is a thinned export of the local index, committed to
 `docs/explorer/data/`. It is not updated live or by CI:
@@ -178,7 +180,8 @@ date) and that the local explorer is the ground-truth source. The docs header li
 to it as **Live explorer**.
 
 The September 2026 export keeps 6.0 million of 165.5 million ledger rows
-(27 MB: a 26 MB Parquet file plus series metadata). In a sampled check against
+(28 MB: 373 per-series Parquet files, the largest about 5 MB for daily claims,
+plus series metadata). In a sampled check against
 the local server, latest values and Wednesday as-of dates matched exactly for
 non-claims series; claims matched for dates within 8 weeks of the as-of date.
 

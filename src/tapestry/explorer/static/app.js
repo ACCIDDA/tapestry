@@ -88,14 +88,15 @@
 
   /* Published (GitHub Pages) mode: no server, so the four API calls are answered
      from files written by `explore_covariates.py export` into ./data/. Revisions
-     are one Parquet change log read by row range with hyparquet. Resolution
+     are one Parquet change log per series, downloaded whole and read with hyparquet. Resolution
      mirrors ExplorerIndex.data(): per event, the latest row released on or before
      the as-of date (versioned sources), events on or before it, null values hidden. */
   const staticData = (() => {
     const ROOT = "data/";
     const HYPARQUET = "https://cdn.jsdelivr.net/npm/hyparquet@1.31.0/+esm";
     const FRESHNESS_DAYS = {daily: 14, weekly: 35, monthly: 75, sample: 45};
-    let detected, catalog, ranges, parquet, metadata;
+    let detected, catalog, ranges, hyparquet, metadata;
+    const files = new Map();
     const lists = new Map();
     const revisions = new Map();
     const json = async name => {
@@ -132,10 +133,15 @@
           ranges ??= json("ranges.json");
           const range = (await ranges)[key];
           if (!range) return [];
-          parquet ??= import(HYPARQUET).then(async module => ({
-            module, file: await module.asyncBufferFromUrl({url: new URL(ROOT + "revisions.parquet", location.href).href}),
-          }));
-          const {module, file} = await parquet;
+          hyparquet ??= import(HYPARQUET);
+          // Whole-file download: GitHub Pages gzips responses, which breaks byte ranges.
+          if (!files.has(id)) {
+            files.set(id, fetch(`${ROOT}revisions/${id}.parquet`).then(response => {
+              if (!response.ok) throw new Error(`Missing published revisions for series ${id} (HTTP ${response.status})`);
+              return response.arrayBuffer();
+            }));
+          }
+          const [module, file] = await Promise.all([hyparquet, files.get(id)]);
           return module.parquetReadObjects({file, columns: ["event", "release", "value", "n"], rowStart: range[0], rowEnd: range[1]});
         })());
       }

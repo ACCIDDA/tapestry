@@ -33,7 +33,7 @@ jobs:
       - name: Add published explorer
         run: |
           test -f site/explorer/data/catalog.json
-          test -f site/explorer/data/revisions.parquet
+          test -n "$(ls site/explorer/data/revisions/*.parquet)"
           cp src/tapestry/explorer/static/index.html src/tapestry/explorer/static/app.js \
              src/tapestry/explorer/static/style.css site/explorer/
       - name: Upload Pages artifact
