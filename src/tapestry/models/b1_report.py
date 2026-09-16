@@ -14,12 +14,17 @@ from .quantiles import LEVELS
 
 def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=None):
     import pandas as pd
-    from .b1_run import sample
+    from .b1_run import sample, task_weights
+    from tapestry.evaluation.totals import quantile_scores
     rows = []
     direct = models[0].config['direct']
     hs = slice(2, 6) if direct else slice(None)
+    weights = task_weights(episodes, range(6), direct)
+    if not direct:
+        weights *= 2  # Rank forecasting and nowcasting separately, each sums to one.
+    scales = models[0].scale.detach().cpu().numpy()
     for scenario in MASK_SCENARIOS:
-        dropouts = []
+        dropouts, quantiles = [], []
         # One episode at a time bounds memory; seed is common across model variants.
         for i, episode in enumerate(episodes):
             samples, d = sample(models, [episode], members=args.evaluation_members,
@@ -31,22 +36,31 @@ def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=No
                                    torch.tensor(valid[None])).numpy()[0]
             q = np.quantile(samples[:, 0], LEVELS, axis=0)
             q[:, :, :3] = np.round(q[:, :, :3])
-            error = truth[None] - q
-            wis = (2 * np.maximum(LEVELS[:, None, None, None] * error,
-                                  (LEVELS[:, None, None, None] - 1) * error)).mean(0)
-            for h, c, l in zip(*np.where(valid)):
+            quantiles.append(q)
+            metrics = quantile_scores(q[:, valid].T, truth[valid]).to_dict('records')
+            for (h, c, l), metric in zip(zip(*np.where(valid)), metrics):
                 target_day = episode['target_dates'][h + (2 if direct else 0)]
                 rows.append(dict(variant=variant, configuration=scenario_string, seed=seed, scenario=scenario,
                     issuance_date=episode['issuance_date'], target_date=target_day,
                     season=season(date.fromisoformat(target_day)), target=CHANNELS[c],
                     location=ds.locations[l], horizon=h - (0 if direct else 2),
-                    crps=float(crps[h, c, l]), wis=float(wis[h, c, l]),
+                    task='forecast' if direct or h >= 2 else 'nowcast',
+                    observed=float(truth[h, c, l]), loss_scale=float(scales[c, l]),
+                    objective_weight=float(weights[i, h, c, l]),
+                    crps=float(crps[h, c, l]), **metric,
                     coverage_50=float(q[6, h, c, l] <= truth[h, c, l] <= q[16, h, c, l]),
                     coverage_95=float(q[1, h, c, l] <= truth[h, c, l] <= q[21, h, c, l])))
             if i == len(episodes) // 2 and scenario == 'natural':
                 path_graph(samples[:, 0], episode, ds, variant, seed, root, direct)
         np.savez_compressed(root / f'evaluation-masks-{variant}-s{seed}-{scenario}.npz',
             D=np.stack(dropouts), issuance_dates=[e['issuance_date'] for e in episodes])
+        np.savez_compressed(root / f'forecasts-{variant}-s{seed}-{scenario}.npz',
+            quantiles=np.stack(quantiles, axis=1), quantile_levels=LEVELS,
+            truth=np.stack([e['Y'][hs, :, 0] for e in episodes]),
+            mask=np.stack([e['Y'][hs, :, 1].astype(bool) for e in episodes]),
+            target_dates=np.array([e['target_dates'][hs] for e in episodes]),
+            issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
+            channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4))
     frame = pd.DataFrame(rows)
     frame.to_parquet(root / f'scores-{variant}-s{seed}.parquet', index=False)
     return rows
@@ -125,14 +139,15 @@ def report(rows, ds, root):
     root = Path(root)
     data_audit(ds, root)
     frame = pd.DataFrame(rows)
-    # Exact identical eligible future cells across all three variants; recent cells
-    # are compared only between the two models that actually produce nowcasts.
+    # Compare future cells across all variants present for each seed; nowcasts
+    # only among models that produce them. Partial manager reports can have
+    # different numbers of finished configurations for each seed.
     keys = ['seed', 'scenario', 'issuance_date', 'target_date', 'target', 'location']
-    counts = ((False, frame.variant.nunique()), (True, frame[frame.horizon.lt(0)].variant.nunique()))
-    for recent, count in counts:
-        f = frame[frame.horizon.lt(0) if recent else frame.horizon.ge(0)]
-        if not (f.groupby(keys).variant.nunique() == count).all():
-            raise ValueError('Comparison variants do not have identical evaluation support')
+    for _, seed_frame in frame.groupby('seed'):
+        for recent in (False, True):
+            f = seed_frame[seed_frame.horizon.lt(0) if recent else seed_frame.horizon.ge(0)]
+            if not (f.groupby(keys).variant.nunique() == f.variant.nunique()).all():
+                raise ValueError('Comparison variants do not have identical evaluation support')
     frame['geography'] = np.where(frame.location == 'US', 'US', 'states_dc')
     summary = frame.groupby(['variant', 'scenario', 'target', 'season', 'geography', 'horizon']).agg(
         n=('crps', 'size'), crps=('crps', 'mean'), wis=('wis', 'mean'),
@@ -141,7 +156,7 @@ def report(rows, ds, root):
     # Separate the four stress scenarios so a formulation grid does not create
     # dozens of overlapping curves/legend entries inside each target panel.
     for stress in summary.scenario.unique():
-        for metric in ('crps', 'coverage_95'):
+        for metric in ('crps', 'wis', 'coverage_50', 'coverage_95'):
             fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharex=True)
             for c, ax in enumerate(axes.flat):
                 subset = summary[(summary.target == CHANNELS[c]) & (summary.scenario == stress)]
@@ -149,7 +164,7 @@ def report(rows, ds, root):
                     curve = f.groupby('horizon')[metric].mean()
                     label = variant.rsplit('-', 1)[0].replace('multiscale_conv', 'multi').replace('two_stage', 'two').replace('mask', 'm')
                     ax.plot(curve.index, curve.values, label=label, alpha=.8)
-                ax.set_title(CHANNELS[c]);ax.set_xlabel('Hub offset');ax.set_ylabel(metric)
+                ax.set_title(CHANNELS[c]);ax.set_xlabel('Week offset (negative = nowcast)');ax.set_ylabel(metric)
             handles, labels = axes.flat[0].get_legend_handles_labels()
             fig.legend(handles, labels, loc='lower center', ncol=3, fontsize=7)
             fig.suptitle(f'{metric}: {stress} inputs')
@@ -161,7 +176,7 @@ def report(rows, ds, root):
         'future offsets 0–3 are forecasts. All variants use identical eligible future cells and fixed stress masks. '
         'Scores are native-unit diagnostics, with states/DC and US reported separately. Plot curves average the '
         'reported season/geography groups; they are not the scientific selection objective. '
-        'No Hub-relative skill is claimed: this comparison does not fetch or match Hub forecasts. '
+        'This native report is separate from the optional manager Hub benchmark and its narrower support. '
         'Later pinned training truth, when enabled explicitly, makes these retrospective development results.\n')
 
 

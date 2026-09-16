@@ -1,5 +1,10 @@
 # Longleaf setup
 
+For the masked-vintage B1 cross, use the [B1 manager and shared-dispatch
+commands](design/b1.md#named-experiments-and-cluster-launch) after the environment
+setup below. B1 uses the same named-experiment workflow, with separate nowcast
+and forecast scores and optional matched frozen-Hub/EpiBench comparisons.
+
 These commands set up the checkout at
 `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf using uv-managed
 Python 3.11 and the cluster's R module. Adjust the workspace paths if installing

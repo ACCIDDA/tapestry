@@ -216,3 +216,48 @@ def test_grouped_forecasts_condition_only_on_own_target_corrections():
     assert recent.grad[1, :, :, 0].abs().sum() > 0
     assert recent.grad[:, :, :, 1].abs().sum() == 0
     assert recent.grad[[0, 2]].abs().sum() == 0
+
+
+def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
+    import pandas as pd
+    from tapestry.models.b1_experiment import ranking_tables
+    rows = []
+    for variant, tasks in [('direct', ['forecast']), ('two', ['forecast', 'nowcast'])]:
+        for task in tasks:
+            # Equal normalized errors despite different native units.
+            for target, scale, weight in [('admissions', 100., 2 / 3), ('ed', .01, 1 / 3)]:
+                error = 2. if task == 'forecast' else 5.
+                rows.append(dict(variant=variant, configuration=variant, seed=42, scenario='natural', task=task,
+                    issuance_date='2025-08-06', target_date='2025-08-09' if task == 'forecast' else '2025-08-02',
+                    target=target, location='US', horizon=0 if task == 'forecast' else -1, season='2025-2026',
+                    observed=scale, loss_scale=scale, objective_weight=weight, crps=error * scale,
+                    wis=error * scale, coverage_50=1., coverage_95=1.))
+    frame = pd.DataFrame(rows)
+    _, ranks, _ = ranking_tables(frame)
+    np.testing.assert_allclose(ranks.loc[ranks.task == 'forecast', 'score_mean'], 2.)
+    np.testing.assert_allclose(ranks.loc[ranks.task == 'nowcast', 'score_mean'], 5.)
+    assert ranks.score_sd.isna().all()  # One seed does not establish zero variance.
+    changed = frame.copy()
+    changed.loc[changed.variant == 'direct', 'loss_scale'] *= 2
+    with pytest.raises(ValueError, match='support/truth/scales/weights differ'):
+        ranking_tables(changed)
+    with pytest.raises(ValueError):
+        ranking_tables(frame.drop(index=0))
+
+
+def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path):
+    from tapestry.models.b1_hubs import export_forecasts
+    from tapestry.models.quantiles import LEVELS
+    q = np.ones((len(LEVELS), 1, 6, 6, 2))
+    q[:, :, :, 3:] = .02
+    dates = np.array([['2025-07-26', '2025-08-02', '2025-08-09', '2025-08-16', '2025-08-23', '2025-08-30']])
+    np.savez(tmp_path / 'forecasts-demo-s42-natural.npz', quantiles=q, horizons=np.arange(-2, 4),
+             quantile_levels=LEVELS, target_dates=dates, issuance_dates=['2025-08-06'], locations=['US', 'NC'])
+    frames = export_forecasts(tmp_path, dict(run_id='demo', seed=42),
+                             dict(evaluation_start='2025-08-06', evaluation_end='2025-08-23'))
+    assert len(frames) == 6
+    for (_, target), frame in frames.items():
+        assert set(frame.reference_date) == {'2025-08-09'}
+        assert set(frame.horizon) == {0, 1, 2}
+        assert set(frame.location) == {'US', '37'}
+        np.testing.assert_allclose(frame['q0.5'], .02 if 'prop' in target else 1.)

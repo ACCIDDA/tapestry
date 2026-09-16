@@ -1,4 +1,14 @@
-# Named B0 experiments
+# Named experiments
+
+B1 uses this same manager, attempt/resume records and shared GPU dispatcher.
+Use `--suite B1` when planning, then the usual `run`, `status`, `rank` and
+`compare` commands with the experiment name. See the [B1 cluster commands and
+scoring definitions](../design/b1.md#named-experiments-and-cluster-launch).
+B1 scores nowcasting (-2/-1) and forecasting (0–3) separately. Its chronological
+split and native normalized-CRPS ranking differ from the B0 CV/ensemble protocol
+described below; optional `--frozen` reuses the B0 Hub/EpiBench forecast comparison
+on matched support. The B1 suite defaults to 24 configurations, three seeds,
+300 epochs maximum and patience 50.
 
 The manager uses an immutable `TrainingScenario`, a short readable scenario
 string, a job list whose rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV

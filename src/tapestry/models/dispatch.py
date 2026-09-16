@@ -15,8 +15,7 @@ import subprocess
 import threading
 import time
 
-from .manager import check_frozen, read_jobs, run_seed, save, seed_state
-from .scenarios import TrainingScenario
+from .manager import check_inputs, parse_scenario, read_jobs, run_seed, save, seed_state
 
 
 
@@ -30,25 +29,33 @@ def queue_lock(folder):
             fcntl.flock(stream, fcntl.LOCK_UN)
 
 
-def initialize(folder):
+def initialize(folder, retry_failed=False):
     with queue_lock(folder):
-        if (folder / 'dispatch.json').exists():
-            return
         jobs = read_jobs(folder)
-        state = {'tasks': {str(job['task']): {'active': None, 'seconds': [],
-                    'seeds': {str(seed): 'complete' if seed_state(folder, job['scenario'], seed)[2] else 'pending'
-                              for seed in job['seeds']}} for job in jobs}}
+        path = folder / 'dispatch.json'
+        state = json.loads(path.read_text()) if path.exists() else {'tasks': {}}
+        for job in jobs:
+            entry = state['tasks'].setdefault(str(job['task']), dict(active=None, seconds=[], seeds={}))
+            for seed in job['seeds']:
+                if entry['active'] and int(entry['active']['seed']) == seed:
+                    continue
+                previous = entry['seeds'].get(str(seed))
+                if seed_state(folder, job['scenario'], seed)[2]:
+                    status = 'complete'
+                else:
+                    status = 'failed' if previous == 'failed' and not retry_failed else 'pending'
+                entry['seeds'][str(seed)] = status
         save(folder / 'dispatch.json', state)
 
 
 class Queue:
-    def __init__(self, folder, owner, lanes=6, gpu_count=6):
+    def __init__(self, folder, owner, lanes=6, gpu_count=6, retry_failed=False):
         self.folder, self.owner = folder, owner
         self.lanes, self.gpu_count = lanes, gpu_count
         self.jobs = {str(job['task']): job for job in read_jobs(folder)}
         self.cost = {}
         for task, job in self.jobs.items():
-            s = TrainingScenario.from_string(job['scenario'])
+            s = parse_scenario(job['scenario'])
             components = {'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
             # Scheduling estimate only: caps are not actual selected epoch counts.
             encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2.}[s.encoder]
@@ -56,7 +63,7 @@ class Queue:
             exchange = 1.4 if s.spatial == 'joint_location_target' else 1.
             self.cost[task] = components * s.epochs * (s.width / 64)**2 * (s.lookback / 12)**.5 * encoder * decoder * exchange
         self.local = threading.Lock()
-        initialize(folder)
+        initialize(folder, retry_failed)
         with queue_lock(folder):
             state = json.loads((folder / 'dispatch.json').read_text())
             state.setdefault('owners', {})[owner] = lanes
@@ -123,6 +130,11 @@ class Queue:
         with queue_lock(self.folder):
             state = json.loads((self.folder / 'dispatch.json').read_text())
             changed = False
+            # Departed allocations must not count as idle peers forever.
+            for owner in list(state.get('owners', {})):
+                if owner not in live:
+                    del state['owners'][owner]
+                    changed = True
             for task, entry in state['tasks'].items():
                 active = entry['active']
                 if active and active['owner'] not in live:
@@ -140,18 +152,19 @@ def main():
     parser.add_argument('-e', '--experiment', default='B0.1')
     parser.add_argument('--lanes', type=int, required=True)
     parser.add_argument('--gpu-count', type=int, default=6)
+    parser.add_argument('--retry-failed', action='store_true', help='Requeue failed seeds when restarting the dispatcher')
     args = parser.parse_args()
-    if args.lanes < 1:
-        parser.error('Positive lanes required')
+    if args.lanes < 1 or args.gpu_count < 1:
+        parser.error('Positive lanes and gpu-count required')
     if 'SLURM_JOB_ID' not in os.environ:
         parser.error('The shared GPU dispatcher requires a Slurm allocation')
     folder = Path('data/experiments') / args.experiment
     settings = json.loads((folder / 'experiment.json').read_text())
     settings['device'] = 'cuda'
-    check_frozen(settings['frozen'])
+    check_inputs(settings)
     owner = (os.environ['SLURM_ARRAY_JOB_ID'] + '_' + os.environ['SLURM_ARRAY_TASK_ID']
              if 'SLURM_ARRAY_JOB_ID' in os.environ else os.environ['SLURM_JOB_ID'])
-    queue = Queue(folder, owner, args.lanes, args.gpu_count)
+    queue = Queue(folder, owner, args.lanes, args.gpu_count, args.retry_failed)
     stop = threading.Event()
     print(json.dumps(dict(dispatch_owner=owner, host=socket.gethostname(), lanes=args.lanes)), flush=True)
 
