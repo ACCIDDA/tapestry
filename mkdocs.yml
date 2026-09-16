@@ -46,7 +46,9 @@ nav:
   - B0:
       - Definition and implementation: data/build-b-finalized.md
       - B0.0 results: results/b0-crosses/index.md
+      - B0.0 follow-up and adopted objective: results/b0-crosses/next-steps.md
       - B0.1 experiment specification: design/b0.1.md
+      - B0.1 results: results/b0-1-crosses/index.md
       - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
   - Data repository:
       - Overview: data/index.md
