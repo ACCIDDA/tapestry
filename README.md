@@ -1,7 +1,8 @@
 # Tapestry
 influpaint v2, or maybe not too much like influpaint.  Tapestry is a research project for multi-disease epidemic forecasting. In alpha, not ready, changing.
 
-Documentation: [accidda.github.io/tapestry](https://accidda.github.io/tapestry/).
+* [Documenations (WIP)](https://accidda.github.io/tapestry/)
+* [Data explorer with revisions](https://accidda.github.io/tapestry/explorer/)
 
 ## Environment
 
