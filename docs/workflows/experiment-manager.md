@@ -28,6 +28,10 @@ copied between Longleaf and a laptop.
 .venv/bin/python -m tapestry.models.manager compare -e b0-explore
 ```
 
+Once the fits are done, [Postprocessing an experiment](experiment-postprocessing.md)
+walks through checking completion, finding the attempt a run actually used,
+ranking, and turning the ranking into figures and a results page.
+
 `tapestry-experiments` is an equivalent installed entrypoint.
 `run` fits each seed's three season folds, then scores them against the official
 ensembles on the frozen tasks (`totals.csv`), so `rank` needs no separate scoring

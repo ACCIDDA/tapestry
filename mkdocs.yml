@@ -68,6 +68,7 @@ nav:
   - Current workflows:
       - Training and prediction: workflows/training.md
       - Experiment manager: workflows/experiment-manager.md
+      - Postprocessing an experiment: workflows/experiment-postprocessing.md
       - Frozen hub support: workflows/hub-evaluation.md
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md

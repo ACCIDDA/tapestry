@@ -226,6 +226,9 @@ Skill is concentrated at the nowcast and decays outward, consistent with B0.0.
 
 ## Reproducing
 
+The general procedure is in
+[Postprocessing an experiment](../../workflows/experiment-postprocessing.md).
+
 ```bash
 .venv/bin/python -m tapestry.models.manager rank -e B0.1
 .venv/bin/python scripts/plot_b01_crosses.py -e B0.1 -r ranking-509b07b0d243
