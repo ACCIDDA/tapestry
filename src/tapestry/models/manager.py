@@ -206,14 +206,15 @@ def run_seed(folder, job, seed, settings):
     attempt.mkdir(parents=True, exist_ok=False)
     output = attempt / output_directory(job['scenario'])
     scenario = parse_scenario(job['scenario'])
+    # `command` is a list of fitting commands: B1 season CV runs one per fold.
     if job['scenario'].startswith('b1:'):
         from .b1_experiment import commands
         command, scoring = commands(scenario, seed, settings, output)
     else:
-        command = [sys.executable, '-m', 'tapestry.models.season_cv',
-                   '--dataset', settings['dataset'], '--population-file', settings['population_file'],
-                   '--eval-members', str(settings['eval_members']), '--device', settings['device'],
-                   '--seed', str(seed), '--output', str(output), *scenario.flags()]
+        command = [[sys.executable, '-m', 'tapestry.models.season_cv',
+                    '--dataset', settings['dataset'], '--population-file', settings['population_file'],
+                    '--eval-members', str(settings['eval_members']), '--device', settings['device'],
+                    '--seed', str(seed), '--output', str(output), *scenario.flags()]]
         scoring = [sys.executable, '-m', 'tapestry.evaluation.totals', 'score',
                    '--run', str(output), '--frozen', settings['frozen']]
     record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
@@ -223,7 +224,8 @@ def run_seed(folder, job, seed, settings):
     print(f'Running {job["name"]}, seed {seed}: {attempt}', flush=True)
     try:
         with (attempt / 'run.log').open('w') as log:
-            execute(command, log)
+            for fit in command:
+                execute(fit, log)
             execute(scoring, log)
         if not complete_artifacts(output):
             raise RuntimeError('Run exited without its complete fitted and scored artifacts')

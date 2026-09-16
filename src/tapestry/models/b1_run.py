@@ -20,6 +20,7 @@ from .experiments import input_scales
 from .objective import TARGET_WEIGHTS, loss_cell_weights, loss_scales
 from .quantiles import LEVELS
 from .run import calendar
+from .season_cv import SEASONS
 
 def task_weights(episodes, target, direct=False):
     """Fixed scientific weights; recent and future each receive half the total.
@@ -73,6 +74,12 @@ def populations(path, locations):
 
 
 def partitions(ds, args):
+    """Chronological split, or B0's leave-one-season-out fold when a season is held out."""
+    held_out = getattr(args, 'held_out_season', None)
+    if held_out:
+        from .b1_seasons import fold
+        fitting, validation, _, _ = fold(ds, held_out)
+        return fitting, validation
     if not args.train_end < args.validation_start <= args.validation_end:
         raise ValueError('Require train-end < validation-start <= validation-end')
     if ds.metadata['truth_cutoff'] > args.validation_end and not args.retrospective:
@@ -194,7 +201,9 @@ def train(args, scenario=None):
     metadata = dict(model='B1', schema_version=2, scenario=scenario.scenario_string,
         run_id=scenario.run_id, configuration=asdict(scenario), groups=groups,
         seed=args.seed, train_end=args.train_end, validation_start=args.validation_start,
-        validation_end=args.validation_end, retrospective=args.retrospective, dataset_metadata=ds.metadata,
+        validation_end=args.validation_end, held_out_season=getattr(args, 'held_out_season', None),
+        protocol='season_cv' if getattr(args, 'held_out_season', None) else 'chronological',
+        retrospective=args.retrospective, dataset_metadata=ds.metadata,
         dataset_sha256=hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
         mask_probabilities=list(scenario.mask_probabilities), training_members=scenario.members,
@@ -331,9 +340,11 @@ def main(argv=None):
         else:
             add_scenario_args(p)
             p.add_argument('--population-file', default='data/metadata/b0_locations.csv')
-            p.add_argument('--train-end', required=True)
-            p.add_argument('--validation-start', required=True)
-            p.add_argument('--validation-end', required=True)
+            p.add_argument('--held-out-season', choices=SEASONS,
+                           help="B0's leave-one-season-out fold; replaces the chronological split")
+            p.add_argument('--train-end')
+            p.add_argument('--validation-start')
+            p.add_argument('--validation-end')
             p.add_argument('--retrospective', action='store_true', help='Explicitly allow later pinned truth during development')
             if command == 'compare':
                 p.add_argument('--seeds', type=int, nargs='+', default=[42, 43, 44])
@@ -351,6 +362,12 @@ def main(argv=None):
             print(json.dumps(dict(run_id=scenario.run_id, scenario=scenario.scenario_string,
                                   config=asdict(scenario), mask_probabilities=scenario.mask_probabilities), indent=2))
             return
+        if args.command in ('train', 'compare'):
+            dates = (args.train_end, args.validation_start, args.validation_end)
+            if args.held_out_season and any(dates):
+                raise ValueError('--held-out-season replaces the chronological split; do not also pass train/validation dates')
+            if not args.held_out_season and not all(dates):
+                raise ValueError('Supply --train-end/--validation-start/--validation-end, or --held-out-season')
         if args.command == 'compare' and args.evaluation_members < 2:
             raise ValueError('At least two evaluation members required for fair CRPS')
         if args.command == 'predict' and min(args.members, args.sample_batch) < 1:

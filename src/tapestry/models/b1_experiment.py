@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from .b1_scenarios import B1Scenario, PRESETS, comparison_grid
+from .season_cv import SEASONS
 
 SCORE_VERSION = 'b1-task-normalized-crps-v2'
 SCORE_DEFINITION = ('Rank forecasting and nowcasting separately by native fair CRPS / fitting-only '
@@ -32,6 +33,8 @@ def add_plan_args(parser):
         group.add_argument('--' + key.replace('_', '-'))
     group.add_argument('--evaluation-dataset')
     group.add_argument('--retrospective', action='store_true')
+    group.add_argument('--protocol', choices=('chronological', 'season_cv'), default='chronological',
+                       help="season_cv reuses B0's three leave-one-season-out folds and hidden validation weeks")
 
 
 def scenarios(args):
@@ -47,9 +50,17 @@ def sha(path):
 
 
 def settings(args):
-    if any(getattr(args, key) is None for key in DATES):
-        raise ValueError('B1 plan requires explicit train/validation/evaluation dates')
-    return dict(model='B1', **{key: getattr(args, key) for key in DATES},
+    protocol = getattr(args, 'protocol', 'chronological')
+    if protocol == 'season_cv':
+        # Folds and hidden validation weeks come from B0's season calendar, not dates.
+        if any(getattr(args, key) for key in DATES):
+            raise ValueError('season_cv uses B0 season folds; do not supply train/validation/evaluation dates')
+        dates = dict.fromkeys(DATES)
+    else:
+        if any(getattr(args, key) is None for key in DATES):
+            raise ValueError('B1 plan requires explicit train/validation/evaluation dates')
+        dates = {key: getattr(args, key) for key in DATES}
+    return dict(model='B1', protocol=protocol, **dates,
                 evaluation_dataset=args.evaluation_dataset or args.dataset,
                 retrospective=args.retrospective)
 
@@ -59,12 +70,17 @@ def check_inputs(config):
     from .b1_run import partitions, populations
     data = WednesdayDataset.load(config['dataset'])
     evaluation = WednesdayDataset.load(config['evaluation_dataset'])
-    partitions(data, argparse.Namespace(**config))
     populations(config['population_file'], data.locations)
     if data.locations != evaluation.locations:
         raise ValueError('B1 fitting/evaluation locations must match in order')
-    if not config['validation_end'] < config['evaluation_start'] <= config['evaluation_end']:
-        raise ValueError('Evaluation must follow validation and end on/after its start')
+    if config.get('protocol') == 'season_cv':
+        from .b1_seasons import fold
+        for held in SEASONS:
+            fold(data, held)  # every fold must have fitting, validation and evaluation episodes
+    else:
+        partitions(data, argparse.Namespace(**config))
+        if not config['validation_end'] < config['evaluation_start'] <= config['evaluation_end']:
+            raise ValueError('Evaluation must follow validation and end on/after its start')
     if config['eval_members'] < 2:
         raise ValueError('Fair CRPS requires at least two evaluation members')
     if config.get('frozen'):
@@ -105,37 +121,70 @@ def prepare(folder, config):
 
 
 def commands(scenario, seed, config, output):
-    command = [sys.executable, '-m', 'tapestry.models', 'b1', 'train', *scenario.flags(),
-               '--dataset', config['dataset'], '--population-file', config['population_file'],
-               '--device', config['device'], '--seed', str(seed), '--output', str(output)]
-    for key in DATES[:3]:
-        command += ['--' + key.replace('_', '-'), config[key]]
+    """One command per fitted partition: three B0 season folds, or one chronological fit."""
+    base = [sys.executable, '-m', 'tapestry.models', 'b1', 'train', *scenario.flags(),
+            '--dataset', config['dataset'], '--population-file', config['population_file'],
+            '--device', config['device'], '--seed', str(seed)]
     if config['retrospective']:
-        command.append('--retrospective')
+        base.append('--retrospective')
+    if config.get('protocol') == 'season_cv':
+        command = [[*base, '--held-out-season', held, '--output', str(output / f'eval_{held}')]
+                   for held in SEASONS]
+    else:
+        dates = [arg for key in DATES[:3] for arg in ('--' + key.replace('_', '-'), config[key])]
+        command = [[*base, *dates, '--output', str(output)]]
     score = [sys.executable, '-m', 'tapestry.models.b1_experiment', '--run', str(output),
              '--settings-json', json.dumps(config)]
     return command, score
 
 
 def score_run(output, config):
+    """Score one chronological fit, or each B0 season fold on its own held-out season."""
     from tapestry.model_data.wednesday import WednesdayDataset
     from .b1_run import crop_episodes, load_models
     from .b1_report import evaluate, report
     from .manager import save
     check_inputs(config)
-    models, metadata = load_models(output / 'model.pt', config['device'])
     ds = WednesdayDataset.load(config['evaluation_dataset'])
-    episodes = list(ds.episodes(start=config['evaluation_start'], end=config['evaluation_end'],
-                               target_start=config['evaluation_start'], target_end=config['evaluation_end']))
-    episodes = [e for e in crop_episodes(episodes, metadata['configuration']['lookback']) if e['X'][:, :, 1].any()]
-    if not episodes:
-        raise ValueError('No usable B1 evaluation episodes')
+    season_cv = config.get('protocol') == 'season_cv'
     args = argparse.Namespace(device=config['device'], evaluation_members=config['eval_members'])
-    rows = evaluate(models, episodes, ds, args, metadata['run_id'], metadata['seed'], output, metadata['scenario'])
+    rows, metadata = [], None
+    if season_cv:
+        from .b1_seasons import fold
+        folds = {}
+        for held in SEASONS:
+            models, meta = load_models(output / f'eval_{held}' / 'model.pt', config['device'])
+            if meta.get('held_out_season') != held:
+                raise ValueError(f'Fold {held} checkpoint reports {meta.get("held_out_season")}')
+            metadata = meta
+            _, _, episodes, info = fold(ds, held)
+            episodes = [e for e in crop_episodes(episodes, meta['configuration']['lookback']) if e['X'][:, :, 1].any()]
+            if not episodes:
+                raise ValueError(f'No usable B1 evaluation episodes for held-out {held}')
+            # Each fold predicts only its held-out season; folds never share evaluation cells.
+            rows += evaluate(models, episodes, ds, args, meta['run_id'], meta['seed'],
+                             output / f'eval_{held}', meta['scenario'])
+            folds[held] = info
+        combined = dict(metadata, protocol='season_cv', held_out_season=None, folds=folds,
+                        seasons=list(SEASONS))
+        save(output / 'manifest.json', combined)
+    else:
+        models, metadata = load_models(output / 'model.pt', config['device'])
+        episodes = list(ds.episodes(start=config['evaluation_start'], end=config['evaluation_end'],
+                                   target_start=config['evaluation_start'], target_end=config['evaluation_end']))
+        episodes = [e for e in crop_episodes(episodes, metadata['configuration']['lookback']) if e['X'][:, :, 1].any()]
+        if not episodes:
+            raise ValueError('No usable B1 evaluation episodes')
+        rows = evaluate(models, episodes, ds, args, metadata['run_id'], metadata['seed'], output, metadata['scenario'])
+    if season_cv:
+        import pandas as pd
+        pd.DataFrame(rows).to_parquet(
+            output / f'scores-{metadata["run_id"]}-s{metadata["seed"]}.parquet', index=False)
     report(rows, ds, output)
     scoring = dict(score_version=SCORE_VERSION, definition=SCORE_DEFINITION,
                    evaluation_dataset_sha256=sha(config['evaluation_dataset']),
-                   settings=config, rows=len(rows), scenario=metadata['scenario'], seed=metadata['seed'])
+                   settings=config, rows=len(rows), scenario=metadata['scenario'], seed=metadata['seed'],
+                   protocol=config.get('protocol', 'chronological'))
     if config.get('frozen'):
         from .b1_hubs import score_hubs
         scoring['hub_support'] = score_hubs(output, config['frozen'], metadata, config)
@@ -147,9 +196,17 @@ def complete_artifacts(output):
         metadata = json.loads((output / 'manifest.json').read_text())
         scoring = json.loads((output / 'scoring.json').read_text())
         prefix = f'{metadata["run_id"]}-s{metadata["seed"]}'
-        files = ['model.pt', 'summary.csv', f'scores-{prefix}.parquet']
-        files += [f'{kind}-{prefix}-{stress}.npz' for kind in ('forecasts', 'evaluation-masks')
-                  for stress in ('natural', 'recent', 'gap', 'outage')]
+        files = ['summary.csv', f'scores-{prefix}.parquet']
+        if scoring.get('protocol') == 'season_cv':
+            # One fitted model and its own forecasts per held-out season fold.
+            files += [f'eval_{held}/model.pt' for held in SEASONS]
+            files += [f'eval_{held}/{kind}-{prefix}-{stress}.npz' for held in SEASONS
+                      for kind in ('forecasts', 'evaluation-masks')
+                      for stress in ('natural', 'recent', 'gap', 'outage')]
+        else:
+            files.append('model.pt')
+            files += [f'{kind}-{prefix}-{stress}.npz' for kind in ('forecasts', 'evaluation-masks')
+                      for stress in ('natural', 'recent', 'gap', 'outage')]
         if scoring['settings'].get('frozen'):
             files += ['hub-support.json', 'hub-scores.parquet']
         return (metadata['model'] == 'B1' and scoring['rows'] > 0

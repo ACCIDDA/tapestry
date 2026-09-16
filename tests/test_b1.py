@@ -261,3 +261,38 @@ def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path)
         assert set(frame.horizon) == {0, 1, 2}
         assert set(frame.location) == {'US', '37'}
         np.testing.assert_allclose(frame['q0.5'], .02 if 'prop' in target else 1.)
+
+
+def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
+    """B0's leakage rule: a held-out or hidden week never informs a fold's fit.
+
+    Checked on inputs as well as labels, because B1 conditions on real Wednesday
+    vintages: zeroing a context week is what mirrors B0 zeroing its panel.
+    """
+    from datetime import date
+    from tapestry.model_data.finalized import season
+    from tapestry.model_data.wednesday import WednesdayDataset
+    from tapestry.models.b1_seasons import fold, hidden_weeks
+    from tapestry.models.season_cv import SEASONS
+
+    ds = WednesdayDataset.load('data/processed/build_b1_wednesday.npz')
+    for held in SEASONS:
+        fitting, validation, evaluation, _ = fold(ds, held)
+        hidden = hidden_weeks(ds, held)
+        for episode in fitting:
+            for h, day in enumerate(episode['target_dates']):
+                if episode['Y'][h, :, 1].any():
+                    assert season(date.fromisoformat(str(day))) != held
+                    assert str(day) not in hidden
+            for j, day in enumerate(episode['context_dates']):
+                if str(day) in hidden or season(date.fromisoformat(str(day))) == held:
+                    assert not episode['X'][j, :, 1].any(), 'hidden/held-out week visible as a fitting input'
+        # Validation scores only hidden weeks; evaluation only the held-out season.
+        for episode in validation:
+            for h, day in enumerate(episode['target_dates']):
+                if episode['Y'][h, :, 1].any():
+                    assert str(day) in hidden
+        for episode in evaluation:
+            for h, day in enumerate(episode['target_dates']):
+                if episode['Y'][h, :, 1].any():
+                    assert season(date.fromisoformat(str(day))) == held
