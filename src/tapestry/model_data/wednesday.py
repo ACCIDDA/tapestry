@@ -91,6 +91,12 @@ class VintageArchive:
         rows[key] = (value, pid)
 
     def resolve(self, cutoff):
+        """Resolve information states, not revision events on the cutoff date.
+
+        Delphi values persist from their advertised report time until replaced
+        (including explicit nulls). Hub commits/full releases define whole-file
+        states that persist until the next eligible state, including deletions.
+        """
         cutoff = cutoff_time(cutoff)
         hub, coverage, latest = {}, {}, {}
         git, git_coverage, git_latest = {}, {}, {}

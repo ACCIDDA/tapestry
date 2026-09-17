@@ -15,8 +15,8 @@ Hub targets without an `as_of` column can still have release history in Git.
 The **Git commit history** variants show canonical target-file states saved by
 intake from the pinned branch's first-parent commits. Select an as-of date to
 resolve the latest eligible complete state, including removed observations.
-Native `as_of` variants remain separate. Commit time is an availability proxy,
-not a provider publication timestamp; see [the vintage policy](../data/vintages-and-geography.md).
+Native `as_of` variants remain separate. A commit fixes repository contents; its
+committer timestamp dates that state, not the provider release clock; see [the vintage policy](../data/vintages-and-geography.md).
 
 ## Commands
 
@@ -147,11 +147,14 @@ and **Wed →** step the date to the previous or next calendar Wednesday (from
 today when showing latest values); the next step stops at today.
 
 The **As of** control uses publisher revisions already present
-in the selected raw snapshot. Full `as_of` releases preserve omissions and
-retractions. Unversioned data uses an event-date cutoff. Inputs without row
+in the selected raw snapshot. Delphi's last eligible advertised value remains
+available when there is no new change. Hub states likewise persist until a later
+complete state replaces them: unchanged rows still belong to the version.
+Full `as_of` releases preserve omissions and retractions. Unversioned data uses an event-date cutoff. Inputs without row
 publication dates are bounded by their saved snapshot/commit timestamp.
-The explorer never traverses or fetches Git history; acquire a historical Hub
-snapshot with the intake command's `--hub-as-of` option when needed.
+The explorer resolves the Git history materialized during intake; it does not
+fetch or traverse Git during a query. `hub-history` backfills a pinned acquisition,
+and `--hub-as-of` can acquire a different historical tip when needed.
 
 Repeated rows for a state, measure, date, and release are shown as their
 unweighted mean, with the contributing sample count. Null latest revisions do
@@ -179,6 +182,8 @@ The copy is a thinned export of the local index, committed to
 
 - Releases collapse to one per Wednesday week (the last release on or before
   each Wednesday), and rows that repeat the previous kept value are dropped.
+  Those rows still have an as-of version: the retained value persists until its
+  next change. This is change-log compression, not missing historical coverage.
 - Delphi inpatient/outpatient claims keep Wednesday snapshots only for the first
   8 weeks after each date, plus each date's latest value.
 - Full-snapshot Hub target files become a change log that keeps removals, so an

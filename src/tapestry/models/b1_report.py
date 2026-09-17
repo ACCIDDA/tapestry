@@ -115,7 +115,7 @@ def path_graph(samples, episode, ds, config_id, seed, root, direct):
     fig.tight_layout();fig.savefig(root / f'paths-{config_id}-s{seed}.png', dpi=160);plt.close(fig)
 
 
-def data_audit(ds, root):
+def data_audit(ds, root, archive=None):
     import pandas as pd
     import matplotlib
     matplotlib.use('Agg')
@@ -141,7 +141,7 @@ def data_audit(ds, root):
                 supplied_final=int(final.sum()), recent_supplied_final=int(final[-2:].sum()),
                 missing=int(total - valid.sum()), recent_labels=int(a['Y_recent_valid'][i, :, c].sum()),
                 future_labels=int(a['Y_future_valid'][i, :, c].sum())))
-    frame = pd.DataFrame(rows);frame.to_csv(root / 'source-coverage.csv', index=False)
+    frame = pd.DataFrame(rows);frame.to_csv(root / 'input-source-coverage.csv', index=False)
     fig, axes = plt.subplots(2, 3, figsize=(13, 7), sharex=True)
     for c, ax in enumerate(axes.flat):
         f = frame[frame.target == CHANNELS[c]]
@@ -149,97 +149,10 @@ def data_audit(ds, root):
                      labels=['Hub as_of', 'Hub Git', 'Delphi', 'Supplied final', 'Missing'], colors=['steelblue', 'purple', 'orange', 'seagreen', 'lightgray'])
         ax.set_title(CHANNELS[c]);ax.set_ylim(0, 1);ax.tick_params(axis='x', rotation=30)
     fig.supylabel('Fraction of context week × location cells')
-    fig.suptitle(f'Per issuance and target: up to {a["X_available"].shape[1]} in-calendar weeks × {len(ds.locations)} locations')
-    axes.flat[0].legend(fontsize=8);fig.tight_layout();fig.savefig(root / 'source-coverage.png', dpi=160);plt.close(fig)
-    # A week can have several report providers and supplied finals across locations.
-    # Show its existence separately from the amount of geographic support.
-    from matplotlib.colors import ListedColormap, BoundaryNorm
-    from matplotlib.patches import Patch
-    eligible = np.isin(a['context_dates'], ds.calendar_weeks)
-    valid, final = a['X_available'], a['X_final']
-    provider, git = kinds[a['X_provenance']], git_sources[a['X_provenance']]
-    masks = dict(hub=valid & ~final & ~git & (provider == 'hub'),
-                 git=valid & ~final & git, delphi=valid & ~final & (provider == 'delphi'),
-                 supplied_final=valid & final, missing=~valid)
-    counts = {key: mask.sum(axis=-1) for key, mask in masks.items()}
-    report_count = (valid & ~final).sum(axis=-1)
-    available_count = valid.sum(axis=-1)
-    weekly_rows, location_rows, geographic_audit = [], [], []
-    for c, channel in enumerate(CHANNELS):
-        for i, t in np.argwhere(eligible):
-            weekly_rows.append(dict(issuance_date=a['issuance_dates'][i],
-                context_date=a['context_dates'][i, t], context_offset=t-valid.shape[1], target=channel,
-                locations=len(ds.locations), available_locations=int(available_count[i, t, c]),
-                report_locations=int(report_count[i, t, c]),
-                **{key: int(n[i, t, c]) for key, n in counts.items()}))
-        for name, n in [('any_input', available_count[:, :, c]), ('wednesday_report', report_count[:, :, c])]:
-            present = eligible & (n > 0)
-            geographic_audit.append(dict(target=channel, kind=name,
-                present_issuance_weeks=int(present.sum()),
-                partial_location_issuance_weeks=int((present & (n < len(ds.locations))).sum()),
-                minimum_locations_when_present=int(n[present].min()) if present.any() else None))
-        for i, t in np.argwhere(eligible):
-            if t < valid.shape[1] - 2:
-                continue
-            for l, location in enumerate(ds.locations):
-                location_rows.append(dict(issuance_date=a['issuance_dates'][i],
-                    context_date=a['context_dates'][i, t], context_offset=t-valid.shape[1],
-                    target=channel, location=location,
-                    **{key: int(mask[i, t, c, l]) for key, mask in masks.items()}))
-    pd.DataFrame(weekly_rows).to_csv(root / 'source-coverage-weeks.csv', index=False)
-    location_frame = pd.DataFrame(location_rows)
-    location_frame.to_csv(root / 'source-coverage-locations.csv', index=False)
-    (root / 'location-coverage-check.json').write_text(json.dumps(geographic_audit, indent=2) + '\n')
-    # Bit codes retain each distinct combination of selected report providers.
-    # Supplied finals are not reports and therefore remain gray in these views.
-    labels = ['No report (including supplied finals)', 'Hub as_of', 'Hub Git',
-              'Hub as_of + Git', 'Delphi', 'Hub as_of + Delphi',
-              'Hub Git + Delphi', 'Hub as_of + Git + Delphi']
-    colors = ['lightgray', 'steelblue', 'purple', 'teal', 'orange', 'crimson', 'olive', 'black']
-    cmap = ListedColormap(colors);cmap.set_bad('white')
-    norm = BoundaryNorm(np.arange(-.5, len(colors)), len(colors))
-    report_codes = sum(bit * masks[key].astype(np.uint8)
-                       for bit, key in ((1, 'hub'), (2, 'git'), (4, 'delphi')))
-    week_codes = np.bitwise_or.reduce(report_codes, axis=-1)
-    # Keep real elapsed time, including gaps between model-calendar issuances.
-    dates = pd.date_range(str(a['issuance_dates'][0]), str(a['issuance_dates'][-1]), freq='7D')
-    positions = dates.get_indexer(pd.to_datetime(a['issuance_dates']))
-    ticks = np.unique(np.linspace(0, len(dates)-1, 7).astype(int))
-    handles = [Patch(color=color, label=label) for color, label in zip(colors, labels)]
-    handles.append(Patch(facecolor='white', edgecolor='gray', label='Outside model calendar'))
-    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharex=True, sharey=True)
-    for c, ax in enumerate(axes.flat):
-        states = np.ma.masked_all((valid.shape[1], len(dates)))
-        states[:, positions] = np.ma.array(week_codes[:, :, c].T, mask=~eligible.T)
-        ax.imshow(states, aspect='auto', interpolation='nearest', cmap=cmap, norm=norm)
-        ax.set_title(CHANNELS[c]);ax.set_xticks(ticks, dates[ticks].strftime('%Y-%m-%d'), rotation=30, ha='right')
-        ax.set_yticks(np.arange(valid.shape[1]), np.arange(-valid.shape[1], 0))
-    fig.supylabel('Context week offset from following Saturday')
-    fig.supxlabel('Wednesday issuance', y=.10)
-    fig.suptitle('Week-by-week selected reports at any location; each source combination has a distinct color\nGray = no report, even when supplied finals exist; overlap can be across different locations')
-    fig.legend(handles=handles, loc='lower center', ncol=3, fontsize=9)
-    fig.tight_layout(rect=(0, .13, 1, .93));fig.savefig(root / 'source-coverage-weeks.png', dpi=160);plt.close(fig)
-    fig, axes = plt.subplots(2, 3, figsize=(18, 15), sharex=True, sharey=True)
-    for c, ax in enumerate(axes.flat):
-        states = np.ma.masked_all((len(ds.locations) * 2, len(dates)))
-        # Each location has separate rows for -2 and -1, avoiding any averaging
-        # or apparent source overlap between different recent weeks.
-        recent = report_codes[:, -2:, c].transpose(2, 1, 0).reshape(len(ds.locations) * 2, -1)
-        excluded = np.broadcast_to(~eligible[:, -2:].T[None],
-                                   (len(ds.locations), 2, len(positions))).reshape(recent.shape)
-        states[:, positions] = np.ma.array(recent, mask=excluded)
-        ax.imshow(states, aspect='auto', interpolation='nearest', cmap=cmap, norm=norm)
-        ax.set_title(CHANNELS[c]);ax.set_xticks(ticks, dates[ticks].strftime('%Y-%m-%d'), rotation=30, ha='right')
-        ax.set_yticks(np.arange(len(ds.locations)) * 2 + .5, ds.locations, fontsize=7)
-        ax.set_yticks(np.arange(len(ds.locations) + 1) * 2 - .5, minor=True)
-        ax.grid(axis='y', which='minor', color='white', linewidth=.3)
-        ax.tick_params(axis='y', which='minor', length=0, labelleft=True)
-        ax.tick_params(axis='y', which='major', labelleft=True)
-    fig.supylabel('Location (two rows each: older recent week −2 above, latest week −1 below)')
-    fig.supxlabel('Wednesday issuance', y=.045)
-    fig.suptitle('Selected report coverage by location over time — two recent weeks shown separately\nGray = no report (including supplied-final fallback); white = outside model calendar')
-    fig.legend(handles=[handles[k] for k in (0, 1, 2, 4, 8)], loc='lower center', ncol=5, fontsize=9)
-    fig.tight_layout(rect=(0, .065, 1, .95));fig.savefig(root / 'source-coverage-locations.png', dpi=160);plt.close(fig)
+    fig.suptitle(f'Selected model inputs: up to {a["X_available"].shape[1]} in-calendar weeks × {len(ds.locations)} locations')
+    axes.flat[0].legend(fontsize=8);fig.tight_layout();fig.savefig(root / 'input-source-coverage.png', dpi=160);plt.close(fig)
+    if archive is not None:
+        source_coverage(ds, root, archive)
     fig, axes = plt.subplots(2, 3, figsize=(12, 7))
     audits = []
     for c, ax in enumerate(axes.flat):
@@ -262,6 +175,169 @@ def data_audit(ds, root):
         calendar_weeks=list(ds.calendar_weeks), history_support=support,
         archive_issuances=ds.metadata.get('archive_issuances'), model_issuances=len(a['issuance_dates']),
         coverage_policy=ds.metadata['coverage_policy']), indent=2) + '\n')
+
+
+def source_coverage(ds, root, archive):
+    """Source information states, before provider selection or final filling."""
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import ListedColormap, BoundaryNorm
+    from matplotlib.patches import Patch
+    from tapestry.model_data.wednesday import START, RSV_ED_START
+    a = ds.arrays
+    eligible = np.isin(a['context_dates'], ds.calendar_weeks)
+    valid, final = a['X_available'], a['X_final']
+    expected = {(p['source'], p['snapshot_id'], p['manifest_sha256']) for p in ds.metadata['source_manifests']}
+    actual = {(p['source'], p['snapshot_id'], p['manifest_sha256']) for p in archive.manifests}
+    if expected != actual:
+        raise ValueError('Archive acquisitions differ from the dataset; rebuild or use its pinned sources')
+    masks = {key: np.zeros_like(valid) for key in ('hub', 'git', 'delphi')}
+    selected_available = np.zeros_like(valid)
+    selected_values = np.zeros_like(a['X_values'])
+    selected_provenance = np.zeros_like(a['X_provenance'])
+    truth_state = archive.resolve(ds.metadata['truth_cutoff'])
+    mismatched_input_cells = 0
+    for i, issuance in enumerate(a['issuance_dates']):
+        state = archive.resolve(str(issuance))
+        values, available, provenance, _ = archive.panel(a['context_dates'][i], ds.locations, state)
+        selected_values[i], selected_available[i], selected_provenance[i] = values, available, provenance
+        finals, final_available, _, _ = archive.panel(a['context_dates'][i], ds.locations, truth_state)
+        use_final = np.ones_like(available);use_final[-2:] = ~available[-2:]
+        expected_values = np.where(use_final, finals, values)
+        expected_available = np.where(use_final, final_available, available)
+        expected_final = use_final & final_available
+        expected_values[~eligible[i]] = 0
+        expected_available[~eligible[i]] = False
+        expected_final[~eligible[i]] = False
+        mismatched_input_cells += int(np.count_nonzero(
+            (expected_values != a['X_values'][i]) | (expected_available != valid[i]) | (expected_final != final[i])))
+        for key, observations in zip(masks, (state[0], state[4], state[3])):
+            for t, day in enumerate(a['context_dates'][i]):
+                if not eligible[i, t]:
+                    continue
+                for c in range(6):
+                    if day < START or (c == 5 and day < RSV_ED_START):
+                        continue
+                    for l, location in enumerate(ds.locations):
+                        value, _ = observations.get((str(day), c, location), (None, 0))
+                        masks[key][i, t, c, l] = value is not None
+    # Verify the stored dataset against independently reconstructed eligible states.
+    # Older context intentionally uses finals; recent existing versions must survive.
+    recent = np.zeros_like(valid);recent[:, -2:] = eligible[:, -2:, None, None]
+    selected_available &= eligible[:, :, None, None]
+    stored_reports = valid & ~final
+    expected_reports = selected_available & recent
+    mismatched_masks = int(np.count_nonzero(stored_reports != expected_reports))
+    mismatched_values = int(np.count_nonzero(stored_reports & expected_reports & (a['X_values'] != selected_values)))
+    releases = np.array([p['release'] or '' for p in archive.provenance])
+    released_days = np.char.partition(releases[selected_provenance], 'T')[..., 0]
+    unchanged = expected_reports & (released_days < a['issuance_dates'][:, None, None, None])
+    check = dict(semantics='Latest eligible information state persists without a new revision; supplied finals are separate.',
+                 stored_recent_report_cells=int(stored_reports.sum()),
+                 recent_report_cells_from_earlier_releases=int(unchanged.sum()),
+                 mismatched_report_masks=mismatched_masks, mismatched_report_values=mismatched_values,
+                 mismatched_input_cells=mismatched_input_cells)
+    (root / 'version-state-dataset-check.json').write_text(json.dumps(check, indent=2) + '\n')
+    if mismatched_masks or mismatched_values or mismatched_input_cells:
+        raise ValueError('Stored dataset disagrees with reconstructed source versions; see version-state-dataset-check.json')
+    source_available = np.logical_or.reduce(list(masks.values()))
+    counts = {key: mask.sum(axis=-1) for key, mask in masks.items()}
+    report_count = source_available.sum(axis=-1)
+    available_count = valid.sum(axis=-1)
+    weekly_rows, location_rows, geographic_audit = [], [], []
+    for c, channel in enumerate(CHANNELS):
+        for i, t in np.argwhere(eligible):
+            weekly_rows.append(dict(issuance_date=a['issuance_dates'][i],
+                context_date=a['context_dates'][i, t], context_offset=t-valid.shape[1], target=channel,
+                locations=len(ds.locations), model_input_locations=int(available_count[i, t, c]),
+                version_locations=int(report_count[i, t, c]),
+                **{key: int(n[i, t, c]) for key, n in counts.items()}))
+        for name, n in [('model_input', available_count[:, :, c]), ('available_source_version', report_count[:, :, c])]:
+            present = eligible & (n > 0)
+            geographic_audit.append(dict(target=channel, kind=name,
+                present_issuance_weeks=int(present.sum()),
+                partial_location_issuance_weeks=int((present & (n < len(ds.locations))).sum()),
+                minimum_locations_when_present=int(n[present].min()) if present.any() else None))
+        for i, t in np.argwhere(eligible):
+            if t < valid.shape[1] - 2:
+                continue
+            for l, location in enumerate(ds.locations):
+                location_rows.append(dict(issuance_date=a['issuance_dates'][i],
+                    context_date=a['context_dates'][i, t], context_offset=t-valid.shape[1],
+                    target=channel, location=location, model_supplied_final=int(final[i, t, c, l]),
+                    version_available=int(source_available[i, t, c, l]),
+                    **{key: int(mask[i, t, c, l]) for key, mask in masks.items()}))
+    pd.DataFrame(weekly_rows).to_csv(root / 'source-coverage-weeks.csv', index=False)
+    location_frame = pd.DataFrame(location_rows)
+    location_frame.to_csv(root / 'source-coverage-locations.csv', index=False)
+    (root / 'location-coverage-check.json').write_text(json.dumps(geographic_audit, indent=2) + '\n')
+    # Each bit marks a source with an eligible version, unchanged or revised.
+    # Source overlap is measured before selecting a provider or supplying finals.
+    labels = ['No available version', 'Hub as_of', 'Hub Git',
+              'Hub as_of + Git', 'Delphi', 'Hub as_of + Delphi',
+              'Hub Git + Delphi', 'Hub as_of + Git + Delphi']
+    colors = ['lightgray', 'steelblue', 'purple', 'teal', 'orange', 'crimson', 'olive', 'black']
+    cmap = ListedColormap(colors);cmap.set_bad('white')
+    norm = BoundaryNorm(np.arange(-.5, len(colors)), len(colors))
+    report_codes = sum(bit * masks[key].astype(np.uint8)
+                       for bit, key in ((1, 'hub'), (2, 'git'), (4, 'delphi')))
+    week_codes = np.bitwise_or.reduce(report_codes, axis=-1)
+    summary = []
+    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharex=True, sharey=True)
+    for c, ax in enumerate(axes.flat):
+        total = eligible.sum(axis=1) * len(ds.locations)
+        shares = [((report_codes[:, :, c] == k) & eligible[:, :, None]).sum(axis=(1, 2)) / total
+                  for k in range(8)]
+        ax.stackplot(pd.to_datetime(a['issuance_dates']), *shares, colors=colors, labels=labels)
+        ax.set_title(CHANNELS[c]);ax.set_ylim(0, 1);ax.tick_params(axis='x', rotation=30)
+        for i, issuance in enumerate(a['issuance_dates']):
+            for k, label in enumerate(labels):
+                summary.append(dict(issuance_date=issuance, target=CHANNELS[c], source_combination=label,
+                                    total=int(total[i]), fraction=float(shares[k][i])))
+    pd.DataFrame(summary).to_csv(root / 'source-coverage.csv', index=False)
+    fig.supylabel('Fraction of eligible context week × location cells')
+    fig.suptitle('Available source versions, including unchanged values; before model-input selection')
+    fig.legend(*axes.flat[0].get_legend_handles_labels(), loc='lower center', ncol=3, fontsize=9)
+    fig.tight_layout(rect=(0, .1, 1, .95));fig.savefig(root / 'source-coverage.png', dpi=160);plt.close(fig)
+    # Keep real elapsed time, including gaps between model-calendar issuances.
+    dates = pd.date_range(str(a['issuance_dates'][0]), str(a['issuance_dates'][-1]), freq='7D')
+    positions = dates.get_indexer(pd.to_datetime(a['issuance_dates']))
+    ticks = np.unique(np.linspace(0, len(dates)-1, 7).astype(int))
+    handles = [Patch(color=color, label=label) for color, label in zip(colors, labels)]
+    handles.append(Patch(facecolor='white', edgecolor='gray', label='Outside model calendar'))
+    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharex=True, sharey=True)
+    for c, ax in enumerate(axes.flat):
+        states = np.ma.masked_all((valid.shape[1], len(dates)))
+        states[:, positions] = np.ma.array(week_codes[:, :, c].T, mask=~eligible.T)
+        ax.imshow(states, aspect='auto', interpolation='nearest', cmap=cmap, norm=norm)
+        ax.set_title(CHANNELS[c]);ax.set_xticks(ticks, dates[ticks].strftime('%Y-%m-%d'), rotation=30, ha='right')
+        ax.set_yticks(np.arange(valid.shape[1]), np.arange(-valid.shape[1], 0))
+    fig.supylabel('Context week offset from following Saturday')
+    fig.supxlabel('Wednesday issuance', y=.10)
+    fig.suptitle('Available source versions by week (unchanged versions remain available)\nGray = no eligible source value; distinct colors show source overlap before model-input selection')
+    fig.legend(handles=handles, loc='lower center', ncol=3, fontsize=9)
+    fig.tight_layout(rect=(0, .13, 1, .93));fig.savefig(root / 'source-coverage-weeks.png', dpi=160);plt.close(fig)
+    fig, axes = plt.subplots(2, 3, figsize=(18, 15), sharex=True, sharey=True)
+    for c, ax in enumerate(axes.flat):
+        states = np.ma.masked_all((len(ds.locations) * 2, len(dates)))
+        # Each location has separate rows for -2 and -1, avoiding any averaging
+        # or apparent source overlap between different recent weeks.
+        recent = report_codes[:, -2:, c].transpose(2, 1, 0).reshape(len(ds.locations) * 2, -1)
+        excluded = np.broadcast_to(~eligible[:, -2:].T[None],
+                                   (len(ds.locations), 2, len(positions))).reshape(recent.shape)
+        states[:, positions] = np.ma.array(recent, mask=excluded)
+        ax.imshow(states, aspect='auto', interpolation='nearest', cmap=cmap, norm=norm)
+        ax.set_title(CHANNELS[c]);ax.set_xticks(ticks, dates[ticks].strftime('%Y-%m-%d'), rotation=30, ha='right')
+        ax.set_yticks(np.arange(len(ds.locations)) * 2 + .5, ds.locations, fontsize=7)
+        ax.set_yticks(np.arange(len(ds.locations) + 1) * 2 - .5, minor=True)
+        ax.grid(axis='y', which='minor', color='white', linewidth=.3)
+        ax.tick_params(axis='y', which='minor', length=0, labelleft=True)
+        ax.tick_params(axis='y', which='major', labelleft=True)
+    fig.supylabel('Location (two rows each: older recent week −2 above, latest week −1 below)')
+    fig.supxlabel('Wednesday issuance', y=.065)
+    fig.suptitle('Available source versions by location over time — recent weeks −2 and −1\nUnchanged versions persist; gray = no eligible source value; white = outside model calendar')
+    fig.legend(handles=handles, loc='lower center', ncol=3, fontsize=9)
+    fig.tight_layout(rect=(0, .085, 1, .95));fig.savefig(root / 'source-coverage-locations.png', dpi=160);plt.close(fig)
 
 
 def history_support(ds):
@@ -351,9 +427,10 @@ def report(rows, ds, root):
 
 if __name__ == '__main__':
     import argparse
-    from tapestry.model_data.wednesday import DEFAULT_DATASET, WednesdayDataset
+    from tapestry.model_data.wednesday import DEFAULT_DATASET, WednesdayDataset, read_archive
     parser = argparse.ArgumentParser(description='Audit B1 source coverage and preliminary-to-final revisions')
     parser.add_argument('--dataset', default=DEFAULT_DATASET)
     parser.add_argument('--output', default='data/processed/b1-audit')
+    parser.add_argument('--data-root', default='data', help='Pinned source archives for information-state coverage')
     args = parser.parse_args()
-    data_audit(WednesdayDataset.load(args.dataset), args.output)
+    data_audit(WednesdayDataset.load(args.dataset), args.output, archive=read_archive(args.data_root))

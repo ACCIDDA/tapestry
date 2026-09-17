@@ -34,7 +34,9 @@ HISTORY_TARGETS = {
 def write_history(mirror, spec, tip, snapshot):
     """Export full file states on first-parent changes through a pinned commit.
 
-Commit time is a proxy for repository publication, not provider release time.
+The commit is ground truth for repository contents. Its committer timestamp
+orders availability in this reconstruction, not the provider's release clock.
+Unchanged blobs need no duplicate rows: their state persists to the next change.
 Same-time commits resolve to the last first-parent state. Backdated children
 cannot become available before their parents' target-file states.
 """
@@ -67,6 +69,7 @@ cannot become available before their parents' target-file states.
                     best_rank[target] = alternatives.index(chosen[target])
             state = tuple((target, path, blobs[path]) for target, path in chosen.items() if path)
             if state == previous_state:
+                # Storage compression, not a gap in version availability.
                 continue
             previous_state = state
             count, files = 0, []

@@ -25,6 +25,8 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
     target.parent.mkdir()
     target.write_text('date,location,value\n2023-11-04,37,10\n2023-11-11,37,20\n')
     git('add', '.'); git('commit', '-m', 'First publication')
+    # A new commit without a target change still has the previous target state.
+    git('commit', '--allow-empty', '-m', 'No target changes', stamp='2023-11-22T12:00:00Z')
     # The obsolete alias remains on disk; deleting its successor must not revive it.
     target = repo / 'target-data' / 'target-hospital-admissions.csv'
     target.write_text('target_end_date,location,value\n2023-11-11,37,30\n')

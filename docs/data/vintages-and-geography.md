@@ -18,6 +18,16 @@ Report-time archives select the latest eligible revision per event date; full
 `as_of` tables select a complete release. Unversioned sources apply only an
 event-date cutoff and cannot reconstruct past revisions.
 
+**No change does not mean no version.** Delphi is a change history: for each
+observation, the value advertised at `report_time` applies until another advertised
+change replaces it. No new row on a Wednesday is required. A Hub commit gives the
+actual repository state, including unchanged observations; that state remains in
+force between target-file changes. Skipping duplicate blobs or unchanged rows is
+storage compression, not a break in coverage. Explicit nulls, removals, and dates
+before the first advertised version remain distinct from unchanged valid values.
+This persistence is along publication time for the same observation; it never
+fills a different event week or carries information backward before publication.
+
 Hub acquisitions now include `git-history.ndjson.gz` and `git-history.json` for
 configured canonical target CSVs without native release dates. Intake walks the
 pinned main branch's first-parent history and saves complete target-file states,
@@ -27,8 +37,9 @@ that saved history; they do not run Git on each query. In the explorer these are
 measure. The date cutoff selects a complete eligible Git snapshot, preserving
 omissions and retractions rather than carrying removed values forward.
 
-**Assumption:** committer time on the main branch approximates publication time;
-it does not establish provider release time. Author time, observation dates,
+**Repository ground truth:** a commit fixes the complete target-file contents.
+**Timing assumption:** its main-branch committer timestamp places that state on
+the availability timeline; it does not establish the provider release time. Author time, observation dates,
 filename dates, and retrieval time are not substituted. Backdated target changes
 cannot predate the preceding target state; equal-time changes resolve to the last
 first-parent state. Only history reachable from the pinned commit is exported.

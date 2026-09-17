@@ -132,6 +132,26 @@ def test_direct_b1_is_b0_on_identical_masked_inputs(noise, us_error):
     torch.testing.assert_close(actual, expected, rtol=0, atol=0)
 
 
+def test_unchanged_versions_persist_until_revision_or_retraction():
+    archive = wd.VintageArchive()
+    day = '2023-11-04'
+    for source, channel in [('delphi_nhsn', 0), ('hub_covid_current:git', 1), ('hub_rsv_current', 2)]:
+        archive.add(source, '2023-11-07', day, channel, 'NC', 10)
+        archive.add(source, '2023-11-30', day, channel, 'NC', None)
+    for issuance in ('2023-11-08', '2023-11-15', '2023-11-22', '2023-11-29'):
+        x, a, _, _ = archive.panel((day,), ('NC',), archive.resolve(issuance))
+        np.testing.assert_array_equal(x[0, :3, 0], [10, 10, 10])
+        assert a[0, :3, 0].all()
+    assert not archive.panel((day,), ('NC',), archive.resolve('2023-11-30'))[1].any()
+    # Missing a revision on Wednesday must never invoke recent-final filling.
+    ds = wd.build_wednesday(start='2023-11-08', end='2023-11-15', truth_cutoff='2023-11-29',
+                            locations=('NC',), archive=archive)
+    for i, days in enumerate(ds.arrays['context_dates']):
+        t = list(days).index(day)
+        assert ds.arrays['X_available'][i, t, :3, 0].all()
+        assert not ds.arrays['X_final'][i, t, :3, 0].any()
+
+
 def test_wednesday_snapshot_fallback_retractions_and_support():
     archive = wd.VintageArchive()
     # Older period has no Hub coverage and may use Delphi; an interior hole may not.
