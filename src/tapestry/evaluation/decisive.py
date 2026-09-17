@@ -90,9 +90,17 @@ def mixture(runs, destination, dataset, device):
                 if stress == 'natural':
                     pooled = np.concatenate([d[i] for d in draws])
                 else:
-                    pooled = np.concatenate([sample(bundle, [episodes[i]], members=2048,
-                        seed=m['seed'] + i * 101, mask_seed=42 + i * 101,
-                        device=device, scenario=stress)[0][:, 0] for bundle, m in zip(models, metas)])
+                    pooled_parts, common_mask = [], None
+                    for bundle, m in zip(models, metas):
+                        values, mask = sample(bundle, [episodes[i]], members=2048,
+                            seed=m['seed'] + i * 101, mask_seed=42 + i * 101,
+                            device=device, scenario=stress)
+                        if common_mask is None:
+                            common_mask = mask
+                        else:
+                            np.testing.assert_array_equal(mask, common_mask)
+                        pooled_parts.append(values[:, 0])
+                    pooled = np.concatenate(pooled_parts)
                 q = np.quantile(pooled, LEVELS, axis=0)
                 q[:, :, :3] = np.round(q[:, :, :3])
                 quantiles.append(q)
@@ -138,7 +146,9 @@ def temporal_intervals(frames, length, repetitions=2000):
             raise ValueError('Temporal comparison has unmatched task keys')
         np.testing.assert_allclose(base.ensemble_wis, frame.ensemble_wis)
         aligned.append(frame)
-    origins = base[['season', 'reference_date']].drop_duplicates().sort_values(['season', 'reference_date']).reset_index(drop=True)
+    origins = pd.concat([pd.DataFrame(dict(season=held,
+        reference_date=pd.date_range(part.reference_date.min(), part.reference_date.max(), freq='7D').strftime('%Y-%m-%d')))
+        for held, part in base.groupby('season')], ignore_index=True)
     groups = base[['season', 'target', 'location']].drop_duplicates().sort_values(['season', 'target', 'location']).reset_index(drop=True)
     oi = pd.MultiIndex.from_frame(origins).get_indexer(pd.MultiIndex.from_frame(base[['season', 'reference_date']]))
     gi = pd.MultiIndex.from_frame(groups).get_indexer(pd.MultiIndex.from_frame(base[['season', 'target', 'location']]))
@@ -157,8 +167,8 @@ def temporal_intervals(frames, length, repetitions=2000):
     counts = block_counts(origins, length, repetitions, np.random.default_rng(20260917 + length))
     den = counts @ denominator
     usable = (den > 0).all(1)
-    if usable.mean() < .99:
-        raise ValueError('Too many block draws lose required location support')
+    if not usable.any():
+        raise ValueError('No temporal block draws retain required location support')
     estimates = {}
     for label, frame in zip(labels, aligned):
         numerator = np.zeros(shape)

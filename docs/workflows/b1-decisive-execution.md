@@ -42,8 +42,10 @@ It does not identify the historical B0/B1 input effect or operational performanc
   4/12 sensitivity. Non-circular blocks cannot cross season boundaries; concatenate
   blocks and truncate to original season length. All targets, locations and
   horizons of each origin stay together. Recompute location denominators and
-  season-first weights. Samples losing required support are excluded and counted;
-  abort if more than 1% lose support. This conditioning is an explicit assumption.
+  season-first weights. Missing frozen origins remain zero-contribution calendar weeks, so blocks keep
+  their declared calendar length. Samples losing required location support are
+  excluded and counted; abort if none retain support. This conditioning is an
+  explicit assumption; exclusion fractions must accompany the intervals.
   Temporal reports cover mixtures and the mean of fitted-seed objectives;
   averaging per-cell WIS here is algebraically equivalent to averaging scores,
   and is distinct from the predictive mixture. Seeds are not epidemic replicates.
