@@ -483,16 +483,23 @@ def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path)
 def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
     """B0's leakage rule: a held-out or hidden week never informs a fold's fit.
 
-    Checked on inputs as well as labels, because B1 conditions on real Wednesday
-    vintages: zeroing a context week is what mirrors B0 zeroing its panel.
+    Checked on inputs, final flags and labels using a fully observed synthetic
+    calendar, so this leakage check also runs without local research datasets.
     """
-    from datetime import date
+    from datetime import date, timedelta
     from tapestry.model_data.finalized import season
-    from tapestry.model_data.wednesday import WednesdayDataset
     from tapestry.models.b1_seasons import fold, hidden_weeks
     from tapestry.models.season_cv import SEASONS
 
-    ds = WednesdayDataset.load(wd.DEFAULT_DATASET)
+    archive = wd.VintageArchive()
+    day = date(2023, 8, 5)
+    while day <= date(2026, 9, 26):
+        for c in range(6):
+            archive.add('delphi_nhsn' if c < 3 else 'delphi_nssp',
+                        '2026-09-30', day.isoformat(), c, 'NC', 100 if c < 3 else .02)
+        day += timedelta(weeks=1)
+    ds = wd.build_wednesday(start='2023-08-09', end='2026-09-16', truth_cutoff='2026-09-30',
+                            locations=('NC',), archive=archive)
     for held in SEASONS:
         fitting, validation, evaluation, _ = fold(ds, held)
         hidden = hidden_weeks(ds, held)
@@ -504,6 +511,7 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
             for j, day in enumerate(episode['context_dates']):
                 if str(day) in hidden or season(date.fromisoformat(str(day))) == held:
                     assert not episode['X'][j, :, 1].any(), 'hidden/held-out week visible as a fitting input'
+                    assert not episode['X'][j, :, 2].any(), 'hidden/held-out final flag visible as a fitting input'
         # Validation scores only hidden weeks; evaluation only the held-out season.
         for episode in validation:
             for h, day in enumerate(episode['target_dates']):
