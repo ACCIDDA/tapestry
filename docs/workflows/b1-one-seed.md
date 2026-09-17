@@ -3,7 +3,8 @@
 2026-09-17: the user cancelled the ten-seed daytime execution and its final
 report, retaining the plans for an overnight run. The proposed CPU screen was
 withdrawn before submission; its launcher, instructions and unused experiment
-folder were removed. No CPU fits ran.
+folder were removed. No CPU fits ran. The decisive-report inference default is
+CUDA as well; GPU allocation failure must not trigger a CPU fallback.
 
 Run seed42 only for all A/B/C candidates, with the full 100-epoch cap, patience30,
 128 training members, 256 validation members and 2,048 evaluation members. Keep

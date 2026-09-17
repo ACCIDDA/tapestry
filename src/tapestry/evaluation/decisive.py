@@ -193,7 +193,7 @@ def temporal_intervals(frames, length, repetitions=2000):
     return rows
 
 
-def compare(root, output, device='cpu', repetitions=2000):
+def compare(root, output, device='cuda', repetitions=2000):
     output.mkdir(parents=True, exist_ok=True)
     # Recover the three reused A seeds concurrently in isolated CUDA processes.
     # Process isolation preserves each archived generator stream exactly.
@@ -458,7 +458,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path('data/experiments'))
     parser.add_argument('--output', type=Path, default=Path('data/experiments/B1-decisive-report'))
-    parser.add_argument('--device', default='cpu')
+    parser.add_argument('--device', default='cuda')
     parser.add_argument('--repetitions', type=int, default=2000)
     args = parser.parse_args()
     compare(args.root, args.output, args.device, args.repetitions)

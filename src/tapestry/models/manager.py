@@ -422,7 +422,7 @@ def main(argv=None):
                 parser.error('A quick decisive screen takes exactly one seed; omit --seeds for the ten-seed report')
             screen(Path(args.root), Path(args.report_output), requested_seeds[0])
         else:
-            decisive_compare(Path(args.root), Path(args.report_output), args.device or 'cpu')
+            decisive_compare(Path(args.root), Path(args.report_output), args.device or 'cuda')
         return
     if args.command == 'plan':
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
