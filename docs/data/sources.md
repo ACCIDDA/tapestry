@@ -142,3 +142,9 @@ backtest periods.
 Repositories are maintained as read-only, blob-filtered Git mirrors. Exports are
 pinned to an exact commit; `--hub-as-of` resolves the last first-parent commit at
 or before a historical UTC cutoff.
+
+Canonical target files without row release dates are also exported across their
+first-parent Git history. `tapestry.data hub-history DATASET...` adds that history
+to a new acquisition at the previously saved commit without refreshing the branch.
+The canonical selector and explorer expose it as Git commit history, with the
+availability assumptions documented in [Vintages and geography](vintages-and-geography.md).

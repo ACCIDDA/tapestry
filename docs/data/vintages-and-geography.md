@@ -16,8 +16,82 @@ not merely mean that local downloads are timestamped.
 The raw repository preserves all available vintage fields. The explorer supports an explicit as-of cutoff and overlays of multiple versions.
 Report-time archives select the latest eligible revision per event date; full
 `as_of` tables select a complete release. Unversioned sources apply only an
-event-date cutoff and cannot reconstruct past revisions. The explorer reads only releases present in the selected snapshot; it does not
-traverse Git history. A future training materializer must also enforce release availability.
+event-date cutoff and cannot reconstruct past revisions.
+
+Hub acquisitions now include `git-history.ndjson.gz` and `git-history.json` for
+configured canonical target CSVs without native release dates. Intake walks the
+pinned main branch's first-parent history and saves complete target-file states,
+including empty releases after deletion. The selected stream and explorer consume
+that saved history; they do not run Git on each query. In the explorer these are
+**Git commit history** variants beside the native `as_of` variants of the same
+measure. The date cutoff selects a complete eligible Git snapshot, preserving
+omissions and retractions rather than carrying removed values forward.
+
+**Assumption:** committer time on the main branch approximates publication time;
+it does not establish provider release time. Author time, observation dates,
+filename dates, and retrieval time are not substituted. Backdated target changes
+cannot predate the preceding target state; equal-time changes resolve to the last
+first-parent state. Only history reachable from the pinned commit is exported.
+Original commit hashes, paths and blob hashes are retained. CSV `date` and
+`target_end_date` are explicit event-date aliases, never release dates. Current
+Hub ED CSV values are already proportions; no percentage conversion is applied.
+Once a preferred filename has appeared, an obsolete alias cannot replace it
+after deletion, even if that older file remains in the Git tree.
+
+`hub-history` augments the latest acquisition at its existing pinned commit;
+ordinary Hub pulls also create these histories. No user's worktree is checked out.
+
+```bash
+.venv/bin/python -m tapestry.data --data-root data hub-history \
+  hub_flusight_current hub_covid_current hub_rsv_current hub_flusight_legacy
+.venv/bin/python -m tapestry.explorer --data-root data index --force
+.venv/bin/python -m tapestry.explorer --data-root data export
+```
+
+The path policy covers historical current-FluSight admissions and ED files,
+current-COVID admissions, and legacy FluSight/COVID primary truth files. Current
+RSV has native `as_of` history and no configured unversioned predecessor. Legacy
+COVID LFS pointers still require their actual payloads; a pointer is not a usable
+historical observation. RSV-NET catchment files are a separate source outside the
+six scored NHSN/NSSP targets and are not folded into statewide Hub outcomes.
+
+The September 17 backfill, pinned to the existing September 16 acquisitions:
+
+| Source | Complete Git releases | Native state/DC/US rows | Commit-time range |
+|---|---:|---:|---|
+| Current FluSight | 132 | 1,577,922 | 2023-10-03–2026-07-09 |
+| Current COVID | 93 | 241,072 | 2024-11-18–2026-09-09 |
+| Current RSV | 0 | 0 | Native `as_of` history already present |
+| Legacy FluSight | 527 | 3,736,470 | 2021-12-07–2023-11-22 |
+
+Repeated event weeks appear in multiple complete releases; these counts are not
+independent observations. Local acquisition IDs and exact pinned commit hashes
+are in `data/processed/hub-git-history-summary.json`.
+
+B1 uses native Hub `as_of` coverage first, Git snapshots outside that coverage,
+then Delphi outside both. Holes within established native/Git coverage remain
+missing in vintage resolution; the separately documented supplied-final policy
+then fills missing recent inputs. Adding Git history does not revert that policy. The rebuilt B1 retains 154
+calendar episodes and uses 560 recent Git input cells. Relative to the previous
+native-Hub/Delphi-only build, 61 recent reports become available and 249 formerly
+used Delphi cells fall inside Git Hub coverage with no current Hub value. Those
+are filled by flagged finals, not passed off as Wednesday reports. All changes
+are influenza ED. Git history therefore does not simply reduce missingness;
+source precedence and full-snapshot omissions matter. See
+`data/processed/b1-git-history-impact.json`.
+
+## Log
+
+- September 17, 2026: materialized Git target-file history into the canonical
+  acquisition and explorer; previously only chosen-commit exports existed and
+  historical no-`as_of` files were excluded by current-Hub selection. Emily's
+  configs and Influpaint's cutoff checkouts motivated this integration. Preserve
+  source dates and the pinned commit; expose Git publication semantics explicitly.
+  The local explorer rebuild reused the 62 unchanged payloads after verifying
+  the previous complete source fingerprint and matching every payload hash,
+  then indexed the four new history artifacts. Unchanged series retain their
+  original immutable acquisition IDs. Ordinary `index --force` remains the
+  full-rebuild reproduction path.
 
 ## Geographic support
 

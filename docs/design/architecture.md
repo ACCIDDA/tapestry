@@ -95,23 +95,25 @@ B0 reads a saved finalized panel with axes
 The 52 locations are states, DC, and native US. No state-to-US summation is used.
 The [B0 data page](../data/build-b-finalized.md) gives units and source details.
 
-B1 instead saves the actual information available at each historical Wednesday.
-It estimates reference-final values for the two recently completed weeks,
-then forecasts four future weeks conditional on each sampled correction.
+B1 saves finalized older history and two recent weeks of Wednesday reports,
+falling back to flagged reference finals where reports are absent. It corrects
+unknown recent values, passes through visible known finals, and forecasts four
+future weeks. Known finals are excluded from nowcast loss and scoring; hiding
+them also hides their flag and restores permitted nowcast supervision.
 
 ```mermaid
 flowchart TD
     A["B0: finalized six-channel history"] --> B["Encode history → sample four future weeks"]
-    C["B1: Wednesday reports + availability masks"] --> D["Encode history → sample two recent-week corrections"]
+    C["B1: finalized history + recent reports/finals + flags"] --> D["Encode history → correct unknown / pass through known finals"]
     D --> E["Each corrected history → sample four future weeks"]
     B --> F["Quantiles and hub evaluation"]
     E --> F
 ```
 
 B0's latest frozen ED snapshot is treated as truth, not assumed permanently
-final. B1 reference truth is separately pinned to a cutoff. Its current input
-cutoff includes all of Wednesday, so availability before an intraday deadline
-needs a further check. B0's unicorn results do not establish B1 performance.
+final. B1 reference truth is separately pinned to a cutoff. Recent report selection
+includes all of Wednesday UTC. Supplied finals can contain later revisions, so
+this experiment measures retrospective conditional forecasting. B0's unicorn results do not establish B1 performance.
 
 ## Fitting with CRPS
 

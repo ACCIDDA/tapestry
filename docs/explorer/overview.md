@@ -11,6 +11,13 @@ Parquet holds publisher revisions. National observations are stored once under
 Raw snapshots remain unchanged. The index is disposable: outdated or missing
 indexes are rebuilt, with no migration path.
 
+Hub targets without an `as_of` column can still have release history in Git.
+The **Git commit history** variants show canonical target-file states saved by
+intake from the pinned branch's first-parent commits. Select an as-of date to
+resolve the latest eligible complete state, including removed observations.
+Native `as_of` variants remain separate. Commit time is an availability proxy,
+not a provider publication timestamp; see [the vintage policy](../data/vintages-and-geography.md).
+
 ## Commands
 
 Install the Parquet dependency and start the explorer from the repository root:

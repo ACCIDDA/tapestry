@@ -24,6 +24,8 @@ def _parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("catalog", help="Print the machine-readable source catalog")
     subparsers.add_parser("init", help="Initialize an empty data repository")
+    history = subparsers.add_parser('hub-history', help='Add Git target history at the latest saved Hub commit; no branch refresh')
+    history.add_argument('datasets', nargs='+', help='Hub catalog dataset keys')
 
     pull = subparsers.add_parser("pull", help="Pull named datasets or a catalog group")
     pull.add_argument("datasets", nargs="*", help="Catalog dataset keys")
@@ -112,6 +114,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "init":
         repository.initialize(CATALOG)
         print(repository.root)
+        return 0
+    if args.command == 'hub-history':
+        from .sources.hub_history import HISTORY_TARGETS, backfill_history
+        for key in args.datasets:
+            if key not in HISTORY_TARGETS:
+                raise ValueError(f'No canonical Git target path policy for {key}')
+            manifest = backfill_history(repository, get_spec(key))
+            print(json.dumps(dict(dataset_key=key, snapshot_id=manifest.snapshot_id)))
         return 0
     if args.command == "show":
         manifests = repository.list_snapshots(args.dataset)

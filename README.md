@@ -51,8 +51,11 @@ add historical release information where the source provides it.
 
 ## B1: Wednesday snapshots and masked training
 
-B1 precomputes Wednesday-vintage arrays with natural availability masks, adds
-random training masks, and samples two recent finals followed by four forecasts.
+B1 uses finalized older history and recent Wednesday reports, supplying flagged
+reference finals where recent reports are absent. Visible known finals bypass
+nowcasting and its loss; hidden finals become nowcast targets again. Four future
+weeks are forecast from the resulting recent values. This is retrospective
+conditional forecasting; later finals are not claimed available on Wednesday.
 MLP, convolution, multiscale and spatial formulations have canonical scenario
 strings, with independently configurable masking rates.
 See the [B1 implementation and commands](docs/design/b1.md).

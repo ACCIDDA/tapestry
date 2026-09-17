@@ -14,9 +14,8 @@ materialized, so the same rules are applied per episode:
   panel. Episodes are retained rather than dropped; B1 already models missing inputs.
 - Validation episodes score only hidden weeks, as in B0.
 
-Assumption: B1 conditions on real Wednesday vintages, so zeroing a context week
-removes information that was genuinely available at issuance. This is the
-protocol's cost, accepted to match B0's leakage rule exactly.
+All input fields, including known-final flags, are zeroed for blocked weeks.
+Hidden reference finals therefore cannot bypass the nowcast during validation.
 """
 from datetime import date
 
@@ -84,8 +83,8 @@ def fold(ds, held_out):
     """Return (fitting, validation, evaluation) episodes for one held-out season.
 
     Fitting and validation come from the two training seasons with held-out and
-    hidden weeks zeroed everywhere. Evaluation episodes keep their real Wednesday
-    context (nothing is hidden at prediction time) and score only held-out weeks.
+    hidden weeks zeroed everywhere. Evaluation keeps the dataset's retrospective
+    context (including supplied finals) and scores only held-out weeks.
     """
     if held_out not in SEASONS:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
@@ -112,7 +111,7 @@ def fold(ds, held_out):
         kept = _keep_labels(episode, masked, hidden)
         if kept is not None:
             validation.append(kept)
-        # Evaluation keeps the real Wednesday information state: nothing is hidden
+        # Evaluation keeps the retrospective conditioning state: nothing is hidden
         # at prediction time except weeks B0's panel does not have either.
         kept = _keep_labels(episode, _mask_context(episode, outside), held_weeks)
         if kept is not None:

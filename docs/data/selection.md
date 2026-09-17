@@ -131,13 +131,14 @@ auxiliary tables, and alternative truth providers do not create outcome series.
 Derived peak/rate-change evaluation definitions are not independent observation
 streams. The rate exclusion for NHSN does not remove the RSV-NET rate target.
 
-Current hub files retain their `as_of` releases. Full-snapshot resolution must
-respect omissions/retractions. Legacy histories remain in raw archives and Git;
-selection chooses a canonical file, rather than making every dated copy a new
-series. `SelectedData.iter_records` reads the selected local snapshot; it does
-not traverse Git history. For a historical legacy export, acquire the desired
-commit using `--hub-as-of` first. The explorer uses only the selected snapshot and its recorded releases; it does
-not read Git history.
+Current hub files retain their `as_of` releases. Intake additionally materializes
+configured target files without native release dates into `git-history.ndjson.gz`,
+with a release/commit/path/blob index in `git-history.json`. These are canonical
+Git-history variants of the same observations, not new outcome definitions.
+Preferred filenames replace earlier aliases; dated backups and oracle outputs
+remain excluded. The selected stream and explorer read these saved releases.
+Complete-snapshot resolution respects omitted rows and whole-file deletions.
+See [the Git vintage policy and reproduction commands](vintages-and-geography.md).
 
 Canonical hub tables are checked across the entire file before yielding rows.
 Identical duplicate keys are emitted once. Conflicting location/target/event/

@@ -16,7 +16,8 @@ tapestry.data
 └── sources/
     ├── socrata.py      CDC pagination and consistency checks
     ├── delphi.py       Delphi V5 via epidatpy + raw CSV
-    └── hubverse.py     Read-only Git history and exports
+    ├── hubverse.py     Read-only Git mirrors and pinned exports
+    └── hub_history.py  Canonical target-file Git vintages
 ```
 
 ## Core guarantees

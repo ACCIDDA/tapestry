@@ -482,6 +482,7 @@
 
   function signalMetadata(item) {
     const vintage = item.revision_mode === "initial_release" ? "frozen first release"
+      : item.source_path === "git-history.ndjson.gz" ? "Git commit history"
       : item.versioned ? "revision archive" : "current snapshot";
     const support = item.spatial_support || "native state";
     return `${item.temporal_resolution} · ${vintage} · ${support} · ${item.freshness}`;

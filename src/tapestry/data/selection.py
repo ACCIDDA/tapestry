@@ -22,7 +22,7 @@ from .lineage import NHSN_DELPHI, series_lineage
 from .geography import observation_geography
 from .tables import Artifact, RawTables, TableSource
 
-POLICY_VERSION = "4"
+POLICY_VERSION = "5"
 FAMILY_TITLES = {
     "nhsn": "NHSN · Hospital surveillance",
     "nssp": "NSSP · Emergency department surveillance",
@@ -270,6 +270,8 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
     if group == "nwss" and support == "native state":
         support = "native site/sewershed" if "site" in dimensions else "site/sewershed state summary"
     details = [RELEASE_LABELS.get(key, key), cadence, smoothing, support]
+    if path == 'git-history.ndjson.gz':
+        details.insert(1, 'Git commit history')
     if group == "nssp":
         details.append("Proportion (0–1)" if key.startswith("hub_") else "Percent (0–100)")
     for k, v in sorted(dimensions.items()):
@@ -294,6 +296,8 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
         "variant_label": " · ".join(filter(None, details)),
         "variant_rank": (int(support != "native state"), rank, int(smoothing == "Smoothed")),
         "selection_policy": POLICY_VERSION,
+        **({'revision_mode': 'git_history', 'vintage_semantics': 'commit_time'}
+           if path == 'git-history.ndjson.gz' else {}),
         "spatial_support": support,
     }
 

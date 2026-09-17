@@ -125,12 +125,12 @@ class B1(nn.Module):
             return
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         extra = 3 * annual_calendar + 2 * geography + 24 * dynamics + location_embedding
-        self.context = nn.Sequential(nn.Linear((lookback * 12 if encoder == 'mlp' else width) + extra, width),
+        self.context = nn.Sequential(nn.Linear((lookback * 18 if encoder == 'mlp' else width) + extra, width),
                                      nn.SiLU(), nn.Linear(width, width))
-        self.focal = (nn.Sequential(nn.Linear(lookback * 2, width), nn.SiLU(), nn.Linear(width, width))
-                      if encoder == 'mlp' else temporal(2, width))
+        self.focal = (nn.Sequential(nn.Linear(lookback * 3, width), nn.SiLU(), nn.Linear(width, width))
+                      if encoder == 'mlp' else temporal(3, width))
         if encoder != 'mlp':
-            self.temporal_context = temporal(12, width)
+            self.temporal_context = temporal(18, width)
         self.source = nn.Embedding(6, width)
         self.anchor_flags = nn.Linear(3, width)
         self.baseline = nn.Linear(width, 1)
@@ -140,8 +140,8 @@ class B1(nn.Module):
             self.spatial = SpatialBlock(width)
         if spatial not in ('none', 'attention'):
             remote_channels = 2 if spatial == 'pathogen_spatial' else 1
-            self.remote = (nn.Sequential(nn.Linear(lookback * remote_channels * 2, width), nn.SiLU(), nn.Linear(width, width))
-                           if encoder == 'mlp' else temporal(remote_channels * 2, width))
+            self.remote = (nn.Sequential(nn.Linear(lookback * remote_channels * 3, width), nn.SiLU(), nn.Linear(width, width))
+                           if encoder == 'mlp' else temporal(remote_channels * 3, width))
             self.remote_identity = nn.Embedding(3 if spatial == 'pathogen_spatial' else 6, width)
             if geography or location_embedding:
                 self.remote_geo = nn.Linear(2 * geography + location_embedding, width)
@@ -179,14 +179,15 @@ class B1(nn.Module):
             results.append(value)
         return torch.stack(results, -2)
 
-    def encode(self, values, visible, calendar):
+    def encode(self, values, visible, calendar, known_final=None):
         n, p, _, l = values.shape
         config = self.config
         raw = torch.where(visible, values, 0)
         v = torch.where(visible, self.normalized(raw), 0)
-        fields = torch.stack((v, visible.to(v.dtype)), -1)  # N,P,C,L,2
+        known_final = torch.zeros_like(visible) if known_final is None else known_final & visible
+        fields = torch.stack((v, visible.to(v.dtype), known_final.to(v.dtype)), -1)  # N,P,C,L,3
         context = (fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1) if config['encoder'] == 'mlp' else
-                   self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, 12, p)).reshape(n, l, -1))
+                   self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, 18, p)).reshape(n, l, -1))
         extras, geo = [], []
         if config['annual_calendar']:
             extras.append(calendar[:, None].expand(-1, l, -1))
@@ -206,8 +207,8 @@ class B1(nn.Module):
         context = self.context(torch.cat([context, *extras], -1))
         if config['spatial'] == 'attention':
             context = self.spatial(context)
-        focal = (self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, 6, p * 2)) if config['encoder'] == 'mlp' else
-                 self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * 6, 2, p)).reshape(n, l, 6, -1))
+        focal = (self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, 6, p * 3)) if config['encoder'] == 'mlp' else
+                 self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * 6, 3, p)).reshape(n, l, 6, -1))
         h = context[:, :, None] + focal + self.source.weight[None, None]
         if config['spatial'] not in ('none', 'attention'):
             groups = [[0, 3], [1, 4], [2, 5]] if config['spatial'] == 'pathogen_spatial' else [[c] for c in range(6)]
@@ -215,7 +216,7 @@ class B1(nn.Module):
             for g, channels in enumerate(groups):
                 f = fields[:, :, channels]
                 inputs = (f.permute(0, 3, 1, 2, 4).reshape(n, l, -1) if config['encoder'] == 'mlp' else
-                          f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * 2, p))
+                          f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * 3, p))
                 token = self.remote(inputs).reshape(n, l, -1) + self.remote_identity.weight[g]
                 if geo:
                     token = token + self.remote_geo(torch.cat(geo, -1))
@@ -295,7 +296,7 @@ class B1(nn.Module):
             national=draw((*shape, 6 if self.config['direct'] else len(self.targets))) if self.config['us_error'] == 'shared_factor' else None)
 
     def forward(self, values, available, calendar, members=128, dropout=None, z_recent=None, z_future=None,
-                local_recent=None, local_future=None, national_recent=None, national_future=None):
+                local_recent=None, local_future=None, national_recent=None, national_future=None, known_final=None):
         """Native samples [member, episode, output week, component target, location]."""
         expected = (values.shape[0], self.config['lookback'], 6, len(self.config['locations']))
         if tuple(values.shape) != expected or available.shape != values.shape:
@@ -303,12 +304,15 @@ class B1(nn.Module):
         if dropout is not None and dropout.shape != available.shape:
             raise ValueError('Artificial dropout must have the same shape as availability')
         visible = available.bool() if dropout is None else available.bool() & ~dropout.bool()
+        if known_final is not None and known_final.shape != available.shape:
+            raise ValueError('Known-final flags must have the same shape as availability')
+        known_final = torch.zeros_like(visible) if known_final is None else known_final.bool() & visible
         if self.config['direct']:
             x = torch.stack((values, visible.to(values.dtype)), dim=3)
             return self.direct_model(x, calendar, members=members, z=z_future,
                 locations=self.config['locations'], local_z=local_future,
                 national_z=national_future)[:, :, :, self.targets]
-        h, anchors, last = self.encode(values, visible, calendar)
+        h, anchors, last = self.encode(values, visible, calendar, known_final)
         if z_recent is not None:
             members = z_recent.shape[0]
         elif z_future is not None:
@@ -324,5 +328,9 @@ class B1(nn.Module):
         if recent_noise[0].shape != future_noise[0].shape:
             raise ValueError('Recent and future noise must have matching member/episode axes')
         recent = anchors[None] + self.decode('recent', h[None], recent_noise, (-1, 0))
+        final_recent = known_final[:, -2:, self.targets][None]
+        recent = torch.where(final_recent, anchors[None], recent)
         future = self.forecast_from_recent(h, recent, *future_noise)
-        return torch.cat((self.working_to_native(recent), future), dim=2)
+        # Return exact native finals, including genuine zeros and ED endpoints.
+        native_recent = torch.where(final_recent, values[:, -2:, self.targets][None], self.working_to_native(recent))
+        return torch.cat((native_recent, future), dim=2)

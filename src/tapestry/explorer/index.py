@@ -31,7 +31,7 @@ from ..data.tables import Artifact, TableSource
 from ..data.selection import SelectedData, POLICY_VERSION, describe, measure_columns
 
 
-INDEX_SCHEMA_VERSION = 13
+INDEX_SCHEMA_VERSION = 14
 # Schema profiling only needs a representative prefix. The indexer makes a
 # second full pass and discovers numeric columns that appear later.
 PROFILE_ROW_LIMIT = 25_000
@@ -775,7 +775,7 @@ class ExplorerIndex(SelectedData):
         raw_value_count = 0
         buffered_writes = 0
         point_buffer: dict[tuple[int, str, str, str], tuple[float, int]] = {}
-        releases: set[str] = set()
+        releases: set[str] = set(source.release_times)
         mapped_rows = 0
         scanned_rows = 0
         for row in source.iter_rows():
@@ -1333,14 +1333,15 @@ class ExplorerIndex(SelectedData):
                 divisor = maximum if scale and maximum not in {None, 0.0} else 1.0
                 item.update(max=maximum, divisor=divisor, versioned=versioned,
                             as_of=day, resolved_vintage=resolved or max((r["release_time"] for r in rows), default=None),
-                            version_behavior="publisher revisions" if versioned else "event-date cutoff",
+                            version_behavior="Git commit snapshots" if item['source_path'] == 'git-history.ndjson.gz' else "publisher revisions" if versioned else "event-date cutoff",
                             aggregation="unweighted mean within the selected vintage",
                             points=[[d, v / divisor, n] for d, v, n in points])
                 if day and versioned and not points:
                     item["version_note"] = "No archived values available by this date."
+                elif item['source_path'] == 'git-history.ndjson.gz':
+                    item['version_note'] = 'Complete target-file state at the latest eligible main-branch commit. Commit time is a publication proxy, not a provider release date.'
                 elif day and versioned and not item["vintage_column"]:
                     item["version_note"] = "Availability is bounded by the saved snapshot/commit date; no row publication dates are recorded."
                 output.append(item)
         return {"state": code, "state_name": "United States (US)" if code == "US" else STATE_NAMES[code], "scaled": scale, "as_of": day, "series": output}
-
 

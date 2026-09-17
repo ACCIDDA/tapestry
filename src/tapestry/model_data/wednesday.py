@@ -1,4 +1,4 @@
-"""B1: pinned Wednesday snapshots and reference finals, materialized once as arrays."""
+"""B1: finalized history, Wednesday reports, and flagged recent-final fallback."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -49,12 +49,13 @@ def output_dates(issuance, lookback=12):
 
 
 class VintageArchive:
-    """Resolve full Hub releases and per-observation Delphi revisions separately.
+    """Resolve native Hub, Git Hub, and per-observation Delphi vintages.
 
     Coverage is conservative: once a channel/location appears, its weekly period
     from the earliest event onward is covered, even if later snapshots omit rows.
     Interior holes and trailing/retracted observations never trigger fallback.
-    Only releases eligible at the cutoff establish that coverage.
+    Only releases eligible at the cutoff establish that coverage. Native as_of
+    coverage precedes Git coverage, which precedes Delphi.
     """
     def __init__(self):
         self.hub = {}
@@ -92,28 +93,32 @@ class VintageArchive:
     def resolve(self, cutoff):
         cutoff = cutoff_time(cutoff)
         hub, coverage, latest = {}, {}, {}
+        git, git_coverage, git_latest = {}, {}, {}
         for source, releases in self.hub.items():
             eligible = sorted(r for r in releases if r <= cutoff)
             if not eligible:
                 continue
             selected = eligible[-1]
-            latest[source] = self.provenance_id(source=source, release=selected,
-                snapshot_id=self.provenance[next(iter(releases[selected].values()))[1]]['snapshot_id'],
-                source_path='full snapshot')
+            is_git = source.endswith(':git')
+            values, covered, provenance = (git, git_coverage, git_latest) if is_git else (hub, coverage, latest)
+            base = source.removesuffix(':git')
+            rows = releases[selected]
+            provenance[base] = (next(iter(rows.values()))[1] if rows else
+                               self.provenance_id(source=source, release=selected, source_path='empty full snapshot'))
             for release in eligible:
                 for day, c, loc in releases[release]:
                     key = (c, loc)
-                    coverage[key] = min(day, coverage.get(key, day))
-            hub.update(releases[selected])
+                    covered[key] = min(day, covered.get(key, day))
+            values.update(rows)
         delphi = {}
         for cell, revisions in self.delphi.items():
             eligible = [r for r in revisions if r <= cutoff]
             if eligible:
                 delphi[cell] = revisions[max(eligible)]
-        return hub, coverage, latest, delphi
+        return hub, coverage, latest, delphi, git, git_coverage, git_latest
 
     def panel(self, dates, locations, state):
-        hub, coverage, latest, delphi = state
+        hub, coverage, latest, delphi, git, git_coverage, git_latest = state
         values = np.zeros((len(dates), 6, len(locations)), np.float32)
         available = np.zeros_like(values, dtype=bool)
         provenance = np.zeros_like(values, dtype=np.int32)
@@ -129,6 +134,9 @@ class VintageArchive:
                     if covered:
                         source = SOURCES[c % 3]
                         value, pid = hub.get(cell, (None, latest.get(source, 0)))
+                        reason = 2 if value is None else 0
+                    elif (c, loc) in git_coverage and day >= git_coverage[c, loc]:
+                        value, pid = git.get(cell, (None, git_latest.get(SOURCES[c % 3], 0)))
                         reason = 2 if value is None else 0
                     else:
                         value, pid = delphi.get(cell, (None, 0))
@@ -146,6 +154,11 @@ def read_archive(data_root):
     seen_manifests = set()
     for key in SOURCES:
         for table in selected.selected_tables(dataset_key=key):
+            is_git = getattr(table, 'source_path', '') == 'git-history.ndjson.gz'
+            source_key = key + ':git' if is_git else key
+            if is_git:
+                for release in table.release_times:
+                    archive.hub.setdefault(source_key, {}).setdefault(release_time(release), {})
             signal = source_signal(table.source_path)
             if key.startswith('delphi_') and signal and signal not in SIGNALS:
                 continue
@@ -191,7 +204,7 @@ def read_archive(data_root):
                     value = None
                 if c >= 3 and key.startswith('delphi_') and value is not None:
                     value /= 100
-                archive.add(key, release, day, c, loc, value, table.snapshot_id, table.source_path)
+                archive.add(source_key, release, day, c, loc, value, table.snapshot_id, table.source_path)
     archive.audit = selected.audit
     return archive
 
@@ -215,6 +228,8 @@ class WednesdayDataset:
     @classmethod
     def load(cls, path, *, archive=False):
         with np.load(path, allow_pickle=False) as data:
+            if 'X_final' not in data.files:
+                raise ValueError('B1 dataset lacks known-final flags; rebuild with build-wednesday before training')
             result = cls({k: data[k] for k in data.files if k != 'metadata'}, json.loads(str(data['metadata'])))
         return result if archive else result.model_view()
 
@@ -238,7 +253,7 @@ class WednesdayDataset:
         if 'outside_model_calendar' not in reasons:
             reasons.append('outside_model_calendar')
         reason = reasons.index('outside_model_calendar')
-        for key in ('X_values', 'X_available', 'X_provenance'):
+        for key in ('X_values', 'X_available', 'X_final', 'X_provenance'):
             arrays[key][~context] = 0
         arrays['X_reason'][~context] = reason
         for prefix, permitted in (('Y_recent', targets[:, :2]), ('Y_future', targets[:, 2:])):
@@ -262,7 +277,7 @@ class WednesdayDataset:
                     valid[h] = False
             if not a['X_available'][i].any() or (supervised and not valid.any()):
                 continue
-            yield dict(X=np.stack((a['X_values'][i], a['X_available'][i]), axis=2),
+            yield dict(X=np.stack((a['X_values'][i], a['X_available'][i], a['X_final'][i]), axis=2),
                        Y=np.stack((np.where(valid, y, 0), valid), axis=2),
                        issuance_date=str(issuance), context_dates=tuple(a['context_dates'][i]),
                        target_dates=tuple(a['target_dates'][i]), locations=self.locations,
@@ -295,9 +310,19 @@ def build_wednesday(data_root='data', *, start=ARCHIVE_START, end, truth_cutoff,
         issuance = (first + timedelta(days=offset)).isoformat()
         context, targets = output_dates(issuance, lookback)
         x, a, xp, xr = archive.panel(context, locations, archive.resolve(issuance))
+        final, final_valid, final_provenance, final_reason = archive.panel(context, locations, truth_state)
+        # Older history is reference-final by assumption. Recent reports keep
+        # their Wednesday vintage; only missing recent cells receive finals.
+        use_final = np.ones_like(a)
+        use_final[-2:] = ~a[-2:]
+        x = np.where(use_final, final, x)
+        a = np.where(use_final, final_valid, a)
+        xp = np.where(use_final, final_provenance, xp)
+        xr = np.where(use_final, final_reason, xr)
+        known_final = use_final & final_valid
         y, valid, yp, yr = archive.panel(targets, locations, truth_state)
         rows.append(dict(issuance_dates=issuance, context_dates=context, target_dates=targets,
-            X_values=x, X_available=a, X_provenance=xp, X_reason=xr,
+            X_values=x, X_available=a, X_final=known_final, X_provenance=xp, X_reason=xr,
             Y_recent=y[:2], Y_recent_valid=valid[:2], Y_future=y[2:], Y_future_valid=valid[2:],
             Y_provenance=yp, Y_reason=yr))
     arrays = {key: np.stack([r[key] for r in rows]) for key in rows[0]}
@@ -309,21 +334,24 @@ def build_wednesday(data_root='data', *, start=ARCHIVE_START, end, truth_cutoff,
         raise ValueError(
             f'No usable B1 episodes for {start} through {end} '
             f'(truth cutoff {truth_cutoff}): {int(has_inputs.sum())}/{len(rows)} '
-            f'episodes have Wednesday inputs and {int(has_labels.sum())}/{len(rows)} '
+            f'episodes have context inputs and {int(has_labels.sum())}/{len(rows)} '
             f'have reference labels, with no usable overlap. '
             f'Check data root {str(data_root)!r}, source snapshots, dates and locations. '
             f'Acquire the required Hub/Delphi archives or copy an existing precomputed '
             f'B1 dataset. No output files were written.')
-    metadata = dict(version=2, model='B1', **calendar, history_mode='strict_wednesday',
+    metadata = dict(version=3, model='B1', **calendar, history_mode='final_history_recent_final_fallback',
         channels=CHANNELS, units=['admissions'] * 3 + ['proportion'] * 3,
         lookback=lookback, truth_cutoff=truth_cutoff, start=start, end=end,
         offsets_from_preceding_saturday=OFFSETS, hub_offsets=[-2, -1, 0, 1, 2, 3],
         cutoff_policy='End of Wednesday UTC; naive timestamps treated as UTC. No intraday deadline claim.',
+        input_policy='Older than two context weeks: pinned reference finals. Recent two: eligible Wednesday reports, otherwise flagged reference finals. No final available: missing.',
+        finality_assumption='Reference finals are treated as known inputs, including later revisions unavailable on the historical Wednesday. Retrospective conditional forecasting, not operational skill.',
+        final_flag_policy='X_final marks supplied reference finals, not inferred source finality. Visible recent finals bypass nowcasting and its loss; hidden finals become nowcast targets again.',
         source_date_policy='Native Hub event dates and Delphi weekly reference_time are Saturday week ends; reject other weekdays.',
         support_start=START, rsv_ed_start=RSV_ED_START,
         truth_policy='Reference finals: latest eligible Hub full snapshot; Delphi latest revision only outside Hub coverage.',
         coverage_policy='Per channel/location earliest event in any eligible Hub release onward; holes and retractions remain missing.',
-        fallback_policy='A Delphi provenance entry means absent Hub historical coverage; explicit Hub missing cells never fall back.',
+        fallback_policy='Native as_of Hub coverage first; otherwise complete Git target snapshot coverage; otherwise Delphi. Holes/retractions within either established Hub coverage stay missing before explicit final-value filling.',
         reasons=REASONS, provenance=archive.provenance, source_manifests=archive.manifests, selection_audit=archive.audit)
     dataset = WednesdayDataset(arrays, metadata)
     if not any(dataset.episodes()):

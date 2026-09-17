@@ -4,6 +4,13 @@ Yes: these ten configs provide explicit forecast calendars and data-vintage rule
 
 Running all ten with `epibench create --config-path` against pinned local hub snapshots produces **345 reference dates and 345 vintage-history files**. These files are not used for B0 training or scoring; their data-quality review is deferred.
 
+B1 now consumes historical Hub inputs through the canonical data reader,
+including [Git snapshots of target files without `as_of`](../data/vintages-and-geography.md).
+This recovers the same kind of repository state that Influpaint obtains by
+checking out a cutoff commit, while preserving the user's worktree and exposing
+the history in the explorer. The generated Emily challenge files remain separate;
+they are not silently substituted for canonical observations.
+
 ## What they define
 
 Every file uses `vintaging: TRUE`, `vintaging_method: as_of`, and `vintaging_offset: -3`. The offset is in **days**: a Saturday reference date gets the latest available revisions through the preceding Wednesday. These histories can be used as forecast inputs; scoring future targets still needs a separate truth policy and scoring config.

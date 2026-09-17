@@ -118,9 +118,9 @@ weeks whose reports are missing or provisional.
 
 ```mermaid
 flowchart TD
-    A["Historical Wednesday information state<br/>Only reports released by the cutoff"] --> B["Six-channel history + availability masks<br/>Keep provisional values and missing reports"]
+    A["Finalized older history<br/>Recent Wednesday reports or flagged finals"] --> B["Six-channel history<br/>Availability and known-final flags"]
     B --> C["B1 history encoder"]
-    C --> D["Sample revision corrections<br/>Two recently completed weeks"]
+    C --> D["Correct unknown recent values<br/>Pass through visible known finals"]
     D --> E["Condition on each sampled correction<br/>Generate the next four weeks"]
     Z["Random member draws"] --> D
     Z --> E
@@ -131,9 +131,11 @@ flowchart TD
 ```
 
 The key distinction is event time versus release time: what happened last week
-may differ from what was reported by Wednesday. Later revised values are labels,
-not replacements for the historical inputs. B1 currently uses an end-of-Wednesday
-cutoff; an actual intraday submission deadline needs its own availability check.
+may differ from what was reported by Wednesday. B1 uses finalized older history
+and keeps eligible Wednesday reports for the two recent weeks. Missing recent
+reports receive flagged reference finals, which bypass nowcasting and are excluded
+from its loss and scores. This is retrospective conditioning on later information,
+not evidence of operational Wednesday skill.
 
 The goal is ensemble-matching performance across all six hub targets. Reporting
 and revision timing remain central to that evaluation. An ensemble of the three

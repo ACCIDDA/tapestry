@@ -11,6 +11,100 @@ from tapestry.models.b1 import B1, draw_dropout
 from tapestry.models.b1_run import task_weights, unique_truth
 
 
+def test_final_history_and_recent_fallback_preserve_real_wednesday_reports():
+    archive = wd.VintageArchive()
+    context, targets = wd.output_dates('2023-11-22')
+    for day in set(context + targets):
+        archive.add('delphi_nhsn', '2023-12-20', day, 0, 'NC', 100)
+    archive.add('delphi_nhsn', '2023-11-22', context[-2], 0, 'NC', 30)
+    archive.add('delphi_nhsn', '2023-11-22', context[-3], 0, 'NC', 20)
+    ds = wd.build_wednesday(start='2023-11-22', end='2023-11-22', truth_cutoff='2023-12-20',
+                            locations=('NC',), archive=archive)
+    a = ds.arrays
+    np.testing.assert_array_equal(a['X_values'][0, -3:, 0, 0], [100, 30, 100])
+    np.testing.assert_array_equal(a['X_final'][0, -3:, 0, 0], [True, False, True])
+    assert not a['X_available'][:, :, 1:].any()
+    assert not a['X_final'][:, :, 1:].any()
+    np.testing.assert_array_equal(a['Y_recent'][0, :, 0, 0], [100, 100])
+    # No eligible vintage at all still produces a supervised episode.
+    earlier = wd.build_wednesday(start='2023-11-15', end='2023-11-15', truth_cutoff='2023-12-20',
+                                 locations=('NC',), archive=archive)
+    assert len(list(earlier.episodes())) == 1
+    assert earlier.arrays['X_final'][0, -2:, 0, 0].all()
+
+
+@pytest.mark.parametrize('ed_transform', ['linear', 'logit', 'fourth_root'])
+def test_known_finals_bypass_nowcast_and_hidden_finals_do_not_leak(ed_transform):
+    model = B1([0, 3], {'NC': 1000000}, ['NC'], width=8, ed_transform=ed_transform)
+    x = torch.ones(1, 12, 6, 1) * .2
+    x[:, :, :3] = 100
+    x[:, -2, [0, 3]] = 0
+    x[:, -1, 3] = 1
+    a = torch.ones_like(x, dtype=torch.bool)
+    known = torch.ones_like(a)
+    cal = torch.zeros(1, 3)
+    z = torch.randn(4, 1, 16)
+    zf = torch.randn_like(z)
+    result = model(x, a, cal, known_final=known, z_recent=z, z_future=zf)
+    expected = x[:, -2:, [0, 3]][None].expand(4, -1, -1, -1, -1)
+    torch.testing.assert_close(result[:, :, :2], expected, rtol=0, atol=0)
+    torch.testing.assert_close(result, model(x, a, cal, known_final=known, z_recent=z + 10, z_future=zf))
+    assert result.isfinite().all()
+    d = torch.zeros_like(a); d[:, -2:] = True
+    altered = x.clone(); altered[:, -2:] = float('nan')
+    masked = model(x, a, cal, known_final=known, dropout=d, z_recent=z, z_future=zf)
+    no_flags = known.clone(); no_flags[:, -2:] = False
+    torch.testing.assert_close(masked, model(altered, a, cal, known_final=no_flags, dropout=d, z_recent=z, z_future=zf))
+    masked[:, :, 2:].sum().backward()
+    assert sum(p.grad.abs().sum() for p in model.recent.parameters() if p.grad is not None) > 0
+
+
+def test_known_final_supervision_tracks_dropout_and_fold_masks():
+    from tapestry.models.b1_run import supervision_mask
+    from tapestry.models.b1_seasons import _mask_context
+    context, dates = wd.output_dates('2025-01-08')
+    x = np.ones((12, 6, 3, 2), np.float32)
+    e = dict(X=x, Y=np.ones((6, 6, 2, 2), np.float32), context_dates=context,
+             target_dates=dates, locations=('NC', 'US'))
+    assert not supervision_mask(e)[:2].any()
+    w = task_weights([e], 0)
+    assert not w[:, :2].any()
+    assert w[:, 2:].sum() == pytest.approx(.5)
+    d = np.zeros((1, 12, 6, 2), bool); d[:, -2:] = True
+    w = task_weights([e], 0, dropout=d)
+    assert w[:, :2].sum() == pytest.approx(.5)
+    assert w[:, 2:].sum() == pytest.approx(.5)
+    np.testing.assert_allclose(w.sum((0, 1, 2)), [.8, .2], rtol=1e-6)
+    blocked = _mask_context(e, set(context[-2:]))
+    assert not blocked[-2:].any()
+    assert supervision_mask({**e, 'X': blocked})[:2].all()
+
+
+def test_scoring_exports_exclude_visible_finals_and_restore_hidden_ones(tmp_path, monkeypatch):
+    from tapestry.models import b1_report, b1_run
+    from tapestry.models.b1 import MASK_SCENARIOS
+    context, dates = wd.output_dates('2025-01-08')
+    e = dict(X=np.ones((12, 6, 3, 1), np.float32), Y=np.ones((6, 6, 2, 1), np.float32),
+             context_dates=context, target_dates=dates, locations=('US',), issuance_date='2025-01-08')
+    def sample(models, episodes, *, scenario, **kwargs):
+        d = np.zeros((1, 12, 6, 1), bool)
+        if scenario != 'natural':
+            d[:, -2:] = True
+        return np.ones((4, 1, 6, 6, 1)), d
+    monkeypatch.setattr(b1_run, 'sample', sample)
+    monkeypatch.setattr(b1_report, 'path_graph', lambda *args: None)
+    model = SimpleNamespace(config={'direct': False}, scale=torch.ones(6, 1))
+    ds = SimpleNamespace(locations=('US',), metadata={'history_mode': 'final_history_recent_final_fallback'})
+    rows = b1_report.evaluate([model], [e], ds, SimpleNamespace(evaluation_members=4, device='cpu'), 'demo', 42, tmp_path)
+    assert not any(r['task'] == 'nowcast' and r['stress'] == 'natural' for r in rows)
+    for stress in MASK_SCENARIOS:
+        with np.load(tmp_path / f'forecasts-demo-s42-{stress}.npz') as data:
+            assert data['mask'][:, 2:].all()
+            assert data['mask'][:, :2].all() == (stress != 'natural')
+        if stress != 'natural':
+            assert sum(r['objective_weight'] for r in rows if r['task'] == 'nowcast' and r['stress'] == stress) == pytest.approx(1)
+
+
 @pytest.mark.parametrize('noise,us_error', [('global', 'none'), ('local', 'shared_factor')])
 def test_direct_b1_is_b0_on_identical_masked_inputs(noise, us_error):
     """The input-vintage control must not change dynamics, anchors or decoding."""
@@ -192,7 +286,7 @@ def test_grouped_predictions_return_canonical_channel_order():
     class ConstantComponent:
         config = {'lookback': 12}
         def __init__(self, targets): self.targets = targets
-        def __call__(self, x, available, cal, members, dropout):
+        def __call__(self, x, available, cal, members, dropout, known_final=None):
             return torch.tensor(self.targets, dtype=x.dtype)[None, None, None, :, None].expand(members, len(x), 6, -1, 1)
     models = [ConstantComponent(group) for group in ([0, 3], [1, 4], [2, 5])]
     samples, _ = sample(models, [e], members=5, seed=42, device='cpu', sample_batch=2)
@@ -306,6 +400,18 @@ def test_nowcast_relative_support_does_not_drop_unavailable_targets_silently(tmp
     covid = [r for r in audit['by_target_season'] if r['target'] == CHANNEL_TARGETS[1]]
     assert len(covid) == 3
     assert all(r['label_cells'] == r['excluded_no_history'] == 2 and r['scored_cells'] == 0 for r in covid)
+    # Supplying one recent final per season must not create a perfect nowcast score,
+    # even if an external caller left its label mask true in the export.
+    for held in SEASONS:
+        path = tmp_path / f'eval_{held}' / 'forecasts-demo-s42-natural.npz'
+        with np.load(path) as data:
+            arrays = dict(data)
+        final = np.zeros((1, 12, 6, 1), bool); final[:, -1, 0] = True
+        np.savez(path, **arrays, X_final=final)
+    totals, audit = nowcast_cells(tmp_path, dict(run_id='demo', seed=42))
+    assert audit['excluded_supplied_final'] == audit['scored_cells'] == 3
+    assert audit['excluded_no_history'] == 6
+    assert totals.n.sum() == 3
 
 
 def test_b1_custom_b0_calendar_controls_views_and_hidden_weeks(tmp_path):

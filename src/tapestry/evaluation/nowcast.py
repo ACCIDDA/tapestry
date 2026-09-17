@@ -27,8 +27,8 @@ from tapestry.models.season_cv import SEASONS
 from .hubs import HUBS
 from .totals import METRICS, quantile_scores
 
-BASELINE = 'preliminary-value persistence (latest Wednesday-visible value)'
-SCORE_VERSION = 'nowcast-persistence-relative-season-first-us20-v1'
+BASELINE = 'latest-visible-input persistence (reports or supplied finals)'
+SCORE_VERSION = 'nowcast-persistence-relative-season-first-us20-known-final-v2'
 SCORE_DEFINITION = (
     'Per target/season/location: total native-unit model WIS / total '
     f'{BASELINE} WIS over identical nowcast cells at offsets -2 and -1. '
@@ -36,7 +36,9 @@ SCORE_DEFINITION = (
     'season, available targets average with admissions 1 and ED .5. Seasons '
     'average equally. Cells with no visible focal-channel history at their location have no baseline '
     'and are excluded from both numerator and denominator, and counted in '
-    'nowcast-support.json. This is skill against a naive no-revision nowcast, '
+    'nowcast-support.json. Visible supplied recent finals are excluded from both '
+    'model and baseline scoring. Conditioning includes retrospective finals. '
+    'This is skill against a naive no-revision nowcast, '
     'not against a competing nowcasting method.')
 # `season_scores` and friends key off these names; the baseline takes the
 # ensemble's place so B0's aggregation is reused verbatim, not reimplemented.
@@ -51,7 +53,7 @@ def nowcast_cells(run, manifest):
     construction, but the filter is applied explicitly rather than assumed.
     """
     prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
-    parts, excluded, scored, support = [], 0, 0, []
+    parts, excluded, scored, support, supplied = [], 0, 0, [], 0
     for held in SEASONS:
         path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-natural.npz'
         with np.load(path, allow_pickle=False) as data:
@@ -69,6 +71,10 @@ def nowcast_cells(run, manifest):
             base = np.broadcast_to(data['baseline'][:, None], truth.shape)
             base_valid = np.broadcast_to(data['baseline_mask'][:, None], valid.shape)
             in_season = np.array([[season(date.fromisoformat(str(d))) == held for d in row] for row in dates])
+            final = (data['X_final'][:, -2:] if 'X_final' in data else np.zeros_like(valid))
+            final = final & in_season[:, :, None, None]
+            supplied += int(final.sum())
+            valid = valid & ~final
             usable = valid & base_valid & in_season[:, :, None, None]
             excluded += int((valid & in_season[:, :, None, None] & ~base_valid).sum())
             scored += int(usable.sum())
@@ -76,7 +82,8 @@ def nowcast_cells(run, manifest):
                 cells = usable[:, :, c]
                 labels = valid[:, :, c] & in_season[:, :, None]
                 support.append(dict(target=target, season=held, label_cells=int(labels.sum()),
-                    scored_cells=int(cells.sum()), excluded_no_history=int((labels & ~base_valid[:, :, c]).sum())))
+                    scored_cells=int(cells.sum()), excluded_supplied_final=int(final[:, :, c].sum()),
+                    excluded_no_history=int((labels & ~base_valid[:, :, c]).sum())))
                 if not cells.any():
                     continue
                 origin, week, location = np.nonzero(cells)
@@ -95,6 +102,7 @@ def nowcast_cells(run, manifest):
                 summed.insert(0, 'n', grouped.size())
                 parts.append(summed.reset_index().assign(target=target, season=held))
     audit = dict(baseline=BASELINE, scored_cells=scored, excluded_no_history=excluded,
+                 excluded_supplied_final=supplied,
                  by_target_season=support, definition=SCORE_DEFINITION, score_version=SCORE_VERSION)
     columns = ['target', 'season', 'geography', 'location', 'horizon', 'n',
                *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]

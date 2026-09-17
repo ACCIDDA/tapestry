@@ -42,6 +42,7 @@ class TableSource:
     revision_mode: str = "snapshot_only"
     fallback_vintage: str | None = None
     full_snapshots: bool = False
+    release_times: tuple[str, ...] = ()
     path: Path | None = None
 
 
@@ -171,6 +172,9 @@ class RawTables:
 
         manifest_path = artifact.snapshot_dir / "manifest.json"
         manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+        from .sources.hub_history import HISTORY_FILE, HISTORY_INDEX
+        git_history = artifact.relative_path == HISTORY_FILE
+        history = json.loads((artifact.snapshot_dir / HISTORY_INDEX).read_text()) if git_history else {}
         fallback = _vintage_string(manifest.get("source_state", {}).get("commit_time") or manifest.get("retrieved_at"))
         mode = str(dataset.get("revision_mode", "snapshot_only"))
         return TableSource(
@@ -179,16 +183,17 @@ class RawTables:
             provider=str(dataset.get("provider", "")),
             snapshot_id=artifact.snapshot_id,
             source_path=source_name,
-            event_date_column=dataset.get("event_date_column"),
-            vintage_column=dataset.get("vintage_column"),
+            event_date_column='date' if git_history else dataset.get("event_date_column"),
+            vintage_column='_git_release' if git_history else dataset.get("vintage_column"),
             geographic_resolutions=tuple(
                 str(item) for item in dataset.get("geographic_resolutions", ())
             ),
             missing_markers=tuple(str(item) for item in dataset.get("missing_value_markers", [])),
             iter_rows=rows,
-            revision_mode=mode,
-            fallback_vintage=fallback if dataset.get("versioned") else None,
-            full_snapshots=(mode == "as_of_column" and dataset.get("vintage_column") == "as_of"),
+            revision_mode='git_history' if git_history else mode,
+            fallback_vintage=None if git_history else fallback if dataset.get("versioned") else None,
+            full_snapshots=git_history or (mode == "as_of_column" and dataset.get("vintage_column") == "as_of"),
+            release_times=tuple(_vintage_string(r['release_time']) for r in history.get('releases', [])),
             path=path,
         )
 

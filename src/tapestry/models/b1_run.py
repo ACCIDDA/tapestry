@@ -28,18 +28,42 @@ from .quantiles import LEVELS
 from .run import calendar
 from .season_cv import SEASONS
 
-def task_weights(episodes, target, direct=False):
+def known_finals(episodes):
+    """Per-context-cell flag; two-field synthetic episodes have no supplied finals."""
+    return np.stack([e['X'][:, :, 2].astype(bool) & e['X'][:, :, 1].astype(bool)
+                     if e['X'].shape[2] > 2 else np.zeros_like(e['X'][:, :, 1], dtype=bool)
+                     for e in episodes])
+
+
+def supervision_mask(episode, dropout=None):
+    """Supplied answers are unscored only while visible; labels remain in the archive."""
+    valid = episode['Y'][:, :, 1].astype(bool).copy()
+    if 'X' in episode:
+        known = known_finals([episode])[0]
+        if dropout is not None:
+            known &= ~dropout
+        valid[:2] &= ~known[-2:]
+    return valid
+
+
+def task_weights(episodes, target, direct=False, dropout=None):
     """Fixed scientific weights; recent and future each receive half the total.
 
-    For an entirely absent task, its half remains zero (not reassigned). Such a
-    target is rejected by fitting; partial missing labels retain valid supervision.
+    For an entirely absent task, its half remains zero (not reassigned). Visible
+    supplied finals are excluded; hiding them restores recent supervision.
+    Weights are computed across the partition, never within a minibatch.
     """
     weights = np.zeros((len(episodes), 6, 6, len(episodes[0]['locations'])), np.float32)
     targets = [target] if isinstance(target, int) else list(target)
     channel_weights = [TARGET_WEIGHTS[c] if c in targets else 0. for c in range(6)]
+    supervised = []
+    for i, e in enumerate(episodes):
+        y = e['Y'].copy()
+        y[:, :, 1] = supervision_mask(e, None if dropout is None else dropout[i])
+        supervised.append({**e, 'Y': y})
     tasks = ((slice(2, 6), 1.),) if direct else ((slice(0, 2), .5), (slice(2, 6), .5))
     for interval, share in tasks:
-        part = [{**e, 'Y': e['Y'][interval], 'target_dates': e['target_dates'][interval]} for e in episodes]
+        part = [{**e, 'Y': e['Y'][interval], 'target_dates': e['target_dates'][interval]} for e in supervised]
         if not any(e['Y'][:, targets, 1].any() for e in part):
             continue
         weights[:, interval] = share * loss_cell_weights(part, channel_weights)
@@ -117,14 +141,14 @@ def fit_component(train, validation, targets, component, options, args, scenario
         raise ValueError(f'No training/validation labels for channels {targets}')
     x, a, y, cal = arrays(train, args.device)
     vx, va, vy, vcal = arrays(validation, args.device)
+    known = torch.as_tensor(known_finals(train), device=args.device)
+    vknown = torch.as_tensor(known_finals(validation), device=args.device)
     y, vy = y[:, hs][:, :, targets], vy[:, hs][:, :, targets]
     weights = torch.as_tensor(task_weights(train, targets, direct)[:, :, targets], device=args.device)
     vw = torch.as_tensor(task_weights(validation, targets, direct)[:, :, targets], device=args.device)
     for i, c in enumerate(targets):
         if not weights[:, :, i].sum() or not vw[:, :, i].sum():
             raise ValueError(f'No training/validation labels for {CHANNELS[c]}')
-        if not direct and (not weights[:, :2, i].sum() or not weights[:, 2:, i].sum()):
-            raise ValueError(f'Both recent and future training labels required for {CHANNELS[c]}')
     generator = torch.Generator().manual_seed(seed + 2000)
     fixed = {}
     for stage in (('future',) if direct else ('recent', 'future')):
@@ -133,18 +157,20 @@ def fit_component(train, validation, targets, component, options, args, scenario
                 fixed[f'{"z" if name == "z" else name}_{stage}'] = value
     probabilities = scenario.mask_probabilities
     vd = torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device)
+    vw = torch.as_tensor(task_weights(validation, targets, direct, vd.cpu().numpy())[:, :, targets], device=args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     best, best_state, best_epoch = float('inf'), None, 0
     history, audit = [], []
     for epoch in range(scenario.epochs):
         d = draw_dropout(a.cpu().numpy(), rng, probabilities)
         dropout = torch.as_tensor(d, device=args.device)
+        weights = torch.as_tensor(task_weights(train, targets, direct, d)[:, :, targets], device=args.device)
         audit.append(np.packbits(d.reshape(-1)))
         total = 0.
         model.train()
         for ids in torch.randperm(len(train), device=args.device).split(scenario.batch_size):
             optimizer.zero_grad()
-            samples = model(x[ids], a[ids], cal[ids], scenario.members, dropout[ids])
+            samples = model(x[ids], a[ids], cal[ids], scenario.members, dropout[ids], known_final=known[ids])
             score = fair_crps_cells(samples, y[ids, :, :, 0], y[ids, :, :, 1])
             loss = (weights[ids] * score / model.scale[targets]).sum() * len(train) / len(ids)
             if not torch.isfinite(loss):
@@ -158,6 +184,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
         with torch.no_grad():
             for ids in torch.arange(len(validation), device=args.device).split(scenario.batch_size):
                 samples = model(vx[ids], va[ids], vcal[ids], dropout=vd[ids],
+                                known_final=vknown[ids],
                                 **{k: v[:, ids] for k, v in fixed.items()})
                 score = fair_crps_cells(samples, vy[ids, :, :, 0], vy[ids, :, :, 1])
                 val += float((vw[ids] * score / model.scale[targets]).sum())
@@ -203,7 +230,7 @@ def train(args, scenario=None):
         components.append(dict(config=model.config, state_dict=model.state_dict()))
         records.append(record)
         np.savez_compressed(out / f'masks-{i}.npz', **audit)
-    metadata = dict(model='B1', schema_version=2, scenario=scenario.scenario_string,
+    metadata = dict(model='B1', schema_version=3, scenario=scenario.scenario_string,
         run_id=scenario.run_id, configuration=asdict(scenario), groups=groups,
         seed=args.seed, held_out_season=args.held_out_season, protocol='season_cv',
         retrospective=args.retrospective, dataset_metadata=ds.metadata,
@@ -211,7 +238,7 @@ def train(args, scenario=None):
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
         mask_probabilities=list(scenario.mask_probabilities), training_members=scenario.members,
         validation_members=scenario.validation_members, records=records,
-        objective='.5 recent + .5 future native fair CRPS / fitting-only Q95; fixed season/target/geography weights within each component. Direct: future only.',
+        objective='.5 recent + .5 future native fair CRPS / fitting-only Q95; visible supplied finals excluded from recent loss. Partition-wide season/target/geography weights recomputed after dropout; absent task share stays zero. Direct: future only.',
         cross_target_dependence='Independent draws across fitted components. Shared components allow within-group dependence; marginal scores do not establish joint calibration.')
     torch.save(dict(components=components, metadata=metadata), out / 'model.pt')
     (out / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
@@ -233,8 +260,8 @@ def train(args, scenario=None):
 
 def load_models(checkpoint, device):
     saved = torch.load(checkpoint, map_location='cpu', weights_only=True)
-    if saved['metadata'].get('schema_version') != 2:
-        raise ValueError('B1 checkpoint predates configurable formulations; refit using the current code')
+    if saved['metadata'].get('schema_version') != 3:
+        raise ValueError('B1 checkpoint predates known-final conditioning; rebuild the dataset and refit')
     models = []
     for component in saved['components']:
         model = B1(**component['config']).to(device)
@@ -246,12 +273,13 @@ def load_models(checkpoint, device):
 def sample(models, episodes, *, members, seed, device, scenario='natural', sample_batch=32):
     episodes = crop_episodes(episodes, models[0].config['lookback'])
     x, a, _, cal = arrays(episodes, device)
+    known = torch.as_tensor(known_finals(episodes), device=device)
     d = torch.as_tensor(draw_dropout(a.cpu().numpy(), np.random.default_rng(seed + 3000), scenario=scenario), device=device)
     components = []
     with torch.no_grad():
         for c, model in enumerate(models):
             torch.manual_seed(seed + 10000 * c)
-            components.append(torch.cat([model(x, a, cal, min(sample_batch, members - m), d).cpu()
+            components.append(torch.cat([model(x, a, cal, min(sample_batch, members - m), d, known_final=known).cpu()
                                         for m in range(0, members, sample_batch)]).numpy())
     order = [c for model in models for c in model.targets]
     if sorted(order) != list(range(6)):
@@ -279,7 +307,8 @@ def predict(args):
     np.savez_compressed(path, samples=samples[:, 0], quantiles=np.quantile(samples[:, 0], LEVELS, axis=0),
         quantile_levels=LEVELS, target_dates=targets, issuance_date=args.issuance, locations=ds.locations,
         channels=CHANNELS, context_dates=episodes[0]['context_dates'],
-        X_values=episodes[0]['X'][:, :, 0], X_available=episodes[0]['X'][:, :, 1].astype(bool), D=d[0],
+        X_values=episodes[0]['X'][:, :, 0], X_available=episodes[0]['X'][:, :, 1].astype(bool),
+        X_final=known_finals(episodes)[0], D=d[0],
         X_provenance=ds.arrays['X_provenance'][episodes[0]['index'], -models[0].config['lookback']:],
         X_reason=ds.arrays['X_reason'][episodes[0]['index'], -models[0].config['lookback']:],
         metadata=json.dumps(dict(fit=metadata, scenario=args.stress_scenario, seed=args.seed,

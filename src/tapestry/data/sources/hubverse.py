@@ -138,7 +138,9 @@ class HubMirror:
         return tuple(line for line in output.splitlines() if line)
 
     def read_file(self, commit: str, path: str) -> bytes:
-        return self.run("show", f"{commit}:{path}", text=False)
+        # Partial mirrors can have commit-graph entries whose objects are absent;
+        # bypass that acceleration when Git lazily fetches a historical blob.
+        return self.run('-c', 'core.commitGraph=false', "show", f"{commit}:{path}", text=False)
 
     def _is_partial(self) -> bool:
         result = subprocess.run(
@@ -347,6 +349,9 @@ class HubverseFetcher:
             )
             file_list = snapshot.path("repository-files.txt", media_type="text/plain")
             file_list.write_text("\n".join(files) + "\n", encoding="utf-8")
+            from .hub_history import HISTORY_TARGETS, write_history
+            if spec.key in HISTORY_TARGETS:
+                write_history(mirror, spec, commit, snapshot)
             return snapshot.commit(
                 selector={"ref": selected_ref, "as_of": as_of, "commit": commit},
                 source_state={

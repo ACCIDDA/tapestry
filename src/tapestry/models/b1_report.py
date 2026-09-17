@@ -15,24 +15,22 @@ from .season_cv import persistence
 
 def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=None):
     import pandas as pd
-    from .b1_run import sample, task_weights
+    from .b1_run import sample, task_weights, supervision_mask, known_finals
     from tapestry.evaluation.totals import quantile_scores
     rows = []
     direct = models[0].config['direct']
     hs = slice(2, 6) if direct else slice(None)
-    weights = task_weights(episodes, range(6), direct)
-    if not direct:
-        weights *= 2  # Rank forecasting and nowcasting separately, each sums to one.
     scales = models[0].scale.detach().cpu().numpy()
     for stress in MASK_SCENARIOS:
-        dropouts, quantiles = [], []
+        dropouts, quantiles, masks, stress_rows, baselines, baseline_masks = [], [], [], [], [], []
         # One episode at a time bounds memory; seed is common across configurations.
         for i, episode in enumerate(episodes):
             samples, d = sample(models, [episode], members=args.evaluation_members,
                 seed=seed + i * 101, device=args.device, scenario=stress)
             dropouts.append(d[0])
             truth = episode['Y'][hs, :, 0]
-            valid = episode['Y'][hs, :, 1].astype(bool)
+            valid = supervision_mask(episode, d[0])[hs]
+            masks.append(valid)
             crps = fair_crps_cells(torch.tensor(samples), torch.tensor(truth[None]),
                                    torch.tensor(valid[None])).numpy()[0]
             q = np.quantile(samples[:, 0], LEVELS, axis=0)
@@ -40,37 +38,48 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
             quantiles.append(q)
             metrics = quantile_scores(q[:, valid].T, truth[valid]).to_dict('records')
             natural = episode['X'][:, :, 1].astype(bool)
+            known = known_finals([episode])[0]
             visible = natural & ~d[0]
+            baseline_x = episode['X'].copy()
+            baseline_x[:, :, 1] = visible
+            base, base_valid = persistence(baseline_x)
+            baselines.append(base)
+            baseline_masks.append(base_valid)
             for (h, c, l), metric in zip(zip(*np.where(valid)), metrics):
                 target_day = episode['target_dates'][h + (2 if direct else 0)]
-                rows.append(dict(config_id=config_id, scenario_string=scenario_string, seed=seed, stress=stress,
+                stress_rows.append(dict(_cell=(i, h, c, l), config_id=config_id, scenario_string=scenario_string, seed=seed, stress=stress,
                     issuance_date=episode['issuance_date'], target_date=target_day,
                     season=season(date.fromisoformat(target_day)), target=CHANNELS[c],
                     location=ds.locations[l], horizon=h - (0 if direct else 2),
                     task='forecast' if direct or h >= 2 else 'nowcast',
                     focal_history_available=bool(natural[:, c, l].any()),
                     visible_focal_history=bool(visible[:, c, l].any()),
-                    recent_report_available=bool(natural[-2 + h, c, l]) if not direct and h < 2 else None,
+                    recent_report_available=bool(natural[-2 + h, c, l] and not known[-2 + h, c, l]) if not direct and h < 2 else None,
                     observed=float(truth[h, c, l]), loss_scale=float(scales[c, l]),
-                    objective_weight=float(weights[i, h, c, l]),
                     crps=float(crps[h, c, l]), **metric,
                     coverage_50=float(q[6, h, c, l] <= truth[h, c, l] <= q[16, h, c, l]),
                     coverage_95=float(q[1, h, c, l] <= truth[h, c, l] <= q[21, h, c, l])))
             if i == len(episodes) // 2 and stress == 'natural':
                 path_graph(samples[:, 0], episode, ds, config_id, seed, root, direct)
+        weights = task_weights(episodes, range(6), direct, np.stack(dropouts))
+        if not direct:
+            weights *= 2  # Report each task separately.
+        for row in stress_rows:
+            row['objective_weight'] = float(weights[row.pop('_cell')])
+        rows.extend(stress_rows)
         np.savez_compressed(root / f'evaluation-masks-{config_id}-s{seed}-{stress}.npz',
             D=np.stack(dropouts), issuance_dates=[e['issuance_date'] for e in episodes])
-        baseline, baseline_mask = zip(*(persistence(e['X']) for e in episodes))
         np.savez_compressed(root / f'forecasts-{config_id}-s{seed}-{stress}.npz',
             quantiles=np.stack(quantiles, axis=1), quantile_levels=LEVELS,
             truth=np.stack([e['Y'][hs, :, 0] for e in episodes]),
-            mask=np.stack([e['Y'][hs, :, 1].astype(bool) for e in episodes]),
+            mask=np.stack(masks), X_final=known_finals(episodes),
+            history_mode=ds.metadata['history_mode'],
             target_dates=np.array([e['target_dates'][hs] for e in episodes]),
             issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
             channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4),
             # Both nowcast offsets use the latest visible context value for this
             # channel/location; it need not be the report for that target week.
-            baseline=np.stack(baseline), baseline_mask=np.stack(baseline_mask))
+            baseline=np.stack(baselines), baseline_mask=np.stack(baseline_masks))
     frame = pd.DataFrame(rows)
     frame['geography'] = np.where(frame.location == 'US', 'US', 'states_dc')
     frame.to_parquet(root / f'scores-{config_id}-s{seed}.parquet', index=False)
@@ -95,7 +104,10 @@ def path_graph(samples, episode, ds, config_id, seed, root, direct):
         valid = episode['Y'][:, c, 1, l].astype(bool)
         ax.scatter(np.arange(-2, 4)[valid], episode['Y'][valid, c, 0, l], s=18, color='black', label='Reference final')
         available = episode['X'][-2:, c, 1, l].astype(bool)
-        ax.scatter(np.array([-2, -1])[available], episode['X'][-2:, c, 0, l][available], marker='x', color='orange', label='Wednesday')
+        final = episode['X'][-2:, c, 2, l].astype(bool)
+        for mask, marker, color, label in ((available & ~final, 'x', 'orange', 'Wednesday report'),
+                                          (available & final, 's', 'green', 'Supplied final')):
+            ax.scatter(np.array([-2, -1])[mask], episode['X'][-2:, c, 0, l][mask], marker=marker, color=color, label=label)
         ax.axvline(-.5, color='gray', linestyle='--')
         ax.set_title(CHANNELS[c]);ax.set_xlabel('Offset from following Saturday')
     axes.flat[0].legend(fontsize=8)
@@ -112,30 +124,37 @@ def data_audit(ds, root):
     ds = ds.model_view()
     a = ds.arrays
     sources = np.array([p['source'] for p in ds.metadata['provenance']])
+    git_sources = np.array([s.endswith(':git') for s in sources])
     kinds = np.array(['hub' if s.startswith('hub_') else 'delphi' if s.startswith('delphi_') else 'none' for s in sources])
     rows = []
     for i, issuance in enumerate(a['issuance_dates']):
         for c, channel in enumerate(CHANNELS):
             valid = a['X_available'][i, :, c]
+            final = a['X_final'][i, :, c]
             provider = kinds[a['X_provenance'][i, :, c]]
+            git = git_sources[a['X_provenance'][i, :, c]]
             eligible = np.isin(a['context_dates'][i], ds.calendar_weeks)
             total = int(eligible.sum()) * len(ds.locations)
             rows.append(dict(issuance_date=issuance, target=channel, available=int(valid.sum()), total=total,
-                hub=int((valid & (provider == 'hub')).sum()), delphi=int((valid & (provider == 'delphi')).sum()),
+                hub=int((valid & ~final & ~git & (provider == 'hub')).sum()),
+                git=int((valid & ~final & git).sum()), delphi=int((valid & ~final & (provider == 'delphi')).sum()),
+                supplied_final=int(final.sum()), recent_supplied_final=int(final[-2:].sum()),
                 missing=int(total - valid.sum()), recent_labels=int(a['Y_recent_valid'][i, :, c].sum()),
                 future_labels=int(a['Y_future_valid'][i, :, c].sum())))
     frame = pd.DataFrame(rows);frame.to_csv(root / 'source-coverage.csv', index=False)
     fig, axes = plt.subplots(2, 3, figsize=(13, 7), sharex=True)
     for c, ax in enumerate(axes.flat):
         f = frame[frame.target == CHANNELS[c]]
-        ax.stackplot(pd.to_datetime(f.issuance_date), f.hub/f.total, f.delphi/f.total, f.missing/f.total,
-                     labels=['Hub', 'Delphi fallback', 'Missing'], colors=['steelblue', 'orange', 'lightgray'])
+        ax.stackplot(pd.to_datetime(f.issuance_date), f.hub/f.total, f.git/f.total, f.delphi/f.total, f.supplied_final/f.total, f.missing/f.total,
+                     labels=['Hub as_of', 'Hub Git', 'Delphi', 'Supplied final', 'Missing'], colors=['steelblue', 'purple', 'orange', 'seagreen', 'lightgray'])
         ax.set_title(CHANNELS[c]);ax.set_ylim(0, 1);ax.tick_params(axis='x', rotation=30)
+    fig.supylabel('Fraction of context week × location cells')
+    fig.suptitle(f'Per issuance and target: up to {a["X_available"].shape[1]} in-calendar weeks × {len(ds.locations)} locations')
     axes.flat[0].legend(fontsize=8);fig.tight_layout();fig.savefig(root / 'source-coverage.png', dpi=160);plt.close(fig)
     fig, axes = plt.subplots(2, 3, figsize=(12, 7))
     audits = []
     for c, ax in enumerate(axes.flat):
-        valid = a['X_available'][:, -2:, c] & a['Y_recent_valid'][:, :, c]
+        valid = a['X_available'][:, -2:, c] & ~a['X_final'][:, -2:, c] & a['Y_recent_valid'][:, :, c]
         x, y = a['X_values'][:, -2:, c][valid], a['Y_recent'][:, :, c][valid]
         ax.scatter(x, y, s=2, alpha=.15)
         if len(x):
@@ -148,6 +167,8 @@ def data_audit(ds, root):
     support = history_support(ds)
     pd.DataFrame(support).to_csv(root / 'history-support.csv', index=False)
     (root / 'audit.json').write_text(json.dumps(dict(truth_cutoff=ds.metadata['truth_cutoff'],
+        history_mode=ds.metadata['history_mode'], finality_assumption=ds.metadata['finality_assumption'],
+        recent_supplied_finals=int(a['X_final'][:, -2:].sum()),
         usable_episodes=sum(1 for _ in ds.episodes()), revision_audit=audits,
         calendar_weeks=list(ds.calendar_weeks), history_support=support,
         archive_issuances=ds.metadata.get('archive_issuances'), model_issuances=len(a['issuance_dates']),
@@ -155,27 +176,31 @@ def data_audit(ds, root):
 
 
 def history_support(ds):
-    """Describe missing-vintage tasks without confusing them with missing truth."""
+    """Distinguish reference labels, supplied answers, and supervised cells."""
     from .provenance import SEASONS
     ds = ds.model_view()
     a = ds.arrays
     x = a['X_available']
-    y = np.concatenate((a['Y_recent_valid'], a['Y_future_valid']), axis=1)
+    reference = np.concatenate((a['Y_recent_valid'], a['Y_future_valid']), axis=1)
+    y = reference.copy()
+    y[:, :2] &= ~a['X_final'][:, -2:]
     seasons = np.array([[season(date.fromisoformat(str(d))) for d in row] for row in a['target_dates']])
     has_input = x.any((1, 2, 3))
     rows = []
     for label in SEASONS:
         for c, channel in enumerate(CHANNELS):
             for task, hs in (('nowcast', slice(0, 2)), ('forecast', slice(2, 6))):
-                valid = y[:, hs, c] & (seasons[:, hs] == label)[:, :, None]
+                in_season = (seasons[:, hs] == label)[:, :, None]
+                valid = reference[:, hs, c] & in_season
                 # Same episode eligibility as the model, before task-specific label filtering.
-                eligible = valid & has_input[:, None, None]
+                eligible = y[:, hs, c] & in_season & has_input[:, None, None]
                 focal = x[:, :, c].any(1)[:, None, :]
-                recent = x[:, -2:, c] if task == 'nowcast' else np.zeros_like(eligible)
+                recent = x[:, -2:, c] & ~a['X_final'][:, -2:, c] if task == 'nowcast' else np.zeros_like(eligible)
                 observed = eligible & recent
                 first = np.flatnonzero(x[:, :, c].any((1, 2)))
                 rows.append(dict(season=label, target=channel, task=task,
                     reference_label_cells=int(valid.sum()), model_eligible_cells=int(eligible.sum()),
+                    supplied_final_cells=int((valid & a['X_final'][:, -2:, c]).sum()) if task == 'nowcast' else 0,
                     with_focal_history=int((eligible & focal).sum()),
                     without_focal_history=int((eligible & ~focal).sum()),
                     observed_recent_report=int(observed.sum()) if task == 'nowcast' else None,
@@ -231,7 +256,8 @@ def report(rows, ds, root):
         'Scores are native-unit diagnostics, with states/DC and US reported separately. Plot curves average the '
         'reported season/geography groups; they are not the scientific selection objective. '
         'This native report is separate from the optional manager Hub benchmark and its narrower support. '
-        'Later pinned training truth, when enabled explicitly, makes these retrospective development results.\n')
+        'Inputs include reference-final older history and flagged recent-final fallback. Visible supplied recent finals '
+        'are excluded from nowcast scoring. Results measure retrospective conditional forecasting, not operational skill.\n')
 
 
 if __name__ == '__main__':
