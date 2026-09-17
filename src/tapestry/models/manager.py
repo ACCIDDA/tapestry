@@ -181,7 +181,7 @@ def run_seed(folder, job, seed, settings):
     return True
 
 
-def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1):
+def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1, seeds=None):
     """Fit the selected tasks, up to `fit_workers` CONFIGURATIONS at a time.
 
     A worker owns one configuration and fits its seeds in sequence, so seeds of a
@@ -208,6 +208,11 @@ def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1):
         if unknown:
             raise ValueError(f'Unknown tasks {sorted(unknown)} in {folder / "jobs.csv"}')
         jobs = [job for job in jobs if job['task'] in tasks]
+    if seeds is not None:
+        jobs = [dict(job, seeds=[seed for seed in job['seeds'] if seed in seeds]) for job in jobs]
+        jobs = [job for job in jobs if job['seeds']]
+        if not jobs:
+            raise ValueError('No requested seeds occur in the selected planned tasks')
     if fit_workers < 1:
         raise ValueError('fit_workers must be positive')
     # One unit of work is a whole configuration, not a seed: that is what keeps a
@@ -428,7 +433,7 @@ def main(argv=None):
         backend.prepare(folder, settings)
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
     elif args.command == 'run':
-        if run(folder, args.task, args.device, args.keep_going, args.fit_workers):
+        if run(folder, args.task, args.device, args.keep_going, args.fit_workers, requested_seeds):
             raise SystemExit(1)
         return
     elif args.command == 'rank':
@@ -447,19 +452,20 @@ def main(argv=None):
     pending = pending_tasks(rows)
     if pending:
         root = '' if args.root == 'data/experiments' else f' --root {args.root}'
+        seed_flags = '' if requested_seeds is None else ' --seeds ' + ' '.join(map(str, requested_seeds))
         # A source snapshot means the shared dispatcher drains one queue across
         # the patron GPUs, rather than Slurm slicing static array tasks.
         if (folder / 'code').is_dir():
             print(f'Shared GPU queue: sbatch --job-name={args.experiment} --array=0-3 '
-                  f'scripts/jlessler.sbatch {args.experiment}')
-            print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}')
+                  f'scripts/jlessler.sbatch {args.experiment}{seed_flags}')
+            print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}{seed_flags}')
             return
         print('Pending tasks (check squeue -a before resubmitting). Sweep launcher:')
         for command in array_commands(pending, args.experiment):
             print(command + root)
         if max(pending) < ARRAY_CHUNK:
             print(f'Partition jlessler: sbatch --array={ranges(pending)}%6 scripts/b0_array.sbatch {args.experiment}{root}')
-        print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}')
+        print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}{seed_flags}')
 
 
 if __name__ == '__main__':
