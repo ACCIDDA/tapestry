@@ -188,7 +188,7 @@ body.is-busy .topbar::after { content: ""; position: absolute; left: 0; bottom: 
 .axis { fill: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; }
 .axis line, .frame, .gridline { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .gridline { stroke-dasharray: 2 4; }
-.series-line { fill: none; stroke-width: 2; stroke-opacity: .7; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.series-line { fill: none; stroke-width: 1; stroke-opacity: .7; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .series-marker { stroke-opacity: .9; fill-opacity: .85; pointer-events: none; }
 .axis-title { fill: var(--muted); font-size: 11px; }
 .hover-line { stroke: #7d8983; stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; }
