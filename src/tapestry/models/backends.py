@@ -182,10 +182,6 @@ class B1Backend:
     # B0's four best configurations under Wednesday inputs, the two-stage B1
     # design, or artificial masking. Label/source support can also differ from B0.
     SUITES = {
-        # Inputs only. B0's own direct four-week task and architecture, refitted
-        # on the Wednesday dataset. Predictor code is B0 itself; natural input
-        # availability and the dataset's reference-label policy determine support.
-        'B1-fromB0': dict(pipeline='direct', mask_rate=0.),
         # Inputs plus nowcasting: the two-stage recent->future path, still with
         # natural availability and no artificial masking.
         'B1-onlynowcast': dict(pipeline='two_stage', mask_rate=0.),
