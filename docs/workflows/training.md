@@ -98,7 +98,7 @@ Defaults give the baseline B0 behavior. The
 | `--lookback` | Compare `8`, `12`, `26`; same MLP architecture and width |
 | `--dynamics` | Recent slope, change in slope, observation age, validity flags, Christmas timing |
 | `--loss-weights` | `influenza_first`: `[1,.1,.1,.1,.1,.1]`; `balanced_admissions`: `[1,1,1,.1,.1,.1]`; `flu_only`: `[1,0,0,0,0,0]`; `objective`: `[1,1,1,.5,.5,.5]`, the adopted target coefficients (training uses Q95 normalization; selection uses ensemble WIS ratios) |
-| `--population-file` | Default frozen `data/metadata/b0_locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
+| `--population-file` | Default frozen `data/metadata/locations.csv`; custom CSV uses `location,population`, or `abbreviation` if present |
 | `--encoder` | `mlp` (default) or `conv`: two shared temporal convolutions |
 | `--heads` | `shared` (default) or `state_us`: separate modulation/output parameters |
 | `--decoder` | `legacy` (default) or `residual2`: two latent-modulated residual blocks |
@@ -127,7 +127,7 @@ pre-training context dates from scale fitting. Scales are saved in model buffers
 
 Assumptions: population denominators are fixed across retrospective seasons from
 the frozen local FluSight table; source path, repository revision, and file hash are
-in `data/metadata/b0_locations.provenance.json`. The actual population mapping is
+in `data/metadata/locations.provenance.json`. The actual population mapping is
 saved in the checkpoint, so prediction does not reread the CSV. Native US stays
 separate from states. Geography and transform switches are independent.
 

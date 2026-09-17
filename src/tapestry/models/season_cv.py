@@ -20,7 +20,7 @@ from .run import calendar, fit
 from .bundles import GROUPS, IndependentBundle, supervision, checkpoint
 from .experiments import add_experiment_args, LOSS_WEIGHTS, model_options
 from .objective import LOSS_DEFINITION, US_WEIGHT, loss_scales
-from .manager import git_state
+from .provenance import git_state
 from .quantiles import LEVELS
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')

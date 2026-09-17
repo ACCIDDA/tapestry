@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from .configurations import identify, digest
-from .hubs import HUBS, KEY, QCOLS, export_b0
+from .hubs import HUBS, KEY, QCOLS, export
 from .epibench import package_source, score_case
 from .scoring import METRICS, validate, match_forecasts, matched_scores, rank, objective as score_objective
 
@@ -153,7 +153,7 @@ def main():
     all_scores = []
     print(f'Loading {len(args.runs)} runs with {args.score_workers} workers', flush=True)
     with ThreadPoolExecutor(max_workers=args.score_workers) as pool:
-        exports = list(pool.map(export_b0, args.runs))
+        exports = list(pool.map(export, args.runs))
     for record, frames in zip(records, exports):
         model = record['model_id']
         print(f'Exporting {model}', flush=True)

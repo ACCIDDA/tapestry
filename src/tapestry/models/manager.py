@@ -9,25 +9,21 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 from dataclasses import asdict
-from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
-import socket
 import subprocess
 import sys
 import threading
 
+from .backends import BACKENDS, DATASETS, EVAL_MEMBERS, FROZEN, LOCATIONS, backend_for, model_of
+from .provenance import SEASONS, environment, git_state, now, save
 from .quantiles import LEVELS
-from .scenarios import ESSENTIAL, SUITES, TrainingScenario, get_scenarios, get_training_scenario
+from .scenarios import ESSENTIAL, SUITES, TrainingScenario
 
-SEASONS = ('2023-2024', '2024-2025', '2025-2026')
 JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
-SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')
 ARRAY_CHUNK = 1000
-FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 
 
 def parse_scenario(value):
@@ -43,52 +39,11 @@ def scenario_directory(value):
 
 
 def output_directory(scenario):
-    return 'b1' if scenario.startswith('b1:') else 'cv'
+    return backend_for(scenario).output_dir
 
 
 def check_inputs(settings):
-    if settings.get('model') == 'B1':
-        from .b1_experiment import check_inputs as check_b1
-        check_b1(settings)
-    else:
-        check_frozen(settings['frozen'])
-
-
-def save(path, value):
-    temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
-    temporary.replace(path)
-
-
-def now():
-    return datetime.now(timezone.utc).isoformat()
-
-
-def git_state():
-    """Commit of the checkout running this code; None outside a git checkout."""
-    root = Path(__file__).resolve().parents[3]
-    try:
-        commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'],
-                                         text=True, stderr=subprocess.DEVNULL).strip()
-        changes = subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain'],
-                                          text=True, stderr=subprocess.DEVNULL).strip()
-    except (OSError, subprocess.CalledProcessError):
-        return dict(git_commit=None, git_dirty=None)
-    return dict(git_commit=commit, git_dirty=bool(changes))
-
-
-def torch_state():
-    """The wheel that produced the numbers; CUDA builds differ in supported architectures."""
-    try:
-        import torch
-        return dict(torch_version=torch.__version__)
-    except ImportError:
-        return dict(torch_version=None)
-
-
-def environment():
-    return dict(host=socket.gethostname(), slurm={name: os.environ.get(name) for name in SLURM},
-                **torch_state(), **git_state())
+    backend_for(settings).check_inputs(settings)
 
 
 def experiment_folder(root, name):
@@ -124,13 +79,14 @@ def plan(folder, scenarios, seeds, settings):
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / 'experiment.json'
     previous = json.loads(path.read_text()) if path.exists() else {}
-    if previous and previous.get('model', 'B0') != settings.get('model', 'B0'):
+    if previous and model_of(previous) != model_of(settings):
         raise ValueError('Use separate experiment names for B0 and B1')
-    if previous.get('model') == 'B1':
-        check_inputs(previous)
     changed = sorted(key for key, value in settings.items() if key in previous and previous[key] != value)
-    if settings.get('model') == 'B1' and set(changed) - {'device'}:
-        raise ValueError(f'B1 experiment settings changed: {changed}; use a new experiment name')
+    # Data, scoring support and protocol define what the scores mean; changing one
+    # mid-experiment would silently pool incomparable runs. Device is a machine detail.
+    protocol = set(changed) - {'device', 'suite'}
+    if protocol:
+        raise ValueError(f'Experiment settings changed: {sorted(protocol)}; use a new experiment name')
     if changed:
         print(f'Updated experiment settings {changed}; each attempt records the settings it used', flush=True)
     save(path, {**previous, **settings})
@@ -146,32 +102,13 @@ def plan(folder, scenarios, seeds, settings):
     return jobs
 
 
-def check_frozen(frozen):
-    """Fail before any fitting when runs could not be scored on the current quantile grid."""
-    expected = [f'q{q:g}' for q in LEVELS]
-    try:
-        quantiles = json.loads((Path(frozen) / 'manifest.json').read_text()).get('quantiles')
-    except (OSError, ValueError) as error:
-        raise ValueError(f'No frozen scoring support at {frozen}; build it with scripts/b0_prepare.sbatch') from error
-    if quantiles != expected:
-        raise ValueError(f'{frozen} holds quantiles {quantiles}; rebuild frozen support for the {len(expected)}-level grid')
-
-
-def complete_artifacts(output):
+def complete_artifacts(output, backend=None):
     """A top-level scores file alone is insufficient evidence of a complete, scored CV."""
-    if output.name == 'b1':
-        from .b1_experiment import complete_artifacts as complete_b1
-        return complete_b1(output)
-    required = ['manifest.json', 'scores.csv', 'totals.csv']
-    required += [f'eval_{season}/{name}' for season in SEASONS
-                 for name in ('model.pt', 'forecasts.npz', 'training.json', 'scores.csv')]
+    backend = backend or next(b for b in BACKENDS.values() if b.output_dir == output.name)
+    required = backend.required_artifacts(output)
     if not all((output / name).is_file() and (output / name).stat().st_size for name in required):
         return False
-    try:
-        manifest = json.loads((output / 'manifest.json').read_text())
-        return sorted(f['eval_season'] for f in manifest['folds']) == sorted(SEASONS)
-    except (KeyError, ValueError, TypeError):
-        return False
+    return backend.complete(output)
 
 
 def attempts(folder, scenario, seed):
@@ -186,8 +123,9 @@ def seed_state(folder, scenario, seed):
             found.append((attempt, json.loads((attempt / 'run.json').read_text())))
         except (OSError, ValueError):
             found.append((attempt, dict(status='unknown')))
+    backend = backend_for(scenario)
     for attempt, record in reversed(found):
-        if record.get('status') == 'complete' and complete_artifacts(attempt / output_directory(scenario)):
+        if record.get('status') == 'complete' and complete_artifacts(attempt / backend.output_dir, backend):
             return attempt, record, True
     return found[-1] + (False,) if found else (None, dict(status='planned'), False)
 
@@ -201,21 +139,17 @@ def run_seed(folder, job, seed, settings):
         print(f'Reusing {job["name"]}, seed {seed}', flush=True)
         return True
     number = len(attempts(folder, job['scenario'], seed)) + 1
+    backend = backend_for(job['scenario'])
     attempt = folder / scenario_directory(job['scenario']) / f's{seed}' / f'attempt-{number:03d}'
     # A duplicate task running the same seed concurrently fails here instead of sharing a folder.
     attempt.mkdir(parents=True, exist_ok=False)
-    output = attempt / output_directory(job['scenario'])
+    output = attempt / backend.output_dir
     scenario = parse_scenario(job['scenario'])
-    if job['scenario'].startswith('b1:'):
-        from .b1_experiment import commands
-        command, scoring = commands(scenario, seed, settings, output)
-    else:
-        command = [sys.executable, '-m', 'tapestry.models.season_cv',
-                   '--dataset', settings['dataset'], '--population-file', settings['population_file'],
-                   '--eval-members', str(settings['eval_members']), '--device', settings['device'],
-                   '--seed', str(seed), '--output', str(output), *scenario.flags()]
-        scoring = [sys.executable, '-m', 'tapestry.evaluation.totals', 'score',
-                   '--run', str(output), '--frozen', settings['frozen']]
+    # `command` is a list of fitting commands, one per leave-one-season-out fold.
+    command = backend.fit_commands(scenario, seed, settings, output)
+    # One scorer for every model: ensemble-relative WIS on the frozen Hub tasks.
+    scoring = [sys.executable, '-m', 'tapestry.evaluation.totals', 'score',
+               '--run', str(output), '--frozen', settings['frozen']]
     record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
                   config=asdict(scenario), settings=settings, command=command, scoring_command=scoring,
                   started=now(), **environment())
@@ -223,9 +157,13 @@ def run_seed(folder, job, seed, settings):
     print(f'Running {job["name"]}, seed {seed}: {attempt}', flush=True)
     try:
         with (attempt / 'run.log').open('w') as log:
-            execute(command, log)
+            for fit in command:
+                execute(fit, log)
+            # The run-level manifest must exist before scoring: the scorer reads
+            # its `model` field to choose the forecast exporter.
+            backend.collect_manifest(output)
             execute(scoring, log)
-        if not complete_artifacts(output):
+        if not complete_artifacts(output, backend):
             raise RuntimeError('Run exited without its complete fitted and scored artifacts')
         manifest = json.loads((output / 'manifest.json').read_text())
         manifest.update(scenario_string=job['scenario'], scenario_name=job['name'])
@@ -354,44 +292,43 @@ def completed_runs(folder, allow_incomplete):
 
 
 def rank(folder, allow_incomplete=False):
-    """Rank completed runs by season-equal location-relative WIS."""
-    if json.loads((folder / 'experiment.json').read_text()).get('model') == 'B1':
-        from .b1_experiment import postprocess
-        return postprocess(folder, allow_incomplete=allow_incomplete)
+    """Rank completed runs by season-equal location-relative WIS, B0 or B1.
+
+    A B1 experiment additionally gets a nowcast ranking under `nowcast/`, scored
+    against preliminary-value persistence. Forecast and nowcast scores share
+    weights but not support and are never combined.
+    """
     from tapestry.evaluation.totals import SCORE_VERSION, rank as rank_runs
+    from tapestry.evaluation import nowcast
+    settings = json.loads((folder / 'experiment.json').read_text())
+    backend = backend_for(settings)
     done, _ = completed_runs(folder, allow_incomplete)
     attempts_used = sorted(row['attempt'] for row in done)
     # Different ranked sets get different destinations; never mix partial rankings.
     fingerprint = dict(attempts=attempts_used, score_version=SCORE_VERSION)
     destination = folder / f'ranking-{hashlib.sha256(json.dumps(fingerprint).encode()).hexdigest()[:12]}'
-    runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'] / 'cv')
+    runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'],
+                 path=folder / row['attempt'] / backend.output_dir)
             for row in sorted(done, key=lambda row: row['attempt'])]
     ranking = rank_runs(runs, destination)
     print(ranking.head(20).to_string(index=False), flush=True)
+    nowcasts = nowcast.rank(runs, destination / 'nowcast')
+    if nowcasts is not None:
+        print(f'\nNowcast, relative to {nowcast.BASELINE}:', flush=True)
+        print(nowcasts.head(20).to_string(index=False), flush=True)
     return destination
 
 
 def compare(folder, workers=2, allow_incomplete=False):
     """Score completed runs through the existing EpiBench sweep; warn when code versions differ."""
     settings = json.loads((folder / 'experiment.json').read_text())
-    if settings.get('model') == 'B1':
-        from .b1_experiment import postprocess
-        record = dict(status='running', started=now(), **environment())
-        save(folder / 'comparison.json', record)
-        try:
-            destination = postprocess(folder, allow_incomplete=allow_incomplete, plots=True, workers=workers)
-        except (Exception, KeyboardInterrupt) as error:
-            record.update(status='failed', error=str(error), finished=now())
-            save(folder / 'comparison.json', record)
-            raise
-        record.update(status='complete', output=destination.name, finished=now())
-        save(folder / 'comparison.json', record)
-        return destination
+    backend = backend_for(settings)
     done, versions = completed_runs(folder, allow_incomplete)
     runs = sorted(row['attempt'] for row in done)
     # Different compared sets get different destinations; never mix partial rankings.
     destination = folder / f'comparison-{hashlib.sha256(json.dumps(runs).encode()).hexdigest()[:12]}'
-    command = [sys.executable, '-m', 'tapestry.evaluation.sweep', '--runs', *[str(folder / run / 'cv') for run in runs],
+    command = [sys.executable, '-m', 'tapestry.evaluation.sweep',
+               '--runs', *[str(folder / run / backend.output_dir) for run in runs],
                '--frozen', settings['frozen'], '--output', str(destination), '--score-workers', str(workers)]
     record = dict(status='running', command=command, output=destination.name, runs=len(runs),
                   run_versions=sorted(map(list, versions), key=str), started=now(), **environment())
@@ -412,15 +349,14 @@ def main(argv=None):
     parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
-    parser.add_argument('--suite', choices=[*SUITES, 'B1'], default='essential')
+    parser.add_argument('--suite', choices=[*SUITES, 'B1', *BACKENDS['B1'].SUITES], default='essential')
     parser.add_argument('-s', '--scenario', nargs='+', help='Named aliases or full scenario strings; overrides suite')
     parser.add_argument('--seeds', nargs='+', type=int, default=None)
     parser.add_argument('--dataset')
     parser.add_argument('--population-file')
-    parser.add_argument('--frozen', help='Optional for B1; frozen ensemble-supported tasks on the 23-quantile grid')
+    parser.add_argument('--frozen', help='Frozen ensemble-supported tasks on the 23-quantile grid')
     parser.add_argument('--eval-members', type=int)
-    from .b1_experiment import add_plan_args
-    add_plan_args(parser)
+    BACKENDS['B1'].add_plan_args(parser)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda'],
                         help='plan: saved default (cpu); run: override for this invocation')
     parser.add_argument('-t', '--task', nargs='+', type=int, help='run: jobs.csv task numbers (default: all)')
@@ -431,12 +367,15 @@ def main(argv=None):
                              'seeds in sequence; every fit pins two torch threads')
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
-    b1 = args.suite == 'B1' or bool(args.scenario and all(s.startswith('b1:') for s in args.scenario))
-    args.dataset = args.dataset or ('data/processed/build_b1_wednesday.npz' if b1 else 'data/processed/build_b_finalized.npz')
-    args.population_file = args.population_file or f'data/metadata/{"b1" if b1 else "b0"}_locations.csv'
-    args.eval_members = args.eval_members if args.eval_members is not None else (256 if b1 else 2048)
-    if not b1:
-        args.frozen = args.frozen or FROZEN
+    b1_suites = {'B1', *BACKENDS['B1'].SUITES}
+    model = 'B1' if args.suite in b1_suites or (args.scenario and all(s.startswith('b1:') for s in args.scenario)) else 'B0'
+    backend = BACKENDS[model]
+    args.dataset = args.dataset or DATASETS[model]
+    args.population_file = args.population_file or LOCATIONS
+    args.eval_members = args.eval_members if args.eval_members is not None else EVAL_MEMBERS[model]
+    # Both models are ranked on the frozen ensemble-supported tasks, so the
+    # frozen support is required for either; a run that cannot be scored failed.
+    args.frozen = args.frozen or FROZEN
     if args.seeds is None:
         if args.suite == 'B0.1':
             from .b01_suite import expand
@@ -448,19 +387,15 @@ def main(argv=None):
     if len(set(args.seeds)) != len(args.seeds) or min(args.seeds) < 0:
         parser.error('Seeds must be distinct nonnegative integers')
     if args.command in ('list', 'plan'):
-        if b1:
-            from .b1_experiment import scenarios as b1_scenarios
-            scenarios = b1_scenarios(args)
-        else:
-            scenarios = ({name: get_training_scenario(name) for name in args.scenario}
-                         if args.scenario else get_scenarios(args.suite))
+        scenarios = backend.scenarios(args)
         count = len(set(scenarios.values()))
+        # Both models fit one run per configuration/seed and one process per fold.
         counts = dict(configurations=count, seeds=len(args.seeds), runs=count * len(args.seeds),
                       season_fits=count * len(args.seeds) * len(SEASONS))
-        if b1:
-            counts.pop('season_fits')
+        if model == 'B1':
+            # A B1 fold fits one model per independently fitted component group.
             counts['component_fits'] = sum({'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
-                                           for s in set(scenarios.values())) * len(args.seeds)
+                                           for s in set(scenarios.values())) * len(args.seeds) * len(SEASONS)
     if args.command == 'list':
         for name, scenario in scenarios.items():
             info = ESSENTIAL.get(name)
@@ -472,18 +407,11 @@ def main(argv=None):
     folder = experiment_folder(args.root, args.experiment)
     if args.command == 'plan':
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
-                        eval_members=args.eval_members, device=args.device or 'cpu')
-        if b1:
-            from .b1_experiment import settings as b1_settings, prepare
-            settings.update(b1_settings(args))
-            check_inputs(settings)
+                        eval_members=args.eval_members, device=args.device or 'cpu',
+                        suite=args.suite, **backend.settings(args))
+        check_inputs(settings)
         plan(folder, scenarios, args.seeds, settings)
-        if b1:
-            prepare(folder, settings)
-        if args.suite == 'B0.1' and not args.scenario:
-            from .b01_suite import manifest, prepare
-            prepare(folder, settings)
-            save(folder / 'design.json', manifest())
+        backend.prepare(folder, settings)
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
     elif args.command == 'run':
         if run(folder, args.task, args.device, args.keep_going, args.fit_workers):
@@ -502,14 +430,14 @@ def main(argv=None):
         print(json.dumps({status: sum(row['status'] == status for row in rows) for status in sorted({r['status'] for r in rows})}))
     pending = pending_tasks(rows)
     if pending:
-        if json.loads((folder / 'experiment.json').read_text()).get('model') == 'B1':
-            print(f'Shared GPU queue: sbatch --array=0-3 scripts/b1_jlessler.sbatch {args.experiment}')
-            print(f'Locally: python -m tapestry.models.manager run -e {args.experiment} --root {args.root}')
-            return
-        if (folder / 'design.json').exists() and json.loads((folder / 'design.json').read_text()).get('experiment') == 'B0.1':
-            print(f'Patron launcher (saved source snapshot, all manifest tasks): sbatch --array=0-3 scripts/b01_jlessler.sbatch {args.experiment}')
-            return
         root = '' if args.root == 'data/experiments' else f' --root {args.root}'
+        # A source snapshot means the shared dispatcher drains one queue across
+        # the patron GPUs, rather than Slurm slicing static array tasks.
+        if (folder / 'code').is_dir():
+            print(f'Shared GPU queue: sbatch --job-name={args.experiment} --array=0-3 '
+                  f'scripts/jlessler.sbatch {args.experiment}')
+            print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}')
+            return
         print('Pending tasks (check squeue -a before resubmitting). Sweep launcher:')
         for command in array_commands(pending, args.experiment):
             print(command + root)

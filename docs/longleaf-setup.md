@@ -125,10 +125,10 @@ covid CDCgov/covid19-forecast-hub df7965dd1d4832a96fe6712f9de9f000abc01f3e
 rsv CDCgov/rsv-forecast-hub 53baf7db03a2429f5a3710d859319b9029df76cd
 HUBS
 git --git-dir=data/mirrors/hub_flusight_current.git \
-  show HEAD:auxiliary-data/locations.csv > data/metadata/b0_locations.csv
+  show HEAD:auxiliary-data/locations.csv > data/metadata/locations.csv
 printf '%s  %s\n' \
   80aaa24750044a837e063812a1d0a22339c8b3a92513f71a23dac613eaaa29e0 \
-  data/metadata/b0_locations.csv | sha256sum --check
+  data/metadata/locations.csv | sha256sum --check
 )
 ```
 

@@ -10,9 +10,10 @@ from tapestry.model_data.finalized import CHANNELS, season
 from .b0 import fair_crps_cells
 from .b1 import MASK_SCENARIOS
 from .quantiles import LEVELS
+from .season_cv import persistence
 
 
-def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=None):
+def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=None):
     import pandas as pd
     from .b1_run import sample, task_weights
     from tapestry.evaluation.totals import quantile_scores
@@ -23,12 +24,12 @@ def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=No
     if not direct:
         weights *= 2  # Rank forecasting and nowcasting separately, each sums to one.
     scales = models[0].scale.detach().cpu().numpy()
-    for scenario in MASK_SCENARIOS:
+    for stress in MASK_SCENARIOS:
         dropouts, quantiles = [], []
-        # One episode at a time bounds memory; seed is common across model variants.
+        # One episode at a time bounds memory; seed is common across configurations.
         for i, episode in enumerate(episodes):
             samples, d = sample(models, [episode], members=args.evaluation_members,
-                seed=seed + i * 101, device=args.device, scenario=scenario)
+                seed=seed + i * 101, device=args.device, scenario=stress)
             dropouts.append(d[0])
             truth = episode['Y'][hs, :, 0]
             valid = episode['Y'][hs, :, 1].astype(bool)
@@ -40,7 +41,7 @@ def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=No
             metrics = quantile_scores(q[:, valid].T, truth[valid]).to_dict('records')
             for (h, c, l), metric in zip(zip(*np.where(valid)), metrics):
                 target_day = episode['target_dates'][h + (2 if direct else 0)]
-                rows.append(dict(variant=variant, configuration=scenario_string, seed=seed, scenario=scenario,
+                rows.append(dict(config_id=config_id, scenario_string=scenario_string, seed=seed, stress=stress,
                     issuance_date=episode['issuance_date'], target_date=target_day,
                     season=season(date.fromisoformat(target_day)), target=CHANNELS[c],
                     location=ds.locations[l], horizon=h - (0 if direct else 2),
@@ -50,23 +51,27 @@ def evaluate(models, episodes, ds, args, variant, seed, root, scenario_string=No
                     crps=float(crps[h, c, l]), **metric,
                     coverage_50=float(q[6, h, c, l] <= truth[h, c, l] <= q[16, h, c, l]),
                     coverage_95=float(q[1, h, c, l] <= truth[h, c, l] <= q[21, h, c, l])))
-            if i == len(episodes) // 2 and scenario == 'natural':
-                path_graph(samples[:, 0], episode, ds, variant, seed, root, direct)
-        np.savez_compressed(root / f'evaluation-masks-{variant}-s{seed}-{scenario}.npz',
+            if i == len(episodes) // 2 and stress == 'natural':
+                path_graph(samples[:, 0], episode, ds, config_id, seed, root, direct)
+        np.savez_compressed(root / f'evaluation-masks-{config_id}-s{seed}-{stress}.npz',
             D=np.stack(dropouts), issuance_dates=[e['issuance_date'] for e in episodes])
-        np.savez_compressed(root / f'forecasts-{variant}-s{seed}-{scenario}.npz',
+        baseline, baseline_mask = zip(*(persistence(e['X']) for e in episodes))
+        np.savez_compressed(root / f'forecasts-{config_id}-s{seed}-{stress}.npz',
             quantiles=np.stack(quantiles, axis=1), quantile_levels=LEVELS,
             truth=np.stack([e['Y'][hs, :, 0] for e in episodes]),
             mask=np.stack([e['Y'][hs, :, 1].astype(bool) for e in episodes]),
             target_dates=np.array([e['target_dates'][hs] for e in episodes]),
             issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
-            channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4))
+            channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4),
+            # The naive nowcast denominator: the latest value visible on Wednesday,
+            # which for offsets -2/-1 is the preliminary report of that same week.
+            baseline=np.stack(baseline), baseline_mask=np.stack(baseline_mask))
     frame = pd.DataFrame(rows)
-    frame.to_parquet(root / f'scores-{variant}-s{seed}.parquet', index=False)
+    frame.to_parquet(root / f'scores-{config_id}-s{seed}.parquet', index=False)
     return rows
 
 
-def path_graph(samples, episode, ds, variant, seed, root, direct):
+def path_graph(samples, episode, ds, config_id, seed, root, direct):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -83,8 +88,8 @@ def path_graph(samples, episode, ds, variant, seed, root, direct):
         ax.axvline(-.5, color='gray', linestyle='--')
         ax.set_title(CHANNELS[c]);ax.set_xlabel('Offset from following Saturday')
     axes.flat[0].legend(fontsize=8)
-    fig.suptitle(f'{variant}, seed {seed}, {episode["issuance_date"]}, {ds.locations[l]}: paired sampled paths')
-    fig.tight_layout();fig.savefig(root / f'paths-{variant}-s{seed}.png', dpi=160);plt.close(fig)
+    fig.suptitle(f'{config_id}, seed {seed}, {episode["issuance_date"]}, {ds.locations[l]}: paired sampled paths')
+    fig.tight_layout();fig.savefig(root / f'paths-{config_id}-s{seed}.png', dpi=160);plt.close(fig)
 
 
 def data_audit(ds, root):
@@ -139,30 +144,30 @@ def report(rows, ds, root):
     root = Path(root)
     data_audit(ds, root)
     frame = pd.DataFrame(rows)
-    # Compare future cells across all variants present for each seed; nowcasts
+    # Compare future cells across all configurations present for each seed; nowcasts
     # only among models that produce them. Partial manager reports can have
     # different numbers of finished configurations for each seed.
-    keys = ['seed', 'scenario', 'issuance_date', 'target_date', 'target', 'location']
+    keys = ['seed', 'stress', 'issuance_date', 'target_date', 'target', 'location']
     for _, seed_frame in frame.groupby('seed'):
         for recent in (False, True):
             f = seed_frame[seed_frame.horizon.lt(0) if recent else seed_frame.horizon.ge(0)]
-            if not (f.groupby(keys).variant.nunique() == f.variant.nunique()).all():
-                raise ValueError('Comparison variants do not have identical evaluation support')
+            if not (f.groupby(keys).config_id.nunique() == f.config_id.nunique()).all():
+                raise ValueError('Compared configurations do not have identical evaluation support')
     frame['geography'] = np.where(frame.location == 'US', 'US', 'states_dc')
-    summary = frame.groupby(['variant', 'scenario', 'target', 'season', 'geography', 'horizon']).agg(
+    summary = frame.groupby(['config_id', 'stress', 'target', 'season', 'geography', 'horizon']).agg(
         n=('crps', 'size'), crps=('crps', 'mean'), wis=('wis', 'mean'),
         coverage_50=('coverage_50', 'mean'), coverage_95=('coverage_95', 'mean')).reset_index()
     summary.to_csv(root / 'summary.csv', index=False)
     # Separate the four stress scenarios so a formulation grid does not create
     # dozens of overlapping curves/legend entries inside each target panel.
-    for stress in summary.scenario.unique():
+    for stress in summary.stress.unique():
         for metric in ('crps', 'wis', 'coverage_50', 'coverage_95'):
             fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharex=True)
             for c, ax in enumerate(axes.flat):
-                subset = summary[(summary.target == CHANNELS[c]) & (summary.scenario == stress)]
-                for variant, f in subset.groupby('variant'):
+                subset = summary[(summary.target == CHANNELS[c]) & (summary.stress == stress)]
+                for config_id, f in subset.groupby('config_id'):
                     curve = f.groupby('horizon')[metric].mean()
-                    label = variant.rsplit('-', 1)[0].replace('multiscale_conv', 'multi').replace('two_stage', 'two').replace('mask', 'm')
+                    label = config_id.rsplit('-', 1)[0].replace('multiscale_conv', 'multi').replace('two_stage', 'two').replace('mask', 'm')
                     ax.plot(curve.index, curve.values, label=label, alpha=.8)
                 ax.set_title(CHANNELS[c]);ax.set_xlabel('Week offset (negative = nowcast)');ax.set_ylabel(metric)
             handles, labels = axes.flat[0].get_legend_handles_labels()
@@ -173,7 +178,7 @@ def report(rows, ds, root):
             fig.savefig(root / f'{metric}{suffix}-by-horizon.png', dpi=160);plt.close(fig)
     (root / 'README.md').write_text('B1 forward chronological comparison\n\n'
         'See summary.csv and per-cell scores-*.parquet. Recent offsets -2/-1 are reference-final nowcasts; '
-        'future offsets 0–3 are forecasts. All variants use identical eligible future cells and fixed stress masks. '
+        'future offsets 0–3 are forecasts. All configurations use identical eligible future cells and fixed stress masks. '
         'Scores are native-unit diagnostics, with states/DC and US reported separately. Plot curves average the '
         'reported season/geography groups; they are not the scientific selection objective. '
         'This native report is separate from the optional manager Hub benchmark and its narrower support. '

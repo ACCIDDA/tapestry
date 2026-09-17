@@ -100,6 +100,42 @@ class B1Scenario(TrainingScenario):
         return {k: getattr(self, k) for k in MODEL_FIELDS}
 
 
+# B0.1's four best configurations, read from
+# data/experiments/B0.1/ranking-509b07b0d243/configuration_ranking.csv
+# (combined location-relative WIS .8834/.8948/.8949/.8968). All four share
+# h12/4rt/logit/geo/dyn/mlp/no-spatial/z16/w64/lr.001 and differ only in how the
+# six targets are partitioned and in the epoch cap, so the B1 comparison changes
+# the task and the inputs, not the architecture. These are B0's winners carried
+# over, not a claim that they win under Wednesday inputs.
+B0_TOP4 = (
+    dict(fit_partition='target', epochs=100),
+    dict(fit_partition='pathogen', epochs=300),
+    dict(fit_partition='target', epochs=300),
+    dict(fit_partition='pathogen', epochs=100),
+)
+B0_TOP4_BASE = dict(lookback=12, count_transform='fourth_root', ed_transform='logit',
+                    geography=True, dynamics=True, loss_weights='objective', encoder='mlp',
+                    spatial='none', heads='shared', decoder='legacy', noise='global',
+                    us_error='none', latent=16, width=64, patience=30, batch_size=8,
+                    members=128, lr=.001, head_sharing='shared', annual_calendar=True,
+                    location_embedding=0, validation_members=256, weight_decay=0.)
+
+
+def b0_top4(pipeline, mask_rate, **overrides):
+    """B0's four best configurations at one pipeline and masking level.
+
+    `overrides` replaces training-budget fields (width, members, and the epoch
+    cap when a smoke run needs one); the architecture fields are the point of the
+    suite and are not overridable.
+    """
+    scenarios = []
+    for recipe in B0_TOP4:
+        options = dict(B0_TOP4_BASE, **recipe, pipeline=pipeline, mask_rate=float(mask_rate))
+        options.update({k: v for k, v in overrides.items() if v is not None})
+        scenarios.append(B1Scenario(**options))
+    return scenarios
+
+
 # Exact B0 formulation choices, adapted to the B1 data/decoder contract. Scores
 # motivated inclusion; they do not establish these architectures as B1 winners.
 PRESETS = {
@@ -142,10 +178,19 @@ def resolve(args):
     return replace(base, **overrides)
 
 
-def comparison_grid(base, presets=None, mask_rates=(0., .25, .5)):
-    """One natural direct control plus two-stage masking levels per formulation."""
+def comparison_grid(base, presets=None, mask_rates=(0., .25, .5), pipelines=None):
+    """Masking levels per formulation, for the requested pipelines.
+
+    `pipelines=None` keeps the full contrast: an unmasked direct control plus a
+    two-stage model at each masking rate. Naming one pipeline isolates a single
+    factor — `two_stage` with `mask_rates=[0]` adds nowcasting to B0's
+    information state, `direct` with `mask_rates=[.5]` adds masking to B0's task.
+    """
     if not mask_rates:
         raise ValueError('At least one masking rate is required')
+    pipelines = tuple(pipelines) if pipelines else ('direct', 'two_stage')
+    if any(p not in ('direct', 'two_stage') for p in pipelines):
+        raise ValueError('Pipelines must be direct and/or two_stage')
     recipes = [base]
     if presets:
         # Presets control architecture and fit grouping. Global training settings,
@@ -155,9 +200,10 @@ def comparison_grid(base, presets=None, mask_rates=(0., .25, .5)):
         recipes = [replace(base, **{k: getattr(PRESETS[name], k) for k in varying}) for name in presets]
     candidates = {}
     for recipe in recipes:
-        for candidate in [replace(recipe, pipeline='direct', mask_rate=0.),
-                          *(replace(recipe, pipeline='two_stage', mask_rate=float(p)) for p in mask_rates)]:
-            candidates[candidate.scenario_string] = candidate
+        for pipeline in pipelines:
+            for rate in mask_rates:
+                candidate = replace(recipe, pipeline=pipeline, mask_rate=float(rate))
+                candidates[candidate.scenario_string] = candidate
     return list(candidates.values())
 
 
