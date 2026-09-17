@@ -465,12 +465,12 @@
   function markerSVG(item, cx, cy) {
     const color = seriesColor(item);
     const fill = item.versionIndex ? "var(--paper)" : color;
-    const attrs = `stroke="${color}" stroke-width="1.4" fill="${fill}" class="series-marker"`;
-    const r = 3.4;
+    const attrs = `stroke="${color}" stroke-width="1" fill="${fill}" class="series-marker"`;
+    const r = 2.5;
     switch (MARKERS[seriesIndex(item) % MARKERS.length]) {
       case "square": return `<rect x="${(cx - r).toFixed(1)}" y="${(cy - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" ${attrs}></rect>`;
       case "triangle": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} L${(cx - r).toFixed(1)},${(cy + r * 0.8).toFixed(1)} Z" ${attrs}></path>`;
-      case "cross": return `<path d="M${(cx - r).toFixed(1)},${(cy - r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r).toFixed(1)} M${(cx - r).toFixed(1)},${(cy + r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy - r).toFixed(1)}" stroke="${color}" stroke-width="1.8" fill="none" class="series-marker"></path>`;
+      case "cross": return `<path d="M${(cx - r).toFixed(1)},${(cy - r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy + r).toFixed(1)} M${(cx - r).toFixed(1)},${(cy + r).toFixed(1)} L${(cx + r).toFixed(1)},${(cy - r).toFixed(1)}" stroke="${color}" stroke-width="1.3" fill="none" class="series-marker"></path>`;
       case "diamond": return `<path d="M${cx.toFixed(1)},${(cy - r - 0.6).toFixed(1)} L${(cx + r + 0.6).toFixed(1)},${cy.toFixed(1)} L${cx.toFixed(1)},${(cy + r + 0.6).toFixed(1)} L${(cx - r - 0.6).toFixed(1)},${cy.toFixed(1)} Z" ${attrs}></path>`;
       default: return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" ${attrs}></circle>`;
     }
