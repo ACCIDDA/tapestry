@@ -191,7 +191,7 @@ The printed folder holds `configuration_ranking.csv`, `run_scores.csv`, and
 
 Benchmark recorded 2026-09-15 UTC for the raw-count B0 baseline: 50 epochs,
 eight history weeks, objective loss weights, three season folds per seed,
-2,048 evaluation samples per forecast date, and frozen 23-quantile scoring.
+256 evaluation samples per forecast date, and frozen 23-quantile scoring.
 The comparison below covers three seeds (42, 43, 44), or nine season fits.
 
 | Component | CPU: 3 seeds estimated | L40 GPU: 3 seeds measured |

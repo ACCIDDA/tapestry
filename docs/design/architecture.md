@@ -127,7 +127,7 @@ fair_CRPS = mean_m |sample_m - y|
 The first term measures error; the second accounts for predictive spread.
 The fair correction uses distinct member pairs. Scoring follows inverse
 transforms, in admission counts and ED proportions. B0.1 used 128 training
-members, 256 fixed validation members, and 2,048 evaluation members.
+members, 256 fixed validation members, and 256 evaluation members.
 
 ### Loss scales and weights {#82-design-choices-for-b0-loss-and-weights}
 

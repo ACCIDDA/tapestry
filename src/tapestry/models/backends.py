@@ -22,7 +22,7 @@ from tapestry.model_data.wednesday import DEFAULT_DATASET as B1_DATASET
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 LOCATIONS = 'data/metadata/locations.csv'
 DATASETS = {'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET}
-EVAL_MEMBERS = {'B0': 2048, 'B1': 256}
+EVAL_MEMBERS = {'B0': 256, 'B1': 256}
 
 
 def sha(path):

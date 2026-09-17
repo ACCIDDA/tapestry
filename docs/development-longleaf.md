@@ -89,7 +89,7 @@ From `/Users/chadi/Research/Tapestry`:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m tapestry.models.season_cv \
-  --device cpu --epochs 50 --eval-members 2048 \
+  --device cpu --epochs 50 --eval-members 256 \
   --output data/experiments/b0_season_cv_repeat
 ```
 

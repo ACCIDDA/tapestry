@@ -289,7 +289,7 @@ def train(args, scenario=None):
         dataset_sha256=hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
         mask_probabilities=list(scenario.mask_probabilities), training_members=scenario.members,
-        validation_members=scenario.validation_members, records=records,
+        validation_members=scenario.validation_members, eval_members=args.eval_members, records=records,
         selection_objective='forecast' if scenario.pipeline != 'two_stage' else 'equal recent and forecast',
         auxiliary_coefficient=.25 if scenario.pipeline == 'joint_aux025' else None,
         objective=('forecast + .25 recent; each task uses partition-wide scientific weights, visible finals excluded'

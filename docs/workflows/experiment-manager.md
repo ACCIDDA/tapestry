@@ -92,7 +92,7 @@ The scenario string is the configuration ID in every ranking and comparison outp
 and a run appends its seed: `<scenario>:s42`. Code, data, and git versions are
 provenance, not part of the ID.
 
-The dataset, population file, frozen scoring inputs, evaluation draws (2,048 by
+The dataset, population file, frozen scoring inputs, evaluation draws (256 by
 default), and device are experiment settings in `experiment.json`, not scenario fields.
 
 ## Suites
@@ -133,7 +133,7 @@ array task per configuration.
 | Stopping (`ep`, `pat`) | fixed 50 epochs; early stopping with patience 20 and a 300-epoch cap |
 
 Fixed: geography features, loss weights `[1,1,1,.5,.5,.5]` (matching the selection
-score), width 64, batch size 8, 8 training draws, learning rate .001, and 2,048
+score), width 64, batch size 8, 8 training draws, learning rate .001, and 256
 evaluation draws. The baseline is raw counts, 8 weeks, no geography or dynamics,
 the `legacy` decoder, linear ED inputs, and fixed 50 epochs, with the same loss
 weights. A transform sets both the input representation and the space where
@@ -349,7 +349,7 @@ latent size. Loss weights never change native-unit channel/location normalizatio
 Unsupervised auxiliary outputs in `flu_only` are not trained auxiliary forecasts.
 
 Scenario defaults: width 64, 50 epochs with no early stopping, learning rate .001,
-batch size 8, and 8 training draws. Experiment defaults: 2,048 evaluation draws,
+batch size 8, and 8 training draws. Experiment defaults: 256 evaluation draws,
 seeds 42/43/44, four horizons, and three seasons. Parameter counts are saved for
 every fold. History changes MLP input size; convolution reuses its filters across
 weeks. These are fixed-width recipe comparisons, not parameter-count-matched

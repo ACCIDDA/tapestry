@@ -1,3 +1,15 @@
+# Evaluation budget update — 2026-09-17
+
+New B0/B1 plans and standalone evaluation default to 256 trajectories. Ten-fit
+mixtures therefore pool 2,560 draws. The original execution below and its
+completed seed42 comparison used 2,048 trajectories; these are historical
+results, not 256-trajectory results. Saved experiment plans and source snapshots
+remain pinned to their original settings. Do not resume those as a 256-draw
+experiment: re-evaluate reused checkpoints and plan the remaining fits with
+`--eval-members 256` in a new experiment before comparing them. The report now
+reads the actual attempt budget and rejects mixed-budget comparisons. No
+overnight job was launched by this update.
+
 # B1 decisive execution
 
 This implements `b1-decisive-experiment.md` at handoff 33412b2. The experiment

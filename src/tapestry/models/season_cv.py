@@ -324,7 +324,7 @@ def build_parser():
     parser.add_argument('--batch-size', type=int, default=8)
     parser.add_argument('--members', type=int, default=128,
                         help='Training draws per episode; fair CRPS is unbiased at any m >= 2, so this trades time for gradient variance')
-    parser.add_argument('--eval-members', type=int, default=2048)
+    parser.add_argument('--eval-members', type=int, default=256)
     parser.add_argument('--lr', type=float, default=.001)
     parser.add_argument('--seed', type=int, default=42)
     add_experiment_args(parser)

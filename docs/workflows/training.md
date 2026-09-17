@@ -189,7 +189,7 @@ Every fold excludes the held-out season from fitting contexts, labels and scales
 Evaluation conditions on already observed past context, including within that
 season, and scores only target weeks in the held-out season. Weekly origins use
 four future leads; the default history is eight weeks. Forecast files retain the
-hub's 23 quantiles from 2,048 draws and 100 complete sample members per origin. Admissions
+hub's 23 quantiles from 256 draws and 100 complete sample members per origin. Admissions
 are rounded half-up for the CV export; ED values remain proportions.
 
 Only training on 2023–24 and 2024–25 to evaluate 2025–26 is chronological. The

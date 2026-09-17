@@ -1,5 +1,11 @@
 # GPU-only one-seed iteration
 
+Completed results and timing are in [b1-seed42-results.md](b1-seed42-results.md).
+The commands below record the completed 2,048-draw execution. New evaluations
+default to 256. The overnight commands below resume the original pinned
+2,048-draw plans; they must not be used for a new 256-draw comparison.
+
+
 2026-09-17: the user cancelled the ten-seed daytime execution and its final
 report, retaining the plans for an overnight run. The proposed CPU screen was
 withdrawn before submission; its launcher, instructions and unused experiment

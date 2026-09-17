@@ -87,3 +87,15 @@ def test_temporal_blocks_preserve_scientific_ratios_and_pairing():
     b = a.sample(frac=1, random_state=51).copy(); b['model_wis'] *= .9
     intervals = temporal_intervals({'A': a, 'B': b}, 8, repetitions=100)
     np.testing.assert_allclose([intervals[0]['relative_low'], intervals[0]['relative_high']], [-.1, -.1])
+
+
+def test_evaluation_budget_uses_attempt_provenance(tmp_path):
+    import json
+    from tapestry.evaluation.decisive import evaluation_members
+    run = tmp_path / 'attempt-001' / 'b1'
+    run.mkdir(parents=True)
+    (run / 'manifest.json').write_text('{}')
+    (run.parent / 'run.json').write_text(json.dumps({'settings': {'eval_members': 2048}}))
+    assert evaluation_members(run) == 2048
+    (run / 'manifest.json').write_text(json.dumps({'eval_members': 256}))
+    assert evaluation_members(run) == 256

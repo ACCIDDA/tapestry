@@ -19,6 +19,14 @@ CELL_KEYS = ['season', 'target', *KEY]
 EXPERIMENTS = ('B1-onlymask-refit', 'B1-direct-finalflag', 'B1-joint-aux025')
 
 
+def evaluation_members(run):
+    """Read the actual fitted attempt's budget, never a subsequently edited plan."""
+    meta = json.loads((run / 'manifest.json').read_text())
+    if 'eval_members' in meta:
+        return int(meta['eval_members'])
+    return int(json.loads((run.parent / 'run.json').read_text())['settings']['eval_members'])
+
+
 def regenerate_draws(run, dataset, device):
     """Recover raw members from compatible checkpoints, verifying archived quantiles/masks."""
     from tapestry.model_data.wednesday import WednesdayDataset
@@ -42,7 +50,7 @@ def regenerate_draws(run, dataset, device):
             archive = np.load(folder / f'forecasts-{prefix}-{stress}.npz')
             masks = np.load(folder / f'evaluation-masks-{prefix}-{stress}.npz')
             assert list(archive['issuance_dates']) == [e['issuance_date'] for e in episodes]
-            members = 2048  # Checked against each experiment's settings by compare().
+            members = evaluation_members(run)
             temporary = folder / f'draws-{prefix}-{stress}.tmp.npy'
             draws = None
             for i, episode in enumerate(episodes):
@@ -96,7 +104,7 @@ def mixture(runs, destination, dataset, device):
                 else:
                     pooled_parts, common_mask = [], None
                     for bundle, m in zip(models, metas):
-                        values, mask = sample(bundle, [episodes[i]], members=2048,
+                        values, mask = sample(bundle, [episodes[i]], members=draws[0].shape[1],
                             seed=m['seed'] + i * 101, mask_seed=42 + i * 101,
                             device=device, scenario=stress, sample_batch=256)
                         if common_mask is None:
@@ -200,17 +208,22 @@ def compare(root, output, device='cuda', repetitions=2000):
     from concurrent.futures import ProcessPoolExecutor
     from multiprocessing import get_context
     recovery = []
+    member_counts = set()
     for experiment in EXPERIMENTS:
         folder = root / experiment
         settings = json.loads((folder / 'experiment.json').read_text())
         done, _ = completed_runs(folder, False)
         for row in done:
             run = folder / row['attempt'] / 'b1'
+            member_counts.add(evaluation_members(run))
             meta = json.loads((run / 'manifest.json').read_text())
             prefix = f"{meta['run_id']}-s{meta['seed']}"
             if any(not (run / f'eval_{held}/draws-{prefix}-{stress}.npy').exists()
                    for held in SEASONS for stress in MASK_SCENARIOS):
                 recovery.append((run, settings['dataset'], device))
+    if len(member_counts) != 1:
+        raise ValueError('Re-evaluate completed checkpoints to a common trajectory count before comparing seeds')
+    members = member_counts.pop()
     if recovery:
         with ProcessPoolExecutor(max_workers=min(3, len(recovery)), mp_context=get_context('spawn')) as pool:
             futures = [pool.submit(regenerate_draws, *args) for args in recovery]
@@ -222,8 +235,6 @@ def compare(root, output, device='cuda', repetitions=2000):
     for label, experiment in zip('ABC', EXPERIMENTS):
         folder = root / experiment
         settings = json.loads((folder / 'experiment.json').read_text())
-        if settings['eval_members'] != 2048:
-            raise ValueError('The decisive experiment requires the compatible 2048-member evaluation')
         done, _ = completed_runs(folder, False)
         if sorted(row['seed'] for row in done) != list(range(42, 52)):
             raise ValueError('Require exactly seeds 42 through 51 and one candidate per experiment')
@@ -302,7 +313,7 @@ def compare(root, output, device='cuda', repetitions=2000):
     pd.concat(calibration, ignore_index=True).to_csv(output / 'calibration.csv', index=False)
     pd.DataFrame(temporal).to_csv(output / 'temporal-uncertainty.csv', index=False)
     recent_diagnostics(all_runs['C'], output)
-    write_recommendation(scores, pd.DataFrame(paired), pd.DataFrame(temporal), output)
+    write_recommendation(scores, pd.DataFrame(paired), pd.DataFrame(temporal), output, members)
 
 
 def recent_diagnostics(runs, output):
@@ -331,7 +342,7 @@ def recent_diagnostics(runs, output):
     pd.DataFrame(rows).to_csv(output / 'recent-loss-contributions.csv', index=False)
 
 
-def write_recommendation(scores, paired, temporal, output):
+def write_recommendation(scores, paired, temporal, output, members=256):
     mix = scores[scores.kind.eq('mixture')].pivot(index='stress', columns='candidate', values='objective')
     eligible, reasons = [], []
     for label in 'BC':
@@ -359,7 +370,7 @@ def write_recommendation(scores, paired, temporal, output):
         reasons.append('When both beat A, C advances over B only if both paired-seed and primary temporal intervals support improvement; otherwise B is simpler.')
     text = f'# B1 decisive experiment\n\nRecommendation: **{chosen}**.\n\n' + '\n\n'.join(reasons)
     text += '\n\n' + mix.to_string() + '\n\nScores are location-relative forecast WIS, equal seasons. Lower is better. '
-    text += ('Mixtures pool 2,048 raw members from each of ten fitted distributions (20,480 draws), before quantiles. '
+    text += (f'Mixtures pool {members:,} raw members from each of ten fitted distributions ({10 * members:,} draws), before quantiles. '
              'Seed intervals bootstrap paired fits; temporal intervals resample weekly origins in season-stratified moving blocks '
              '(8 weeks primary, 4/12 sensitivity; 2,000 draws). All locations, targets and horizons move together. '
              'Thresholds, block lengths, auxiliary weight .25 and the interval gate are engineering assumptions. '
@@ -402,6 +413,10 @@ def screen(root, output, seed=42):
     if any(v['input_sha256'] != settings['A']['input_sha256'] for v in settings.values()):
         raise ValueError('Single-seed inputs or frozen support differ')
     from .totals import rank as rank_runs
+    member_counts = {evaluation_members(run) for run in runs.values()}
+    if len(member_counts) != 1:
+        raise ValueError('Single-seed candidates must use a common evaluation trajectory count')
+    members = member_counts.pop()
     rank_runs([dict(config_id=label, seed=seed, path=run) for label, run in runs.items()], output)
     records, calibration, uncertainty = [], [], []
     for stress in MASK_SCENARIOS:
@@ -435,7 +450,7 @@ def screen(root, output, seed=42):
     pd.DataFrame(contrasts).to_csv(output / 'paired-differences.csv', index=False)
     best = table.loc['natural'].idxmin()
     text = (f'# Full-budget seed {seed} screen\n\nLowest natural forecast point score: **{best}**.\n\n'
-            + table.to_string() + '\n\nOne seed per candidate, all three folds, full training and 2,048 evaluation draws. '
+            + table.to_string() + f'\n\nOne seed per candidate, all three folds, full training and {members:,} evaluation draws. '
             'A is reused; no reduced-epoch or CPU fits are included. '
             'The natural totals reproduce the ranked scores, and stress masks and frozen task keys match. '
             'Paired differences are one fitted-seed contrast, not an estimate of seed uncertainty. '
