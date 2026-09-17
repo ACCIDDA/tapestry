@@ -117,7 +117,8 @@ def partitions(ds, args):
     if not args.retrospective:
         raise ValueError('Leave-one-season-out CV pins truth after each fold; pass --retrospective '
                          'to acknowledge these are retrospective development fits, not operational ones.')
-    fitting, validation, _, _ = fold(ds, args.held_out_season)
+    fitting, validation, _, _ = fold(ds, args.held_out_season,
+                                     min_availability=getattr(args, 'min_availability', 0.))
     return fitting, validation
 
 
@@ -342,6 +343,9 @@ def main(argv=None):
                            help='Draws for the held-out season forecasts this fold writes')
             p.add_argument('--retrospective', action='store_true',
                            help='Acknowledge that leave-one-season-out CV pins truth after each fold')
+            p.add_argument('--min-availability', type=float, default=0.,
+                           help='Drop fitting/validation episodes below this mean input '
+                                'availability; evaluation is never filtered')
     args = parser.parse_args(argv)
     try:
         if args.command == 'scenario':

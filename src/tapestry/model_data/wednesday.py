@@ -265,10 +265,18 @@ class WednesdayDataset:
                         archive_issuances=len(a['issuance_dates']), model_issuances=int(rows.sum()))
         return WednesdayDataset(arrays, metadata)
 
-    def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True):
+    def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True,
+                 min_availability=0.):
+        """Keep episodes with inputs and labels, including supplied-final inputs.
+
+        Optional min_availability filters on availability after final filling;
+        its zero default retains sparse episodes.
+        """
         a = self.model_view().arrays
         for i, issuance in enumerate(a['issuance_dates']):
             if (start and issuance < start) or (end and issuance > end):
+                continue
+            if min_availability and a['X_available'][i].mean() < min_availability:
                 continue
             y = np.concatenate((a['Y_recent'][i], a['Y_future'][i]))
             valid = np.concatenate((a['Y_recent_valid'][i], a['Y_future_valid'][i])).copy()

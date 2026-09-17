@@ -79,12 +79,16 @@ def _keep_labels(episode, x, allowed):
     return {**episode, 'X': x, 'Y': y}
 
 
-def fold(ds, held_out):
+def fold(ds, held_out, min_availability=0.):
     """Return (fitting, validation, evaluation) episodes for one held-out season.
 
     Fitting and validation come from the two training seasons with held-out and
     hidden weeks zeroed everywhere. Evaluation keeps the dataset's retrospective
     context (including supplied finals) and scores only held-out weeks.
+
+    `min_availability` drops sparse episodes from fitting and validation only.
+    Evaluation is never filtered: the scored tasks must stay identical to B0's,
+    or the ensemble-relative comparison stops being like-for-like.
     """
     if held_out not in SEASONS:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
@@ -105,11 +109,12 @@ def fold(ds, held_out):
     fitting, validation, evaluation = [], [], []
     for episode in ds.episodes(supervised=False):
         masked = _mask_context(episode, blocked)
+        sparse = min_availability and masked[:, :, 1].mean() < min_availability
         kept = _keep_labels(episode, masked, inner)
-        if kept is not None:
+        if kept is not None and not sparse:
             fitting.append(kept)
         kept = _keep_labels(episode, masked, hidden)
-        if kept is not None:
+        if kept is not None and not sparse:
             validation.append(kept)
         # Evaluation keeps the retrospective conditioning state: nothing is hidden
         # at prediction time except weeks B0's panel does not have either.
