@@ -19,6 +19,12 @@ attribution suites, `--suite B1-onlynowcast` / `--suite B1-onlymask`, which run
 B0's four best configurations while changing exactly one thing. See the
 [B1 design](../design/b1.md#named-experiments-and-cluster-launch).
 
+The [B1 overnight screen](b1-overnight.md), `--suite B1-overnight`, expands 40
+configurations around four successful B0 architectures: forecast/nowcast
+formulations, masking rates and mechanisms, and an auxiliary-nowcast
+outage comparison. Its six-GPU launch uses eight concurrent seed runs per GPU and the
+shared dispatcher queue. Planning does not submit jobs.
+
 The manager uses an immutable `TrainingScenario`, a short readable scenario
 string, a job list whose rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV
 files and the existing CV/EpiBench commands, with no MLflow server.

@@ -190,6 +190,7 @@ class B1Backend:
         'B1-decisive-A': dict(pipeline='direct', mask_rate=.5),
         'B1-direct-finalflag': dict(pipeline='direct_finalflag', mask_rate=.5),
         'B1-joint-aux025': dict(pipeline='joint_aux025', mask_rate=.5),
+        'B1-overnight': {},
     }
 
     def scenarios(self, args):
@@ -200,6 +201,9 @@ class B1Backend:
         # an explicit flag overrides, which is what makes a cheap smoke run of
         # the real suite possible without redefining it.
         budget = {key: getattr(args, key) for key in self.BUDGET}
+        if args.suite == 'B1-overnight':
+            from .b1_overnight import scenarios
+            return scenarios(**budget)
         if args.suite in self.SUITES:
             recipes = b0_top4(**self.SUITES[args.suite], **budget)
             if args.suite in ('B1-decisive-A', 'B1-direct-finalflag', 'B1-joint-aux025'):
@@ -234,7 +238,11 @@ class B1Backend:
                 raise ValueError(f'B1 input changed since planning: {path}; use a new experiment')
 
     def prepare(self, folder, settings):
-        snapshot(folder, settings, extra=[Path(__file__).parents[3] / 'docs/design/b1.md'])
+        root = Path(__file__).parents[3]
+        extra = [root / 'docs/design/b1.md']
+        if settings['suite'] == 'B1-overnight':
+            extra.append(root / 'docs/workflows/b1-overnight.md')
+        snapshot(folder, settings, extra=extra)
 
     def fit_commands(self, scenario, seed, settings, output):
         """One process per leave-one-season-out fold, as B0 fits three folds."""
