@@ -24,6 +24,8 @@ def regenerate_draws(run, dataset, device):
     from tapestry.model_data.wednesday import WednesdayDataset
     from tapestry.models.b1_run import crop_episodes, load_models, sample
     from tapestry.models.b1_seasons import fold
+    import torch
+    torch.set_num_threads(1)
     ds = WednesdayDataset.load(dataset)
     meta = json.loads((run / 'manifest.json').read_text())
     seed, prefix = meta['seed'], f"{meta['run_id']}-s{meta['seed']}"
@@ -96,7 +98,7 @@ def mixture(runs, destination, dataset, device):
                     for bundle, m in zip(models, metas):
                         values, mask = sample(bundle, [episodes[i]], members=2048,
                             seed=m['seed'] + i * 101, mask_seed=42 + i * 101,
-                            device=device, scenario=stress)
+                            device=device, scenario=stress, sample_batch=256)
                         if common_mask is None:
                             common_mask = mask
                         else:
@@ -193,6 +195,27 @@ def temporal_intervals(frames, length, repetitions=2000):
 
 def compare(root, output, device='cpu', repetitions=2000):
     output.mkdir(parents=True, exist_ok=True)
+    # Recover the three reused A seeds concurrently in isolated CUDA processes.
+    # Process isolation preserves each archived generator stream exactly.
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import get_context
+    recovery = []
+    for experiment in EXPERIMENTS:
+        folder = root / experiment
+        settings = json.loads((folder / 'experiment.json').read_text())
+        done, _ = completed_runs(folder, False)
+        for row in done:
+            run = folder / row['attempt'] / 'b1'
+            meta = json.loads((run / 'manifest.json').read_text())
+            prefix = f"{meta['run_id']}-s{meta['seed']}"
+            if any(not (run / f'eval_{held}/draws-{prefix}-{stress}.npy').exists()
+                   for held in SEASONS for stress in MASK_SCENARIOS):
+                recovery.append((run, settings['dataset'], device))
+    if recovery:
+        with ProcessPoolExecutor(max_workers=min(3, len(recovery)), mp_context=get_context('spawn')) as pool:
+            futures = [pool.submit(regenerate_draws, *args) for args in recovery]
+            for future in futures:
+                future.result()
     all_runs, records, calibration, paired, temporal = {}, [], [], [], []
     natural_reference = None
     masks_by_seed = {}

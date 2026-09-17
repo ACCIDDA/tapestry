@@ -36,6 +36,10 @@ It does not identify the historical B0/B1 input effect or operational performanc
   raw draws. Stress mixture draws are regenerated from checkpoints under the
   common masks. Each mixture pools 2,048 draws per seed, 20,480 total per cell,
   before quantiles and the existing admissions rounding. No quantile averaging.
+  Common-mask stress inference batches 256 members per call for throughput; this
+  samples the same predictive distribution but uses a different reproducible CUDA
+  random stream layout from archived 32-member calls. Recovery of A retains the
+  original 32-member calls and uses isolated processes to preserve each stream.
 - Seed uncertainty: percentile 95% bootstrap intervals, 10,000 paired seed
   resamples. Temporal uncertainty: percentile 95% intervals, 2,000 paired moving
   block resamples of weekly forecast origins within each season, 8 weeks primary,
