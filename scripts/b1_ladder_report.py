@@ -108,10 +108,12 @@ def stress_table(experiment):
 def nowcast_support(experiment):
     """Nowcast skill for two-stage arms, as written by the fold scorer."""
     rows = []
+    # Written once per run at the b1/ level, not per evaluation fold.
     for path in sorted(Path('data/experiments', experiment).glob(
-            '*/s*/attempt-*/b1/eval_*/nowcast-support.json')):
+            '*/s*/attempt-*/b1/nowcast-support.json')):
         payload = json.loads(path.read_text())
-        rows.append(dict(experiment=experiment, season=path.parent.name.removeprefix('eval_'),
+        seed = path.parents[2].name.removeprefix('s')
+        rows.append(dict(experiment=experiment, seed=int(seed),
                          **{k: v for k, v in payload.items() if not isinstance(v, (list, dict))}))
     return pd.DataFrame(rows)
 
@@ -203,11 +205,27 @@ def main():
     print('\n' + '=' * 78)
     print('Nowcast skill, visible supplied finals excluded by the scorer')
     print('=' * 78)
-    nowcast = pd.concat([nowcast_support(a) for a in available], ignore_index=True)
-    if nowcast.empty:
-        print('No nowcast-support.json found; the direct arms do not nowcast.')
+    parts = []
+    for arm in available:
+        folders = sorted(Path('data/experiments', arm).glob('ranking-*/nowcast/run_scores.csv'))
+        if not folders:
+            continue  # direct arms have no nowcast stage
+        frame = pd.read_csv(folders[-1])
+        frame = frame[frame.geography == 'all']
+        support = nowcast_support(arm)
+        parts.append(dict(arm=arm, condition=LABEL.get(arm, ''), seeds=len(frame),
+                          skill=frame.combined.mean(),
+                          sd=frame.combined.std(ddof=1) if len(frame) > 1 else np.nan,
+                          scored_cells=int(support.scored_cells.sum()) if not support.empty else 0,
+                          excluded_supplied_final=int(support.excluded_supplied_final.sum())
+                          if not support.empty else 0))
+    if not parts:
+        print('No nowcast ranking found; the direct arms do not nowcast.')
     else:
-        print(nowcast.to_string(index=False))
+        print(pd.DataFrame(parts).to_string(index=False, float_format=lambda x: f'{x:.4f}'))
+        print('\n`skill` is model WIS / latest-visible-input persistence WIS; <1 beats persistence.')
+        print('Visible supplied finals are excluded by the scorer, so copying a known')
+        print('answer cannot be counted as reconstruction skill.')
 
     if args.output:
         args.output.write_text(json.dumps(dict(
