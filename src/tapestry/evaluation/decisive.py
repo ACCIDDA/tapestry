@@ -176,10 +176,13 @@ def temporal_intervals(frames, length, repetitions=2000):
         estimates[label] = ((counts[usable] @ numerator) / den[usable]) @ weights
         np.testing.assert_allclose((numerator.sum(0) / denominator.sum(0)) @ weights, scalar(frame), rtol=1e-12)
     rows = []
-    for candidate in labels[1:]:
-        diff = estimates[candidate] - estimates[labels[0]]
-        rel = estimates[candidate] / estimates[labels[0]] - 1
-        rows.append(dict(candidate=candidate, baseline=labels[0], block_weeks=length,
+    pairs = [(candidate, labels[0]) for candidate in labels[1:]]
+    if len(labels) == 3:
+        pairs.append((labels[2], labels[1]))
+    for candidate, baseline in pairs:
+        diff = estimates[candidate] - estimates[baseline]
+        rel = estimates[candidate] / estimates[baseline] - 1
+        rows.append(dict(candidate=candidate, baseline=baseline, block_weeks=length,
             repetitions=repetitions, excluded_missing_support=int((~usable).sum()),
             difference_low=np.quantile(diff, .025), difference_high=np.quantile(diff, .975),
             relative_low=np.quantile(rel, .025), relative_high=np.quantile(rel, .975)))
@@ -233,17 +236,17 @@ def compare(root, output, device='cpu', repetitions=2000):
     rng = np.random.default_rng(20260917)
     for stress, part in seed_scores.groupby('stress'):
         wide = part.pivot(index='seed', columns='candidate', values='objective')
-        for label in 'BC':
-            diffs = wide[label] - wide.A
-            relative = wide[label] / wide.A - 1
+        for label, baseline in (('B', 'A'), ('C', 'A'), ('C', 'B')):
+            diffs = wide[label] - wide[baseline]
+            relative = wide[label] / wide[baseline] - 1
             indices = rng.integers(0, len(wide), size=(10000, len(wide)))
             boot = diffs.to_numpy()[indices].mean(1)
-            relboot = wide[label].to_numpy()[indices].mean(1) / wide.A.to_numpy()[indices].mean(1) - 1
-            paired.append(dict(candidate=label, stress=stress, mean_difference=diffs.mean(), seed_sd=diffs.std(),
-                relative_change=wide[label].mean()/wide.A.mean()-1, seeds_better=int((diffs < 0).sum()),
+            relboot = wide[label].to_numpy()[indices].mean(1) / wide[baseline].to_numpy()[indices].mean(1) - 1
+            paired.append(dict(candidate=label, baseline=baseline, stress=stress, mean_difference=diffs.mean(), seed_sd=diffs.std(),
+                relative_change=wide[label].mean()/wide[baseline].mean()-1, seeds_better=int((diffs < 0).sum()),
                 seed_ci_low=np.quantile(boot, .025), seed_ci_high=np.quantile(boot, .975),
                 relative_low=np.quantile(relboot, .025), relative_high=np.quantile(relboot, .975)))
-            pd.DataFrame(dict(seed=wide.index, difference=diffs, relative_change=relative)).to_csv(output / f'paired-{label}-minus-A-{stress}.csv', index=False)
+            pd.DataFrame(dict(seed=wide.index, difference=diffs, relative_change=relative)).to_csv(output / f'paired-{label}-minus-{baseline}-{stress}.csv', index=False)
     pd.DataFrame(paired).to_csv(output / 'paired-summary.csv', index=False)
     mixtures = {label: mixture(runs, output / f'mixture-{label}', settings['dataset'], device) for label, runs in all_runs.items()}
     for stress in MASK_SCENARIOS:
@@ -309,9 +312,9 @@ def write_recommendation(scores, paired, temporal, output):
     for label in 'BC':
         natural = mix.loc['natural', label] / mix.loc['natural', 'A'] - 1
         stresses = mix.loc[['recent', 'gap', 'outage'], label] / mix.loc[['recent', 'gap', 'outage'], 'A'] - 1
-        pair = paired[paired.candidate.eq(label)]
+        pair = paired[paired.candidate.eq(label) & paired.baseline.eq('A')]
         primary = pair[pair.stress.eq('natural')].iloc[0]
-        interval = temporal[(temporal.kind == 'mixture') & (temporal.candidate == label) &
+        interval = temporal[(temporal.kind == 'mixture') & (temporal.candidate == label) & (temporal.baseline == 'A') &
                             (temporal.stress == 'natural') & (temporal.block_weeks == 8)].iloc[0]
         # Conservative operationalization of "supported" and "ambiguous": both
         # fitting-randomness and primary date intervals must exclude no improvement.
@@ -321,7 +324,14 @@ def write_recommendation(scores, paired, temporal, output):
         if passes:
             eligible.append(label)
         reasons.append(f'{label}: mixture natural change {natural:+.2%}; worst mixture stress change {stresses.max():+.2%}; passes predeclared gate: {passes}.')
-    chosen = eligible[0] if eligible else 'A'  # A < B < C in complexity; uncertainty favors simplicity.
+    chosen = eligible[0] if eligible else 'A'
+    if eligible == ['B', 'C']:
+        cb = paired[(paired.candidate == 'C') & (paired.baseline == 'B') & (paired.stress == 'natural')].iloc[0]
+        ti = temporal[(temporal.candidate == 'C') & (temporal.baseline == 'B') &
+                      (temporal.kind == 'mixture') & (temporal.stress == 'natural') & (temporal.block_weeks == 8)].iloc[0]
+        if cb.relative_high < 0 and ti.relative_high < 0:
+            chosen = 'C'
+        reasons.append('When both beat A, C advances over B only if both paired-seed and primary temporal intervals support improvement; otherwise B is simpler.')
     text = f'# B1 decisive experiment\n\nRecommendation: **{chosen}**.\n\n' + '\n\n'.join(reasons)
     text += '\n\n' + mix.to_string() + '\n\nScores are location-relative forecast WIS, equal seasons. Lower is better. '
     text += ('Mixtures pool 2,048 raw members from each of ten fitted distributions (20,480 draws), before quantiles. '

@@ -53,8 +53,10 @@ It does not identify the historical B0/B1 input effect or operational performanc
   and mixture objectives; no >5% increase in any individual stress objective
   (recent report loss, local gap, channel outage), in either comparison.
   Operationalize "supported" conservatively: paired-seed and primary 8-week
-  mixture temporal intervals must both exclude no improvement. Favor the simpler
-  qualifying candidate; no automatic architecture grid. These cutoffs, interval
+  mixture temporal intervals must both exclude no improvement. If both B and C qualify against A, advance C only if the paired-seed and
+  primary mixture temporal C-minus-B intervals both exclude no improvement;
+  otherwise advance the simpler B. Report all three paired contrasts. No
+  automatic architecture grid. These cutoffs, interval
   convention, block lengths and .25 coefficient are engineering assumptions.
 - C's recent revision, artificial reconstruction and naturally missing cells
   are reported separately in native diagnostics and scaled-loss contributions.
