@@ -283,6 +283,7 @@
       model.stateName = stateSelect.options[stateSelect.selectedIndex].text.replace(/\s+\([\d,]+ columns\)$/, "");
       syncLocationSupport();
       await loadSeries(true);
+      await applyHubPreset("influenza");
     } catch (error) {
       showError(error);
     }
@@ -456,7 +457,7 @@
   // Identical series must stay distinguishable: each selected series gets its own
   // width (drawn widest first, so an overlap reads as a thin line inside a thick one)
   // and its own marker shape, placed at staggered positions along the line.
-  const LINE_WIDTHS = [4, 3, 2.2, 1.5];
+  const LINE_WIDTHS = [2, 1.5, 1.1, 0.75];
   const MARKERS = ["circle", "square", "triangle", "cross", "diamond"];
   function seriesIndex(item) { return Math.max(0, [...model.selected.keys()].indexOf(item.id)); }
   function lineWidth(item) { return LINE_WIDTHS[seriesIndex(item) % LINE_WIDTHS.length]; }
