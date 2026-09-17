@@ -218,53 +218,68 @@ def test_grouped_forecasts_condition_only_on_own_target_corrections():
     assert recent.grad[[0, 2]].abs().sum() == 0
 
 
-def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
-    import pandas as pd
-    from tapestry.models.b1_experiment import ranking_tables, totals
-    rows = []
-    for config_id, tasks in [('direct', ['forecast']), ('two', ['forecast', 'nowcast'])]:
-        for task in tasks:
-            # Equal normalized errors despite different native units.
-            for target, scale, weight in [('admissions', 100., 2 / 3), ('ed', .01, 1 / 3)]:
-                error = 2. if task == 'forecast' else 5.
-                rows.append(dict(config_id=config_id, scenario_string=config_id, seed=42, stress='natural', task=task,
-                    issuance_date='2025-08-06', target_date='2025-08-09' if task == 'forecast' else '2025-08-02',
-                    target=target, location='US', horizon=0 if task == 'forecast' else -1, season='2025-2026',
-                    observed=scale, loss_scale=scale, objective_weight=weight, crps=error * scale,
-                    wis=error * scale, coverage_50=1., coverage_95=1.))
-    frame = pd.DataFrame(rows)
-    runs, target, digests = totals(frame)
-    _, ranks, _ = ranking_tables(runs, target, [digests])
-    np.testing.assert_allclose(ranks.loc[ranks.task == 'forecast', 'score_mean'], 2.)
-    np.testing.assert_allclose(ranks.loc[ranks.task == 'nowcast', 'score_mean'], 5.)
-    assert ranks.score_sd.isna().all()  # One seed does not establish zero variance.
-    # A run scoring different truth/scales is rejected by its per-task digest.
-    changed = frame.copy()
-    changed.loc[changed.config_id == 'direct', 'loss_scale'] *= 2
-    other_runs, other_target, other_digests = totals(changed)
-    with pytest.raises(ValueError, match='different cells, truth, scales or weights'):
-        ranking_tables(pd.concat([runs, other_runs]), pd.concat([target, other_target]),
-                       [digests, other_digests])
-    # Dropping a cell breaks the normalization that each task's weights sum to one.
-    short_runs, short_target, short_digests = totals(frame.drop(index=0))
-    with pytest.raises(ValueError, match='weights must sum to one'):
-        ranking_tables(short_runs, short_target, [short_digests])
+def test_nowcast_baseline_is_persistence_of_the_visible_value():
+    """The nowcast denominator must be the last value visible on Wednesday.
+
+    If it silently used the reference final instead, the denominator would be
+    zero error and every model would look infinitely bad; if it used a later
+    revision it would leak truth into the baseline. Both failures are silent in
+    the ratio, so the baseline itself is pinned here.
+    """
+    from tapestry.models.season_cv import persistence
+    x = np.zeros((4, 6, 2, 1))          # week, channel, value/mask, location
+    x[:, :, 1] = 1                      # everything visible by default
+    x[:, 0, 0, 0] = [10., 20., 30., 40.]
+    # Channel 1's two most recent weeks are missing, so it falls back further.
+    x[:, 1, 0, 0] = [7., 8., 9., 99.]
+    x[2:, 1, 1, 0] = 0
+    x[:, 2, 1, 0] = 0                   # channel 2 has no visible history at all
+    values, available = persistence(x)
+    assert values[0, 0] == 40. and available[0, 0]      # latest visible week
+    assert values[1, 0] == 8. and available[1, 0]       # latest STILL-visible week
+    assert not available[2, 0]                          # no baseline exists
+
+
+def test_nowcast_scores_against_persistence_and_excludes_cells_without_history():
+    """A deterministic baseline's WIS is its absolute error, and nothing else."""
+    from tapestry.evaluation.totals import quantile_scores
+    from tapestry.models.quantiles import LEVELS
+    truth = np.array([100., 50.])
+    baseline = np.array([90., 50.])
+    flat = np.repeat(baseline[:, None], len(LEVELS), axis=1)
+    scores = quantile_scores(flat, truth)
+    np.testing.assert_allclose(scores.wis, np.abs(truth - baseline))
+    np.testing.assert_allclose(scores.dispersion, 0.)
+    # A point forecast covers an interval only when it is exactly right.
+    np.testing.assert_allclose(scores.covered_95, [0., 1.])
 
 
 def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path):
-    from tapestry.models.b1_hubs import export_forecasts
+    """Recent offsets are nowcasts and must never be relabelled as Hub forecasts.
+
+    A Wednesday issuance maps to the FOLLOWING Saturday at horizon 0. Shifting
+    that by a week, or letting offsets -2/-1 through, would score nowcasts
+    against the ensemble's forecasts and silently flatter the model.
+    """
+    from tapestry.evaluation.hubs import export_b1
     from tapestry.models.quantiles import LEVELS
     q = np.ones((len(LEVELS), 1, 6, 6, 2))
     q[:, :, :, 3:] = .02
-    dates = np.array([['2025-07-26', '2025-08-02', '2025-08-09', '2025-08-16', '2025-08-23', '2025-08-30']])
-    np.savez(tmp_path / 'forecasts-demo-s42-natural.npz', quantiles=q, horizons=np.arange(-2, 4),
-             quantile_levels=LEVELS, target_dates=dates, issuance_dates=['2025-08-06'], locations=['US', 'NC'])
-    frames = export_forecasts(tmp_path, dict(run_id='demo', seed=42),
-                             dict(evaluation_start='2025-08-06', evaluation_end='2025-08-23'))
-    assert len(frames) == 6
-    for (_, target), frame in frames.items():
-        assert set(frame.reference_date) == {'2025-08-09'}
-        assert set(frame.horizon) == {0, 1, 2}
+    dates = np.array([['2025-11-08', '2025-11-15', '2025-11-22', '2025-11-29', '2025-12-06', '2025-12-13']])
+    for held in ('2023-2024', '2024-2025', '2025-2026'):
+        folder = tmp_path / f'eval_{held}'
+        folder.mkdir()
+        # Only the 2025-2026 fold has target dates in its own held-out season.
+        np.savez(folder / 'forecasts-demo-s42-natural.npz', quantiles=q, horizons=np.arange(-2, 4),
+                 quantile_levels=LEVELS, target_dates=dates, issuance_dates=['2025-11-19'],
+                 locations=['US', 'NC'])
+    frames = export_b1(tmp_path, dict(run_id='demo', seed=42))
+    for (held, target), frame in frames.items():
+        if held != '2025-2026':
+            assert frame.empty  # a trained-on season leaking through the output window
+            continue
+        assert set(frame.reference_date) == {'2025-11-22'}
+        assert set(frame.horizon) == {0, 1, 2, 3}
         assert set(frame.location) == {'US', '37'}
         np.testing.assert_allclose(frame['q0.5'], .02 if 'prop' in target else 1.)
 
@@ -305,27 +320,32 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
 
 
 def test_b1_season_fold_hub_export_keeps_only_the_held_out_season(tmp_path):
-    """A fold's 6-week window spans seasons; only the held-out one is out-of-sample."""
-    from tapestry.models.b1_hubs import export_forecasts
+    """A fold's 6-week window spans seasons; only the held-out one is out-of-sample.
+
+    Without the filter a fold would contribute forecasts for weeks it trained on,
+    and two folds would both claim the same target date, inflating the score with
+    in-sample predictions.
+    """
+    from tapestry.evaluation.hubs import export_b1
     from tapestry.models.quantiles import LEVELS
 
-    seasons = ('2023-2024', '2024-2025')
     # Each fold's last origin reaches into the next season, as real folds do.
-    spans = {'2023-2024': ('2024-07-27', '2024-08-03'), '2024-2025': ('2025-07-26', '2025-08-02')}
+    # (last week inside the held-out season, first week of the next one)
+    spans = {'2023-2024': ('2024-07-27', '2024-08-03'), '2024-2025': ('2025-07-26', '2025-08-02'),
+             '2025-2026': ('2026-08-01', '2026-08-08')}
     run_id, seed = 'probe-run', 42
     for held, (inside, outside) in spans.items():
         folder = tmp_path / f'eval_{held}'
         folder.mkdir()
-        np.savez_compressed(folder / f'forecasts-{run_id}-s{seed}.npz'.replace('.npz', '-natural.npz'),
+        np.savez_compressed(folder / f'forecasts-{run_id}-s{seed}-natural.npz',
             quantiles=np.ones((len(LEVELS), 1, 4, 6, 1)), quantile_levels=LEVELS,
             truth=np.ones((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), bool),
             target_dates=np.array([[inside, inside, outside, outside]]),
             issuance_dates=np.array(['2024-07-24']), locations=np.array(['US']),
             channels=np.array(['nhsn_flu_admissions'] * 6), horizons=np.arange(4))
-    metadata = dict(run_id=run_id, seed=seed, protocol='season_cv', seasons=list(seasons))
-    frames = export_forecasts(tmp_path, metadata, dict(evaluation_start=None, evaluation_end=None))
+    frames = export_b1(tmp_path, dict(run_id=run_id, seed=seed))
     assert frames, 'expected exported Hub frames'
     # Nothing from a season the fold trained on, and no fold collides with another.
-    assert {label for label, _ in frames} <= set(seasons)
+    assert {label for label, _ in frames} <= set(spans)
     for (label, _), frame in frames.items():
         assert set(frame.target_end_date) == {spans[label][0]}

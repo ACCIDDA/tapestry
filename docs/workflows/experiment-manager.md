@@ -1,14 +1,23 @@
 # Named experiments
 
-B1 uses this same manager, attempt/resume records and shared GPU dispatcher.
-Use `--suite B1` when planning, then the usual `run`, `status`, `rank` and
-`compare` commands with the experiment name. See the [B1 cluster commands and
-scoring definitions](../design/b1.md#named-experiments-and-cluster-launch).
-B1 scores nowcasting (-2/-1) and forecasting (0–3) separately. Its chronological
-split and native normalized-CRPS ranking differ from the B0 CV/ensemble protocol
-described below; optional `--frozen` reuses the B0 Hub/EpiBench forecast comparison
-on matched support. The B1 suite defaults to 24 configurations, three seeds,
-300 epochs maximum and patience 50.
+**One manager, one scorer, both models.** B0 and B1 share every command below,
+the same attempt/resume records, the same GPU dispatcher and the same ranking:
+season-equal location-relative WIS against the official ensembles on the frozen
+Hub tasks. The manager has no model-specific branches; the only differences live
+in `src/tapestry/models/backends.py`, which says how to expand a suite, how to
+launch a fold's fit, and which artifacts prove a seed finished.
+
+B1 adds one thing B0 does not have: it also predicts the two completed weeks at
+offsets -2 and -1. No Hub ensemble forecasts a week that has already happened, so
+those are ranked separately against **preliminary-value persistence** — the naive
+nowcast that Wednesday's visible value is already final — using the identical
+weights and aggregation. `rank` writes that table under `ranking-<hash>/nowcast/`.
+Forecast and nowcast scores share weights but not support and are never combined.
+
+Plan B1 with `--suite B1` for the open formulation grid, or with one of the two
+attribution suites, `--suite B1-onlynowcast` / `--suite B1-onlymask`, which run
+B0's four best configurations while changing exactly one thing. See the
+[B1 design](../design/b1.md#named-experiments-and-cluster-launch).
 
 The manager uses an immutable `TrainingScenario`, a short readable scenario
 string, a job list whose rows are Slurm array tasks, and one output folder per run. It uses local JSON/CSV
@@ -217,13 +226,23 @@ sbatch --array=0-50 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch b0-crosses
 
 ## Slurm
 
-Both launchers run `manager run --task <row> --device cuda --keep-going` for one
-`jobs.csv` row:
+| Script | Shape | Use |
+|---|---|---|
+| `scripts/jlessler.sbatch` | One GPU per array element, several fitting lanes inside, all drawing from one shared queue | Any experiment planned with a source snapshot, B0 or B1 |
+| `scripts/b0_sweep.sbatch` | One `jobs.csv` row per array task | Large static sweeps |
+| `scripts/b0_array.sbatch` | One `jobs.csv` row per array task | Small experiments on the lab's six GPUs |
 
-| Script | Partitions | Per task | Use |
-|---|---|---|---|
-| `scripts/b0_sweep.sbatch` | `jlessler`, QOS `normal` | 1 GPU, 4 CPUs, 16 GiB, 6 h | Large experiments such as the sweep |
-| `scripts/b0_array.sbatch` | `jlessler` | 1 GPU, 4 CPUs, 64 GiB, 1 day | Small experiments on the lab's six GPUs |
+`jlessler.sbatch` takes the experiment name and reads the model from
+`experiment.json`, so the same launcher serves both models:
+
+```bash
+sbatch --job-name=B1-onlynowcast --array=0-3 scripts/jlessler.sbatch B1-onlynowcast
+LANES=4 GPUS=6 sbatch --job-name=B1-onlynowcast --array=0-1 \
+  --nodelist=g1803jles02 scripts/jlessler.sbatch B1-onlynowcast
+```
+
+The two static launchers run `manager run --task <row> --device cuda --keep-going`
+for one `jobs.csv` row.
 
 The calibration now uses the patron nodes `g1803jles01` (four L40 GPUs) and
 `g1803jles02` (two H100 GPUs). Previous shared-partition settings remain
@@ -370,7 +389,7 @@ they are not prospective validation.
 
 The [B0.1 design](../design/b0.1.md#run-b01) contains 172 recipes and three seeds.
 `LANES=6` runs six fits per GPU. Submit four array elements on `g1803jles01` and
-two on `g1803jles02`, using `scripts/b01_jlessler.sbatch` as shown in the design.
+two on `g1803jles02`, using `scripts/jlessler.sbatch` as shown in the design.
 All six allocations draw from one shared queue; large and small jobs are spread
 by estimated workload, and each seed can move to another GPU when it starts.
 Sources are read from the prepared snapshot. Never refresh it during a run.

@@ -22,7 +22,7 @@ git rev-parse HEAD
 Rscript -e 'library(scoringutils); library(purrr)'
 test -s data/processed/build_b_finalized.npz
 test -s data/processed/build_b_finalized.json
-printf '%s  %s\n' 80aaa24750044a837e063812a1d0a22339c8b3a92513f71a23dac613eaaa29e0 data/metadata/b0_locations.csv | sha256sum --check
+printf '%s  %s\n' 80aaa24750044a837e063812a1d0a22339c8b3a92513f71a23dac613eaaa29e0 data/metadata/locations.csv | sha256sum --check
 while read -r hub revision; do
     test "$(git --git-dir="data/mirrors/hub_${hub}_current.git" rev-parse HEAD)" = "$revision"
 done <<'HUBS'

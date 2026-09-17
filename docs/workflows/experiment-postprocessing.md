@@ -7,12 +7,13 @@ figures and a results page.
 All commands run from the repository root. Substitute your experiment name for
 `B0.1`; the worked example is the [B0.1 crosses](../results/b0-1-crosses/index.md).
 
-For **B1**, the same `status`, `rank` and `compare` commands apply. Completed
-attempts contain a `b1/` directory rather than three `cv/eval_<season>/` folders.
-Native ranking tables distinguish `task=nowcast` from `task=forecast`; compare
-merges saved scores and generates graphs without retraining. An optional frozen
-Hub benchmark reuses B0 totals and EpiBench on matched future tasks. See the
-[B1 output definitions](../design/b1.md#forecast-and-nowcast-ranking). The B0
+For **B1**, these are the same commands running the same code. A completed
+attempt contains a `b1/` directory instead of `cv/`, holding one
+`eval_<season>/` per fold, `totals.csv` in B0's schema, and additionally
+`nowcast-totals.csv` for offsets -2/-1. `rank` writes B0's usual
+`configuration_ranking.csv` plus a `nowcast/` subfolder scored against
+preliminary-value persistence. See the
+[B1 output definitions](../design/b1.md#one-manager-one-scorer). The B0
 publishing/calibration commands below do not yet accept B1's artifact layout.
 
 ## 1. Confirm it finished

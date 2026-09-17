@@ -1,4 +1,9 @@
-"""Train/predict B1 and compare direct, two-stage, and masked two-stage models."""
+"""Fit and predict one B1 leave-one-season-out fold.
+
+Experiment management, scoring and ranking are the shared model-agnostic tools
+(`tapestry.models.manager`, `tapestry.evaluation.totals`); this module only fits
+a fold and writes its held-out-season forecasts.
+"""
 import argparse
 import csv
 from dataclasses import asdict
@@ -14,7 +19,8 @@ from tapestry.model_data.finalized import CHANNELS
 from tapestry.model_data.wednesday import WednesdayDataset
 from .b0 import fair_crps_cells
 from .b1 import B1, MASK_SCENARIOS, draw_dropout
-from .b1_scenarios import PRESETS, add_scenario_args, resolve, comparison_grid
+from .b1_scenarios import add_scenario_args, resolve
+from .b1_seasons import fold
 from .bundles import GROUPS
 from .experiments import input_scales
 from .objective import TARGET_WEIGHTS, loss_cell_weights, loss_scales
@@ -74,22 +80,21 @@ def populations(path, locations):
 
 
 def partitions(ds, args):
-    """Chronological split, or B0's leave-one-season-out fold when a season is held out."""
-    held_out = getattr(args, 'held_out_season', None)
-    if held_out:
-        from .b1_seasons import fold
-        fitting, validation, _, _ = fold(ds, held_out)
-        return fitting, validation
-    if not args.train_end < args.validation_start <= args.validation_end:
-        raise ValueError('Require train-end < validation-start <= validation-end')
-    if ds.metadata['truth_cutoff'] > args.validation_end and not args.retrospective:
-        raise ValueError('Later reference finals require --retrospective. For operational fits rebuild with truth-cutoff <= validation-end.')
-    fit = list(ds.episodes(end=args.train_end, target_end=args.train_end))
-    validation = list(ds.episodes(start=args.validation_start, end=args.validation_end,
-                                  target_start=args.validation_start, target_end=args.validation_end))
-    if not fit or not validation:
-        raise ValueError('No usable fitting or validation episodes')
-    return fit, validation
+    """B0's leave-one-season-out fold. B1 has no other split.
+
+    The earlier chronological split validated on nine summer issuances, whose
+    medians sat 10-13x below the fitting and evaluation data, so selection
+    optimized a seasonal floor. It was removed rather than kept as an option.
+
+    Leave-one-season-out over completed seasons uses labels pinned after the fold's
+    own dates by construction, exactly as B0's finalized CV does, so these are
+    retrospective development runs and `--retrospective` must be explicit.
+    """
+    if not args.retrospective:
+        raise ValueError('Leave-one-season-out CV pins truth after each fold; pass --retrospective '
+                         'to acknowledge these are retrospective development fits, not operational ones.')
+    fitting, validation, _, _ = fold(ds, args.held_out_season)
+    return fitting, validation
 
 
 def crop_episodes(episodes, lookback):
@@ -200,9 +205,7 @@ def train(args, scenario=None):
         np.savez_compressed(out / f'masks-{i}.npz', **audit)
     metadata = dict(model='B1', schema_version=2, scenario=scenario.scenario_string,
         run_id=scenario.run_id, configuration=asdict(scenario), groups=groups,
-        seed=args.seed, train_end=args.train_end, validation_start=args.validation_start,
-        validation_end=args.validation_end, held_out_season=getattr(args, 'held_out_season', None),
-        protocol='season_cv' if getattr(args, 'held_out_season', None) else 'chronological',
+        seed=args.seed, held_out_season=args.held_out_season, protocol='season_cv',
         retrospective=args.retrospective, dataset_metadata=ds.metadata,
         dataset_sha256=hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
@@ -211,6 +214,19 @@ def train(args, scenario=None):
         objective='.5 recent + .5 future native fair CRPS / fitting-only Q95; fixed season/target/geography weights within each component. Direct: future only.',
         cross_target_dependence='Independent draws across fitted components. Shared components allow within-group dependence; marginal scores do not establish joint calibration.')
     torch.save(dict(components=components, metadata=metadata), out / 'model.pt')
+    (out / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
+    # The fold predicts its own held-out season immediately, as B0 evaluates inside
+    # season_cv, so the run's scoring step needs no second model load.
+    from .b1_report import evaluate
+    from .b1_seasons import fold as season_fold
+    fitted = load_models(out / 'model.pt', args.device)[0]
+    _, _, evaluation, info = season_fold(ds, args.held_out_season)
+    evaluation = [e for e in crop_episodes(evaluation, scenario.lookback) if e['X'][:, :, 1].any()]
+    if not evaluation:
+        raise ValueError(f'No usable evaluation episodes for held-out {args.held_out_season}')
+    settings = argparse.Namespace(device=args.device, evaluation_members=args.eval_members)
+    evaluate(fitted, evaluation, ds, settings, scenario.run_id, args.seed, out, scenario.scenario_string)
+    metadata['fold'] = info
     (out / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
     return out / 'model.pt'
 
@@ -271,61 +287,12 @@ def predict(args):
     print(json.dumps(dict(output=str(path), shape=list(samples[:, 0].shape))))
 
 
-def compare(args):
-    from .b1_report import evaluate, report
-    base = resolve(args)
-    if args.presets and (args.preset or args.scenario or any(getattr(args, k) is not None
-            for k in ('encoder', 'spatial', 'head_sharing', 'fit_partition'))):
-        raise ValueError('--presets selects those architecture fields; use a single --preset/--scenario for custom architecture overrides')
-    if args.mask_rates is not None and args.mask_rate is not None:
-        raise ValueError('Use --mask-rates for a grid or --mask-rate for one comparison level')
-    if args.pipeline is not None:
-        raise ValueError('compare expands both pipelines; select --pipeline with train or scenario instead')
-    rates = args.mask_rates if args.mask_rates is not None else ([0., base.mask_rate] if args.mask_rate is not None else [0., .25, .5])
-    grid = comparison_grid(base, args.presets, rates)
-    ds = WednesdayDataset.load(args.evaluation_dataset or args.dataset)
-    fitting_ds = WednesdayDataset.load(args.dataset)
-    if ds.locations != fitting_ds.locations:
-        raise ValueError('Fitting and evaluation datasets must have identical locations')
-    if args.evaluation_start <= args.validation_end:
-        raise ValueError('Forward evaluation must begin after validation-end')
-    episodes = list(ds.episodes(start=args.evaluation_start, end=args.evaluation_end,
-        target_start=args.evaluation_start, target_end=args.evaluation_end))
-    if not episodes:
-        raise ValueError('No evaluation episodes')
-    if max(s.lookback for s in grid) > min(ds.metadata['lookback'], fitting_ds.metadata['lookback']):
-        raise ValueError('Materialize enough context weeks for every comparison scenario')
-    episodes = [e for e in crop_episodes(episodes, base.lookback) if e['X'][:, :, 1].any()]
-    if not episodes:
-        raise ValueError('No evaluation episodes within the selected lookback')
-    root = Path(args.output)
-    root.mkdir(parents=True, exist_ok=True)
-    plan = dict(settings=vars(args), configurations=[dict(run_id=s.run_id, scenario=s.scenario_string,
-        config=asdict(s), mask_probabilities=s.mask_probabilities) for s in grid],
-        evaluation_dataset_metadata=ds.metadata,
-        evaluation_dataset_sha256=hashlib.sha256(Path(args.evaluation_dataset or args.dataset).read_bytes()).hexdigest())
-    (root / 'comparison.json').write_text(json.dumps(plan, indent=2) + '\n')
-    if args.plan_only:
-        print(json.dumps(dict(configurations=len(grid), seed_runs=len(grid) * len(args.seeds), manifest=str(root / 'comparison.json'))))
-        return
-    results = []
-    for seed in args.seeds:
-        for scenario in grid:
-            options = argparse.Namespace(**{**vars(args), 'seed': seed,
-                'output': str(root / scenario.run_id / f's{seed}')})
-            checkpoint = train(options, scenario)
-            models, _ = load_models(checkpoint, args.device)
-            results.extend(evaluate(models, crop_episodes(episodes, scenario.lookback), ds,
-                                   args, scenario.run_id, seed, root, scenario.scenario_string))
-    report(results, ds, root)
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     identify = commands.add_parser('scenario', help='Print resolved canonical configuration without fitting')
     add_scenario_args(identify)
-    for command in ('train', 'predict', 'compare'):
+    for command in ('train', 'predict'):
         p = commands.add_parser(command)
         p.add_argument('--dataset', default='data/processed/build_b1_wednesday.npz')
         p.add_argument('--device', choices=('cpu', 'cuda', 'mps'), default='cpu')
@@ -339,22 +306,13 @@ def main(argv=None):
             p.add_argument('--sample-batch', type=int, default=32)
         else:
             add_scenario_args(p)
-            p.add_argument('--population-file', default='data/metadata/b0_locations.csv')
-            p.add_argument('--held-out-season', choices=SEASONS,
-                           help="B0's leave-one-season-out fold; replaces the chronological split")
-            p.add_argument('--train-end')
-            p.add_argument('--validation-start')
-            p.add_argument('--validation-end')
-            p.add_argument('--retrospective', action='store_true', help='Explicitly allow later pinned truth during development')
-            if command == 'compare':
-                p.add_argument('--seeds', type=int, nargs='+', default=[42, 43, 44])
-                p.add_argument('--presets', choices=tuple(PRESETS), nargs='+', help='Formulations to compare using common training settings')
-                p.add_argument('--mask-rates', type=float, nargs='+', help='Two-stage masking rates; default 0 .25 .5')
-                p.add_argument('--plan-only', action='store_true', help='Save the complete scenario grid without training')
-                p.add_argument('--evaluation-dataset', help='Separate later pinned truth for operational evaluation')
-                p.add_argument('--evaluation-start', required=True)
-                p.add_argument('--evaluation-end', required=True)
-                p.add_argument('--evaluation-members', type=int, default=256)
+            p.add_argument('--population-file', default='data/metadata/locations.csv')
+            p.add_argument('--held-out-season', choices=SEASONS, required=True,
+                           help="B0's leave-one-season-out fold; the only B1 protocol")
+            p.add_argument('--eval-members', type=int, default=256,
+                           help='Draws for the held-out season forecasts this fold writes')
+            p.add_argument('--retrospective', action='store_true',
+                           help='Acknowledge that leave-one-season-out CV pins truth after each fold')
     args = parser.parse_args(argv)
     try:
         if args.command == 'scenario':
@@ -362,13 +320,7 @@ def main(argv=None):
             print(json.dumps(dict(run_id=scenario.run_id, scenario=scenario.scenario_string,
                                   config=asdict(scenario), mask_probabilities=scenario.mask_probabilities), indent=2))
             return
-        if args.command in ('train', 'compare'):
-            dates = (args.train_end, args.validation_start, args.validation_end)
-            if args.held_out_season and any(dates):
-                raise ValueError('--held-out-season replaces the chronological split; do not also pass train/validation dates')
-            if not args.held_out_season and not all(dates):
-                raise ValueError('Supply --train-end/--validation-start/--validation-end, or --held-out-season')
-        if args.command == 'compare' and args.evaluation_members < 2:
+        if args.command == 'train' and args.eval_members < 2:
             raise ValueError('At least two evaluation members required for fair CRPS')
         if args.command == 'predict' and min(args.members, args.sample_batch) < 1:
             raise ValueError('Prediction members and sample-batch must be positive')

@@ -26,13 +26,30 @@ from tapestry.model_data.finalized import season
 from .season_cv import SEASONS, VALIDATION_WEEKS, VALIDATION_SPACING, VALIDATION_OFFSET
 
 
+# B0's panel begins at the first available September 2023 week and its season 1 is
+# therefore 48 weeks, not a full 52. B1's archive reaches back to 2023-08-05. That
+# is a data-availability difference, not a season definition, so the shared fold
+# calendar starts where B0's does and B1 drops the four earlier weeks. Otherwise
+# B1's 2023-2024 fold would both train on more data and, because the 3-in-16
+# pattern counts weeks from the start of a season, hide a different set of weeks
+# (measured: an offset of exactly four weeks in two of the three folds).
+CALENDAR_START = '2023-09-02'
+
+
+def season_weeks(ds):
+    """The fold calendar: target weeks inside the three modelled seasons, in order."""
+    weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
+    return [day for day in weeks
+            if day >= CALENDAR_START and season(date.fromisoformat(day)) in SEASONS]
+
+
 def hidden_weeks(ds, held_out):
     """B0's 3-in-16 hidden target weeks inside each training season of a fold.
 
-    Uses the dataset's own ordered target weeks so the pattern indexes weeks, not
-    issuances, exactly as B0 indexes its panel rows.
+    Uses the ordered season calendar so the pattern indexes weeks, not issuances,
+    exactly as B0 indexes its panel rows.
     """
-    weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
+    weeks = season_weeks(ds)
     labels = [season(date.fromisoformat(day)) for day in weeks]
     hidden = set()
     for label in SEASONS:
@@ -74,13 +91,17 @@ def fold(ds, held_out):
     """
     if held_out not in SEASONS:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
-    weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
+    all_weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
+    weeks = season_weeks(ds)
     label = {day: season(date.fromisoformat(day)) for day in weeks}
     hidden = hidden_weeks(ds, held_out)
-    training_weeks = {day for day in weeks if label[day] in SEASONS and label[day] != held_out}
+    training_weeks = {day for day in weeks if label[day] != held_out}
     held_weeks = {day for day in weeks if label[day] == held_out}
     # A fold's fit never sees the held-out season or its own validation weeks.
-    blocked = held_weeks | hidden
+    # Weeks outside the three modelled seasons are blocked too: B0's panel does
+    # not contain them, so leaving them visible would give B1 extra history.
+    outside = set(all_weeks) - set(weeks)
+    blocked = held_weeks | hidden | outside
     inner = training_weeks - hidden
 
     fitting, validation, evaluation = [], [], []
@@ -92,8 +113,9 @@ def fold(ds, held_out):
         kept = _keep_labels(episode, masked, hidden)
         if kept is not None:
             validation.append(kept)
-        # Evaluation keeps the unmodified Wednesday information state.
-        kept = _keep_labels(episode, episode['X'], held_weeks)
+        # Evaluation keeps the real Wednesday information state: nothing is hidden
+        # at prediction time except weeks B0's panel does not have either.
+        kept = _keep_labels(episode, _mask_context(episode, outside), held_weeks)
         if kept is not None:
             evaluation.append(kept)
     if not fitting or not validation or not evaluation:
@@ -101,5 +123,7 @@ def fold(ds, held_out):
     info = dict(held_out=held_out, hidden_target_weeks=sorted(hidden),
                 training_weeks=len(training_weeks), inner_weeks=len(inner),
                 held_out_weeks=len(held_weeks), fitting_episodes=len(fitting),
-                validation_episodes=len(validation), evaluation_episodes=len(evaluation))
+                validation_episodes=len(validation), evaluation_episodes=len(evaluation),
+                # Auditable against B0's fold: the two must hold out the same calendar.
+                season_weeks=len(weeks), weeks_outside_seasons=sorted(outside))
     return fitting, validation, evaluation, info

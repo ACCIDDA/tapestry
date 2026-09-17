@@ -1,4 +1,4 @@
-"""Normalize saved B0 quantiles and pinned local hub Git blobs into task tables."""
+"""Normalize saved model quantiles and pinned local hub Git blobs into task tables."""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -37,6 +37,18 @@ def location_codes(values):
     return values.astype(str).str.replace(r'\.0$', '', regex=True).str.zfill(2)
 
 
+def export(run):
+    """Hub task tables for one saved run, whichever model produced it.
+
+    Both models write the same `{(season, target): frame}` shape, so every
+    downstream scorer (`totals`, `sweep`) is model-agnostic; only the mapping
+    from saved forecasts to reference Saturdays differs.
+    """
+    run = Path(run)
+    manifest = json.loads((run / 'manifest.json').read_text())
+    return export_b1(run, manifest) if manifest.get('model') == 'B1' else export_b0(run)
+
+
 def export_b0(run):
     """Exact hub mapping: reference=context_end+7d; hub horizon=internal lead-1."""
     postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
@@ -60,6 +72,43 @@ def export_b0(run):
                     frame[QCOLS] = q.reshape(len(LEVELS), -1).T
                     # Retain only held-out target dates, regardless of a revised truth's missingness.
                     keep = frame.target_end_date.map(lambda d: season(date.fromisoformat(d))) == held
+                    frames[(held, target)] = frame[keep].copy()
+    return frames
+
+
+def export_b1(run, manifest):
+    """Wednesday issuance maps to the following Saturday reference; horizons 0–3.
+
+    A fold's six-week output window straddles season boundaries, so its forecasts
+    include target dates in seasons it trained on. Only the held-out season is
+    genuinely out-of-sample, so each fold contributes that season alone. Recent
+    offsets (-2/-1) are nowcasts and are never relabelled as Hub forecasts; they
+    are scored separately by `tapestry.evaluation.nowcast`.
+    """
+    postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
+    prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
+    frames = {}
+    for held in SEASONS:
+        path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-natural.npz'
+        with np.load(path, allow_pickle=False) as data:
+            quantiles = select_quantiles(data['quantiles'], data['quantile_levels'])
+            future = data['horizons'] >= 0
+            dates = data['target_dates'][:, future]
+            n, h = dates.shape
+            locations = [postal_to_fips[str(loc)] for loc in data['locations']]
+            for spec in HUBS.values():
+                for target, c in spec['targets'].items():
+                    frame = pd.DataFrame({
+                        'reference_date': np.repeat(dates[:, 0], h * len(locations)),
+                        'target_end_date': np.repeat(dates.reshape(-1), len(locations)),
+                        'location': np.tile(locations, n * h),
+                        'horizon': np.tile(np.repeat(np.arange(h), len(locations)), n),
+                    })
+                    frame[QCOLS] = quantiles[:, :, future, c, :].reshape(len(LEVELS), -1).T
+                    # Retain only the fold's held-out season; folds never overlap.
+                    keep = frame.target_end_date.map(lambda d: season(date.fromisoformat(d))) == held
+                    if (held, target) in frames:
+                        raise ValueError(f'Duplicate B1 hub export for {held}/{target}; folds must not overlap')
                     frames[(held, target)] = frame[keep].copy()
     return frames
 

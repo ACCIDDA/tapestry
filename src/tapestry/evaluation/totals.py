@@ -13,7 +13,7 @@ import pandas as pd
 
 from tapestry.models.quantiles import LEVELS
 from tapestry.models.objective import US_WEIGHT
-from .hubs import KEY, QCOLS, export_b0
+from .hubs import KEY, QCOLS, export
 from .scoring import match_forecasts
 
 TARGET_WEIGHTS = {
@@ -86,9 +86,13 @@ def frozen_cases(frozen):
 
 
 def score_run(run, frozen):
-    """Write `totals.csv` for one saved season-CV run."""
+    """Write `totals.csv` for one saved season-CV run, B0 or B1.
+
+    A B1 run additionally writes `nowcast-totals.csv` for its two recent weeks,
+    which have no Hub ensemble and are scored against preliminary persistence.
+    """
     run, frozen = Path(run), Path(frozen)
-    frames = export_b0(run)
+    frames = export(run)
     parts = []
     for case in frozen_cases(frozen):
         units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
@@ -101,6 +105,9 @@ def score_run(run, frozen):
     temporary = run / 'totals.tmp'
     totals.to_csv(temporary, index=False)
     temporary.replace(run / 'totals.csv')
+    if json.loads((run / 'manifest.json').read_text()).get('model') == 'B1':
+        from .nowcast import score_nowcasts
+        score_nowcasts(run)
     return totals
 
 

@@ -25,7 +25,7 @@ def add_experiment_args(parser):
                         help='linear inputs with a logit residual (original), logit, or fourth root')
     parser.add_argument('--geography', action='store_true', help='Include log population and native US flag')
     parser.add_argument('--dynamics', action='store_true', help='Include slopes, acceleration, observation age and Christmas timing')
-    parser.add_argument('--population-file', default='data/metadata/b0_locations.csv')
+    parser.add_argument('--population-file', default='data/metadata/locations.csv')
     parser.add_argument('--loss-weights', choices=list(LOSS_WEIGHTS), default='objective')
     parser.add_argument('--encoder', choices=['mlp', 'conv', 'multiscale_conv'], default='mlp')
     parser.add_argument('--spatial', choices=['none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target'], default='none',

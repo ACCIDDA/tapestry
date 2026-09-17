@@ -10,6 +10,7 @@ from tapestry.model_data.finalized import CHANNELS, season
 from .b0 import fair_crps_cells
 from .b1 import MASK_SCENARIOS
 from .quantiles import LEVELS
+from .season_cv import persistence
 
 
 def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=None):
@@ -54,13 +55,17 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
                 path_graph(samples[:, 0], episode, ds, config_id, seed, root, direct)
         np.savez_compressed(root / f'evaluation-masks-{config_id}-s{seed}-{stress}.npz',
             D=np.stack(dropouts), issuance_dates=[e['issuance_date'] for e in episodes])
+        baseline, baseline_mask = zip(*(persistence(e['X']) for e in episodes))
         np.savez_compressed(root / f'forecasts-{config_id}-s{seed}-{stress}.npz',
             quantiles=np.stack(quantiles, axis=1), quantile_levels=LEVELS,
             truth=np.stack([e['Y'][hs, :, 0] for e in episodes]),
             mask=np.stack([e['Y'][hs, :, 1].astype(bool) for e in episodes]),
             target_dates=np.array([e['target_dates'][hs] for e in episodes]),
             issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
-            channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4))
+            channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4),
+            # The naive nowcast denominator: the latest value visible on Wednesday,
+            # which for offsets -2/-1 is the preliminary report of that same week.
+            baseline=np.stack(baseline), baseline_mask=np.stack(baseline_mask))
     frame = pd.DataFrame(rows)
     frame.to_parquet(root / f'scores-{config_id}-s{seed}.parquet', index=False)
     return rows
