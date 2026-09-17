@@ -64,7 +64,8 @@ def snapshot(folder, settings, extra=()):
     from .provenance import save, git_state
     root = Path(__file__).resolve().parents[3]
     files = list((root / 'src').rglob('*.py')) + list((root / 'src').rglob('*.R'))
-    files += [root / 'scripts/jlessler.sbatch', root / 'pyproject.toml', *extra]
+    files += [root / 'scripts/jlessler.sbatch', root / 'scripts/notify.sbatch',
+              root / 'pyproject.toml', *extra]
     notifications = folder / 'notifications'
     notifications.mkdir(parents=True, exist_ok=True)
     shutil.copy2(root / 'scripts/b01_notify.py', notifications / 'b01_notify.py')
@@ -172,14 +173,19 @@ class B1Backend:
                                help=f'default {value}; a named suite keeps its own unless given')
         group.add_argument('--retrospective', action='store_true')
 
-    # The two experiments that attribute any B1-versus-B0 gap. Each adds exactly
-    # one thing to B0's four best configurations, so a difference has one cause.
+    # Experiments that attribute a B1-versus-B0 gap. Each takes B0's four best
+    # configurations and adds exactly one thing, so a difference has one cause.
+    # Read them as a ladder from B0: vintage inputs, then nowcasting, then masking.
     SUITES = {
-        # Nowcasting only: the two-stage recent->future path, with natural
-        # Wednesday availability and no artificial masking.
+        # Inputs only. B0's own direct four-week task and architecture, refitted
+        # on the Wednesday dataset, so the ONLY difference from B0 is that the
+        # model sees the real Wednesday information state instead of finalized
+        # data. This is the control that measures what the vintages cost.
+        'B1-fromB0': dict(pipeline='direct', mask_rate=0.),
+        # Inputs plus nowcasting: the two-stage recent->future path, still with
+        # natural availability and no artificial masking.
         'B1-onlynowcast': dict(pipeline='two_stage', mask_rate=0.),
-        # Masking only: B0's direct four-week forecast, trained under artificial
-        # missingness at the original B1 default rate.
+        # Inputs plus masking: B0's direct task under artificial missingness.
         'B1-onlymask': dict(pipeline='direct', mask_rate=.5),
     }
 
