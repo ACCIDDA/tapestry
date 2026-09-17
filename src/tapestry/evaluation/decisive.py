@@ -14,6 +14,8 @@ from .hubs import KEY
 from .totals import (METRICS, TARGET_WEIGHTS, cells_totals, forecast_cells,
                      run_scores, score_run, season_scores)
 
+CELL_KEYS = ['season', 'target', *KEY]
+
 EXPERIMENTS = ('B1-onlymask-refit', 'B1-direct-finalflag', 'B1-joint-aux025')
 
 
@@ -137,8 +139,8 @@ def block_counts(origins, length, repetitions, rng):
 def temporal_intervals(frames, length, repetitions=2000):
     """Paired origins, all locations/targets/horizons together; recompute every ratio."""
     labels = list(frames)
-    base = frames[labels[0]].sort_values(['season', *KEY]).reset_index(drop=True)
-    keys = ['season', *KEY]
+    base = frames[labels[0]].sort_values(CELL_KEYS).reset_index(drop=True)
+    keys = CELL_KEYS
     aligned = []
     for label in labels:
         frame = frames[label].sort_values(keys).reset_index(drop=True)
@@ -223,7 +225,7 @@ def compare(root, output, device='cpu', repetitions=2000):
             all_runs[label].append(run)
             for stress in MASK_SCENARIOS:
                 frame = pd.read_parquet(run / f'forecast-cells-{stress}.parquet')
-                support = frame[['season', *KEY]].sort_values(['season', *KEY]).reset_index(drop=True)
+                support = frame[CELL_KEYS].sort_values(CELL_KEYS).reset_index(drop=True)
                 if natural_reference is None:
                     natural_reference = support
                 if not support.equals(natural_reference):
@@ -263,7 +265,7 @@ def compare(root, output, device='cpu', repetitions=2000):
         # denominators, and exactly equals the mean of individual seed objectives.
         seed_frames = {}
         for label, runs in all_runs.items():
-            members = [pd.read_parquet(run / f'forecast-cells-{stress}.parquet').sort_values(['season', *KEY]).reset_index(drop=True) for run in runs]
+            members = [pd.read_parquet(run / f'forecast-cells-{stress}.parquet').sort_values(CELL_KEYS).reset_index(drop=True) for run in runs]
             frame = members[0].copy()
             frame['model_wis'] = np.mean([member.model_wis.to_numpy() for member in members], axis=0)
             seed_frames[label] = frame

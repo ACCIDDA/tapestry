@@ -11,7 +11,7 @@
 #SBATCH --output=output/slurm/%x-%j.log
 set -euo pipefail
 export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 TAPESTRY_TORCH_THREADS=2 PYTHONUNBUFFERED=1
-export PYTHONPATH="$PWD/data/experiments/B1-onlymask-refit/code/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD/data/experiments/B1-decisive-report/code/src${PYTHONPATH:+:$PYTHONPATH}"
 if [ "${NTFY:-1}" != "0" ]; then
     sbatch --job-name=B1-report-notify --dependency="afterany:$SLURM_JOB_ID" \
         scripts/notify.sbatch B1-onlymask-refit "$SLURM_JOB_ID"

@@ -79,6 +79,11 @@ def test_temporal_blocks_preserve_scientific_ratios_and_pairing():
                     horizon=h, location=loc, geography='US' if loc == 'US' else 'states_dc',
                     **{f'{who}_{metric}': scale * (i+1) for who in ('model', 'ensemble') for metric in METRICS}))
     a = pd.DataFrame(rows)
-    b = a.copy(); b['model_wis'] *= .9
+    second = a.copy(); second['target'] = 'wk inc covid hosp'
+    for metric in METRICS:
+        for who in ('model', 'ensemble'):
+            second[f'{who}_{metric}'] *= 10
+    a = pd.concat([a, second], ignore_index=True)
+    b = a.sample(frac=1, random_state=51).copy(); b['model_wis'] *= .9
     intervals = temporal_intervals({'A': a, 'B': b}, 8, repetitions=100)
     np.testing.assert_allclose([intervals[0]['relative_low'], intervals[0]['relative_high']], [-.1, -.1])
