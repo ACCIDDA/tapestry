@@ -346,7 +346,7 @@ def compare(folder, workers=2, allow_incomplete=False):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare'])
+    parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare', 'decisive'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
     parser.add_argument('--suite', choices=[*SUITES, 'B1', *BACKENDS['B1'].SUITES], default='essential')
@@ -365,6 +365,8 @@ def main(argv=None):
     parser.add_argument('--fit-workers', type=int, default=1,
                         help='run: configurations fitted concurrently on one GPU, each running its '
                              'seeds in sequence; every fit pins two torch threads')
+    parser.add_argument('--report-output', default='data/experiments/B1-decisive-report',
+                        help='decisive: output for paired seeds, mixtures, calibration and uncertainty')
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     b1_suites = {'B1', *BACKENDS['B1'].SUITES}
@@ -405,6 +407,10 @@ def main(argv=None):
     if not args.experiment:
         parser.error('--experiment is required')
     folder = experiment_folder(args.root, args.experiment)
+    if args.command == 'decisive':
+        from tapestry.evaluation.decisive import compare as decisive_compare
+        decisive_compare(Path(args.root), Path(args.report_output), args.device or 'cpu')
+        return
     if args.command == 'plan':
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
                         eval_members=args.eval_members, device=args.device or 'cpu',

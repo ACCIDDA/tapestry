@@ -65,16 +65,49 @@ def case_totals(model, ensemble, case):
     ensemble = ensemble.sort_values(KEY).reset_index(drop=True)
     if not model[KEY].equals(ensemble[KEY]) or not np.allclose(model.observed, ensemble.observed):
         raise ValueError(f"Model and ensemble tasks differ: {case['directory']}")
+    table = case_cells(model, ensemble, case)
+    grouped = table.groupby(['geography', 'location', 'horizon'])
+    totals = grouped[[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]].sum()
+    totals.insert(0, 'n', grouped.size())
+    return totals.reset_index().assign(target=case['target'], season=case['season'])
+
+
+def case_cells(model, ensemble, case):
+    """The same scores as case_totals, retaining forecast origins for paired blocks."""
+    model = model.sort_values(KEY).reset_index(drop=True)
+    ensemble = ensemble.sort_values(KEY).reset_index(drop=True)
+    if not model[KEY].equals(ensemble[KEY]) or not np.allclose(model.observed, ensemble.observed):
+        raise ValueError(f"Model and ensemble tasks differ: {case['directory']}")
     y = model.observed.to_numpy()
     table = pd.concat([quantile_scores(frame[QCOLS].to_numpy(), y).add_prefix(f'{who}_')
                        for who, frame in (('model', model), ('ensemble', ensemble))], axis=1)
+    for key in KEY:
+        table[key] = model[key].to_numpy()
     table['geography'] = np.where(model.location.eq('US'), 'US', 'states_dc')
-    table['location'] = model.location.to_numpy()
-    table['horizon'] = model.horizon.to_numpy()
-    grouped = table.groupby(['geography', 'location', 'horizon'])
-    totals = grouped.sum()
-    totals.insert(0, 'n', grouped.size())
-    return totals.reset_index().assign(target=case['target'], season=case['season'])
+    return table.assign(target=case['target'], season=case['season'])
+
+
+def forecast_cells(run, frozen, stress='natural'):
+    """Shared frozen support, reference truth and ensemble for every stress condition."""
+    frozen = Path(frozen)
+    frames = export(run, stress)
+    parts = []
+    for case in frozen_cases(frozen):
+        units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
+        quantiles = pd.read_parquet(frozen / case['directory'] / 'quantiles.parquet')
+        model = match_forecasts(frames[(case['season'], case['target'])], units, case['target'])
+        ensemble = match_forecasts(quantiles[quantiles.model == case['ensemble']], units, case['target'])
+        parts.append(case_cells(model, ensemble, case))
+    return pd.concat(parts, ignore_index=True)
+
+
+def cells_totals(cells):
+    keys = ['target', 'season', 'geography', 'location', 'horizon']
+    metrics = [f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]
+    grouped = cells.groupby(keys)
+    result = grouped[metrics].sum()
+    result.insert(0, 'n', grouped.size())
+    return result.reset_index()
 
 
 def frozen_cases(frozen):
@@ -92,16 +125,14 @@ def score_run(run, frozen):
     which have no Hub ensemble and are scored against preliminary persistence.
     """
     run, frozen = Path(run), Path(frozen)
-    frames = export(run)
-    parts = []
-    for case in frozen_cases(frozen):
-        units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
-        quantiles = pd.read_parquet(frozen / case['directory'] / 'quantiles.parquet')
-        model = match_forecasts(frames[(case['season'], case['target'])], units, case['target'])
-        ensemble = match_forecasts(quantiles[quantiles.model == case['ensemble']], units, case['target'])
-        parts.append(case_totals(model, ensemble, case))
-    columns = ['target', 'season', 'geography', 'location', 'horizon', 'n', *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]
-    totals = pd.concat(parts, ignore_index=True)[columns]
+    totals = cells_totals(forecast_cells(run, frozen))
+    if json.loads((run / 'manifest.json').read_text()).get('model') == 'B1':
+        stress_parts = []
+        for stress in ('natural', 'recent', 'gap', 'outage'):
+            cells = forecast_cells(run, frozen, stress)
+            cells.to_parquet(run / f'forecast-cells-{stress}.parquet', index=False)
+            stress_parts.append(cells_totals(cells).assign(stress=stress))
+        pd.concat(stress_parts, ignore_index=True).to_csv(run / 'stress-totals.csv', index=False)
     temporary = run / 'totals.tmp'
     totals.to_csv(temporary, index=False)
     temporary.replace(run / 'totals.csv')

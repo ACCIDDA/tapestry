@@ -70,6 +70,15 @@ def task_weights(episodes, target, direct=False, dropout=None):
     return weights[:, 2:] if direct else weights
 
 
+def objective_weights(episodes, targets, scenario, dropout=None, validation=False):
+    direct = scenario.pipeline in ('direct', 'direct_finalflag')
+    weights = task_weights(episodes, targets, direct, dropout)
+    if scenario.pipeline == 'joint_aux025':
+        weights[:, :2] *= 0 if validation else .5
+        weights[:, 2:] *= 2
+    return weights
+
+
 def unique_truth(episodes):
     by_date = {}
     for e in episodes:
@@ -132,7 +141,8 @@ def crop_episodes(episodes, lookback):
 def fit_component(train, validation, targets, component, options, args, scenario, epochs=None):
     """Fit one component. With `validation`, select the best epoch on it; without,
     fit `epochs` epochs on `train` with no early-stopping decision (B0's refit)."""
-    direct = scenario.pipeline == 'direct'
+    direct = scenario.pipeline in ('direct', 'direct_finalflag')
+    joint = scenario.pipeline == 'joint_aux025'
     seed = args.seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -141,20 +151,21 @@ def fit_component(train, validation, targets, component, options, args, scenario
     budget = scenario.epochs if epochs is None else epochs
     # Each fitted component uses only episodes with at least one of its labels.
     hs = slice(2, 6) if direct else slice(0, 6)
-    train = [e for e in train if e['Y'][hs][:, targets, 1].any()]
+    eligibility = slice(2, 6) if direct or joint else hs
+    train = [e for e in train if e['Y'][eligibility][:, targets, 1].any()]
     if selecting:
-        validation = [e for e in validation if e['Y'][hs][:, targets, 1].any()]
+        validation = [e for e in validation if e['Y'][eligibility][:, targets, 1].any()]
     if not train or (selecting and not validation):
         raise ValueError(f'No training/validation labels for channels {targets}')
     x, a, y, cal = arrays(train, args.device)
     known = torch.as_tensor(known_finals(train), device=args.device)
     y = y[:, hs][:, :, targets]
-    weights = torch.as_tensor(task_weights(train, targets, direct)[:, :, targets], device=args.device)
+    weights = torch.as_tensor(objective_weights(train, targets, scenario)[:, :, targets], device=args.device)
     if selecting:
         vx, va, vy, vcal = arrays(validation, args.device)
         vknown = torch.as_tensor(known_finals(validation), device=args.device)
         vy = vy[:, hs][:, :, targets]
-        vw = torch.as_tensor(task_weights(validation, targets, direct)[:, :, targets], device=args.device)
+        vw = torch.as_tensor(objective_weights(validation, targets, scenario, validation=True)[:, :, targets], device=args.device)
     for i, c in enumerate(targets):
         if not weights[:, :, i].sum() or (selecting and not vw[:, :, i].sum()):
             raise ValueError(f'No training/validation labels for {CHANNELS[c]}')
@@ -162,19 +173,19 @@ def fit_component(train, validation, targets, component, options, args, scenario
     if selecting:
         generator = torch.Generator().manual_seed(seed + 2000)
         fixed = {}
-        for stage in (('future',) if direct else ('recent', 'future')):
+        for stage in (('future',) if direct or joint else ('recent', 'future')):
             for name, value in model.draw_noise(scenario.validation_members, len(validation), generator).items():
                 if value is not None:
                     fixed[f'{"z" if name == "z" else name}_{stage}'] = value
         vd = torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device)
-        vw = torch.as_tensor(task_weights(validation, targets, direct, vd.cpu().numpy())[:, :, targets], device=args.device)
+        vw = torch.as_tensor(objective_weights(validation, targets, scenario, vd.cpu().numpy(), validation=True)[:, :, targets], device=args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     best, best_state, best_epoch = float('inf'), None, 0
     history, audit = [], []
     for epoch in range(budget):
         d = draw_dropout(a.cpu().numpy(), rng, probabilities)
         dropout = torch.as_tensor(d, device=args.device)
-        weights = torch.as_tensor(task_weights(train, targets, direct, d)[:, :, targets], device=args.device)
+        weights = torch.as_tensor(objective_weights(train, targets, scenario, d)[:, :, targets], device=args.device)
         audit.append(np.packbits(d.reshape(-1)))
         total = 0.
         model.train()
@@ -229,7 +240,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
 def train(args, scenario=None):
     scenario = resolve(args) if scenario is None else scenario
     ds = WednesdayDataset.load(args.dataset)
-    fitting, validation, refit = partitions(ds, args, direct=scenario.pipeline == 'direct')
+    fitting, validation, refit = partitions(ds, args, direct=scenario.pipeline != 'two_stage')
     fitting = [e for e in crop_episodes(fitting, scenario.lookback) if e['X'][:, :, 1].any()]
     validation = [e for e in crop_episodes(validation, scenario.lookback) if e['X'][:, :, 1].any()]
     refit = [e for e in crop_episodes(refit, scenario.lookback) if e['X'][:, :, 1].any()]
@@ -279,7 +290,10 @@ def train(args, scenario=None):
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
         mask_probabilities=list(scenario.mask_probabilities), training_members=scenario.members,
         validation_members=scenario.validation_members, records=records,
-        objective='.5 recent + .5 future native fair CRPS / fitting-only Q95; visible supplied finals excluded from recent loss. Partition-wide season/target/geography weights recomputed after dropout; absent task share stays zero. Direct: future only.',
+        selection_objective='forecast' if scenario.pipeline != 'two_stage' else 'equal recent and forecast',
+        auxiliary_coefficient=.25 if scenario.pipeline == 'joint_aux025' else None,
+        objective=('forecast + .25 recent; each task uses partition-wide scientific weights, visible finals excluded'
+                   if scenario.pipeline == 'joint_aux025' else '.5 recent + .5 future native fair CRPS / fitting-only Q95; visible supplied finals excluded from recent loss. Partition-wide season/target/geography weights recomputed after dropout; absent task share stays zero. Direct: future only.'),
         cross_target_dependence='Independent draws across fitted components. Shared components allow within-group dependence; marginal scores do not establish joint calibration.')
     torch.save(dict(components=components, metadata=metadata), out / 'model.pt')
     (out / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')
@@ -289,7 +303,7 @@ def train(args, scenario=None):
     from .b1_seasons import fold as season_fold
     fitted = load_models(out / 'model.pt', args.device)[0]
     _, _, _, evaluation, info = season_fold(ds, args.held_out_season,
-                                            direct=scenario.pipeline == 'direct')
+                                            direct=scenario.pipeline != 'two_stage')
     evaluation = [e for e in crop_episodes(evaluation, scenario.lookback) if e['X'][:, :, 1].any()]
     if not evaluation:
         raise ValueError(f'No usable evaluation episodes for held-out {args.held_out_season}')
@@ -312,11 +326,11 @@ def load_models(checkpoint, device):
     return models, saved['metadata']
 
 
-def sample(models, episodes, *, members, seed, device, scenario='natural', sample_batch=32):
+def sample(models, episodes, *, members, seed, device, scenario='natural', sample_batch=32, mask_seed=None):
     episodes = crop_episodes(episodes, models[0].config['lookback'])
     x, a, _, cal = arrays(episodes, device)
     known = torch.as_tensor(known_finals(episodes), device=device)
-    d = torch.as_tensor(draw_dropout(a.cpu().numpy(), np.random.default_rng(seed + 3000), scenario=scenario), device=device)
+    d = torch.as_tensor(draw_dropout(a.cpu().numpy(), np.random.default_rng((seed if mask_seed is None else mask_seed) + 3000), scenario=scenario), device=device)
     components = []
     with torch.no_grad():
         for c, model in enumerate(models):

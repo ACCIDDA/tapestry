@@ -187,6 +187,9 @@ class B1Backend:
         'B1-onlynowcast': dict(pipeline='two_stage', mask_rate=0.),
         # Inputs plus masking: B0's direct task under artificial missingness.
         'B1-onlymask': dict(pipeline='direct', mask_rate=.5),
+        'B1-decisive-A': dict(pipeline='direct', mask_rate=.5),
+        'B1-direct-finalflag': dict(pipeline='direct_finalflag', mask_rate=.5),
+        'B1-joint-aux025': dict(pipeline='joint_aux025', mask_rate=.5),
     }
 
     def scenarios(self, args):
@@ -198,7 +201,10 @@ class B1Backend:
         # the real suite possible without redefining it.
         budget = {key: getattr(args, key) for key in self.BUDGET}
         if args.suite in self.SUITES:
-            return {s.run_id: s for s in b0_top4(**self.SUITES[args.suite], **budget)}
+            recipes = b0_top4(**self.SUITES[args.suite], **budget)
+            if args.suite in ('B1-decisive-A', 'B1-direct-finalflag', 'B1-joint-aux025'):
+                recipes = recipes[:1]
+            return {s.run_id: s for s in recipes}
         base = B1Scenario(**{key: value if value is not None else self.BUDGET[key]
                              for key, value in budget.items()})
         grid = comparison_grid(base, args.presets, args.mask_rates, getattr(args, 'pipelines', None))

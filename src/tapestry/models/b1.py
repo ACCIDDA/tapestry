@@ -86,7 +86,8 @@ class B1(nn.Module):
                  input_scale=None, input_offset=None, scale=None, direct=False,
                  encoder='mlp', spatial='none', decoder='legacy', heads='shared', noise='global',
                  head_sharing='shared', count_transform='fourth_root', ed_transform='logit',
-                 geography=True, dynamics=True, annual_calendar=True, location_embedding=0, us_error='none'):
+                 geography=True, dynamics=True, annual_calendar=True, location_embedding=0, us_error='none',
+                 supplied_final=False, parallel_recent=False):
         super().__init__()
         targets = [target] if isinstance(target, int) else list(target)
         if not targets or len(set(targets)) != len(targets) or any(c not in range(6) for c in targets):
@@ -109,19 +110,19 @@ class B1(nn.Module):
             raise ValueError('Finite positive population required for every location')
         self.targets = targets
         self.config = dict(target=targets, populations=populations, locations=list(locations), lookback=lookback,
-            width=width, latent=latent, direct=direct, input_scale=input_scale, input_offset=input_offset, scale=scale, **options)
+            width=width, latent=latent, direct=direct, supplied_final=supplied_final, parallel_recent=parallel_recent, input_scale=input_scale, input_offset=input_offset, scale=scale, **options)
         self.register_buffer('input_scale', B0._per_location(input_scale, 1))
         self.register_buffer('input_offset', B0._per_location(input_offset, 0))
         self.register_buffer('scale', B0._per_location(scale, 1))
         self.register_buffer('population', torch.tensor([populations[loc] for loc in locations], dtype=torch.float32))
         self.register_buffer('geography', torch.tensor([[np.log(populations[loc] / 100000), float(loc == 'US')]
                                                        for loc in locations], dtype=torch.float32))
-        if direct:
+        if direct or parallel_recent:
             # The finalized-vs-Wednesday control must change inputs, not the
             # predictor: reuse B0's dynamics, decoder and missing-history prior.
             self.direct_model = B0(lookback=lookback, width=width, latent=latent, scale=scale,
                 populations=populations, input_scale=input_scale, input_offset=input_offset,
-                location_ids=list(locations), **options)
+                location_ids=list(locations), supplied_final=supplied_final, parallel_recent=parallel_recent, **options)
             return
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         extra = 3 * annual_calendar + 2 * geography + 24 * dynamics + location_embedding
@@ -307,11 +308,17 @@ class B1(nn.Module):
         if known_final is not None and known_final.shape != available.shape:
             raise ValueError('Known-final flags must have the same shape as availability')
         known_final = torch.zeros_like(visible) if known_final is None else known_final.bool() & visible
-        if self.config['direct']:
-            x = torch.stack((values, visible.to(values.dtype)), dim=3)
-            return self.direct_model(x, calendar, members=members, z=z_future,
+        if self.config['direct'] or self.config['parallel_recent']:
+            x = torch.stack((values, visible.to(values.dtype), known_final.to(values.dtype))
+                            if self.config['supplied_final'] else (values, visible.to(values.dtype)), dim=3)
+            result = self.direct_model(x, calendar, members=members, z=z_future,
                 locations=self.config['locations'], local_z=local_future,
                 national_z=national_future)[:, :, :, self.targets]
+            if self.config['parallel_recent']:
+                recent = torch.where(known_final[:, -2:, self.targets][None],
+                                     values[:, -2:, self.targets][None], result[:, :, :2])
+                result = torch.cat((recent, result[:, :, 2:]), dim=2)
+            return result
         h, anchors, last = self.encode(values, visible, calendar, known_final)
         if z_recent is not None:
             members = z_recent.shape[0]

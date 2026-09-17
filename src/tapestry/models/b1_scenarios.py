@@ -8,7 +8,7 @@ import math
 from .scenarios import TrainingScenario, PREFIX, CODES
 
 PREFIXES = {**PREFIX, 'pipeline': 'pipe_', 'mask_rate': 'mask', 'mask_recent': 'mr', 'mask_gap': 'mg', 'mask_outage': 'mo'}
-OPTIONS = {**CODES, 'pipeline': {'direct': 'direct', 'two_stage': 'two'}}
+OPTIONS = {**CODES, 'pipeline': {'direct': 'direct', 'two_stage': 'two', 'direct_finalflag': 'flag', 'joint_aux025': 'aux025'}}
 MODEL_FIELDS = ('encoder', 'spatial', 'decoder', 'heads', 'noise', 'head_sharing', 'count_transform',
                 'ed_transform', 'geography', 'dynamics', 'annual_calendar', 'location_embedding', 'us_error')
 
@@ -97,7 +97,9 @@ class B1Scenario(TrainingScenario):
         return ['--scenario', self.scenario_string]
 
     def model_options(self):
-        return {k: getattr(self, k) for k in MODEL_FIELDS}
+        return dict({k: getattr(self, k) for k in MODEL_FIELDS},
+                    supplied_final=self.pipeline in ('direct_finalflag', 'joint_aux025'),
+                    parallel_recent=self.pipeline == 'joint_aux025')
 
 
 # B0.1's four best configurations, read from

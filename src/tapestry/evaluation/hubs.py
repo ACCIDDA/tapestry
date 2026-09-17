@@ -37,7 +37,7 @@ def location_codes(values):
     return values.astype(str).str.replace(r'\.0$', '', regex=True).str.zfill(2)
 
 
-def export(run):
+def export(run, stress="natural"):
     """Hub task tables for one saved run, whichever model produced it.
 
     Both models write the same `{(season, target): frame}` shape, so every
@@ -46,7 +46,7 @@ def export(run):
     """
     run = Path(run)
     manifest = json.loads((run / 'manifest.json').read_text())
-    return export_b1(run, manifest) if manifest.get('model') == 'B1' else export_b0(run)
+    return export_b1(run, manifest, stress) if manifest.get('model') == 'B1' else export_b0(run)
 
 
 def export_b0(run):
@@ -76,7 +76,7 @@ def export_b0(run):
     return frames
 
 
-def export_b1(run, manifest):
+def export_b1(run, manifest, stress="natural"):
     """Wednesday issuance maps to the following Saturday reference; horizons 0–3.
 
     A fold's six-week output window straddles season boundaries, so its forecasts
@@ -89,7 +89,7 @@ def export_b1(run, manifest):
     prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
     frames = {}
     for held in SEASONS:
-        path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-natural.npz'
+        path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-{stress}.npz'
         with np.load(path, allow_pickle=False) as data:
             quantiles = select_quantiles(data['quantiles'], data['quantile_levels'])
             future = data['horizons'] >= 0

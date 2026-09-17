@@ -1,7 +1,6 @@
 """Shared seed queue for heterogeneous Slurm GPUs.
 
-NFS advisory locking serializes short queue updates. A configuration has at most
-one active seed; its next seed may move to another GPU. No static node slices.
+NFS advisory locking serializes short queue updates. Independent seeds may run concurrently; each seed has exactly one owner. No static node slices.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -35,9 +34,13 @@ def initialize(folder, retry_failed=False):
         path = folder / 'dispatch.json'
         state = json.loads(path.read_text()) if path.exists() else {'tasks': {}}
         for job in jobs:
-            entry = state['tasks'].setdefault(str(job['task']), dict(active=None, seconds=[], seeds={}))
+            entry = state['tasks'].setdefault(str(job['task']), dict(active={}, seconds=[], seeds={}))
+            active = entry.get('active') or {}
+            if 'seed' in active:  # Read older queues without losing ownership.
+                active = {str(active['seed']): active}
+            entry['active'] = active
             for seed in job['seeds']:
-                if entry['active'] and int(entry['active']['seed']) == seed:
+                if str(seed) in entry['active']:
                     continue
                 previous = entry['seeds'].get(str(seed))
                 if seed_state(folder, job['scenario'], seed)[2]:
@@ -76,8 +79,8 @@ class Queue:
             loads = {owner: 0. for owner in state['owners']}
             counts = {owner: 0 for owner in state['owners']}
             for task, entry in state['tasks'].items():
-                if entry['active']:
-                    owner = entry['active']['owner']
+                for active in entry['active'].values():
+                    owner = active['owner']
                     loads[owner] = loads.get(owner, 0.) + self.cost[task]
                     counts[owner] = counts.get(owner, 0) + 1
             idle_peer = any(owner != self.owner and counts[owner] < lanes
@@ -85,8 +88,8 @@ class Queue:
             pending = False
             for task, entry in state['tasks'].items():
                 todo = [seed for seed, status in entry['seeds'].items() if status == 'pending']
-                pending |= bool(todo) or entry['active'] is not None
-                if not todo or entry['active']:
+                pending |= bool(todo) or bool(entry['active'])
+                if not todo:
                     continue
                 # Give an idle peer a polling interval to take the next seed.
                 if (idle_peer and entry.get('last_owner') == self.owner
@@ -104,7 +107,7 @@ class Queue:
             chosen = min(eligible) if loads.get(self.owner, 0) > average else max(eligible)
             _, _, _, task, seed = chosen
             entry = state['tasks'][task]
-            entry['active'] = dict(owner=self.owner, lane=lane, seed=seed, started=time.time())
+            entry['active'][seed] = dict(owner=self.owner, lane=lane, seed=seed, started=time.time())
             entry['seeds'][seed] = 'running'
             save(self.folder / 'dispatch.json', state)
             return (task, int(seed)), True
@@ -113,7 +116,7 @@ class Queue:
         with self.local, queue_lock(self.folder):
             state = json.loads((self.folder / 'dispatch.json').read_text())
             entry = state['tasks'][task]
-            entry['active'] = None
+            entry['active'].pop(str(seed))
             entry.update(last_owner=self.owner, finished=time.time())
             entry['seeds'][str(seed)] = 'complete' if success else 'failed'
             if success:
@@ -136,13 +139,12 @@ class Queue:
                     del state['owners'][owner]
                     changed = True
             for task, entry in state['tasks'].items():
-                active = entry['active']
-                if active and active['owner'] not in live:
-                    seed = active['seed']
-                    done = seed_state(self.folder, self.jobs[task]['scenario'], int(seed))[2]
-                    entry['seeds'][seed] = 'complete' if done else 'pending'
-                    entry['active'] = None
-                    changed = True
+                for seed, active in list(entry['active'].items()):
+                    if active['owner'] not in live:
+                        done = seed_state(self.folder, self.jobs[task]['scenario'], int(seed))[2]
+                        entry['seeds'][seed] = 'complete' if done else 'pending'
+                        del entry['active'][seed]
+                        changed = True
             if changed:
                 save(self.folder / 'dispatch.json', state)
 

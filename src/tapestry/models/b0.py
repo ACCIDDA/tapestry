@@ -183,9 +183,12 @@ class B0(nn.Module):
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
-                 annual_calendar=True, location_embedding=0, location_ids=None):
+                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False):
         super().__init__()
-        self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent)
+        self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
+                           supplied_final=supplied_final, parallel_recent=parallel_recent)
+        if parallel_recent and (heads != "shared" or noise != "global" or us_error != "none"):
+            raise ValueError("Parallel recent head currently supports the rank-1 shared/global backbone")
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
                 or spatial not in ('none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
@@ -222,13 +225,14 @@ class B0(nn.Module):
             self.config['input_offset'] = self.input_offset.tolist()
         from .architecture import MultiscaleEncoder, ForecastHead
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
+        fields_per_cell = 3 if supplied_final else 2
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
-        self.context = nn.Sequential(nn.Linear((lookback * 12 if encoder == 'mlp' else width) + extra_width, width),
+        self.context = nn.Sequential(nn.Linear((lookback * 6 * fields_per_cell if encoder == 'mlp' else width) + extra_width, width),
                                      nn.SiLU(), nn.Linear(width, width))
-        self.focal = (nn.Sequential(nn.Linear(lookback * 2, width), nn.SiLU(), nn.Linear(width, width))
-                      if encoder == 'mlp' else temporal(2, width))
+        self.focal = (nn.Sequential(nn.Linear(lookback * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
+                      if encoder == 'mlp' else temporal(fields_per_cell, width))
         if encoder != 'mlp':
-            self.temporal_context = temporal(12, width)
+            self.temporal_context = temporal(6 * fields_per_cell, width)
         self.source = nn.Embedding(6, width)
         self.horizon = nn.Linear(1, width)
         self.norm = nn.LayerNorm(width)
@@ -247,8 +251,8 @@ class B0(nn.Module):
         if spatial not in ('none', 'attention'):
             scope_channels = 2 if spatial == 'pathogen_spatial' else 1
             # A separate, scope-restricted remote branch cannot leak other histories.
-            self.remote = (nn.Sequential(nn.Linear(lookback * scope_channels * 2, width), nn.SiLU(), nn.Linear(width, width))
-                           if encoder == 'mlp' else temporal(scope_channels * 2, width))
+            self.remote = (nn.Sequential(nn.Linear(lookback * scope_channels * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
+                           if encoder == 'mlp' else temporal(scope_channels * fields_per_cell, width))
             self.remote_identity = nn.Embedding(3 if spatial == 'pathogen_spatial' else 6, width)
             if geography or location_embedding:
                 self.remote_geo = nn.Linear(2 * geography + location_embedding, width)
@@ -259,6 +263,11 @@ class B0(nn.Module):
             # grow or shrink it. An earlier near-zero start (softplus(-8) = 3e-4) never
             # moved at all. One magnitude per channel; diseases peak at different times.
             self.national_scale = nn.Parameter(softplus_inverse(.1).expand(6).clone())
+
+        if parallel_recent:
+            self.recent_horizon = nn.Linear(1, width)
+            self.recent_norm = nn.LayerNorm(width)
+            self.recent_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
 
     @staticmethod
     def _per_location(value, default):
@@ -304,10 +313,12 @@ class B0(nn.Module):
         if offset is not None:
             transformed = transformed - offset[None, None, :, :]
         values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
-        fields = torch.stack((values, mask), dim=-1)  # N,P,C,L,2
+        fields = torch.stack((values, mask, (x[:, :, :, 2, :].bool() & valid).to(values.dtype))
+                             if config["supplied_final"] else (values, mask), dim=-1)
+        fpc = fields.shape[-1]
         context = fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)
         if config['encoder'] != 'mlp':
-            context = self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * 2, p)).reshape(n, l, -1)
+            context = self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * fpc, p)).reshape(n, l, -1)
         extras, geo_features = [], []
         if config['annual_calendar']:
             if calendar.shape[-1] != 3:
@@ -324,9 +335,9 @@ class B0(nn.Module):
             extras.append(recent_dynamics(values, mask).permute(0, 2, 1))
         context = self.context(torch.cat([context, *extras], -1))
         if config['encoder'] == 'mlp':
-            focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * 2))
+            focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * fpc))
         else:
-            focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, 2, p)).reshape(n, l, c, -1)
+            focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, fpc, p)).reshape(n, l, c, -1)
         if config['spatial'] == 'attention':
             context = self.spatial(context)
         h = context[:, :, None, :] + focal + self.source.weight[None, None, :, :]
@@ -337,7 +348,7 @@ class B0(nn.Module):
             for gi, channels in enumerate(groups):
                 f = fields[:, :, channels]
                 remote_input = (f.permute(0, 3, 1, 2, 4).reshape(n, l, -1) if config['encoder'] == 'mlp'
-                                else f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * 2, p))
+                                else f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * fpc, p))
                 token = self.remote(remote_input).reshape(n, l, -1)
                 token = token + self.remote_identity.weight[gi]
                 if geo_features:
@@ -352,6 +363,7 @@ class B0(nn.Module):
                 remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
             mapping = [next(i for i, group in enumerate(groups) if c in group) for c in range(6)]
             h = h + remote[:, :, mapping]
+        encoded = h
         offsets = x.new_tensor(config['horizons']).reshape(-1, 1) / 4
         h = self.norm(h[:, None, :, :, :] + self.horizon(offsets)[None, :, None, None, :])
         if z is None:
@@ -362,12 +374,15 @@ class B0(nn.Module):
             if local_z.shape != (z.shape[0], n, l, LOCAL_LATENT):
                 raise ValueError('Local latent must have shape [members, episodes, locations, 4]')
 
-        def decode(heads):
-            outputs = [head(h[:, :, :, group], z, local_z)
+        def decode(heads, context=h):
+            outputs = [head(context[:, :, :, group], z, local_z)
                        for head, group in zip(heads, self.output_groups)]
             order = [channel for group in self.output_groups for channel in group]
             return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
         delta = decode(self.output_heads)
+        if config["parallel_recent"]:
+            recent_context = self.recent_norm(encoded[:, None] + self.recent_horizon(x.new_tensor([[-1.], [0.]]) / 4)[None, :, None, None])
+            delta = torch.cat((decode(self.recent_heads, recent_context), delta), dim=2)
         if config['heads'] == 'state_us':
             us = decode(self.us_output_heads)
             is_us = torch.tensor([loc == 'US' for loc in locations], device=x.device)

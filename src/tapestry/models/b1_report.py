@@ -23,10 +23,15 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
     scales = models[0].scale.detach().cpu().numpy()
     for stress in MASK_SCENARIOS:
         dropouts, quantiles, masks, stress_rows, baselines, baseline_masks = [], [], [], [], [], []
+        draws = None
         # One episode at a time bounds memory; seed is common across configurations.
         for i, episode in enumerate(episodes):
             samples, d = sample(models, [episode], members=args.evaluation_members,
                 seed=seed + i * 101, device=args.device, scenario=stress)
+            if draws is None:
+                draws = np.lib.format.open_memmap(root / f'draws-{config_id}-s{seed}-{stress}.tmp.npy',
+                    mode='w+', dtype=np.float32, shape=(len(episodes), samples.shape[0], *samples.shape[2:]))
+            draws[i] = samples[:, 0]
             dropouts.append(d[0])
             truth = episode['Y'][hs, :, 0]
             valid = supervision_mask(episode, d[0])[hs]
@@ -55,12 +60,18 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
                     focal_history_available=bool(natural[:, c, l].any()),
                     visible_focal_history=bool(visible[:, c, l].any()),
                     recent_report_available=bool(natural[-2 + h, c, l] and not known[-2 + h, c, l]) if not direct and h < 2 else None,
+                    recent_kind=('artificial_reconstruction' if d[0, -2 + h, c, l] else
+                                 'revision' if natural[-2 + h, c, l] and not known[-2 + h, c, l] else
+                                 'natural_missing') if not direct and h < 2 else None,
                     observed=float(truth[h, c, l]), loss_scale=float(scales[c, l]),
                     crps=float(crps[h, c, l]), **metric,
                     coverage_50=float(q[6, h, c, l] <= truth[h, c, l] <= q[16, h, c, l]),
                     coverage_95=float(q[1, h, c, l] <= truth[h, c, l] <= q[21, h, c, l])))
             if i == len(episodes) // 2 and stress == 'natural':
                 path_graph(samples[:, 0], episode, ds, config_id, seed, root, direct)
+        draws.flush()
+        del draws
+        (root / f'draws-{config_id}-s{seed}-{stress}.tmp.npy').replace(root / f'draws-{config_id}-s{seed}-{stress}.npy')
         weights = task_weights(episodes, range(6), direct, np.stack(dropouts))
         if not direct:
             weights *= 2  # Report each task separately.

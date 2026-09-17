@@ -1,0 +1,20 @@
+[
+  {
+    "seed": 42,
+    "natural_score": 0.9893939742665779,
+    "natural_totals_match": true,
+    "checkpoint_predictions_match": true
+  },
+  {
+    "seed": 43,
+    "natural_score": 1.0553258464097028,
+    "natural_totals_match": true,
+    "checkpoint_predictions_match": true
+  },
+  {
+    "seed": 44,
+    "natural_score": 1.0518708781661001,
+    "natural_totals_match": true,
+    "checkpoint_predictions_match": true
+  }
+]

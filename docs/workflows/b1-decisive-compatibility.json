@@ -1,0 +1,21 @@
+{
+  "input_hashes_match": true,
+  "scenario_match": true,
+  "seeds": [
+    {
+      "seed": 42,
+      "attempt": "data/experiments/B1-onlymask-refit/mlp-target-direct-mask0.5-a18eb85fd2dd/s42/attempt-001",
+      "git_commit": "ea17323c85900741e11cbdef4bd2ba8fe7ab357f"
+    },
+    {
+      "seed": 43,
+      "attempt": "data/experiments/B1-onlymask-refit/mlp-target-direct-mask0.5-a18eb85fd2dd/s43/attempt-001",
+      "git_commit": "ee659765fe99fe745835429c54088e9475f4153b"
+    },
+    {
+      "seed": 44,
+      "attempt": "data/experiments/B1-onlymask-refit/mlp-target-direct-mask0.5-a18eb85fd2dd/s44/attempt-001",
+      "git_commit": "ee659765fe99fe745835429c54088e9475f4153b"
+    }
+  ]
+}
