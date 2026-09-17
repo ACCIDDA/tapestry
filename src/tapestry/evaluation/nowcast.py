@@ -2,9 +2,9 @@
 
 No Hub ensemble forecasts a week that has already happened, so the ensemble
 denominator B0 uses does not exist here. The denominator is instead the naive
-nowcast "the value visible on Wednesday is already final": preliminary-value
-persistence, falling back to the latest visible context week when this week's
-preliminary report is missing. That is `season_cv.persistence`, the same rule B0
+nowcast "repeat the latest value visible on Wednesday": the same last-visible
+context value for both recent offsets, per channel/location. That is
+`season_cv.persistence`, the same rule B0
 uses for its own persistence diagnostic.
 
 Everything else is B0's: `totals.quantile_scores` computes the metrics and
@@ -34,7 +34,7 @@ SCORE_DEFINITION = (
     f'{BASELINE} WIS over identical nowcast cells at offsets -2 and -1. '
     'States/DC ratios average equally with 80% weight; US gets 20%. Within a '
     'season, available targets average with admissions 1 and ED .5. Seasons '
-    'average equally. Cells with no visible history anywhere have no baseline '
+    'average equally. Cells with no visible focal-channel history at their location have no baseline '
     'and are excluded from both numerator and denominator, and counted in '
     'nowcast-support.json. This is skill against a naive no-revision nowcast, '
     'not against a competing nowcasting method.')
@@ -51,7 +51,7 @@ def nowcast_cells(run, manifest):
     construction, but the filter is applied explicitly rather than assumed.
     """
     prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
-    parts, excluded, scored = [], 0, 0
+    parts, excluded, scored, support = [], 0, 0, []
     for held in SEASONS:
         path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-natural.npz'
         with np.load(path, allow_pickle=False) as data:
@@ -74,6 +74,9 @@ def nowcast_cells(run, manifest):
             scored += int(usable.sum())
             for c, target in sorted(CHANNEL_TARGETS.items()):
                 cells = usable[:, :, c]
+                labels = valid[:, :, c] & in_season[:, :, None]
+                support.append(dict(target=target, season=held, label_cells=int(labels.sum()),
+                    scored_cells=int(cells.sum()), excluded_no_history=int((labels & ~base_valid[:, :, c]).sum())))
                 if not cells.any():
                     continue
                 origin, week, location = np.nonzero(cells)
@@ -91,13 +94,11 @@ def nowcast_cells(run, manifest):
                 summed = grouped.sum()
                 summed.insert(0, 'n', grouped.size())
                 parts.append(summed.reset_index().assign(target=target, season=held))
-    if not parts:
-        return None, None
+    audit = dict(baseline=BASELINE, scored_cells=scored, excluded_no_history=excluded,
+                 by_target_season=support, definition=SCORE_DEFINITION, score_version=SCORE_VERSION)
     columns = ['target', 'season', 'geography', 'location', 'horizon', 'n',
                *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]
-    audit = dict(baseline=BASELINE, scored_cells=scored, excluded_no_history=excluded,
-                 definition=SCORE_DEFINITION, score_version=SCORE_VERSION)
-    return pd.concat(parts, ignore_index=True)[columns], audit
+    return (pd.concat(parts, ignore_index=True)[columns] if parts else pd.DataFrame(columns=columns)), audit
 
 
 def score_nowcasts(run):
@@ -107,10 +108,13 @@ def score_nowcasts(run):
     totals, audit = nowcast_cells(run, manifest)
     if totals is None:
         return None
+    (run / 'nowcast-support.json').write_text(json.dumps(audit, indent=2) + '\n')
+    if totals.empty:
+        (run / 'nowcast-totals.csv').unlink(missing_ok=True)
+        return None
     temporary = run / 'nowcast-totals.tmp'
     totals.to_csv(temporary, index=False)
     temporary.replace(run / 'nowcast-totals.csv')
-    (run / 'nowcast-support.json').write_text(json.dumps(audit, indent=2) + '\n')
     return totals
 
 

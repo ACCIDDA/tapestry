@@ -1,0 +1,970 @@
+{
+  "truth_cutoff": "2026-09-16",
+  "calendar_weeks": [
+    "2023-09-02",
+    "2023-09-09",
+    "2023-09-16",
+    "2023-09-23",
+    "2023-09-30",
+    "2023-10-07",
+    "2023-10-14",
+    "2023-10-21",
+    "2023-10-28",
+    "2023-11-04",
+    "2023-11-11",
+    "2023-11-18",
+    "2023-11-25",
+    "2023-12-02",
+    "2023-12-09",
+    "2023-12-16",
+    "2023-12-23",
+    "2023-12-30",
+    "2024-01-06",
+    "2024-01-13",
+    "2024-01-20",
+    "2024-01-27",
+    "2024-02-03",
+    "2024-02-10",
+    "2024-02-17",
+    "2024-02-24",
+    "2024-03-02",
+    "2024-03-09",
+    "2024-03-16",
+    "2024-03-23",
+    "2024-03-30",
+    "2024-04-06",
+    "2024-04-13",
+    "2024-04-20",
+    "2024-04-27",
+    "2024-05-04",
+    "2024-05-11",
+    "2024-05-18",
+    "2024-05-25",
+    "2024-06-01",
+    "2024-06-08",
+    "2024-06-15",
+    "2024-06-22",
+    "2024-06-29",
+    "2024-07-06",
+    "2024-07-13",
+    "2024-07-20",
+    "2024-07-27",
+    "2024-08-03",
+    "2024-08-10",
+    "2024-08-17",
+    "2024-08-24",
+    "2024-08-31",
+    "2024-09-07",
+    "2024-09-14",
+    "2024-09-21",
+    "2024-09-28",
+    "2024-10-05",
+    "2024-10-12",
+    "2024-10-19",
+    "2024-10-26",
+    "2024-11-02",
+    "2024-11-09",
+    "2024-11-16",
+    "2024-11-23",
+    "2024-11-30",
+    "2024-12-07",
+    "2024-12-14",
+    "2024-12-21",
+    "2024-12-28",
+    "2025-01-04",
+    "2025-01-11",
+    "2025-01-18",
+    "2025-01-25",
+    "2025-02-01",
+    "2025-02-08",
+    "2025-02-15",
+    "2025-02-22",
+    "2025-03-01",
+    "2025-03-08",
+    "2025-03-15",
+    "2025-03-22",
+    "2025-03-29",
+    "2025-04-05",
+    "2025-04-12",
+    "2025-04-19",
+    "2025-04-26",
+    "2025-05-03",
+    "2025-05-10",
+    "2025-05-17",
+    "2025-05-24",
+    "2025-05-31",
+    "2025-06-07",
+    "2025-06-14",
+    "2025-06-21",
+    "2025-06-28",
+    "2025-07-05",
+    "2025-07-12",
+    "2025-07-19",
+    "2025-07-26",
+    "2025-08-02",
+    "2025-08-09",
+    "2025-08-16",
+    "2025-08-23",
+    "2025-08-30",
+    "2025-09-06",
+    "2025-09-13",
+    "2025-09-20",
+    "2025-09-27",
+    "2025-10-04",
+    "2025-10-11",
+    "2025-10-18",
+    "2025-10-25",
+    "2025-11-01",
+    "2025-11-08",
+    "2025-11-15",
+    "2025-11-22",
+    "2025-11-29",
+    "2025-12-06",
+    "2025-12-13",
+    "2025-12-20",
+    "2025-12-27",
+    "2026-01-03",
+    "2026-01-10",
+    "2026-01-17",
+    "2026-01-24",
+    "2026-01-31",
+    "2026-02-07",
+    "2026-02-14",
+    "2026-02-21",
+    "2026-02-28",
+    "2026-03-07",
+    "2026-03-14",
+    "2026-03-21",
+    "2026-03-28",
+    "2026-04-04",
+    "2026-04-11",
+    "2026-04-18",
+    "2026-04-25",
+    "2026-05-02",
+    "2026-05-09",
+    "2026-05-16",
+    "2026-05-23",
+    "2026-05-30",
+    "2026-06-06",
+    "2026-06-13",
+    "2026-06-20",
+    "2026-06-27",
+    "2026-07-04",
+    "2026-07-11",
+    "2026-07-18",
+    "2026-07-25",
+    "2026-08-01"
+  ],
+  "calendar_source": {
+    "path": "data/processed/build_b_finalized.npz",
+    "sha256": "4b5a82c31abaab84c4db8a0f8a7869d5021c811924f7e3444ca8726fd4f2bf9a"
+  },
+  "archive_issuances": 163,
+  "model_issuances": 154,
+  "issuance_range": [
+    "2023-09-06",
+    "2026-08-12"
+  ],
+  "lookback": 12,
+  "locations": 52,
+  "definitions": {
+    "episode": "One issuance containing all six targets and 52 locations.",
+    "input_cell": "One issuance/context-week/channel/location; repeated weeks count in every window.",
+    "output_cell": "One issuance/output-week/channel/location with a valid label; not an independent epidemiological replicate.",
+    "target_location_example": "One issuance/channel/location with at least one valid output week.",
+    "finalized_comparator": "Same B1 pinned labels/source policy/support, used counterfactually as context. Isolates vintage availability.",
+    "masking": "Natural availability only, before artificial training dropout.",
+    "empty_history": "Missing focal histories remain trainable through other channels; even all-missing local histories are retained when the overall episode has inputs."
+  },
+  "sections": {
+    "full_requested_period": {
+      "candidate_issuances": 154,
+      "label_end": null,
+      "finalized_eligible_episodes": 154,
+      "wednesday_eligible_episodes": 151,
+      "lost_episodes": 3,
+      "lost_episode_percent": 1.948051948051948,
+      "lost_issuance_dates": [
+        "2023-09-06",
+        "2023-09-13",
+        "2023-09-20"
+      ],
+      "finalized_input_cells": 531752,
+      "unavailable_wednesday_cells": 148150,
+      "input_cell_percent_unavailable": 27.860732070589297,
+      "eligible_output_cells": 270608,
+      "output_cells_lost_with_episodes": 3542,
+      "target_location_examples": 46417,
+      "target_location_examples_lost": 628,
+      "by_channel": [
+        {
+          "channel": "nhsn_flu_admissions",
+          "finalized_input_cells": 91452,
+          "unavailable_wednesday_cells": 16687,
+          "percent_unavailable": 18.24673052530289,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 45752,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 17
+        },
+        {
+          "channel": "nhsn_covid_admissions",
+          "finalized_input_cells": 92180,
+          "unavailable_wednesday_cells": 37164,
+          "percent_unavailable": 40.316771533955304,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 47000,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 60
+        },
+        {
+          "channel": "nhsn_rsv_admissions",
+          "finalized_input_cells": 77252,
+          "unavailable_wednesday_cells": 23775,
+          "percent_unavailable": 30.775902242013153,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 40056,
+          "output_cells_lost_with_episodes": 6,
+          "retained_episodes_without_any_focal_history": 61
+        },
+        {
+          "channel": "nssp_flu_proportion",
+          "finalized_input_cells": 91884,
+          "unavailable_wednesday_cells": 25800,
+          "percent_unavailable": 28.07888206869531,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 45968,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_covid_proportion",
+          "finalized_input_cells": 92612,
+          "unavailable_wednesday_cells": 25467,
+          "percent_unavailable": 27.498596294216732,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 47216,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_rsv_proportion",
+          "finalized_input_cells": 86372,
+          "unavailable_wednesday_cells": 19257,
+          "percent_unavailable": 22.295419811976103,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 44616,
+          "output_cells_lost_with_episodes": 0,
+          "retained_episodes_without_any_focal_history": 27
+        }
+      ]
+    },
+    "short_run_fitting_partition": {
+      "candidate_issuances": 91,
+      "label_end": "2025-05-28",
+      "finalized_eligible_episodes": 91,
+      "wednesday_eligible_episodes": 88,
+      "lost_episodes": 3,
+      "lost_episode_percent": 3.2967032967032965,
+      "lost_issuance_dates": [
+        "2023-09-06",
+        "2023-09-13",
+        "2023-09-20"
+      ],
+      "finalized_input_cells": 297648,
+      "unavailable_wednesday_cells": 135271,
+      "input_cell_percent_unavailable": 45.44663495135193,
+      "eligible_output_cells": 156728,
+      "output_cells_lost_with_episodes": 3542,
+      "target_location_examples": 27177,
+      "target_location_examples_lost": 628,
+      "by_channel": [
+        {
+          "channel": "nhsn_flu_admissions",
+          "finalized_input_cells": 52920,
+          "unavailable_wednesday_cells": 14180,
+          "percent_unavailable": 26.795162509448225,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 27604,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 17
+        },
+        {
+          "channel": "nhsn_covid_admissions",
+          "finalized_input_cells": 52920,
+          "unavailable_wednesday_cells": 35656,
+          "percent_unavailable": 67.3771730914588,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 27604,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 60
+        },
+        {
+          "channel": "nhsn_rsv_admissions",
+          "finalized_input_cells": 37992,
+          "unavailable_wednesday_cells": 22267,
+          "percent_unavailable": 58.60970730680143,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 20660,
+          "output_cells_lost_with_episodes": 6,
+          "retained_episodes_without_any_focal_history": 61
+        },
+        {
+          "channel": "nssp_flu_proportion",
+          "finalized_input_cells": 53352,
+          "unavailable_wednesday_cells": 23126,
+          "percent_unavailable": 43.34607887239466,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 27820,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_covid_proportion",
+          "finalized_input_cells": 53352,
+          "unavailable_wednesday_cells": 23126,
+          "percent_unavailable": 43.34607887239466,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 27820,
+          "output_cells_lost_with_episodes": 884,
+          "retained_episodes_without_any_focal_history": 30
+        },
+        {
+          "channel": "nssp_rsv_proportion",
+          "finalized_input_cells": 47112,
+          "unavailable_wednesday_cells": 16916,
+          "percent_unavailable": 35.9059263032773,
+          "wednesday_only_cells": 0,
+          "eligible_output_cells": 25220,
+          "output_cells_lost_with_episodes": 0,
+          "retained_episodes_without_any_focal_history": 27
+        }
+      ]
+    }
+  },
+  "source_manifests": [
+    {
+      "source": "hub_flusight_current",
+      "snapshot_id": "20260916T142845.474400Z",
+      "manifest_sha256": "a3883fd425815b95048d530a38bd2cac93825ed62d03bdcab18d24ec8bd5685b"
+    },
+    {
+      "source": "hub_covid_current",
+      "snapshot_id": "20260916T142859.672053Z",
+      "manifest_sha256": "ae59e74387b4a84ae744264eda2f2f48a3ae6ceedb7db8a30a7f3b1c0a77ce07"
+    },
+    {
+      "source": "hub_rsv_current",
+      "snapshot_id": "20260916T142901.469950Z",
+      "manifest_sha256": "542b8950222095f18ebd321a0ee2fba2280bccb5f55588a5ca336ae290dedf21"
+    },
+    {
+      "source": "delphi_nhsn",
+      "snapshot_id": "20260916T142715.158100Z",
+      "manifest_sha256": "ecbe7dacd74de4b1e885b5dc00648ee8483e2605f69e199afa7b262bc674a832"
+    },
+    {
+      "source": "delphi_nssp",
+      "snapshot_id": "20260916T142717.398812Z",
+      "manifest_sha256": "2c6204dfdaa0be89e4e98aca498590e1fbd86fc61038c0518f5d733d60101822"
+    }
+  ],
+  "season_cv": {
+    "2023-2024": {
+      "fitting": {
+        "finalized_eligible_episodes": 105,
+        "wednesday_eligible_episodes": 104,
+        "lost_episodes": 1,
+        "lost_issuance_dates": [
+          "2024-08-07"
+        ]
+      },
+      "validation": {
+        "finalized_eligible_episodes": 54,
+        "wednesday_eligible_episodes": 53,
+        "lost_episodes": 1,
+        "lost_issuance_dates": [
+          "2024-08-07"
+        ]
+      },
+      "evaluation": {
+        "finalized_eligible_episodes": 49,
+        "wednesday_eligible_episodes": 46,
+        "lost_episodes": 3,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      }
+    },
+    "2024-2025": {
+      "fitting": {
+        "finalized_eligible_episodes": 102,
+        "wednesday_eligible_episodes": 99,
+        "lost_episodes": 3,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "validation": {
+        "finalized_eligible_episodes": 54,
+        "wednesday_eligible_episodes": 51,
+        "lost_episodes": 3,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "evaluation": {
+        "finalized_eligible_episodes": 57,
+        "wednesday_eligible_episodes": 57,
+        "lost_episodes": 0,
+        "lost_issuance_dates": []
+      }
+    },
+    "2025-2026": {
+      "fitting": {
+        "finalized_eligible_episodes": 101,
+        "wednesday_eligible_episodes": 98,
+        "lost_episodes": 3,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "validation": {
+        "finalized_eligible_episodes": 48,
+        "wednesday_eligible_episodes": 45,
+        "lost_episodes": 3,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "evaluation": {
+        "finalized_eligible_episodes": 58,
+        "wednesday_eligible_episodes": 58,
+        "lost_episodes": 0,
+        "lost_issuance_dates": []
+      }
+    }
+  },
+  "history_support": [
+    {
+      "season": "2023-2024",
+      "target": "nhsn_flu_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 4964,
+      "model_eligible_cells": 4704,
+      "with_focal_history": 4448,
+      "without_focal_history": 256,
+      "observed_recent_report": 3380,
+      "missing_recent_report_with_older_history": 1068,
+      "missing_history_percent": 5.442176870748299,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nhsn_flu_admissions",
+      "task": "forecast",
+      "reference_label_cells": 9408,
+      "model_eligible_cells": 8784,
+      "with_focal_history": 8734,
+      "without_focal_history": 50,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 0.569216757741348,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nhsn_covid_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 4964,
+      "model_eligible_cells": 4704,
+      "with_focal_history": 0,
+      "without_focal_history": 4704,
+      "observed_recent_report": 0,
+      "missing_recent_report_with_older_history": 0,
+      "missing_history_percent": 100.0,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nhsn_covid_admissions",
+      "task": "forecast",
+      "reference_label_cells": 9408,
+      "model_eligible_cells": 8784,
+      "with_focal_history": 0,
+      "without_focal_history": 8784,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 100.0,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nhsn_rsv_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 2762,
+      "model_eligible_cells": 2762,
+      "with_focal_history": 0,
+      "without_focal_history": 2762,
+      "observed_recent_report": 0,
+      "missing_recent_report_with_older_history": 0,
+      "missing_history_percent": 100.0,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nhsn_rsv_admissions",
+      "task": "forecast",
+      "reference_label_cells": 5524,
+      "model_eligible_cells": 5518,
+      "with_focal_history": 0,
+      "without_focal_history": 5518,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 100.0,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_flu_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 4992,
+      "model_eligible_cells": 4732,
+      "with_focal_history": 1519,
+      "without_focal_history": 3213,
+      "observed_recent_report": 586,
+      "missing_recent_report_with_older_history": 933,
+      "missing_history_percent": 67.89940828402366,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_flu_proportion",
+      "task": "forecast",
+      "reference_label_cells": 9464,
+      "model_eligible_cells": 8840,
+      "with_focal_history": 2450,
+      "without_focal_history": 6390,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 72.28506787330316,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_covid_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 4992,
+      "model_eligible_cells": 4732,
+      "with_focal_history": 1519,
+      "without_focal_history": 3213,
+      "observed_recent_report": 586,
+      "missing_recent_report_with_older_history": 933,
+      "missing_history_percent": 67.89940828402366,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_covid_proportion",
+      "task": "forecast",
+      "reference_label_cells": 9464,
+      "model_eligible_cells": 8840,
+      "with_focal_history": 2450,
+      "without_focal_history": 6390,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 72.28506787330316,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_rsv_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 3952,
+      "model_eligible_cells": 3952,
+      "with_focal_history": 1519,
+      "without_focal_history": 2433,
+      "observed_recent_report": 584,
+      "missing_recent_report_with_older_history": 935,
+      "missing_history_percent": 61.56376518218624,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2023-2024",
+      "target": "nssp_rsv_proportion",
+      "task": "forecast",
+      "reference_label_cells": 7904,
+      "model_eligible_cells": 7904,
+      "with_focal_history": 2450,
+      "without_focal_history": 5454,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 69.00303643724696,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_flu_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5364,
+      "model_eligible_cells": 5364,
+      "with_focal_history": 3900,
+      "without_focal_history": 1464,
+      "observed_recent_report": 3380,
+      "missing_recent_report_with_older_history": 520,
+      "missing_history_percent": 27.293064876957494,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_flu_admissions",
+      "task": "forecast",
+      "reference_label_cells": 10728,
+      "model_eligible_cells": 10728,
+      "with_focal_history": 7326,
+      "without_focal_history": 3402,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 31.711409395973153,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_covid_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5364,
+      "model_eligible_cells": 5364,
+      "with_focal_history": 3900,
+      "without_focal_history": 1464,
+      "observed_recent_report": 3744,
+      "missing_recent_report_with_older_history": 156,
+      "missing_history_percent": 27.293064876957494,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_covid_admissions",
+      "task": "forecast",
+      "reference_label_cells": 10728,
+      "model_eligible_cells": 10728,
+      "with_focal_history": 7176,
+      "without_focal_history": 3552,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 33.1096196868009,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_rsv_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5078,
+      "model_eligible_cells": 5078,
+      "with_focal_history": 3796,
+      "without_focal_history": 1282,
+      "observed_recent_report": 3640,
+      "missing_recent_report_with_older_history": 156,
+      "missing_history_percent": 25.246159905474595,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nhsn_rsv_admissions",
+      "task": "forecast",
+      "reference_label_cells": 10156,
+      "model_eligible_cells": 10156,
+      "with_focal_history": 6968,
+      "without_focal_history": 3188,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 31.39031114612052,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_flu_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5408,
+      "model_eligible_cells": 5408,
+      "with_focal_history": 5147,
+      "without_focal_history": 261,
+      "observed_recent_report": 2485,
+      "missing_recent_report_with_older_history": 2662,
+      "missing_history_percent": 4.826183431952662,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_flu_proportion",
+      "task": "forecast",
+      "reference_label_cells": 10816,
+      "model_eligible_cells": 10816,
+      "with_focal_history": 10282,
+      "without_focal_history": 534,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 4.937130177514793,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_covid_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5408,
+      "model_eligible_cells": 5408,
+      "with_focal_history": 5162,
+      "without_focal_history": 246,
+      "observed_recent_report": 2500,
+      "missing_recent_report_with_older_history": 2662,
+      "missing_history_percent": 4.548816568047338,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_covid_proportion",
+      "task": "forecast",
+      "reference_label_cells": 10816,
+      "model_eligible_cells": 10816,
+      "with_focal_history": 10300,
+      "without_focal_history": 516,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 4.770710059171598,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_rsv_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5408,
+      "model_eligible_cells": 5408,
+      "with_focal_history": 5156,
+      "without_focal_history": 252,
+      "observed_recent_report": 2500,
+      "missing_recent_report_with_older_history": 2656,
+      "missing_history_percent": 4.659763313609467,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2024-2025",
+      "target": "nssp_rsv_proportion",
+      "task": "forecast",
+      "reference_label_cells": 10816,
+      "model_eligible_cells": 10816,
+      "with_focal_history": 10288,
+      "without_focal_history": 528,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 4.881656804733728,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_flu_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5096,
+      "model_eligible_cells": 5096,
+      "with_focal_history": 5092,
+      "without_focal_history": 4,
+      "observed_recent_report": 3858,
+      "missing_recent_report_with_older_history": 1234,
+      "missing_history_percent": 0.07849293563579278,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_flu_admissions",
+      "task": "forecast",
+      "reference_label_cells": 10192,
+      "model_eligible_cells": 10192,
+      "with_focal_history": 10184,
+      "without_focal_history": 8,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 0.07849293563579278,
+      "first_wednesday_with_focal_history": "2023-09-27"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_covid_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5512,
+      "model_eligible_cells": 5512,
+      "with_focal_history": 5512,
+      "without_focal_history": 0,
+      "observed_recent_report": 4784,
+      "missing_recent_report_with_older_history": 728,
+      "missing_history_percent": 0.0,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_covid_admissions",
+      "task": "forecast",
+      "reference_label_cells": 11024,
+      "model_eligible_cells": 11024,
+      "with_focal_history": 11024,
+      "without_focal_history": 0,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 0.0,
+      "first_wednesday_with_focal_history": "2024-11-20"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_rsv_admissions",
+      "task": "nowcast",
+      "reference_label_cells": 5512,
+      "model_eligible_cells": 5512,
+      "with_focal_history": 5512,
+      "without_focal_history": 0,
+      "observed_recent_report": 4784,
+      "missing_recent_report_with_older_history": 728,
+      "missing_history_percent": 0.0,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nhsn_rsv_admissions",
+      "task": "forecast",
+      "reference_label_cells": 11024,
+      "model_eligible_cells": 11024,
+      "with_focal_history": 11024,
+      "without_focal_history": 0,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 0.0,
+      "first_wednesday_with_focal_history": "2024-11-27"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_flu_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5096,
+      "model_eligible_cells": 5096,
+      "with_focal_history": 4972,
+      "without_focal_history": 124,
+      "observed_recent_report": 4120,
+      "missing_recent_report_with_older_history": 852,
+      "missing_history_percent": 2.4332810047095763,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_flu_proportion",
+      "task": "forecast",
+      "reference_label_cells": 10192,
+      "model_eligible_cells": 10192,
+      "with_focal_history": 9920,
+      "without_focal_history": 272,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 2.6687598116169546,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_covid_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5512,
+      "model_eligible_cells": 5512,
+      "with_focal_history": 5425,
+      "without_focal_history": 87,
+      "observed_recent_report": 4609,
+      "missing_recent_report_with_older_history": 816,
+      "missing_history_percent": 1.5783744557329462,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_covid_proportion",
+      "task": "forecast",
+      "reference_label_cells": 11024,
+      "model_eligible_cells": 11024,
+      "with_focal_history": 10838,
+      "without_focal_history": 186,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 1.6872278664731495,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_rsv_proportion",
+      "task": "nowcast",
+      "reference_label_cells": 5512,
+      "model_eligible_cells": 5512,
+      "with_focal_history": 5425,
+      "without_focal_history": 87,
+      "observed_recent_report": 4609,
+      "missing_recent_report_with_older_history": 816,
+      "missing_history_percent": 1.5783744557329462,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    },
+    {
+      "season": "2025-2026",
+      "target": "nssp_rsv_proportion",
+      "task": "forecast",
+      "reference_label_cells": 11024,
+      "model_eligible_cells": 11024,
+      "with_focal_history": 10838,
+      "without_focal_history": 186,
+      "observed_recent_report": null,
+      "missing_recent_report_with_older_history": null,
+      "missing_history_percent": 1.6872278664731495,
+      "first_wednesday_with_focal_history": "2024-04-24"
+    }
+  ],
+  "b0_comparison": {
+    "start": "2023-09-02",
+    "interpretation": "Supplied B0 NPZ, same four future horizons, model calendar and issuance dates. Source/support differences remain; this is not an isolated effect of vintage availability.",
+    "snapshots": [
+      {
+        "dataset": "cdc_nhsn_final",
+        "snapshot_id": "20260914T201316.612613Z"
+      },
+      {
+        "dataset": "cdc_nssp_trajectories",
+        "snapshot_id": "20260914T201420.344071Z"
+      }
+    ],
+    "sections": {
+      "full_period": {
+        "b0_episodes": 152,
+        "b1_episodes": 149,
+        "lost_episodes": 3,
+        "gained_episodes": 0,
+        "lost_percent": 1.9736842105263157,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      },
+      "short_run_fitting_partition": {
+        "b0_episodes": 90,
+        "b1_episodes": 87,
+        "lost_episodes": 3,
+        "gained_episodes": 0,
+        "lost_percent": 3.3333333333333335,
+        "lost_issuance_dates": [
+          "2023-09-06",
+          "2023-09-13",
+          "2023-09-20"
+        ]
+      }
+    }
+  },
+  "dataset_sha256": "e52eee71ab1b2646f8d39bea1ddc951c22551c17866ad738a348f3123507ba8c",
+  "b0_dataset_sha256": "4b5a82c31abaab84c4db8a0f8a7869d5021c811924f7e3444ca8726fd4f2bf9a"
+}

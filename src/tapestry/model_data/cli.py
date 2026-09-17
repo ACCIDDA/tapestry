@@ -53,7 +53,8 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="Materialize the two local CDC snapshots")
     build.add_argument("--data-root", default="data")
-    build.add_argument("--start", default="2023-09-01")
+    from tapestry.models.provenance import CALENDAR_START
+    build.add_argument("--start", default=CALENDAR_START)
     build.add_argument("--end")
     build.add_argument("--output", default=DEFAULT_DATASET)
     inspect = commands.add_parser("inspect", help="Show dimensions and observed coverage")

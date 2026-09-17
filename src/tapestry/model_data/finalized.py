@@ -11,6 +11,7 @@ import numpy as np
 
 from tapestry.data.geography import STATE_NAMES, observation_geography
 from tapestry.data.selection import SelectedData
+from tapestry.models.provenance import CALENDAR_START
 
 CHANNELS = (
     "nhsn_flu_admissions", "nhsn_covid_admissions", "nhsn_rsv_admissions",
@@ -117,7 +118,7 @@ class FinalizedDataset:
                 yield episode
 
 
-def build_dataset(data_root="data", *, start="2023-09-01", end=None):
+def build_dataset(data_root="data", *, start=CALENDAR_START, end=None):
     """Read only the pinned latest direct CDC products via the shared selector."""
     start_day = date.fromisoformat(start)
     end_day = date.fromisoformat(end) if end else None

@@ -13,6 +13,7 @@ import socket
 import subprocess
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
+CALENDAR_START = '2023-09-02'  # First modelled Saturday, shared by B0 and B1.
 SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')
 
 

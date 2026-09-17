@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from tapestry.model_data.finalized import CHANNELS
-from tapestry.model_data.wednesday import WednesdayDataset
+from tapestry.model_data.wednesday import DEFAULT_DATASET, WednesdayDataset
 from .b0 import fair_crps_cells
 from .b1 import B1, MASK_SCENARIOS, draw_dropout
 from .b1_scenarios import add_scenario_args, resolve
@@ -127,7 +127,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
             raise ValueError(f'Both recent and future training labels required for {CHANNELS[c]}')
     generator = torch.Generator().manual_seed(seed + 2000)
     fixed = {}
-    for stage in ('recent', 'future'):
+    for stage in (('future',) if direct else ('recent', 'future')):
         for name, value in model.draw_noise(scenario.validation_members, len(validation), generator).items():
             if value is not None:
                 fixed[f'{"z" if name == "z" else name}_{stage}'] = value
@@ -294,7 +294,7 @@ def main(argv=None):
     add_scenario_args(identify)
     for command in ('train', 'predict'):
         p = commands.add_parser(command)
-        p.add_argument('--dataset', default='data/processed/build_b1_wednesday.npz')
+        p.add_argument('--dataset', default=DEFAULT_DATASET)
         p.add_argument('--device', choices=('cpu', 'cuda', 'mps'), default='cpu')
         p.add_argument('--seed', type=int, default=42)
         p.add_argument('--output', required=True)

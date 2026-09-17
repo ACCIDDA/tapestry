@@ -17,10 +17,11 @@ import sys
 from .scenarios import SUITES, get_scenarios, get_training_scenario
 from .provenance import SEASONS
 from .quantiles import LEVELS
+from tapestry.model_data.wednesday import DEFAULT_DATASET as B1_DATASET
 
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 LOCATIONS = 'data/metadata/locations.csv'
-DATASETS = {'B0': 'data/processed/build_b_finalized.npz', 'B1': 'data/processed/build_b1_wednesday.npz'}
+DATASETS = {'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET}
 EVAL_MEMBERS = {'B0': 2048, 'B1': 256}
 
 
@@ -80,6 +81,11 @@ def snapshot(folder, settings, extra=()):
         hashes[str(source.relative_to(root))] = sha(source)
     frozen = Path(settings['frozen'])
     inputs = {settings['dataset'], settings['population_file'], str(frozen / 'manifest.json')}
+    if settings.get('model') == 'B1':
+        from tapestry.model_data.wednesday import WednesdayDataset
+        calendar_source = WednesdayDataset.load(settings['dataset']).metadata.get('calendar_source')
+        if calendar_source:
+            inputs.add(calendar_source['path'])
     inputs |= {str(p) for p in list(frozen.rglob('units.parquet')) + list(frozen.rglob('quantiles.parquet'))}
     settings['input_sha256'] = {p: sha(p) for p in sorted(inputs)}
     settings['source_snapshot_sha256'] = hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()
@@ -173,14 +179,12 @@ class B1Backend:
                                help=f'default {value}; a named suite keeps its own unless given')
         group.add_argument('--retrospective', action='store_true')
 
-    # Experiments that attribute a B1-versus-B0 gap. Each takes B0's four best
-    # configurations and adds exactly one thing, so a difference has one cause.
-    # Read them as a ladder from B0: vintage inputs, then nowcasting, then masking.
+    # B0's four best configurations under Wednesday inputs, the two-stage B1
+    # design, or artificial masking. Label/source support can also differ from B0.
     SUITES = {
         # Inputs only. B0's own direct four-week task and architecture, refitted
-        # on the Wednesday dataset, so the ONLY difference from B0 is that the
-        # model sees the real Wednesday information state instead of finalized
-        # data. This is the control that measures what the vintages cost.
+        # on the Wednesday dataset. Predictor code is B0 itself; natural input
+        # availability and the dataset's reference-label policy determine support.
         'B1-fromB0': dict(pipeline='direct', mask_rate=0.),
         # Inputs plus nowcasting: the two-stage recent->future path, still with
         # natural availability and no artificial masking.
@@ -214,6 +218,9 @@ class B1Backend:
         from .b1_seasons import fold
         check_frozen(settings['frozen'])
         data = WednesdayDataset.load(settings['dataset'])
+        calendar_source = data.metadata.get('calendar_source')
+        if calendar_source and sha(calendar_source['path']) != calendar_source['sha256']:
+            raise ValueError('The B0 calendar dataset changed; rebuild B1 against it and use a new experiment')
         populations(settings['population_file'], data.locations)
         for held in SEASONS:
             fold(data, held)  # every fold must have fitting, validation and evaluation episodes

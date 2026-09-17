@@ -11,6 +11,33 @@ from tapestry.models.b1 import B1, draw_dropout
 from tapestry.models.b1_run import task_weights, unique_truth
 
 
+@pytest.mark.parametrize('noise,us_error', [('global', 'none'), ('local', 'shared_factor')])
+def test_direct_b1_is_b0_on_identical_masked_inputs(noise, us_error):
+    """The input-vintage control must not change dynamics, anchors or decoding."""
+    from tapestry.models.b0 import B0
+    locations, population = ['NC', 'US'], {'NC': 10000000., 'US': 330000000.}
+    options = dict(lookback=12, width=8, latent=4, count_transform='fourth_root',
+        ed_transform='logit', geography=True, dynamics=True, noise=noise, us_error=us_error)
+    torch.manual_seed(17)
+    original = B0(populations=population, location_ids=locations, **options)
+    torch.manual_seed(17)
+    direct = B1([0, 3], population, locations, direct=True, **options)
+    values = torch.rand(2, 12, 6, 2)
+    available = torch.rand_like(values) > .2
+    available[:, :, 0, 0] = False  # no focal history: the B0 prior must be preserved
+    dropout = torch.rand_like(values) > .8
+    visible = available & ~dropout
+    values[~visible] = float('nan')  # masked values cannot leak through either path
+    calendar = torch.zeros(2, 3)
+    fixed = direct.draw_noise(3, 2, torch.Generator().manual_seed(42))
+    expected = original(torch.stack((values, visible.float()), dim=3), calendar,
+        locations=locations, z=fixed['z'], local_z=fixed['local'], national_z=fixed['national'])[:, :, :, [0, 3]]
+    actual = direct(values, available, calendar, dropout=dropout,
+        z_future=fixed['z'], local_future=fixed['local'], national_future=fixed['national'])
+    assert torch.isfinite(actual).all()
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+
 def test_wednesday_snapshot_fallback_retractions_and_support():
     archive = wd.VintageArchive()
     # Older period has no Hub coverage and may use Delphi; an interior hole may not.
@@ -254,6 +281,69 @@ def test_nowcast_scores_against_persistence_and_excludes_cells_without_history()
     np.testing.assert_allclose(scores.covered_95, [0., 1.])
 
 
+def test_nowcast_relative_support_does_not_drop_unavailable_targets_silently(tmp_path):
+    from tapestry.evaluation.nowcast import nowcast_cells, CHANNEL_TARGETS
+    from tapestry.models.provenance import SEASONS
+    from tapestry.models.quantiles import LEVELS
+    for held in SEASONS:
+        folder = tmp_path / f'eval_{held}'
+        folder.mkdir()
+        truth = np.full((1, 2, 6, 1), 5.)
+        valid = np.zeros_like(truth, dtype=bool)
+        valid[:, :, :2] = True
+        baseline_mask = np.zeros((1, 6, 1), dtype=bool)
+        baseline_mask[:, 0] = True
+        np.savez(folder / 'forecasts-demo-s42-natural.npz', horizons=[-2, -1],
+            quantiles=np.repeat(truth[None], len(LEVELS), axis=0), quantile_levels=LEVELS,
+            truth=truth, mask=valid, locations=['US'],
+            target_dates=[[f'{held[5:]}-01-06', f'{held[5:]}-01-13']],
+            baseline=np.full((1, 6, 1), 4.), baseline_mask=baseline_mask)
+    totals, audit = nowcast_cells(tmp_path, dict(run_id='demo', seed=42))
+    assert audit['scored_cells'] == audit['excluded_no_history'] == 6
+    assert totals.n.sum() == 6
+    assert totals.model_wis.sum() == 0
+    assert totals.ensemble_wis.sum() == 6
+    covid = [r for r in audit['by_target_season'] if r['target'] == CHANNEL_TARGETS[1]]
+    assert len(covid) == 3
+    assert all(r['label_cells'] == r['excluded_no_history'] == 2 and r['scored_cells'] == 0 for r in covid)
+
+
+def test_b1_custom_b0_calendar_controls_views_and_hidden_weeks(tmp_path):
+    """A custom B0 start must move B1's calendar and validation pattern together."""
+    from datetime import date, timedelta
+    from tapestry.model_data.finalized import FinalizedDataset
+    from tapestry.models.b1_seasons import hidden_weeks
+    from tapestry.models.season_cv import validation_split, SEASONS
+    first, last = date(2023, 9, 30), date(2026, 8, 1)
+    days = tuple((first + timedelta(weeks=i)).isoformat() for i in range((last-first).days // 7 + 1))
+    b0 = FinalizedDataset(np.ones((len(days), 6, 2, 1), np.float32), days, ('NC',), {})
+    path = tmp_path / 'b0.npz'
+    b0.save(path)
+    archive = wd.VintageArchive()
+    for day in ('2023-09-02', *days):
+        release = (date.fromisoformat(day) + timedelta(days=4)).isoformat()
+        archive.add('delphi_nhsn', release, day, 0, 'NC', 10)
+    raw = wd.build_wednesday(start='2023-09-06', end='2026-08-05', truth_cutoff='2026-08-05',
+                             locations=('NC',), archive=archive, calendar_dataset=path)
+    output = tmp_path / 'b1.npz'
+    raw.save(output)
+    view = wd.WednesdayDataset.load(output)
+    assert view.calendar_weeks == days
+    assert view.metadata['calendar_start'] == days[0]
+    assert wd.WednesdayDataset.load(output, archive=True).arrays['issuance_dates'][0] == '2023-09-06'
+    a = view.arrays
+    outside = ~np.isin(a['context_dates'], days)
+    assert not a['X_available'][outside].any()
+    assert not a['X_values'][outside].any()
+    labels = np.concatenate((a['Y_recent_valid'], a['Y_future_valid']), axis=1)
+    assert not labels[~np.isin(a['target_dates'], days)].any()
+    # Archive data outside the model calendar was not overwritten by the view.
+    assert raw.arrays['X_available'][raw.arrays['context_dates'] == '2023-09-02'].any()
+    for held in SEASONS:
+        *_, info = validation_split(b0, held, lookback=12)
+        assert hidden_weeks(view, held) == set(info['validation_weeks'])
+
+
 def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path):
     """Recent offsets are nowcasts and must never be relabelled as Hub forecasts.
 
@@ -296,7 +386,7 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
     from tapestry.models.b1_seasons import fold, hidden_weeks
     from tapestry.models.season_cv import SEASONS
 
-    ds = WednesdayDataset.load('data/processed/build_b1_wednesday.npz')
+    ds = WednesdayDataset.load(wd.DEFAULT_DATASET)
     for held in SEASONS:
         fitting, validation, evaluation, _ = fold(ds, held)
         hidden = hidden_weeks(ds, held)

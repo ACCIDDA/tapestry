@@ -116,6 +116,13 @@ class B1(nn.Module):
         self.register_buffer('population', torch.tensor([populations[loc] for loc in locations], dtype=torch.float32))
         self.register_buffer('geography', torch.tensor([[np.log(populations[loc] / 100000), float(loc == 'US')]
                                                        for loc in locations], dtype=torch.float32))
+        if direct:
+            # The finalized-vs-Wednesday control must change inputs, not the
+            # predictor: reuse B0's dynamics, decoder and missing-history prior.
+            self.direct_model = B0(lookback=lookback, width=width, latent=latent, scale=scale,
+                populations=populations, input_scale=input_scale, input_offset=input_offset,
+                location_ids=list(locations), **options)
+            return
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         extra = 3 * annual_calendar + 2 * geography + 24 * dynamics + location_embedding
         self.context = nn.Sequential(nn.Linear((lookback * 12 if encoder == 'mlp' else width) + extra, width),
@@ -147,11 +154,10 @@ class B1(nn.Module):
         self.future = heads_for_stage()
         if heads == 'state_us':
             self.us_future = heads_for_stage()
-        if not direct:
-            self.recent = heads_for_stage()
-            self.corrections = nn.Sequential(nn.Linear(2, width), nn.SiLU(), nn.Linear(width, width))
-            if heads == 'state_us':
-                self.us_recent = heads_for_stage()
+        self.recent = heads_for_stage()
+        self.corrections = nn.Sequential(nn.Linear(2, width), nn.SiLU(), nn.Linear(width, width))
+        if heads == 'state_us':
+            self.us_recent = heads_for_stage()
         if us_error == 'shared_factor':
             self.national_scale = nn.Parameter(softplus_inverse(.1).expand(2, len(targets)).clone())
 
@@ -286,7 +292,7 @@ class B1(nn.Module):
         shape = (members, episodes)
         return dict(z=draw((*shape, self.config['latent'])),
             local=draw((*shape, len(self.config['locations']), LOCAL_LATENT)) if self.config['noise'] == 'local' else None,
-            national=draw((*shape, len(self.targets))) if self.config['us_error'] == 'shared_factor' else None)
+            national=draw((*shape, 6 if self.config['direct'] else len(self.targets))) if self.config['us_error'] == 'shared_factor' else None)
 
     def forward(self, values, available, calendar, members=128, dropout=None, z_recent=None, z_future=None,
                 local_recent=None, local_future=None, national_recent=None, national_future=None):
@@ -297,6 +303,11 @@ class B1(nn.Module):
         if dropout is not None and dropout.shape != available.shape:
             raise ValueError('Artificial dropout must have the same shape as availability')
         visible = available.bool() if dropout is None else available.bool() & ~dropout.bool()
+        if self.config['direct']:
+            x = torch.stack((values, visible.to(values.dtype)), dim=3)
+            return self.direct_model(x, calendar, members=members, z=z_future,
+                locations=self.config['locations'], local_z=local_future,
+                national_z=national_future)[:, :, :, self.targets]
         h, anchors, last = self.encode(values, visible, calendar)
         if z_recent is not None:
             members = z_recent.shape[0]
@@ -309,9 +320,6 @@ class B1(nn.Module):
             return (noise.get('z') if z is None else z, noise.get('local') if local is None else local,
                     noise.get('national') if national is None else national)
         future_noise = complete(z_future, local_future, national_future)
-        if self.config['direct']:
-            future = last[None, :, None] + self.decode('future', h[None], future_noise, (1, 2, 3, 4))
-            return self.working_to_native(future)
         recent_noise = complete(z_recent, local_recent, national_recent)
         if recent_noise[0].shape != future_noise[0].shape:
             raise ValueError('Recent and future noise must have matching member/episode axes')

@@ -205,7 +205,8 @@ def main(argv=None):
         p.add_argument('--output', default='data/processed/b0.pt' if name == 'train' else 'data/processed/b0_predictions.npz')
         if name == 'train':
             add_experiment_args(p)
-            p.add_argument('--train-start', default='2023-09-01')
+            from .provenance import CALENDAR_START
+            p.add_argument('--train-start', default=CALENDAR_START)
             p.add_argument('--train-end', required=True)
             p.add_argument('--lookback', type=int, default=8)
             p.add_argument('--horizons', type=int, nargs='+', default=[1, 2, 3, 4])

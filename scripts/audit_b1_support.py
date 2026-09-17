@@ -1,7 +1,7 @@
 """Count B1 episode/input losses with explicit, aligned finalized comparators.
 
-Run from the repo root after building the Wednesday dataset. Optional B0 data
-must be rebuilt from pinned local CDC snapshots; it is not an original B0 run.
+Run from the repo root after building the Wednesday dataset. Pass the actual B0
+NPZ for a B0 comparison; its hash is recorded separately from B1's truth policy.
 """
 import argparse
 import hashlib
@@ -11,7 +11,8 @@ from pathlib import Path
 import numpy as np
 
 from tapestry.model_data.finalized import CHANNELS, FinalizedDataset
-from tapestry.model_data.wednesday import START, WednesdayDataset
+from tapestry.model_data.wednesday import DEFAULT_DATASET, WednesdayDataset
+from tapestry.models.provenance import CALENDAR_START
 
 
 def count(value):
@@ -22,7 +23,9 @@ def percent(numerator, denominator):
     return 100 * numerator / denominator if denominator else None
 
 
-def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
+def audit(ds, train_end, b0=None, b0_start=None):
+    ds = ds.model_view()
+    b0_start = b0_start or (b0.dates[0] if b0 is not None else ds.metadata.get('calendar_start', CALENDAR_START))
     a = ds.arrays
     available = a['X_available']
     labels = np.concatenate((a['Y_recent_valid'], a['Y_future_valid']), axis=1)
@@ -35,7 +38,7 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
                 raise ValueError(f'Inconsistent pinned reference support: {day}')
             by_date[day] = mask
     missing = set(a['context_dates'].flat) - by_date.keys()
-    if any(day >= START for day in missing):
+    if any(day in ds.calendar_weeks for day in missing):
         raise ValueError('Reference labels do not span the requested context; rebuild a wider issuance range')
     empty = np.zeros_like(available[0, 0])
     finalized = np.array([[by_date.get(day, empty) for day in days] for days in a['context_dates']])
@@ -78,6 +81,8 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
             target_location_examples_lost=count(permitted[lost].any(1)),
             by_channel=per_channel)
     result = dict(truth_cutoff=ds.metadata['truth_cutoff'],
+        calendar_weeks=list(ds.calendar_weeks), calendar_source=ds.metadata.get('calendar_source'),
+        archive_issuances=ds.metadata.get('archive_issuances'), model_issuances=len(available),
         issuance_range=[str(a['issuance_dates'][0]), str(a['issuance_dates'][-1])],
         lookback=int(available.shape[1]), locations=len(ds.locations),
         definitions=dict(episode='One issuance containing all six targets and 52 locations.',
@@ -88,6 +93,24 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
             masking='Natural availability only, before artificial training dropout.',
             empty_history='Missing focal histories remain trainable through other channels; even all-missing local histories are retained when the overall episode has inputs.'),
         sections=sections, source_manifests=ds.metadata['source_manifests'])
+    # This counterfactual is used only to measure support, never saved as model inputs.
+    from tapestry.models.b1_seasons import fold
+    from tapestry.models.provenance import SEASONS
+    counterfactual = WednesdayDataset(dict(a, X_available=finalized), ds.metadata)
+    folds = {}
+    for held in SEASONS:
+        real = fold(ds, held)
+        final = fold(counterfactual, held)
+        parts = {}
+        for name, actual, reference in zip(('fitting', 'validation', 'evaluation'), real[:3], final[:3]):
+            actual_dates = {e['issuance_date'] for e in actual}
+            lost = [e['issuance_date'] for e in reference if e['issuance_date'] not in actual_dates]
+            parts[name] = dict(finalized_eligible_episodes=len(reference), wednesday_eligible_episodes=len(actual),
+                               lost_episodes=len(lost), lost_issuance_dates=lost)
+        folds[held] = parts
+    result['season_cv'] = folds
+    from tapestry.models.b1_report import history_support
+    result['history_support'] = history_support(ds)
     if b0 is not None:
         if b0.locations != ds.locations:
             raise ValueError('B0 and B1 location orders differ')
@@ -96,6 +119,8 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
             e = b0.query(str(days[-1]), lookback=available.shape[1])
             # Recreate B0's original dataset-start padding from a wider saved panel.
             e['X'][np.array(e['context_dates']) < b0_start] = 0
+            e['X'][~np.isin(e['context_dates'], ds.calendar_weeks)] = 0
+            e['Y'][~np.isin(e['target_dates'], ds.calendar_weeks)] = 0
             b0_x.append(e['X'][:, :, 1].astype(bool))
             b0_y.append(e['Y'][:, :, 1].astype(bool))
         b0_x, b0_y = np.array(b0_x), np.array(b0_y)
@@ -114,8 +139,8 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
                 lost_episodes=count(before & ~after), gained_episodes=count(after & ~before),
                 lost_percent=percent(count(before & ~after), count(before)),
                 lost_issuance_dates=a['issuance_dates'][before & ~after].tolist())
-        result['rebuilt_b0_comparison'] = dict(start=b0_start,
-            interpretation='Same four future targets and issuance dates. Rebuilt current local CDC snapshots, not original historical B0 experiment dataset. Source/support differences remain.',
+        result['b0_comparison'] = dict(start=b0_start,
+            interpretation='Supplied B0 NPZ, same four future horizons, model calendar and issuance dates. Source/support differences remain; this is not an isolated effect of vintage availability.',
             snapshots=[dict(dataset=p['dataset'], snapshot_id=p['snapshot_id']) for p in b0.metadata['provenance']],
             sections=comparisons)
     return result
@@ -123,7 +148,7 @@ def audit(ds, train_end, b0=None, b0_start='2023-09-01'):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dataset', default='data/processed/build_b1_wednesday.npz')
+    parser.add_argument('--dataset', default=DEFAULT_DATASET)
     parser.add_argument('--train-end', default='2025-05-28')
     parser.add_argument('--b0-dataset')
     parser.add_argument('--output', default='data/processed/b1-audit/training-support.json')

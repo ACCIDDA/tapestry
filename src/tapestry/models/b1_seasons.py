@@ -29,18 +29,16 @@ from .season_cv import SEASONS, VALIDATION_WEEKS, VALIDATION_SPACING, VALIDATION
 # B0's panel begins at the first available September 2023 week and its season 1 is
 # therefore 48 weeks, not a full 52. B1's archive reaches back to 2023-08-05. That
 # is a data-availability difference, not a season definition, so the shared fold
-# calendar starts where B0's does and B1 drops the four earlier weeks. Otherwise
+# calendar comes from the dataset's pinned B0 weeks (or the shared default) and
+# B1 drops the four earlier weeks. Otherwise
 # B1's 2023-2024 fold would both train on more data and, because the 3-in-16
 # pattern counts weeks from the start of a season, hide a different set of weeks
 # (measured: an offset of exactly four weeks in two of the three folds).
-CALENDAR_START = '2023-09-02'
 
 
 def season_weeks(ds):
     """The fold calendar: target weeks inside the three modelled seasons, in order."""
-    weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
-    return [day for day in weeks
-            if day >= CALENDAR_START and season(date.fromisoformat(day)) in SEASONS]
+    return list(ds.calendar_weeks)
 
 
 def hidden_weeks(ds, held_out):
@@ -91,6 +89,7 @@ def fold(ds, held_out):
     """
     if held_out not in SEASONS:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
+    ds = ds.model_view()
     all_weeks = sorted({str(day) for row in ds.arrays['target_dates'] for day in row})
     weeks = season_weeks(ds)
     label = {day: season(date.fromisoformat(day)) for day in weeks}

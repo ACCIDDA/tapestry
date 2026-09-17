@@ -12,6 +12,7 @@ import numpy as np
 from tapestry.data.geography import STATE_NAMES, observation_geography
 from tapestry.data.selection import SelectedData, describe, source_signal, _timestamp
 from .finalized import CHANNELS, saturday, season
+from tapestry.models.provenance import CALENDAR_START, SEASONS
 
 SOURCES = ('hub_flusight_current', 'hub_covid_current', 'hub_rsv_current', 'delphi_nhsn', 'delphi_nssp')
 ORIGINS = ('totalconfflunewadm', 'totalconfc19newadm', 'totalconfrsvnewadm',
@@ -20,6 +21,8 @@ SIGNALS = ('confirmed_admissions_flu_ew', 'confirmed_admissions_covid_ew', 'conf
            'pct_ed_visits_influenza', 'pct_ed_visits_covid', 'pct_ed_visits_rsv')
 # These are requested week STARTS converted explicitly, not source date heuristics.
 START = '2023-08-05'
+ARCHIVE_START = (date.fromisoformat(START) + timedelta(days=4)).isoformat()
+DEFAULT_DATASET = 'data/processed/build_b1_wednesday_calendar.npz'
 RSV_ED_START = '2023-11-11'
 OFFSETS = (-1, 0, 1, 2, 3, 4)  # relative to preceding Saturday
 REASONS = ('available', 'no_archive_coverage', 'hub_missing_or_retracted', 'source_null_or_invalid', 'outside_support')
@@ -210,12 +213,45 @@ class WednesdayDataset:
         path.with_suffix('.json').write_text(json.dumps(self.metadata, indent=2) + '\n')
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, *, archive=False):
         with np.load(path, allow_pickle=False) as data:
-            return cls({k: data[k] for k in data.files if k != 'metadata'}, json.loads(str(data['metadata'])))
+            result = cls({k: data[k] for k in data.files if k != 'metadata'}, json.loads(str(data['metadata'])))
+        return result if archive else result.model_view()
+
+    @property
+    def calendar_weeks(self):
+        candidates = self.metadata.get('calendar_weeks', sorted(set(self.arrays['target_dates'].flat)))
+        start = self.metadata.get('calendar_start', CALENDAR_START)
+        return tuple(str(d) for d in candidates if str(d) >= start and season(date.fromisoformat(str(d))) in SEASONS)
+
+    def model_view(self):
+        """One calendar filter for folds, diagnostics and prediction; archive stays intact."""
+        if self.metadata.get('view') == 'model_calendar':
+            return self
+        a, weeks = self.arrays, self.calendar_weeks
+        context = np.isin(a['context_dates'], weeks)
+        targets = np.isin(a['target_dates'], weeks)
+        rows = context.any(1) & targets.any(1)
+        arrays = {key: value[rows].copy() if key != 'locations' else value.copy() for key, value in a.items()}
+        context, targets = context[rows], targets[rows]
+        reasons = list(self.metadata.get('reasons', REASONS))
+        if 'outside_model_calendar' not in reasons:
+            reasons.append('outside_model_calendar')
+        reason = reasons.index('outside_model_calendar')
+        for key in ('X_values', 'X_available', 'X_provenance'):
+            arrays[key][~context] = 0
+        arrays['X_reason'][~context] = reason
+        for prefix, permitted in (('Y_recent', targets[:, :2]), ('Y_future', targets[:, 2:])):
+            arrays[prefix][~permitted] = 0
+            arrays[prefix + '_valid'][~permitted] = False
+        arrays['Y_provenance'][~targets] = 0
+        arrays['Y_reason'][~targets] = reason
+        metadata = dict(self.metadata, view='model_calendar', calendar_weeks=list(weeks), reasons=reasons,
+                        archive_issuances=len(a['issuance_dates']), model_issuances=int(rows.sum()))
+        return WednesdayDataset(arrays, metadata)
 
     def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True):
-        a = self.arrays
+        a = self.model_view().arrays
         for i, issuance in enumerate(a['issuance_dates']):
             if (start and issuance < start) or (end and issuance > end):
                 continue
@@ -233,10 +269,20 @@ class WednesdayDataset:
                        season=season(date.fromisoformat(a['context_dates'][i, -1])), index=i)
 
 
-def build_wednesday(data_root='data', *, start='2023-08-09', end, truth_cutoff, lookback=12,
-                    locations=None, archive=None):
+def build_wednesday(data_root='data', *, start=ARCHIVE_START, end, truth_cutoff, lookback=12,
+                    locations=None, archive=None, calendar_start=None, calendar_dataset=None):
     """Explicit issuance range and pinned truth cutoff; allow incomplete leading context."""
     archive = read_archive(data_root) if archive is None else archive
+    if calendar_start is not None and calendar_dataset is not None:
+        raise ValueError('Choose --calendar-start or --calendar-dataset, not both')
+    calendar = dict(calendar_start=calendar_start or CALENDAR_START)
+    saturday(calendar['calendar_start'])
+    if calendar_dataset is not None:
+        from .finalized import FinalizedDataset
+        reference = FinalizedDataset.load(calendar_dataset)
+        calendar = dict(calendar_start=reference.dates[0], calendar_weeks=list(reference.dates),
+                        calendar_source=dict(path=str(calendar_dataset),
+                            sha256=hashlib.sha256(Path(calendar_dataset).read_bytes()).hexdigest()))
     locations = tuple(locations or (*sorted(STATE_NAMES), 'US'))
     first, last = date.fromisoformat(start), date.fromisoformat(end)
     output_dates(start, lookback)
@@ -268,7 +314,8 @@ def build_wednesday(data_root='data', *, start='2023-08-09', end, truth_cutoff, 
             f'Check data root {str(data_root)!r}, source snapshots, dates and locations. '
             f'Acquire the required Hub/Delphi archives or copy an existing precomputed '
             f'B1 dataset. No output files were written.')
-    metadata = dict(version=1, model='B1', channels=CHANNELS, units=['admissions'] * 3 + ['proportion'] * 3,
+    metadata = dict(version=2, model='B1', **calendar, history_mode='strict_wednesday',
+        channels=CHANNELS, units=['admissions'] * 3 + ['proportion'] * 3,
         lookback=lookback, truth_cutoff=truth_cutoff, start=start, end=end,
         offsets_from_preceding_saturday=OFFSETS, hub_offsets=[-2, -1, 0, 1, 2, 3],
         cutoff_policy='End of Wednesday UTC; naive timestamps treated as UTC. No intraday deadline claim.',
@@ -278,28 +325,36 @@ def build_wednesday(data_root='data', *, start='2023-08-09', end, truth_cutoff, 
         coverage_policy='Per channel/location earliest event in any eligible Hub release onward; holes and retractions remain missing.',
         fallback_policy='A Delphi provenance entry means absent Hub historical coverage; explicit Hub missing cells never fall back.',
         reasons=REASONS, provenance=archive.provenance, source_manifests=archive.manifests, selection_audit=archive.audit)
-    return WednesdayDataset(arrays, metadata)
+    dataset = WednesdayDataset(arrays, metadata)
+    if not any(dataset.episodes()):
+        raise ValueError('No usable B1 episodes inside the model calendar; check calendar and archive dates. No output files were written.')
+    return dataset
 
 
 def main(argv=None):
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-root', default='data')
-    parser.add_argument('--start', default='2023-08-09', help='First Wednesday issuance')
+    parser.add_argument('--start', default=ARCHIVE_START, help='First archived Wednesday; distinct from the model calendar')
     parser.add_argument('--end', required=True, help='Last Wednesday issuance')
     parser.add_argument('--truth-cutoff', required=True)
     parser.add_argument('--lookback', type=int, default=12)
-    parser.add_argument('--output', default='data/processed/build_b1_wednesday.npz')
+    parser.add_argument('--calendar-start', help='First modelled Saturday; defaults to the shared B0/B1 start')
+    parser.add_argument('--calendar-dataset', help='Use the exact calendar of this B0 NPZ, recording its hash')
+    parser.add_argument('--output', default=DEFAULT_DATASET)
     args = parser.parse_args(argv)
     try:
         dataset = build_wednesday(args.data_root, start=args.start, end=args.end,
-            truth_cutoff=args.truth_cutoff, lookback=args.lookback)
+            truth_cutoff=args.truth_cutoff, lookback=args.lookback,
+            calendar_start=args.calendar_start, calendar_dataset=args.calendar_dataset)
     except (ValueError, FileNotFoundError) as error:
         parser.error(str(error))
     dataset.save(args.output)
-    print(json.dumps(dict(output=args.output, shape=list(dataset.arrays['X_values'].shape),
+    view = dataset.model_view()
+    print(json.dumps(dict(output=args.output, archive_shape=list(dataset.arrays['X_values'].shape),
+        model_shape=list(view.arrays['X_values'].shape), calendar_start=view.calendar_weeks[0],
         usable_episodes=sum(1 for _ in dataset.episodes()),
-        observed_by_channel=dataset.arrays['X_available'].sum((0, 1, 3)).tolist())))
+        observed_by_channel=view.arrays['X_available'].sum((0, 1, 3)).tolist())))
 
 
 if __name__ == '__main__':
