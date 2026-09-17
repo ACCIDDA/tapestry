@@ -280,8 +280,10 @@ def array_commands(tasks, experiment, chunk=ARRAY_CHUNK):
     return commands
 
 
-def completed_runs(folder, allow_incomplete):
+def completed_runs(folder, allow_incomplete, seeds=None):
     rows = collect(folder)
+    if seeds is not None:
+        rows = [row for row in rows if row["seed"] in seeds]
     done = [row for row in rows if row['status'] == 'complete']
     if not done or (len(done) < len(rows) and not allow_incomplete):
         raise ValueError(f'{len(rows) - len(done)} of {len(rows)} runs incomplete; finish them or pass --allow-incomplete')
@@ -291,7 +293,7 @@ def completed_runs(folder, allow_incomplete):
     return done, versions
 
 
-def rank(folder, allow_incomplete=False):
+def rank(folder, allow_incomplete=False, seeds=None):
     """Rank completed runs by season-equal location-relative WIS, B0 or B1.
 
     A B1 experiment additionally gets a nowcast ranking under `nowcast/`, scored
@@ -302,7 +304,7 @@ def rank(folder, allow_incomplete=False):
     from tapestry.evaluation import nowcast
     settings = json.loads((folder / 'experiment.json').read_text())
     backend = backend_for(settings)
-    done, _ = completed_runs(folder, allow_incomplete)
+    done, _ = completed_runs(folder, allow_incomplete, seeds)
     attempts_used = sorted(row['attempt'] for row in done)
     # Different ranked sets get different destinations; never mix partial rankings.
     fingerprint = dict(attempts=attempts_used, score_version=SCORE_VERSION)
@@ -378,6 +380,7 @@ def main(argv=None):
     # Both models are ranked on the frozen ensemble-supported tasks, so the
     # frozen support is required for either; a run that cannot be scored failed.
     args.frozen = args.frozen or FROZEN
+    requested_seeds = args.seeds
     if args.seeds is None:
         if args.suite == 'B0.1':
             from .b01_suite import expand
@@ -424,13 +427,15 @@ def main(argv=None):
             raise SystemExit(1)
         return
     elif args.command == 'rank':
-        print(rank(folder, args.allow_incomplete))
+        print(rank(folder, args.allow_incomplete, requested_seeds))
         return
     elif args.command == 'compare':
         print(compare(folder, args.workers, args.allow_incomplete))
         return
     rows = collect(folder)
     if args.command == 'status':
+        if requested_seeds is not None:
+            rows = [row for row in rows if row['seed'] in requested_seeds]
         for row in rows:
             print(f'{row["status"]}\t{row["task"]}\t{row["name"]}\ts{row["seed"]}\t{row["attempt"]}')
         print(json.dumps({status: sum(row['status'] == status for row in rows) for status in sorted({r['status'] for r in rows})}))

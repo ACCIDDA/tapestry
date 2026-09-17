@@ -52,9 +52,10 @@ def initialize(folder, retry_failed=False):
 
 
 class Queue:
-    def __init__(self, folder, owner, lanes=6, gpu_count=6, retry_failed=False):
+    def __init__(self, folder, owner, lanes=6, gpu_count=6, retry_failed=False, seeds=None):
         self.folder, self.owner = folder, owner
         self.lanes, self.gpu_count = lanes, gpu_count
+        self.seeds = None if seeds is None else {str(seed) for seed in seeds}
         self.jobs = {str(job['task']): job for job in read_jobs(folder)}
         self.cost = {}
         for task, job in self.jobs.items():
@@ -87,8 +88,10 @@ class Queue:
                             for owner, lanes in state['owners'].items())
             pending = False
             for task, entry in state['tasks'].items():
-                todo = [seed for seed, status in entry['seeds'].items() if status == 'pending']
-                pending |= bool(todo) or bool(entry['active'])
+                todo = [seed for seed, status in entry['seeds'].items() if status == 'pending'
+                        and (self.seeds is None or seed in self.seeds)]
+                active = [seed for seed in entry['active'] if self.seeds is None or seed in self.seeds]
+                pending |= bool(todo) or bool(active)
                 if not todo:
                     continue
                 # Give an idle peer a polling interval to take the next seed.
@@ -154,6 +157,7 @@ def main():
     parser.add_argument('-e', '--experiment', default='B0.1')
     parser.add_argument('--lanes', type=int, required=True)
     parser.add_argument('--gpu-count', type=int, default=6)
+    parser.add_argument('--seeds', nargs='+', type=int, help='Run only these planned seeds; leave the full plan intact')
     parser.add_argument('--retry-failed', action='store_true', help='Requeue failed seeds when restarting the dispatcher')
     args = parser.parse_args()
     if args.lanes < 1 or args.gpu_count < 1:
@@ -166,7 +170,7 @@ def main():
     check_inputs(settings)
     owner = (os.environ['SLURM_ARRAY_JOB_ID'] + '_' + os.environ['SLURM_ARRAY_TASK_ID']
              if 'SLURM_ARRAY_JOB_ID' in os.environ else os.environ['SLURM_JOB_ID'])
-    queue = Queue(folder, owner, args.lanes, args.gpu_count, args.retry_failed)
+    queue = Queue(folder, owner, args.lanes, args.gpu_count, args.retry_failed, args.seeds)
     stop = threading.Event()
     print(json.dumps(dict(dispatch_owner=owner, host=socket.gethostname(), lanes=args.lanes)), flush=True)
 
