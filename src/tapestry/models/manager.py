@@ -440,11 +440,6 @@ def main(argv=None):
         # A source snapshot means the shared dispatcher drains one queue across
         # the patron GPUs, rather than Slurm slicing static array tasks.
         if (folder / 'code').is_dir():
-            settings = json.loads((folder / 'experiment.json').read_text())
-            if settings.get('device') == 'cpu':
-                print(f'CPU launch: sbatch --job-name={args.experiment} scripts/cpu.sbatch {args.experiment}')
-                print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root} --device cpu')
-                return
             print(f'Shared GPU queue: sbatch --job-name={args.experiment} --array=0-3 '
                   f'scripts/jlessler.sbatch {args.experiment}')
             print(f'Locally: python -m tapestry.models.manager run -e {args.experiment}{root}')
