@@ -21,3 +21,17 @@ This is a paired engineering screen, not a ten-seed conclusion. There is no
 estimable across-seed uncertainty with one seed, and no ten-distribution mixture.
 Use the shared natural/stress forecast score and calibration to guide iteration;
 the original uncertainty and decision-rule report waits for the overnight run.
+
+
+One-seed report command after the two new fits finish:
+
+```bash
+.venv/bin/python -m tapestry.models.manager decisive -e B1-onlymask-refit \
+  --seeds 42 --device cuda --report-output data/experiments/B1-seed42-report
+```
+
+The same dependency report launcher takes an optional seed (`scripts/b1_decisive.sbatch 42`).
+It uses its separately pinned reporting source. The report includes all three
+pairwise differences, corrected stress scores, target/season/geography calibration,
+C's recent mechanisms, and conditional temporal intervals. It does not manufacture
+seed intervals or a ten-member-model mixture from a single fitted seed.

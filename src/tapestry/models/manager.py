@@ -411,8 +411,13 @@ def main(argv=None):
         parser.error('--experiment is required')
     folder = experiment_folder(args.root, args.experiment)
     if args.command == 'decisive':
-        from tapestry.evaluation.decisive import compare as decisive_compare
-        decisive_compare(Path(args.root), Path(args.report_output), args.device or 'cpu')
+        from tapestry.evaluation.decisive import compare as decisive_compare, screen
+        if requested_seeds is not None:
+            if len(requested_seeds) != 1:
+                parser.error('A quick decisive screen takes exactly one seed; omit --seeds for the ten-seed report')
+            screen(Path(args.root), Path(args.report_output), requested_seeds[0])
+        else:
+            decisive_compare(Path(args.root), Path(args.report_output), args.device or 'cpu')
         return
     if args.command == 'plan':
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,

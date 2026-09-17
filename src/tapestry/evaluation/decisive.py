@@ -377,6 +377,83 @@ def write_recommendation(scores, paired, temporal, output):
     fig.tight_layout(); fig.savefig(output / 'mixture-stress.png', dpi=160); plt.close(fig)
 
 
+def screen(root, output, seed=42):
+    """Full-budget single-seed comparison; no across-seed inference or mixture claim."""
+    output.mkdir(parents=True, exist_ok=True)
+    runs, settings, masks = {}, {}, {}
+    for label, experiment in zip('ABC', EXPERIMENTS):
+        folder = root / experiment
+        done, _ = completed_runs(folder, False, seeds=[seed])
+        if len(done) != 1:
+            raise ValueError('Single-seed screen requires one configuration per experiment')
+        settings[label] = json.loads((folder / 'experiment.json').read_text())
+        runs[label] = folder / done[0]['attempt'] / 'b1'
+        meta = json.loads((runs[label] / 'manifest.json').read_text())
+        prefix = f"{meta['run_id']}-s{seed}"
+        for held in SEASONS:
+            for stress in MASK_SCENARIOS:
+                with np.load(runs[label] / f'eval_{held}/evaluation-masks-{prefix}-{stress}.npz') as archive:
+                    key = (held, stress)
+                    if key in masks:
+                        np.testing.assert_array_equal(masks[key][0], archive['D'])
+                        np.testing.assert_array_equal(masks[key][1], archive['issuance_dates'])
+                    else:
+                        masks[key] = (archive['D'].copy(), archive['issuance_dates'].copy())
+    if any(v['input_sha256'] != settings['A']['input_sha256'] for v in settings.values()):
+        raise ValueError('Single-seed inputs or frozen support differ')
+    from .totals import rank as rank_runs
+    rank_runs([dict(config_id=label, seed=seed, path=run) for label, run in runs.items()], output)
+    records, calibration, uncertainty = [], [], []
+    for stress in MASK_SCENARIOS:
+        frames = {}
+        for label, run in runs.items():
+            frame = forecast_cells(run, settings[label]['frozen'], stress).sort_values(CELL_KEYS).reset_index(drop=True)
+            if frames and not frame[CELL_KEYS].equals(frames['A'][CELL_KEYS]):
+                raise ValueError('Single-seed task keys differ')
+            frames[label] = frame
+            records.append(dict(candidate=label, seed=seed, stress=stress, objective=scalar(frame)))
+            totals = cells_totals(frame)
+            calibration.append(season_scores(totals.assign(config_id=label, seed=seed)).assign(stress=stress))
+            if stress == 'natural':
+                keys = ['target', 'season', 'location', 'horizon']
+                prior = pd.read_csv(run / 'totals.csv').sort_values(keys).reset_index(drop=True).sort_index(axis=1)
+                current = totals.sort_values(keys).reset_index(drop=True).sort_index(axis=1)
+                pd.testing.assert_frame_equal(prior, current, check_dtype=False, rtol=1e-12, atol=1e-10)
+        for length in (8, 4, 12):
+            uncertainty.extend(dict(row, stress=stress, seed=seed) for row in temporal_intervals(frames, length))
+    scores = pd.DataFrame(records)
+    scores.to_csv(output / 'stress-scores.csv', index=False)
+    pd.concat(calibration).to_csv(output / 'calibration.csv', index=False)
+    pd.DataFrame(uncertainty).to_csv(output / 'temporal-uncertainty.csv', index=False)
+    recent_diagnostics([runs['C']], output)
+    table = scores.pivot(index='stress', columns='candidate', values='objective')
+    contrasts = []
+    for stress, row in table.iterrows():
+        for candidate, baseline in (('B', 'A'), ('C', 'A'), ('C', 'B')):
+            contrasts.append(dict(stress=stress, candidate=candidate, baseline=baseline,
+                                  difference=row[candidate]-row[baseline], relative_change=row[candidate]/row[baseline]-1))
+    pd.DataFrame(contrasts).to_csv(output / 'paired-differences.csv', index=False)
+    best = table.loc['natural'].idxmin()
+    text = (f'# Full-budget seed {seed} screen\n\nLowest natural forecast point score: **{best}**.\n\n'
+            + table.to_string() + '\n\nOne seed per candidate, all three folds, full training and 2,048 evaluation draws. '
+            'A is reused; no reduced-epoch or CPU fits are included. '
+            'The natural totals reproduce the ranked scores, and stress masks and frozen task keys match. '
+            'Paired differences are one fitted-seed contrast, not an estimate of seed uncertainty. '
+            'There is no ten-distribution mixture. Temporal intervals condition on these fitted models, '
+            'resampling 8-week blocks with 4/12-week sensitivity; excluded-support counts accompany the intervals. '
+            'Use this screen for iteration. The ten-seed promotion decision remains deferred to the overnight run.\n')
+    (output / 'README.md').write_text(text)
+    print(text, flush=True)
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(9, 5))
+    table.plot.bar(ax=ax)
+    ax.set_ylabel('Forecast ensemble-relative WIS (lower is better)')
+    ax.tick_params(axis='x', rotation=0)
+    fig.tight_layout(); fig.savefig(output / 'seed-stress.png', dpi=160); plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=Path('data/experiments'))
