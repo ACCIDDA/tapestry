@@ -250,10 +250,16 @@ class WednesdayDataset:
                         archive_issuances=len(a['issuance_dates']), model_issuances=int(rows.sum()))
         return WednesdayDataset(arrays, metadata)
 
-    def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True):
+    def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True,
+                 min_availability=0.):
+        """`min_availability` drops episodes whose mean X_available falls below it. The
+        archive begins before several channels exist, so early Wednesdays carry as little
+        as one of six channels; keeping them trains the model on near-empty inputs."""
         a = self.model_view().arrays
         for i, issuance in enumerate(a['issuance_dates']):
             if (start and issuance < start) or (end and issuance > end):
+                continue
+            if min_availability and a['X_available'][i].mean() < min_availability:
                 continue
             y = np.concatenate((a['Y_recent'][i], a['Y_future'][i]))
             valid = np.concatenate((a['Y_recent_valid'][i], a['Y_future_valid'][i])).copy()
