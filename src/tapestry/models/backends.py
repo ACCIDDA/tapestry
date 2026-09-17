@@ -65,7 +65,7 @@ def snapshot(folder, settings, extra=()):
     from .provenance import save, git_state
     root = Path(__file__).resolve().parents[3]
     files = list((root / 'src').rglob('*.py')) + list((root / 'src').rglob('*.R'))
-    files += [root / 'scripts/jlessler.sbatch', root / 'scripts/notify.sbatch',
+    files += [root / 'scripts/jlessler.sbatch', root / 'scripts/cpu.sbatch', root / 'scripts/notify.sbatch',
               root / 'pyproject.toml', *extra]
     notifications = folder / 'notifications'
     notifications.mkdir(parents=True, exist_ok=True)
