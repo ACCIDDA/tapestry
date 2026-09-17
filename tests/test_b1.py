@@ -521,7 +521,7 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
     ds = wd.build_wednesday(start='2023-08-09', end='2026-09-16', truth_cutoff='2026-09-30',
                             locations=('NC',), archive=archive)
     for held in SEASONS:
-        fitting, validation, evaluation, _ = fold(ds, held)
+        fitting, validation, _, evaluation, _ = fold(ds, held)
         hidden = hidden_weeks(ds, held)
         for episode in fitting:
             for h, day in enumerate(episode['target_dates']):
@@ -541,6 +541,115 @@ def test_b1_season_folds_exclude_held_out_and_hidden_weeks_from_fitting():
             for h, day in enumerate(episode['target_dates']):
                 if episode['Y'][h, :, 1].any():
                     assert season(date.fromisoformat(str(day))) == held
+
+
+def _synthetic_fold_dataset():
+    """Fully observed three-season calendar; no local research dataset needed."""
+    from datetime import date, timedelta
+    archive = wd.VintageArchive()
+    day = date(2023, 8, 5)
+    while day <= date(2026, 9, 26):
+        for c in range(6):
+            archive.add('delphi_nhsn' if c < 3 else 'delphi_nssp',
+                        '2026-09-30', day.isoformat(), c, 'NC', 100 if c < 3 else .02)
+        day += timedelta(weeks=1)
+    return wd.build_wednesday(start='2023-08-09', end='2026-09-16', truth_cutoff='2026-09-30',
+                              locations=('NC',), archive=archive)
+
+
+def test_b1_refit_partition_restores_hidden_weeks_that_inner_fitting_hides():
+    """The refit sees every training week; inner fitting and its scales do not.
+
+    This is the partition half of B0's select-then-refit procedure: hidden weeks
+    are withheld only to choose an epoch count, then restored for the final fit.
+    """
+    from datetime import date
+    from tapestry.model_data.finalized import season
+    from tapestry.models.b1_seasons import fold, hidden_weeks
+    from tapestry.models.season_cv import SEASONS
+
+    ds = _synthetic_fold_dataset()
+    for held in SEASONS:
+        fitting, validation, refit, _, info = fold(ds, held)
+        hidden = hidden_weeks(ds, held)
+        assert hidden, 'the fixture must exercise hidden weeks'
+        # Inner fitting hides them; the refit supervises them again.
+        inner_labelled = {str(d) for e in fitting for h, d in enumerate(e['target_dates'])
+                          if e['Y'][h, :, 1].any()}
+        refit_labelled = {str(d) for e in refit for h, d in enumerate(e['target_dates'])
+                          if e['Y'][h, :, 1].any()}
+        assert not (inner_labelled & hidden), 'hidden week supervised during inner fitting'
+        assert hidden <= refit_labelled, 'refit must restore hidden-week supervision'
+        # Neither ever supervises or conditions on the held-out season.
+        for name, episodes in (('refit', refit), ('fitting', fitting)):
+            for episode in episodes:
+                for h, day in enumerate(episode['target_dates']):
+                    if episode['Y'][h, :, 1].any():
+                        assert season(date.fromisoformat(str(day))) != held, f'{name} leaks held-out label'
+                for j, day in enumerate(episode['context_dates']):
+                    if season(date.fromisoformat(str(day))) == held:
+                        assert not episode['X'][j, :, 1].any(), f'{name} leaks held-out context'
+                        assert not episode['X'][j, :, 2].any(), f'{name} leaks held-out final flag'
+        # B0's validation may condition on earlier hidden weeks while scoring only them.
+        visible = {str(d) for e in validation for j, d in enumerate(e['context_dates'])
+                   if e['X'][j, :, 1].any()}
+        assert visible & hidden, 'validation must be able to condition on earlier hidden weeks'
+        assert info['refit_episodes'] >= info['fitting_episodes']
+
+
+def test_b1_fold_origins_follow_calendar_membership_of_the_context_end():
+    """B0 selects origins by calendar membership, not by remaining labels."""
+    from datetime import date
+    from tapestry.model_data.finalized import season
+    from tapestry.models.b1_seasons import fold, hidden_weeks, season_weeks
+    from tapestry.models.season_cv import SEASONS
+
+    ds = _synthetic_fold_dataset()
+    weeks = set(season_weeks(ds))
+    for held in SEASONS:
+        fitting, validation, refit, evaluation, _ = fold(ds, held)
+        hidden = hidden_weeks(ds, held)
+        training = {d for d in weeks if season(date.fromisoformat(d)) != held}
+        held_weeks = {d for d in weeks if season(date.fromisoformat(d)) == held}
+        for episode in fitting:
+            assert str(episode['context_dates'][-1]) in training - hidden
+        for episode in refit:
+            assert str(episode['context_dates'][-1]) in training
+        for episode in validation:
+            assert str(episode['context_dates'][-1]) in training
+            # B0 keeps only origins that can actually reach a hidden target.
+            assert hidden & {str(d) for d in episode['target_dates']}
+        for episode in evaluation:
+            assert str(episode['context_dates'][-1]) in held_weeks
+
+
+def test_b1_perturbing_held_out_values_cannot_change_fitting_or_refit_inputs():
+    """Held-out observations may not reach inner or refit inputs, labels or scales."""
+    import numpy as np
+    from datetime import date
+    from tapestry.model_data.finalized import season
+    from tapestry.model_data.wednesday import WednesdayDataset
+    from tapestry.models.b1_seasons import fold
+    from tapestry.models.season_cv import SEASONS
+
+    ds = _synthetic_fold_dataset()
+    held = SEASONS[-1]
+    arrays = {k: v.copy() for k, v in ds.arrays.items()}
+    target_dates = arrays['target_dates']
+    for i in range(target_dates.shape[0]):
+        for h, day in enumerate(target_dates[i]):
+            if season(date.fromisoformat(str(day))) == held:
+                if h < 2:
+                    arrays['Y_recent'][i, h] *= 7.5
+                else:
+                    arrays['Y_future'][i, h - 2] *= 7.5
+    perturbed = WednesdayDataset(arrays, dict(ds.metadata))
+    for name, a, b in zip(('fitting', 'validation', 'refit'),
+                          fold(ds, held)[:3], fold(perturbed, held)[:3]):
+        assert len(a) == len(b), f'{name} episode count changed'
+        for ea, eb in zip(a, b):
+            assert np.array_equal(ea['X'], eb['X']), f'{name} inputs saw held-out values'
+            assert np.array_equal(ea['Y'], eb['Y']), f'{name} labels saw held-out values'
 
 
 def test_b1_season_fold_hub_export_keeps_only_the_held_out_season(tmp_path):
@@ -573,3 +682,127 @@ def test_b1_season_fold_hub_export_keeps_only_the_held_out_season(tmp_path):
     assert {label for label, _ in frames} <= set(spans)
     for (label, _), frame in frames.items():
         assert set(frame.target_end_date) == {spans[label][0]}
+
+
+def test_b1_refit_uses_a_fresh_model_and_exactly_the_selected_epochs(monkeypatch, tmp_path):
+    """B0's procedure: select an epoch count, then refit a freshly seeded model.
+
+    Spies on `fit_component` so the contract is checked without GPU training: the
+    refit call must receive the selection's chosen epoch count, the refit partition
+    and its own recomputed options, and the exported model must be the refit's.
+    """
+    import argparse
+    import numpy as np
+    import torch
+    from tapestry.models import b1_run
+    from tapestry.models.season_cv import SEASONS
+
+    ds = _synthetic_fold_dataset()
+    dataset = tmp_path / 'fixture.npz'
+    ds.save(dataset)
+    population = tmp_path / 'pop.csv'
+    population.write_text('location,population\nNC,10000000\n')
+
+    calls = []
+    real_fit = b1_run.fit_component
+
+    class Fake:
+        config = dict(target=(0,), direct=True)
+        def state_dict(self):
+            return {'w': torch.zeros(1)}
+
+    def spy(train, validation, targets, component, options, args, scenario, epochs=None):
+        calls.append(dict(phase='select' if validation is not None else 'refit',
+                          episodes=len(train), epochs=epochs, options=id(options),
+                          scale=np.asarray(options['scale']).copy()))
+        record = dict(targets=targets, best_epoch=3, selected_epoch=3,
+                      phase='select' if validation is not None else 'refit',
+                      epochs=scenario.epochs if epochs is None else epochs,
+                      fitting_episodes=len(train), validation_episodes=0, history=[])
+        audit = dict(dropout_packed=np.zeros((1, 1), np.uint8), dropout_shape=np.array([1, 1]),
+                     train_issuance_dates=[e['issuance_date'] for e in train])
+        return Fake(), record, audit
+
+    monkeypatch.setattr(b1_run, 'fit_component', spy)
+    monkeypatch.setattr(b1_run, 'load_models', lambda *a, **k: ([None], None))
+    monkeypatch.setattr(b1_run, 'GROUPS', {'target': [(0,)]})
+    import tapestry.models.b1_report as b1_report
+    monkeypatch.setattr(b1_report, 'evaluate', lambda *a, **k: None)
+
+    args = argparse.Namespace(dataset=str(dataset), population_file=str(population),
+        held_out_season=SEASONS[-1], seed=42, device='cpu', retrospective=True,
+        output=str(tmp_path / 'out'), eval_members=2, scenario=None, min_availability=0.)
+    from tapestry.models.b1_scenarios import B1Scenario
+    scenario = B1Scenario.from_string(
+        'b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:'
+        'nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:'
+        'fit_targ:vm256:wd0.0:pipe_direct:mask0.0:mr0.5:mg0.3:mo0.2')
+    b1_run.train(args, scenario=scenario)
+
+    assert [c['phase'] for c in calls] == ['select', 'refit'], 'expected one selection then one refit'
+    select, refit = calls
+    assert refit['epochs'] == 3, 'refit must run exactly the selected epoch count'
+    assert refit['episodes'] > select['episodes'], 'refit must see the restored hidden weeks'
+    assert refit['options'] != select['options'], 'refit must recompute its own options'
+    # The constant-valued fixture gives both partitions the same Q95, so equality here
+    # is expected; the separate options object above is what proves recomputation.
+    assert np.array_equal(refit['scale'], select['scale'])
+
+    import json
+    manifest = json.loads((tmp_path / 'out' / 'manifest.json').read_text())
+    assert manifest['protocol'] == 'season_cv_refit_v1'
+    assert manifest['selected_epochs'] == [3] and manifest['refit_epochs'] == [3]
+
+
+def test_b1_refit_loss_scales_use_restored_hidden_weeks():
+    """Hidden weeks are excluded from inner scales but included in the refit's.
+
+    Uses a calendar whose hidden weeks carry a distinctly larger level, so a Q95
+    computed with them differs from one computed without.
+    """
+    from datetime import date, timedelta
+    import numpy as np
+    from tapestry.models.b1_run import unique_truth, loss_scales
+    from tapestry.models.b1_seasons import fold, hidden_weeks
+    from tapestry.models.season_cv import SEASONS
+
+    held = SEASONS[-1]
+    hidden = hidden_weeks(_synthetic_fold_dataset(), held)
+    archive = wd.VintageArchive()
+    day = date(2023, 8, 5)
+    while day <= date(2026, 9, 26):
+        spike = day.isoformat() in hidden
+        for c in range(6):
+            archive.add('delphi_nhsn' if c < 3 else 'delphi_nssp', '2026-09-30', day.isoformat(),
+                        c, 'NC', (1000 if spike else 100) if c < 3 else (.4 if spike else .02))
+        day += timedelta(weeks=1)
+    ds = wd.build_wednesday(start='2023-08-09', end='2026-09-16', truth_cutoff='2026-09-30',
+                            locations=('NC',), archive=archive)
+    fitting, _, refit, _, _ = fold(ds, held)
+    inner_scale = loss_scales(unique_truth(fitting))
+    refit_scale = loss_scales(unique_truth(refit))
+    assert not np.array_equal(inner_scale, refit_scale), 'refit scales must see restored hidden weeks'
+    assert (np.asarray(refit_scale) > np.asarray(inner_scale)).any()
+
+
+@pytest.mark.skipif(not __import__('pathlib').Path('data/processed/build_b_finalized.npz').exists()
+                    or not __import__('pathlib').Path('data/processed/build_b1_wednesday_calendar.npz').exists(),
+                    reason='requires the local B0 and B1 datasets')
+def test_b1_direct_fold_origins_match_b0_exactly():
+    """The direct task's four partitions must select B0's own origins, fold by fold."""
+    from tapestry.model_data.finalized import FinalizedDataset
+    from tapestry.model_data.wednesday import WednesdayDataset
+    from tapestry.models.b1_seasons import fold
+    from tapestry.models.season_cv import SEASONS, fold_data, validation_split
+
+    b1ds = WednesdayDataset.load('data/processed/build_b1_wednesday_calendar.npz')
+    b0ds = FinalizedDataset.load('data/processed/build_b_finalized.npz')
+    ends = lambda eps: {str(e['context_dates'][-1]) for e in eps}
+    for held in SEASONS:
+        fitting, validation, refit, evaluation, _ = fold(b1ds, held)
+        b0_train, b0_eval, _ = fold_data(b0ds, held, 12)
+        b0_inner, b0_val, _, _ = validation_split(b0ds, held, 12, 4)
+        assert ends(refit) == ends(b0_train), f'{held}: refit origins differ from B0 training'
+        assert ends(fitting) == ends(b0_inner), f'{held}: inner origins differ from B0'
+        assert ends(validation) == ends(b0_val), f'{held}: validation origins differ from B0'
+        assert ends(evaluation) == ends(b0_eval), f'{held}: evaluation origins differ from B0'

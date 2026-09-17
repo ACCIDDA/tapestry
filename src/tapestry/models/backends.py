@@ -210,7 +210,8 @@ class B1Backend:
 
     def settings(self, args):
         # B1 always uses B0's leave-one-season-out protocol; there is no other split.
-        return dict(model='B1', protocol='season_cv', retrospective=args.retrospective)
+        # `_refit_v1` marks B0's select-then-refit training procedure.
+        return dict(model='B1', protocol='season_cv_refit_v1', retrospective=args.retrospective)
 
     def check_inputs(self, settings):
         from tapestry.model_data.wednesday import WednesdayDataset
@@ -223,7 +224,7 @@ class B1Backend:
             raise ValueError('The B0 calendar dataset changed; rebuild B1 against it and use a new experiment')
         populations(settings['population_file'], data.locations)
         for held in SEASONS:
-            fold(data, held)  # every fold must have fitting, validation and evaluation episodes
+            fold(data, held)  # every fold must have fitting, validation, refit and evaluation episodes
         if settings['eval_members'] < 2:
             raise ValueError('Fair CRPS requires at least two evaluation members')
         for path, expected in settings.get('input_sha256', {}).items():

@@ -102,7 +102,7 @@ def audit(ds, train_end, b0=None, b0_start=None):
         real = fold(ds, held)
         final = fold(counterfactual, held)
         parts = {}
-        for name, actual, reference in zip(('fitting', 'validation', 'evaluation'), real[:3], final[:3]):
+        for name, actual, reference in zip(('fitting', 'validation', 'refit', 'evaluation'), real[:4], final[:4]):
             actual_dates = {e['issuance_date'] for e in actual}
             lost = [e['issuance_date'] for e in reference if e['issuance_date'] not in actual_dates]
             parts[name] = dict(finalized_eligible_episodes=len(reference), wednesday_eligible_episodes=len(actual),

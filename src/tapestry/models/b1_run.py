@@ -103,7 +103,7 @@ def populations(path, locations):
     return {loc: values[loc] for loc in locations}
 
 
-def partitions(ds, args):
+def partitions(ds, args, direct=True):
     """B0's leave-one-season-out fold. B1 has no other split.
 
     The earlier chronological split validated on nine summer issuances, whose
@@ -117,9 +117,10 @@ def partitions(ds, args):
     if not args.retrospective:
         raise ValueError('Leave-one-season-out CV pins truth after each fold; pass --retrospective '
                          'to acknowledge these are retrospective development fits, not operational ones.')
-    fitting, validation, _, _ = fold(ds, args.held_out_season,
-                                     min_availability=getattr(args, 'min_availability', 0.))
-    return fitting, validation
+    fitting, validation, refit, _, _ = fold(ds, args.held_out_season,
+                                            min_availability=getattr(args, 'min_availability', 0.),
+                                            direct=direct)
+    return fitting, validation, refit
 
 
 def crop_episodes(episodes, lookback):
@@ -128,41 +129,49 @@ def crop_episodes(episodes, lookback):
     return [{**e, 'X': e['X'][-lookback:], 'context_dates': e['context_dates'][-lookback:]} for e in episodes]
 
 
-def fit_component(train, validation, targets, component, options, args, scenario):
+def fit_component(train, validation, targets, component, options, args, scenario, epochs=None):
+    """Fit one component. With `validation`, select the best epoch on it; without,
+    fit `epochs` epochs on `train` with no early-stopping decision (B0's refit)."""
     direct = scenario.pipeline == 'direct'
     seed = args.seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     model = B1(target=targets, direct=direct, **options).to(args.device)
+    selecting = validation is not None
+    budget = scenario.epochs if epochs is None else epochs
     # Each fitted component uses only episodes with at least one of its labels.
     hs = slice(2, 6) if direct else slice(0, 6)
     train = [e for e in train if e['Y'][hs][:, targets, 1].any()]
-    validation = [e for e in validation if e['Y'][hs][:, targets, 1].any()]
-    if not train or not validation:
+    if selecting:
+        validation = [e for e in validation if e['Y'][hs][:, targets, 1].any()]
+    if not train or (selecting and not validation):
         raise ValueError(f'No training/validation labels for channels {targets}')
     x, a, y, cal = arrays(train, args.device)
-    vx, va, vy, vcal = arrays(validation, args.device)
     known = torch.as_tensor(known_finals(train), device=args.device)
-    vknown = torch.as_tensor(known_finals(validation), device=args.device)
-    y, vy = y[:, hs][:, :, targets], vy[:, hs][:, :, targets]
+    y = y[:, hs][:, :, targets]
     weights = torch.as_tensor(task_weights(train, targets, direct)[:, :, targets], device=args.device)
-    vw = torch.as_tensor(task_weights(validation, targets, direct)[:, :, targets], device=args.device)
+    if selecting:
+        vx, va, vy, vcal = arrays(validation, args.device)
+        vknown = torch.as_tensor(known_finals(validation), device=args.device)
+        vy = vy[:, hs][:, :, targets]
+        vw = torch.as_tensor(task_weights(validation, targets, direct)[:, :, targets], device=args.device)
     for i, c in enumerate(targets):
-        if not weights[:, :, i].sum() or not vw[:, :, i].sum():
+        if not weights[:, :, i].sum() or (selecting and not vw[:, :, i].sum()):
             raise ValueError(f'No training/validation labels for {CHANNELS[c]}')
-    generator = torch.Generator().manual_seed(seed + 2000)
-    fixed = {}
-    for stage in (('future',) if direct else ('recent', 'future')):
-        for name, value in model.draw_noise(scenario.validation_members, len(validation), generator).items():
-            if value is not None:
-                fixed[f'{"z" if name == "z" else name}_{stage}'] = value
     probabilities = scenario.mask_probabilities
-    vd = torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device)
-    vw = torch.as_tensor(task_weights(validation, targets, direct, vd.cpu().numpy())[:, :, targets], device=args.device)
+    if selecting:
+        generator = torch.Generator().manual_seed(seed + 2000)
+        fixed = {}
+        for stage in (('future',) if direct else ('recent', 'future')):
+            for name, value in model.draw_noise(scenario.validation_members, len(validation), generator).items():
+                if value is not None:
+                    fixed[f'{"z" if name == "z" else name}_{stage}'] = value
+        vd = torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device)
+        vw = torch.as_tensor(task_weights(validation, targets, direct, vd.cpu().numpy())[:, :, targets], device=args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     best, best_state, best_epoch = float('inf'), None, 0
     history, audit = [], []
-    for epoch in range(scenario.epochs):
+    for epoch in range(budget):
         d = draw_dropout(a.cpu().numpy(), rng, probabilities)
         dropout = torch.as_tensor(d, device=args.device)
         weights = torch.as_tensor(task_weights(train, targets, direct, d)[:, :, targets], device=args.device)
@@ -180,60 +189,91 @@ def fit_component(train, validation, targets, component, options, args, scenario
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             optimizer.step()
             total += float(loss.detach()) * len(ids) / len(train)
-        model.eval()
-        val = 0.
-        with torch.no_grad():
-            for ids in torch.arange(len(validation), device=args.device).split(scenario.batch_size):
-                samples = model(vx[ids], va[ids], vcal[ids], dropout=vd[ids],
-                                known_final=vknown[ids],
-                                **{k: v[:, ids] for k, v in fixed.items()})
-                score = fair_crps_cells(samples, vy[ids, :, :, 0], vy[ids, :, :, 1])
-                val += float((vw[ids] * score / model.scale[targets]).sum())
-        if not np.isfinite(val):
-            raise ValueError('Nonfinite B1 validation loss')
-        if val < best:
-            best, best_epoch = val, epoch + 1
-            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        val = None
+        if selecting:
+            model.eval()
+            val = 0.
+            with torch.no_grad():
+                for ids in torch.arange(len(validation), device=args.device).split(scenario.batch_size):
+                    samples = model(vx[ids], va[ids], vcal[ids], dropout=vd[ids],
+                                    known_final=vknown[ids],
+                                    **{k: v[:, ids] for k, v in fixed.items()})
+                    score = fair_crps_cells(samples, vy[ids, :, :, 0], vy[ids, :, :, 1])
+                    val += float((vw[ids] * score / model.scale[targets]).sum())
+            if not np.isfinite(val):
+                raise ValueError('Nonfinite B1 validation loss')
+            if val < best:
+                best, best_epoch = val, epoch + 1
+                best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         history.append(dict(epoch=epoch + 1, loss=total, validation_loss=val, hidden=int(d.sum())))
-        print(json.dumps(dict(run_id=scenario.run_id, targets=[CHANNELS[c] for c in targets], seed=args.seed, **history[-1])), flush=True)
-        if scenario.patience and epoch + 1 - best_epoch >= scenario.patience:
+        print(json.dumps(dict(run_id=scenario.run_id, targets=[CHANNELS[c] for c in targets], seed=args.seed,
+                              phase='select' if selecting else 'refit', **history[-1])), flush=True)
+        if selecting and scenario.patience and epoch + 1 - best_epoch >= scenario.patience:
             break
-    # patience=0 is an explicit fixed-epoch run, as in B0.
-    if scenario.patience:
+    # Selection returns its best checkpoint only as a diagnostic; the reported model
+    # is the refit below. patience=0 is an explicit fixed-epoch run, as in B0.
+    if selecting and scenario.patience:
         model.load_state_dict(best_state)
-    return model.cpu(), dict(targets=targets, best_epoch=best_epoch,
-        selected_epoch=best_epoch if scenario.patience else scenario.epochs,
-        fitting_episodes=len(train), validation_episodes=len(validation), history=history), dict(
-        dropout_packed=np.stack(audit), dropout_shape=np.array(a.shape),
-        validation_dropout=vd.cpu().numpy(), train_issuance_dates=[e['issuance_date'] for e in train],
-        validation_issuance_dates=[e['issuance_date'] for e in validation])
+    record = dict(targets=targets, best_epoch=best_epoch,
+        selected_epoch=(best_epoch if scenario.patience else scenario.epochs) if selecting else budget,
+        phase='select' if selecting else 'refit', epochs=budget,
+        fitting_episodes=len(train), validation_episodes=len(validation) if selecting else 0, history=history)
+    audit_arrays = dict(dropout_packed=np.stack(audit), dropout_shape=np.array(a.shape),
+        train_issuance_dates=[e['issuance_date'] for e in train])
+    if selecting:
+        audit_arrays.update(validation_dropout=vd.cpu().numpy(),
+                            validation_issuance_dates=[e['issuance_date'] for e in validation])
+    return model.cpu(), record, audit_arrays
 
 
 def train(args, scenario=None):
     scenario = resolve(args) if scenario is None else scenario
     ds = WednesdayDataset.load(args.dataset)
-    fitting, validation = partitions(ds, args)
+    fitting, validation, refit = partitions(ds, args, direct=scenario.pipeline == 'direct')
     fitting = [e for e in crop_episodes(fitting, scenario.lookback) if e['X'][:, :, 1].any()]
     validation = [e for e in crop_episodes(validation, scenario.lookback) if e['X'][:, :, 1].any()]
-    if not fitting or not validation:
+    refit = [e for e in crop_episodes(refit, scenario.lookback) if e['X'][:, :, 1].any()]
+    if not fitting or not validation or not refit:
         raise ValueError('No usable episodes within the selected lookback')
     pop = populations(args.population_file, ds.locations)
-    scales = input_scales(fitting, scenario.count_transform, scenario.ed_transform, pop)
-    options = dict(populations=pop, locations=list(ds.locations), lookback=scenario.lookback,
-        width=scenario.width, latent=scenario.latent, scale=loss_scales(unique_truth(fitting)),
-        **scales, **scenario.model_options())
+
+    def fit_options(episodes):
+        """Normalizers, logit centers and native Q95 loss scales from one partition."""
+        return dict(populations=pop, locations=list(ds.locations), lookback=scenario.lookback,
+            width=scenario.width, latent=scenario.latent, scale=loss_scales(unique_truth(episodes)),
+            **input_scales(episodes, scenario.count_transform, scenario.ed_transform, pop),
+            **scenario.model_options())
+
+    # Selection uses inner-fit statistics only; the refit recomputes its own from the
+    # full training partition, as B0 does with `channel_scales` over training weeks.
+    options, refit_options = fit_options(fitting), fit_options(refit)
     out = Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
     components, records = [], []
     groups = GROUPS[scenario.fit_partition]
     for i, targets in enumerate(groups):
-        model, record, audit = fit_component(fitting, validation, targets, i, options, args, scenario)
+        selected = scenario.epochs
+        if scenario.patience:
+            _, record, audit = fit_component(fitting, validation, targets, i, options, args, scenario)
+            records.append(record)
+            np.savez_compressed(out / f'masks-{i}.npz', **audit)
+            selected = record['selected_epoch']
+        # Fresh model and optimizer, reseeded by fit_component's seed + 10000 * i rule.
+        model, record, audit = fit_component(refit, None, targets, i, refit_options, args, scenario,
+                                             epochs=selected)
         components.append(dict(config=model.config, state_dict=model.state_dict()))
         records.append(record)
-        np.savez_compressed(out / f'masks-{i}.npz', **audit)
+        np.savez_compressed(out / f'refit-masks-{i}.npz', **audit)
     metadata = dict(model='B1', schema_version=3, scenario=scenario.scenario_string,
         run_id=scenario.run_id, configuration=asdict(scenario), groups=groups,
-        seed=args.seed, held_out_season=args.held_out_season, protocol='season_cv',
+        seed=args.seed, held_out_season=args.held_out_season, protocol='season_cv_refit_v1',
+        training_procedure=('Epoch count selected per component on inner validation, then a fresh '
+            'seeded model refitted on all permitted training weeks for exactly that count, as in B0 '
+            'season_cv.run. Selection checkpoints are diagnostics and are never exported.'
+            if scenario.patience else
+            f'Fixed {scenario.epochs} epochs on all permitted training weeks; no epoch selection.'),
+        selected_epochs=[r['selected_epoch'] for r in records if r['phase'] == 'select'],
+        refit_epochs=[r['epochs'] for r in records if r['phase'] == 'refit'],
         retrospective=args.retrospective, dataset_metadata=ds.metadata,
         dataset_sha256=hashlib.sha256(Path(args.dataset).read_bytes()).hexdigest(),
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
@@ -248,7 +288,8 @@ def train(args, scenario=None):
     from .b1_report import evaluate
     from .b1_seasons import fold as season_fold
     fitted = load_models(out / 'model.pt', args.device)[0]
-    _, _, evaluation, info = season_fold(ds, args.held_out_season)
+    _, _, _, evaluation, info = season_fold(ds, args.held_out_season,
+                                            direct=scenario.pipeline == 'direct')
     evaluation = [e for e in crop_episodes(evaluation, scenario.lookback) if e['X'][:, :, 1].any()]
     if not evaluation:
         raise ValueError(f'No usable evaluation episodes for held-out {args.held_out_season}')
