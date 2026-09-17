@@ -220,7 +220,7 @@ def test_grouped_forecasts_condition_only_on_own_target_corrections():
 
 def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
     import pandas as pd
-    from tapestry.models.b1_experiment import ranking_tables
+    from tapestry.models.b1_experiment import ranking_tables, totals
     rows = []
     for config_id, tasks in [('direct', ['forecast']), ('two', ['forecast', 'nowcast'])]:
         for task in tasks:
@@ -233,16 +233,22 @@ def test_b1_rank_keeps_nowcasting_separate_and_normalizes_units():
                     observed=scale, loss_scale=scale, objective_weight=weight, crps=error * scale,
                     wis=error * scale, coverage_50=1., coverage_95=1.))
     frame = pd.DataFrame(rows)
-    _, ranks, _ = ranking_tables(frame)
+    runs, target, digests = totals(frame)
+    _, ranks, _ = ranking_tables(runs, target, [digests])
     np.testing.assert_allclose(ranks.loc[ranks.task == 'forecast', 'score_mean'], 2.)
     np.testing.assert_allclose(ranks.loc[ranks.task == 'nowcast', 'score_mean'], 5.)
     assert ranks.score_sd.isna().all()  # One seed does not establish zero variance.
+    # A run scoring different truth/scales is rejected by its per-task digest.
     changed = frame.copy()
     changed.loc[changed.config_id == 'direct', 'loss_scale'] *= 2
-    with pytest.raises(ValueError, match='support/truth/scales/weights differ'):
-        ranking_tables(changed)
-    with pytest.raises(ValueError):
-        ranking_tables(frame.drop(index=0))
+    other_runs, other_target, other_digests = totals(changed)
+    with pytest.raises(ValueError, match='different cells, truth, scales or weights'):
+        ranking_tables(pd.concat([runs, other_runs]), pd.concat([target, other_target]),
+                       [digests, other_digests])
+    # Dropping a cell breaks the normalization that each task's weights sum to one.
+    short_runs, short_target, short_digests = totals(frame.drop(index=0))
+    with pytest.raises(ValueError, match='weights must sum to one'):
+        ranking_tables(short_runs, short_target, [short_digests])
 
 
 def test_b1_hub_export_maps_only_future_weeks_and_keeps_ed_proportions(tmp_path):

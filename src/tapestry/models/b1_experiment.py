@@ -19,7 +19,9 @@ SCORE_DEFINITION = ('Rank forecasting and nowcasting separately by native fair C
                     '80% equally weighted states/DC and 20% US, renormalizing absent support. '
                     'Within a location average eligible origins/horizons. Mean and sample SD across seeds. '
                     'Natural inputs are primary; stress scenarios have separate rankings. Not Hub-relative skill. '
-                    'Score columns use B0 naming: config_id identifies the configuration, stress the input scenario.')
+                    'Score columns use B0 naming: config_id identifies the configuration, stress the input scenario. '
+                    'Under season_cv each fold scores its own held-out season and normalizes to one; combining folds '
+                    'divides by the fold count, averaging season composites equally as B0 does.')
 DATES = ('train_end', 'validation_start', 'validation_end', 'evaluation_start', 'evaluation_end')
 
 
@@ -98,6 +100,10 @@ def prepare(folder, config):
     destination = folder / 'code'
     files = list((root / 'src').rglob('*.py')) + list((root / 'src').rglob('*.R'))
     files += [root / 'scripts/b1_jlessler.sbatch', root / 'docs/design/b1.md', root / 'pyproject.toml']
+    # The ntfy notifier reads this copy, so a launch never depends on staging it by hand.
+    notifications = folder / 'notifications'
+    notifications.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(root / 'scripts/b01_notify.py', notifications / 'b01_notify.py')
     hashes = {}
     if destination.exists():
         shutil.rmtree(destination)
@@ -177,15 +183,19 @@ def score_run(output, config):
         if not episodes:
             raise ValueError('No usable B1 evaluation episodes')
         rows = evaluate(models, episodes, ds, args, metadata['run_id'], metadata['seed'], output, metadata['scenario'])
+    frame = pd.DataFrame(rows)
     if season_cv:
-        import pandas as pd
-        pd.DataFrame(rows).to_parquet(
-            output / f'scores-{metadata["run_id"]}-s{metadata["seed"]}.parquet', index=False)
+        frame.to_parquet(output / f'scores-{metadata["run_id"]}-s{metadata["seed"]}.parquet', index=False)
+    # Each run reduces its own scores, so ranking never loads every cell (as in B0).
+    seasons = len(SEASONS) if season_cv else 1
+    run_totals, target_totals, digest = totals(frame, seasons)
+    run_totals.to_csv(output / 'totals.csv', index=False)
+    target_totals.to_csv(output / 'target-totals.csv', index=False)
     report(rows, ds, output)
     scoring = dict(score_version=SCORE_VERSION, definition=SCORE_DEFINITION,
                    evaluation_dataset_sha256=sha(config['evaluation_dataset']),
                    settings=config, rows=len(rows), scenario=metadata['scenario'], seed=metadata['seed'],
-                   protocol=config.get('protocol', 'chronological'))
+                   protocol=config.get('protocol', 'chronological'), support_sha256=digest)
     if config.get('frozen'):
         from .b1_hubs import score_hubs
         scoring['hub_support'] = score_hubs(output, config['frozen'], metadata, config)
@@ -217,6 +227,54 @@ def complete_artifacts(output):
         return False
 
 
+# Repeated per-cell labels; as plain objects, season CV's 51M rows need ~48GB.
+LABELS = ('config_id', 'scenario_string', 'stress', 'issuance_date', 'target_date',
+          'season', 'target', 'location', 'task')
+
+
+def read_scores(path):
+    """Load per-cell scores with repeated labels as categories (about 6x smaller)."""
+    frame = pd.read_parquet(path)
+    for column in LABELS:
+        frame[column] = frame[column].astype('category')
+    return frame
+
+
+IDS = ['config_id', 'scenario_string', 'seed', 'stress', 'task']
+SUPPORT_KEYS = ['issuance_date', 'target_date', 'target', 'location', 'horizon']
+
+
+def totals(frame, seasons=1):
+    """Pre-aggregate one run's per-cell scores, as B0's workers write `totals.csv`.
+
+    Ranking needs weighted sums per run and per-target diagnostics, not 700k cells
+    per run. Each worker reduces its own scores so `rank` concatenates summaries
+    instead of the full 51M-row per-cell frame.
+    """
+    weight = frame.objective_weight / seasons
+    weighted = frame.assign(normalized_crps=frame.crps / frame.loss_scale * weight,
+                            normalized_wis=frame.wis / frame.loss_scale * weight,
+                            objective_weight=weight)
+    runs = weighted.groupby(IDS, observed=True).agg(
+        normalized_crps=('normalized_crps', 'sum'), normalized_wis=('normalized_wis', 'sum'),
+        objective_weight=('objective_weight', 'sum'), cells=('crps', 'size')).reset_index()
+    geography = np.where(weighted.location == 'US', 'US', 'states_dc')
+    # Sums, not means: `rank` divides by n so pooling across runs stays exact.
+    target = weighted.assign(geography=geography).groupby(
+        [*IDS, 'target', 'season', 'geography', 'horizon'], observed=True).agg(
+        n=('wis', 'size'), wis=('wis', 'sum'), crps=('crps', 'sum'),
+        coverage_50=('coverage_50', 'sum'), coverage_95=('coverage_95', 'sum')).reset_index()
+    # Cheap proof that runs scored identical cells, truth, scales and weights,
+    # replacing the per-cell comparison that required holding all runs in memory.
+    # Digested per task: direct controls produce no nowcast cells, so only runs
+    # sharing a task are required to share its support.
+    digest = {}
+    for task, part in weighted.groupby('task', observed=True):
+        support = part[SUPPORT_KEYS + ['observed', 'loss_scale', 'objective_weight']].sort_values(SUPPORT_KEYS)
+        digest[task] = hashlib.sha256(pd.util.hash_pandas_object(support, index=False).values.tobytes()).hexdigest()
+    return runs, target, digest
+
+
 def validate_support(frame):
     """Match exact cells, labels, normalization and weights across seeds/configs."""
     keys = ['issuance_date', 'target_date', 'target', 'location', 'horizon']
@@ -227,9 +285,9 @@ def validate_support(frame):
         raise ValueError('Nonfinite B1 scores, weights or truth')
     if (frame.loss_scale <= 0).any() or (frame.objective_weight < 0).any():
         raise ValueError('Invalid B1 normalization or weights')
-    for task, part in frame.groupby('task'):
+    for task, part in frame.groupby('task', observed=True):
         baseline = None
-        for _, run in part.groupby(['config_id', 'seed', 'stress']):
+        for _, run in part.groupby(['config_id', 'seed', 'stress'], observed=True):
             values = run[keys + reference].sort_values(keys).reset_index(drop=True)
             if baseline is not None and not values.equals(baseline):
                 raise ValueError(f'B1 {task} support/truth/scales/weights differ; use common evaluation and fitting support')
@@ -238,22 +296,29 @@ def validate_support(frame):
                 raise ValueError(f'B1 {task} objective weights must sum to one')
 
 
-def ranking_tables(frame):
-    validate_support(frame)
-    ids = ['config_id', 'scenario_string', 'seed', 'stress', 'task']
-    weighted = frame.assign(normalized_crps=frame.crps / frame.loss_scale * frame.objective_weight,
-                            normalized_wis=frame.wis / frame.loss_scale * frame.objective_weight)
-    runs = weighted.groupby(ids)[['normalized_crps', 'normalized_wis']].sum().reset_index()
-    ranks = runs.groupby([c for c in ids if c != 'seed']).agg(
+def ranking_tables(runs, target, digests):
+    """Rank from pre-aggregated run totals; per-cell support is checked by digest."""
+    for task in {t for d in digests for t in d}:
+        seen = {d[task] for d in digests if task in d}
+        if len(seen) != 1:
+            raise ValueError(f'B1 {task} runs scored different cells, truth, scales or weights; '
+                             'use common evaluation and fitting support')
+    for task, part in runs.groupby('task', observed=True):
+        if not np.isclose(part.objective_weight, 1., atol=1e-5).all():
+            raise ValueError(f'B1 {task} objective weights must sum to one')
+    if not np.isfinite(runs[['normalized_crps', 'normalized_wis']].to_numpy()).all():
+        raise ValueError('Nonfinite B1 run scores')
+    ids = IDS
+    ranks = runs.groupby([c for c in ids if c != 'seed'], observed=True).agg(
         score_mean=('normalized_crps', 'mean'), score_sd=('normalized_crps', 'std'),
         wis_mean=('normalized_wis', 'mean'), wis_sd=('normalized_wis', 'std'), seeds=('seed', 'nunique')).reset_index()
     # Configurations are ranked against each other within one stress scenario and task.
-    ranks['rank'] = ranks.groupby(['stress', 'task']).score_mean.rank(method='min')
+    ranks['rank'] = ranks.groupby(['stress', 'task'], observed=True).score_mean.rank(method='min')
     # Native per-target scores retain their units; never pool admissions with ED.
-    target = frame.assign(geography=np.where(frame.location == 'US', 'US', 'states_dc')).groupby(
-        [*ids, 'target', 'season', 'geography', 'horizon']).agg(
-        n=('wis', 'size'), wis=('wis', 'mean'), crps=('crps', 'mean'),
-        coverage_50=('coverage_50', 'mean'), coverage_95=('coverage_95', 'mean')).reset_index()
+    keys = [*ids, 'target', 'season', 'geography', 'horizon']
+    target = target.groupby(keys, observed=True).sum(numeric_only=True).reset_index()
+    for column in ('wis', 'crps', 'coverage_50', 'coverage_95'):
+        target[column] = target[column] / target.n
     return runs, ranks.sort_values(['stress', 'task', 'rank']), target
 
 
@@ -268,24 +333,26 @@ def postprocess(folder, allow_incomplete=False, plots=False, workers=2):
     baseline = {k: records[0]['settings'].get(k) for k in comparable}
     if any({k: r['settings'].get(k) for k in comparable} != baseline for r in records[1:]):
         raise ValueError('B1 attempts have different data, date splits or evaluation settings')
-    files = [p / f'scores-{json.loads((p / "manifest.json").read_text())["run_id"]}-s{r["seed"]}.parquet'
-             for p, r in zip(outputs, done)]
+    # Runs pre-aggregate their own scores, so ranking reads summaries, not 51M cells.
+    files = [p / 'totals.csv' for p in outputs]
     fingerprint = dict(version=SCORE_VERSION, runs=[dict(path=str(p), sha256=sha(p)) for p in files],
                        scoring=[sha(p / 'scoring.json') for p in outputs])
     digest = hashlib.sha256(json.dumps(fingerprint, sort_keys=True).encode()).hexdigest()[:12]
     destination = folder / f'{"comparison" if plots else "ranking"}-{digest}'
     destination.mkdir(parents=True, exist_ok=True)
-    frame = pd.concat([pd.read_parquet(p) for p in files], ignore_index=True)
+    runs = pd.concat([pd.read_csv(p) for p in files], ignore_index=True)
+    target = pd.concat([pd.read_csv(p / 'target-totals.csv') for p in outputs], ignore_index=True)
+    digests = [r['support_sha256'] for r in records]
     expected = set()
     for row in done:
         scenario = B1Scenario.from_string(row['scenario'])
         tasks = ('forecast',) if scenario.pipeline == 'direct' else ('forecast', 'nowcast')
         expected.update((scenario.run_id, row['seed'], stress, task)
                         for stress in ('natural', 'recent', 'gap', 'outage') for task in tasks)
-    actual = set(frame[['config_id', 'seed', 'stress', 'task']].itertuples(index=False, name=None))
+    actual = set(runs[['config_id', 'seed', 'stress', 'task']].itertuples(index=False, name=None))
     if actual != expected:
         raise ValueError('Missing or unexpected B1 run/task/stress-scenario scores')
-    runs, ranks, targets = ranking_tables(frame)
+    runs, ranks, targets = ranking_tables(runs, target, digests)
     runs.to_csv(destination / 'run_scores.csv', index=False)
     ranks.to_csv(destination / 'configuration_ranking.csv', index=False)
     targets.to_csv(destination / 'target_scores.csv', index=False)
@@ -297,7 +364,11 @@ def postprocess(folder, allow_incomplete=False, plots=False, workers=2):
     if plots:
         check_inputs(records[0]['settings'])
         ds = WednesdayDataset.load(records[0]['settings']['evaluation_dataset'])
-        report(frame, ds, destination)
+        # Only `compare` needs per-cell scores, for graphs; `rank` never loads them.
+        cells = pd.concat([read_scores(p / f'scores-{r["run_id"]}-s{r["seed"]}.parquet')
+                           for p, r in zip(outputs, [json.loads((p / 'manifest.json').read_text()) for p in outputs])],
+                          ignore_index=True)
+        report(cells, ds, destination)
     save(destination / 'manifest.json', dict(**fingerprint, definition=SCORE_DEFINITION,
          attempts=[r['attempt'] for r in done], run_versions=sorted(map(list, versions), key=str)))
     (destination / 'REPORT.md').write_text(
