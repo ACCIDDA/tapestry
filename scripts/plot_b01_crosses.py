@@ -35,6 +35,11 @@ FAMILY = {'local_mlp': '#4f81bd', 'spatial_conv': '#9bbb59', 'pathogen_multiscal
 ENSEMBLE = '#7f7f7f'
 
 
+def case_order(case):
+    """Influenza/COVID/RSV, admissions/ED, then chronological season."""
+    return list(NAMES).index(case['target']), case['season']
+
+
 def family(name):
     """Reference family of a configuration; the four conv controls share one colour."""
     head = name.split('__')[0]
@@ -349,7 +354,7 @@ def fan_figures(ranking, configs, runs, frozen, output):
         # The median seed is the honest representative of a configuration.
         chosen.append((name, int(part.iloc[len(part) // 2].seed)))
     exports = {(name, seed): export_b0(jobs[(ids[name], seed)]) for name, seed in chosen}
-    for case in frozen_cases(frozen):
+    for case in sorted(frozen_cases(frozen), key=case_order):
         target, season = case['target'], case['season']
         folder = frozen / case['directory']
         units = pd.read_parquet(folder / 'units.parquet')

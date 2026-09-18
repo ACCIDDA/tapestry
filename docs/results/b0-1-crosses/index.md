@@ -142,21 +142,23 @@ Four-week forecasts at every third origin for the three leading configurations,
 each at its median-scoring seed, and the hub ensemble. Locations are the United
 States and North Carolina.
 
-![Influenza admissions, 2024-2025](figures/fans-flu_hosp-2024-2025.png)
+Order: influenza → COVID-19 → RSV; admissions → ED visits; oldest → newest season.
 
 ![Influenza admissions, 2023-2024](figures/fans-flu_hosp-2023-2024.png)
 
+![Influenza admissions, 2024-2025](figures/fans-flu_hosp-2024-2025.png)
+
 ![Influenza admissions, 2025-2026](figures/fans-flu_hosp-2025-2026.png)
+
+![Influenza ED visits, 2025-2026](figures/fans-flu_prop_ed_visits-2025-2026.png)
 
 ![COVID-19 admissions, 2024-2025](figures/fans-covid_hosp-2024-2025.png)
 
 ![COVID-19 admissions, 2025-2026](figures/fans-covid_hosp-2025-2026.png)
 
-![RSV admissions, 2025-2026](figures/fans-rsv_hosp-2025-2026.png)
-
-![Influenza ED visits, 2025-2026](figures/fans-flu_prop_ed_visits-2025-2026.png)
-
 ![COVID-19 ED visits, 2025-2026](figures/fans-covid_prop_ed_visits-2025-2026.png)
+
+![RSV admissions, 2025-2026](figures/fans-rsv_hosp-2025-2026.png)
 
 ![RSV ED visits, 2025-2026](figures/fans-rsv_prop_ed_visits-2025-2026.png)
 
@@ -205,5 +207,6 @@ calibration table behind the pairplot is saved alongside this page as
 
 ## Log
 
+- 2026-09-17: standardized fan order with B1: influenza, COVID-19, RSV; admissions then ED; chronological seasons. B1 now uses this page's full saved-season fan calendar.
 - 2026-09-16: Shortened the report. Removed causal explanations not established
   by the comparisons, seed-SD decision thresholds, and repeated recommendations.

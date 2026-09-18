@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from tapestry.evaluation.hubs import export, KEY
+from tapestry.evaluation.hubs import export
 from tapestry.evaluation.totals import rank, frozen_cases, season_scores, run_scores
 from tapestry.models.manager import read_jobs, attempts
-from plot_b01_crosses import NAMES, SHORT
+from plot_b01_crosses import NAMES, SHORT, case_order
 
 ARCH = {'target_mlp': 'Target MLP', 'pathogen_mlp': 'Pathogen MLP',
         'target_multiscale': 'Target convolution', 'joint_mlp': 'Joint MLP'}
@@ -133,7 +133,7 @@ def snapshot(root):
 def fans(chosen, paths, frozen, output, prefix):
     frames = {name: export(paths[(name, seed)]) for name, seed in chosen}
     files = []
-    for case in frozen_cases(frozen):
+    for case in sorted(frozen_cases(frozen), key=case_order):
         target, season = case['target'], case['season']
         folder = frozen / case['directory']
         units = pd.read_parquet(folder / 'units.parquet')
@@ -142,19 +142,19 @@ def fans(chosen, paths, frozen, output, prefix):
         series = [(f'{label(name)}\nseed {seed}', frames[name][(season, target)], COLORS[PIPE[name.split('__')[1]]]) for name, seed in chosen]
         series.append(('Hub ensemble', ensemble, '#757575'))
         fig, axes = plt.subplots(len(series), 2, figsize=(14, 2.15 * len(series)), sharex=True, sharey='col', squeeze=False)
-        support = units[KEY].drop_duplicates()
         for column, loc in enumerate(['US', '37']):
             truth = units[units.location.eq(loc)][['target_end_date', 'observed']].drop_duplicates().sort_values('target_end_date')
-            # Use identical origins for every row; never draw outside frozen support.
-            origins = sorted(support[support.location.eq(loc)].reference_date.unique())[::3]
             for row, (name, frame, color) in enumerate(series):
                 ax = axes[row, column]
-                data = frame.merge(support, on=KEY, how='inner', validate='one_to_one')
-                data = data[data.location.eq(loc)]
+                # Match B0.1's full saved seasonal calendar and every-third-origin rule.
+                # Only the ranking, not these illustrative fans, is restricted to Hub support.
+                data = frame[frame.location.eq(loc)]
+                origins = sorted(data.reference_date.unique())[::3]
                 ax.plot(pd.to_datetime(truth.target_end_date), truth.observed, color='black', lw=1, label='Frozen truth')
                 for i, origin in enumerate(origins):
-                    f = data[data.reference_date.eq(origin)].sort_values('horizon')
-                    x = pd.to_datetime(f.target_end_date)
+                    f = (data[data.reference_date.eq(origin)].sort_values('horizon')
+                         .set_index('horizon').reindex(range(4)))
+                    x = pd.date_range(origin, periods=4, freq='7D')
                     ax.fill_between(x, f['q0.025'], f['q0.975'], color=color, alpha=.18, label='95%' if i == 0 else None)
                     ax.fill_between(x, f['q0.25'], f['q0.75'], color=color, alpha=.42, label='50%' if i == 0 else None)
                     ax.plot(x, f['q0.5'], color=color, lw=1)
@@ -165,7 +165,7 @@ def fans(chosen, paths, frozen, output, prefix):
                     ax.set_title('United States' if loc == 'US' else 'North Carolina')
             axes[-1, column].set_xlabel('Target week ending')
         axes[0, 0].legend(fontsize=7, ncol=3)
-        fig.suptitle(f'{NAMES[target]} · {season}\nNatural-input four-week forecasts; identical origins every three weeks', fontsize=12)
+        fig.suptitle(f'{NAMES[target]} · {season}\nNatural-input four-week forecasts; B0.1 calendar, every third saved origin', fontsize=12)
         fig.autofmt_xdate()
         name = f'{prefix}-{SHORT[target]}-{season}.png'
         save(fig, output, name)
@@ -297,6 +297,8 @@ def main():
     save(fig, figures, 'coverage.png')
 
     target_table = seasons[seasons.geography.eq('all')].groupby(['name', 'season', 'target']).wis_ratio.mean().unstack(['season', 'target'])
+    columns = sorted(target_table.columns, key=lambda pair: case_order({'season': pair[0], 'target': pair[1]}))
+    target_table = target_table.reindex(columns=columns)
     target_table.to_csv(out / 'target-season-scores.csv')
     fig, ax = plt.subplots(figsize=(12, 5))
     data = target_table.reindex(selected)
@@ -482,10 +484,20 @@ architectures. Joint MLP already had cap 300, so its repeats are controls rather
 
 ## Fan plots
 
-Natural-input four-week forecasts at every third origin, restricted to identical frozen Hub
-support, for the United States and North Carolina. Black is frozen truth; colored bands are
+Natural-input four-week forecasts at every third saved origin, using the same full seasonal
+calendar and plotting rule as [B0.1](../b0-1-crosses/index.md#fan-plots), for the United States
+and North Carolina. Black is frozen truth; colored bands are
 50% and 95% intervals, with median lines. Y scales match across models within each location.
 These examples illustrate forecasts and do not replace the all-location scoring.
+Forecasts extend beyond the scored Hub window; truth and ensemble remain limited to their
+available frozen dates. No missing forecast or truth value is filled in. The ranking still
+uses only identical frozen Hub support. Each row samples its own available origins, as in B0.1.
+
+The standard order throughout the target/season panels is **influenza → COVID-19 → RSV**,
+then **admissions → ED visits**, then **oldest → newest season**. Saved model dates span
+September 9, 2023–July 27, 2024; August 10, 2024–July 26, 2025; and
+August 9, 2025–August 1, 2026, respectively. The final fan can have fewer than four
+available horizons at the held-out season boundary.
 
 ### Leading configurations
 
@@ -521,6 +533,7 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 
 - 2026-09-17: added the original overnight screen report while the separate 300-epoch experiment was queued. Reused saved forecast totals, the shared scientific aggregation and B1 forecast export. Explicitly separated forecast performance from nowcast accuracy and marked incomplete seed sets.
 - 2026-09-17: expanded the page to all 40 ranked configurations and a numeric target/season breakdown of the leader and matched pathogen formulations; clarified that training without artificial masking remains competitive.
+- 2026-09-17: matched fan dates to B0.1's full saved seasonal calendar; retained frozen support for scores and truth. Standardized disease, target, and chronological season order in fans, target/season tables, and the heatmap.
 '''
     body = body.replace('## Masking around B', interpretation(configs, contrasts, stress_table, coverage) + '## Masking around B')
     (out / 'index.md').write_text(body)

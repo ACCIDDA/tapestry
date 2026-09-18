@@ -6,7 +6,7 @@ This page reports the original overnight screen, **not the new 300-epoch experim
 
 ## Snapshot and experiment
 
-Generated 2026-09-17T20:34-04:00. **120/120 seed runs complete**; status: {'complete': 120}.
+Generated 2026-09-17T21:23-04:00. **120/120 seed runs complete**; status: {'complete': 120}.
 The page is a snapshot, not a live dashboard. Incomplete averages show their seed count;
 paired contrasts use only seeds completed on both sides. No missing run receives an imputed score.
 
@@ -217,12 +217,12 @@ to the combined score: seasons receive equal weight and targets are weighted wit
 | Season | Target | Overall leader | Pathogen B | Pathogen C | Pathogen two-stage |
 |---|---|---|---|---|---|
 | 2023-2024 | Influenza admissions | 0.968 | 0.991 | 1.023 | 1.215 |
-| 2024-2025 | COVID-19 admissions | 0.940 | 1.016 | 0.973 | 1.175 |
 | 2024-2025 | Influenza admissions | 0.847 | 0.847 | 0.841 | 0.826 |
-| 2025-2026 | COVID-19 admissions | 0.943 | 0.905 | 0.950 | 1.200 |
-| 2025-2026 | COVID-19 ED visits | 1.032 | 0.964 | 0.992 | 1.532 |
 | 2025-2026 | Influenza admissions | 0.944 | 1.006 | 0.945 | 1.153 |
 | 2025-2026 | Influenza ED visits | 0.915 | 0.978 | 0.953 | 1.049 |
+| 2024-2025 | COVID-19 admissions | 0.940 | 1.016 | 0.973 | 1.175 |
+| 2025-2026 | COVID-19 admissions | 0.943 | 0.905 | 0.950 | 1.200 |
+| 2025-2026 | COVID-19 ED visits | 1.032 | 0.964 | 0.992 | 1.532 |
 | 2025-2026 | RSV admissions | 1.044 | 0.895 | 0.907 | 0.880 |
 | 2025-2026 | RSV ED visits | 0.787 | 0.842 | 0.911 | 0.810 |
 
@@ -263,10 +263,20 @@ architectures. Joint MLP already had cap 300, so its repeats are controls rather
 
 ## Fan plots
 
-Natural-input four-week forecasts at every third origin, restricted to identical frozen Hub
-support, for the United States and North Carolina. Black is frozen truth; colored bands are
+Natural-input four-week forecasts at every third saved origin, using the same full seasonal
+calendar and plotting rule as [B0.1](../b0-1-crosses/index.md#fan-plots), for the United States
+and North Carolina. Black is frozen truth; colored bands are
 50% and 95% intervals, with median lines. Y scales match across models within each location.
 These examples illustrate forecasts and do not replace the all-location scoring.
+Forecasts extend beyond the scored Hub window; truth and ensemble remain limited to their
+available frozen dates. No missing forecast or truth value is filled in. The ranking still
+uses only identical frozen Hub support. Each row samples its own available origins, as in B0.1.
+
+The standard order throughout the target/season panels is **influenza → COVID-19 → RSV**,
+then **admissions → ED visits**, then **oldest → newest season**. Saved model dates span
+September 9, 2023–July 27, 2024; August 10, 2024–July 26, 2025; and
+August 9, 2025–August 1, 2026, respectively. The final fan can have fewer than four
+available horizons at the held-out season boundary.
 
 ### Leading configurations
 
@@ -336,3 +346,4 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 
 - 2026-09-17: added the original overnight screen report while the separate 300-epoch experiment was queued. Reused saved forecast totals, the shared scientific aggregation and B1 forecast export. Explicitly separated forecast performance from nowcast accuracy and marked incomplete seed sets.
 - 2026-09-17: expanded the page to all 40 ranked configurations and a numeric target/season breakdown of the leader and matched pathogen formulations; clarified that training without artificial masking remains competitive.
+- 2026-09-17: matched fan dates to B0.1's full saved seasonal calendar; retained frozen support for scores and truth. Standardized disease, target, and chronological season order in fans, target/season tables, and the heatmap.
