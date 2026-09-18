@@ -45,7 +45,8 @@ receiving all six input histories.
 The [B1 overnight results](results/b1-overnight/index.md) compare direct forecasts,
 supplied-final flags, auxiliary nowcasts, and two-stage forecasts under vintage
 inputs and artificial masking, with rankings and matched forecast fan plots.
-The separate 300-epoch follow-up is excluded from that results snapshot.
+The page also reports the [completed 300-epoch follow-up](results/b1-overnight/index.md#300-epoch-results-and-comparison),
+with matched-seed comparisons and 100-vs-300-epoch fan plots.
 
 ## B0: six channels, no revision nowcasting
 

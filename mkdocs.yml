@@ -59,7 +59,7 @@ nav:
       - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
   - B1:
       - Masked-vintage model: design/b1.md
-      - Overnight results: results/b1-overnight/index.md
+      - Screen and 300-epoch results: results/b1-overnight/index.md
       - Overnight experiment: workflows/b1-overnight.md
       - 300-epoch comparison: workflows/b1-300.md
   - Data repository:

@@ -1,0 +1,12 @@
+{
+  "generated": "2026-09-17T22:20-04:00",
+  "experiment": "B1-formulations-300",
+  "included": 48,
+  "planned": 48,
+  "status": {
+    "complete": 48
+  },
+  "source_snapshot": "dd2b9c4fd03b2e929c4fc80545e5540054b4606a9998ff7296c86db1049cbe31",
+  "original_source_snapshot": "c40df02eb45210adc4e62503a68fdef7c39dda14c76df3b1e7b34b819c0ac273",
+  "fan_seed": 42
+}

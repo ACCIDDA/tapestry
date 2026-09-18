@@ -28,7 +28,8 @@ COLORS = {'A': '#64748b', 'B': '#16856c', 'C': '#387ac1', 'Two-stage': '#bc6037'
 
 def label(name):
     a, p, mask = name.split('__')
-    mask = {'mask0.5': 'mixed 50%', 'mask0.25': 'mixed 25%', 'mask0': 'no masking'}.get(mask, mask.replace('_', ' '))
+    mask = {'mask0.5': 'mixed 50%', 'mask0.25': 'mixed 25%', 'mask0': 'no masking',
+            'cap100': '100-epoch cap', 'cap300': '300-epoch cap'}.get(mask, mask.replace('_', ' '))
     return f'{ARCH[a]} · {PIPE[p]} · {mask}'
 
 
@@ -354,11 +355,12 @@ def main():
     target_details = target_details.reset_index()
     target_details['target'] = target_details.target.map(NAMES)
     target_details = target_details.rename(columns={'season': 'Season', 'target': 'Target'})
-    body = f'''# B1 overnight — Formulations and masking
+    body = f'''# B1 — First screen and 300-epoch comparison
 
 **{int((configs.combined_mean < 1).sum())} of {len(configs)} configurations beat the Hub ensemble** on the combined forecast score.
 The leading configuration is **{winner.label}**, at **{winner.combined_mean:.3f}** ({100*(1-winner.combined_mean):.1f}% lower relative WIS).
-This page reports the original overnight screen, **not the new 300-epoch experiment**.
+These headline numbers describe the original overnight screen. The separate
+[300-epoch comparison](#300-epoch-results-and-comparison) is reported below.
 
 ## Snapshot and experiment
 
@@ -523,6 +525,7 @@ The top three configurations with all three seeds complete, each at its median-s
 
 ```bash
 .venv/bin/python scripts/plot_b1_overnight.py
+.venv/bin/python scripts/plot_b1_300.py
 .venv/bin/python -m mkdocs build --strict
 ```
 
@@ -534,8 +537,12 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 - 2026-09-17: added the original overnight screen report while the separate 300-epoch experiment was queued. Reused saved forecast totals, the shared scientific aggregation and B1 forecast export. Explicitly separated forecast performance from nowcast accuracy and marked incomplete seed sets.
 - 2026-09-17: expanded the page to all 40 ranked configurations and a numeric target/season breakdown of the leader and matched pathogen formulations; clarified that training without artificial masking remains competitive.
 - 2026-09-17: matched fan dates to B0.1's full saved seasonal calendar; retained frozen support for scores and truth. Standardized disease, target, and chronological season order in fans, target/season tables, and the heatmap.
+- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.
 '''
     body = body.replace('## Masking around B', interpretation(configs, contrasts, stress_table, coverage) + '## Masking around B')
+    followup = out / 'epoch300/section.txt'
+    if followup.exists():
+        body = body.replace('## Snapshot and experiment', followup.read_text() + '\n## Snapshot and experiment', 1)
     (out / 'index.md').write_text(body)
     print(f'Wrote {out / "index.md"}', flush=True)
 

@@ -20,6 +20,10 @@ it writes the [B1 results page](../results/b1-overnight/index.md), forecast rank
 paired contrasts, stress diagnostics, coverage and fans directly from completed
 saved runs. It records the included attempts and explicitly labels incomplete
 seed sets. It omits standalone nowcast ranking because cell support differs.
+Then run `.venv/bin/python scripts/plot_b1_300.py` to add the 300-epoch ranking,
+matched-seed changes, target/season comparison, and matched-budget fan plots to
+the same page. Joint MLP repeats retain their original 300-epoch cap and are
+reported as controls rather than training-duration contrasts.
 
 ## 1. Confirm it finished
 
