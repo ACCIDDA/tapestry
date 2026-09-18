@@ -1,0 +1,1441 @@
+name,seed,season,targets,cap,epochs,selected
+target_mlp__direct__mask0.5,42,2023-2024,[0],100,53,23
+target_mlp__direct__mask0.5,42,2023-2024,[1],100,100,78
+target_mlp__direct__mask0.5,42,2023-2024,[2],100,100,84
+target_mlp__direct__mask0.5,42,2023-2024,[3],100,72,42
+target_mlp__direct__mask0.5,42,2023-2024,[4],100,78,48
+target_mlp__direct__mask0.5,42,2023-2024,[5],100,64,34
+target_mlp__direct__mask0.5,42,2024-2025,[0],100,100,87
+target_mlp__direct__mask0.5,42,2024-2025,[1],100,100,76
+target_mlp__direct__mask0.5,42,2024-2025,[2],100,100,71
+target_mlp__direct__mask0.5,42,2024-2025,[3],100,76,46
+target_mlp__direct__mask0.5,42,2024-2025,[4],100,100,76
+target_mlp__direct__mask0.5,42,2024-2025,[5],100,88,58
+target_mlp__direct__mask0.5,42,2025-2026,[0],100,100,99
+target_mlp__direct__mask0.5,42,2025-2026,[1],100,100,91
+target_mlp__direct__mask0.5,42,2025-2026,[2],100,93,63
+target_mlp__direct__mask0.5,42,2025-2026,[3],100,100,98
+target_mlp__direct__mask0.5,42,2025-2026,[4],100,100,99
+target_mlp__direct__mask0.5,42,2025-2026,[5],100,78,48
+target_mlp__direct__mask0.5,43,2023-2024,[0],100,76,46
+target_mlp__direct__mask0.5,43,2023-2024,[1],100,100,92
+target_mlp__direct__mask0.5,43,2023-2024,[2],100,100,87
+target_mlp__direct__mask0.5,43,2023-2024,[3],100,56,26
+target_mlp__direct__mask0.5,43,2023-2024,[4],100,85,55
+target_mlp__direct__mask0.5,43,2023-2024,[5],100,100,79
+target_mlp__direct__mask0.5,43,2024-2025,[0],100,96,66
+target_mlp__direct__mask0.5,43,2024-2025,[1],100,100,100
+target_mlp__direct__mask0.5,43,2024-2025,[2],100,83,53
+target_mlp__direct__mask0.5,43,2024-2025,[3],100,85,55
+target_mlp__direct__mask0.5,43,2024-2025,[4],100,100,97
+target_mlp__direct__mask0.5,43,2024-2025,[5],100,93,63
+target_mlp__direct__mask0.5,43,2025-2026,[0],100,92,62
+target_mlp__direct__mask0.5,43,2025-2026,[1],100,100,90
+target_mlp__direct__mask0.5,43,2025-2026,[2],100,100,73
+target_mlp__direct__mask0.5,43,2025-2026,[3],100,100,91
+target_mlp__direct__mask0.5,43,2025-2026,[4],100,100,82
+target_mlp__direct__mask0.5,43,2025-2026,[5],100,67,37
+target_mlp__direct__mask0.5,44,2023-2024,[0],100,100,74
+target_mlp__direct__mask0.5,44,2023-2024,[1],100,100,89
+target_mlp__direct__mask0.5,44,2023-2024,[2],100,71,41
+target_mlp__direct__mask0.5,44,2023-2024,[3],100,91,61
+target_mlp__direct__mask0.5,44,2023-2024,[4],100,78,48
+target_mlp__direct__mask0.5,44,2023-2024,[5],100,78,48
+target_mlp__direct__mask0.5,44,2024-2025,[0],100,89,59
+target_mlp__direct__mask0.5,44,2024-2025,[1],100,100,100
+target_mlp__direct__mask0.5,44,2024-2025,[2],100,100,76
+target_mlp__direct__mask0.5,44,2024-2025,[3],100,100,98
+target_mlp__direct__mask0.5,44,2024-2025,[4],100,100,93
+target_mlp__direct__mask0.5,44,2024-2025,[5],100,100,98
+target_mlp__direct__mask0.5,44,2025-2026,[0],100,99,69
+target_mlp__direct__mask0.5,44,2025-2026,[1],100,100,100
+target_mlp__direct__mask0.5,44,2025-2026,[2],100,62,32
+target_mlp__direct__mask0.5,44,2025-2026,[3],100,88,58
+target_mlp__direct__mask0.5,44,2025-2026,[4],100,100,89
+target_mlp__direct__mask0.5,44,2025-2026,[5],100,100,92
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[0],100,85,55
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[1],100,100,85
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[2],100,94,64
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[3],100,63,33
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[4],100,78,48
+target_mlp__direct_finalflag__mask0.5,42,2023-2024,[5],100,87,57
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[0],100,62,32
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[1],100,100,97
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[2],100,100,93
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[3],100,75,45
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[4],100,99,69
+target_mlp__direct_finalflag__mask0.5,42,2024-2025,[5],100,100,99
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[0],100,100,99
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[1],100,100,93
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[2],100,90,60
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[3],100,100,95
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[4],100,100,99
+target_mlp__direct_finalflag__mask0.5,42,2025-2026,[5],100,100,98
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[0],100,100,98
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[1],100,100,98
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[2],100,86,56
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[3],100,100,97
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[4],100,75,45
+target_mlp__direct_finalflag__mask0.5,43,2023-2024,[5],100,52,22
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[0],100,96,66
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[1],100,100,100
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[2],100,100,90
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[3],100,100,94
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[4],100,100,92
+target_mlp__direct_finalflag__mask0.5,43,2024-2025,[5],100,100,86
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[0],100,92,62
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[1],100,100,99
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[2],100,100,81
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[3],100,100,100
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[4],100,100,79
+target_mlp__direct_finalflag__mask0.5,43,2025-2026,[5],100,99,69
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[0],100,100,74
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[1],100,100,80
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[2],100,71,41
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[3],100,100,83
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[4],100,100,79
+target_mlp__direct_finalflag__mask0.5,44,2023-2024,[5],100,78,48
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[0],100,100,76
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[1],100,100,91
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[2],100,100,76
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[3],100,73,43
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[4],100,90,60
+target_mlp__direct_finalflag__mask0.5,44,2024-2025,[5],100,100,98
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[0],100,100,83
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[1],100,100,100
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[2],100,100,98
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[3],100,88,58
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[4],100,100,87
+target_mlp__direct_finalflag__mask0.5,44,2025-2026,[5],100,100,100
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[0],100,88,58
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[1],100,100,85
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[2],100,66,36
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[3],100,63,33
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[4],100,78,48
+target_mlp__joint_aux025__mask0.5,42,2023-2024,[5],100,63,33
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[0],100,100,87
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[1],100,100,97
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[2],100,100,92
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[3],100,75,45
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[4],100,100,83
+target_mlp__joint_aux025__mask0.5,42,2024-2025,[5],100,100,99
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[0],100,95,65
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[1],100,100,97
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[2],100,100,91
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[3],100,75,45
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[4],100,100,99
+target_mlp__joint_aux025__mask0.5,42,2025-2026,[5],100,78,48
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[0],100,100,74
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[1],100,100,98
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[2],100,100,94
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[3],100,98,68
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[4],100,52,22
+target_mlp__joint_aux025__mask0.5,43,2023-2024,[5],100,57,27
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[0],100,96,66
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[1],100,100,100
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[2],100,100,82
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[3],100,100,94
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[4],100,100,92
+target_mlp__joint_aux025__mask0.5,43,2024-2025,[5],100,100,92
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[0],100,92,62
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[1],100,100,93
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[2],100,57,27
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[3],100,100,79
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[4],100,100,97
+target_mlp__joint_aux025__mask0.5,43,2025-2026,[5],100,89,59
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[0],100,95,65
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[1],100,100,80
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[2],100,71,41
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[3],100,91,61
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[4],100,100,96
+target_mlp__joint_aux025__mask0.5,44,2023-2024,[5],100,78,48
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[0],100,70,40
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[1],100,100,93
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[2],100,84,54
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[3],100,66,36
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[4],100,88,58
+target_mlp__joint_aux025__mask0.5,44,2024-2025,[5],100,100,98
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[0],100,84,54
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[1],100,100,98
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[2],100,99,69
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[3],100,100,88
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[4],100,100,87
+target_mlp__joint_aux025__mask0.5,44,2025-2026,[5],100,100,100
+target_mlp__two_stage__mask0.5,42,2023-2024,[0],100,100,91
+target_mlp__two_stage__mask0.5,42,2023-2024,[1],100,100,100
+target_mlp__two_stage__mask0.5,42,2023-2024,[2],100,100,87
+target_mlp__two_stage__mask0.5,42,2023-2024,[3],100,88,58
+target_mlp__two_stage__mask0.5,42,2023-2024,[4],100,100,98
+target_mlp__two_stage__mask0.5,42,2023-2024,[5],100,87,57
+target_mlp__two_stage__mask0.5,42,2024-2025,[0],100,100,85
+target_mlp__two_stage__mask0.5,42,2024-2025,[1],100,100,99
+target_mlp__two_stage__mask0.5,42,2024-2025,[2],100,100,91
+target_mlp__two_stage__mask0.5,42,2024-2025,[3],100,100,92
+target_mlp__two_stage__mask0.5,42,2024-2025,[4],100,100,97
+target_mlp__two_stage__mask0.5,42,2024-2025,[5],100,100,88
+target_mlp__two_stage__mask0.5,42,2025-2026,[0],100,100,82
+target_mlp__two_stage__mask0.5,42,2025-2026,[1],100,100,97
+target_mlp__two_stage__mask0.5,42,2025-2026,[2],100,100,93
+target_mlp__two_stage__mask0.5,42,2025-2026,[3],100,100,98
+target_mlp__two_stage__mask0.5,42,2025-2026,[4],100,100,100
+target_mlp__two_stage__mask0.5,42,2025-2026,[5],100,100,87
+target_mlp__two_stage__mask0.5,43,2023-2024,[0],100,84,54
+target_mlp__two_stage__mask0.5,43,2023-2024,[1],100,100,92
+target_mlp__two_stage__mask0.5,43,2023-2024,[2],100,58,28
+target_mlp__two_stage__mask0.5,43,2023-2024,[3],100,92,62
+target_mlp__two_stage__mask0.5,43,2023-2024,[4],100,100,92
+target_mlp__two_stage__mask0.5,43,2023-2024,[5],100,100,85
+target_mlp__two_stage__mask0.5,43,2024-2025,[0],100,80,50
+target_mlp__two_stage__mask0.5,43,2024-2025,[1],100,38,8
+target_mlp__two_stage__mask0.5,43,2024-2025,[2],100,100,89
+target_mlp__two_stage__mask0.5,43,2024-2025,[3],100,100,78
+target_mlp__two_stage__mask0.5,43,2024-2025,[4],100,100,85
+target_mlp__two_stage__mask0.5,43,2024-2025,[5],100,100,79
+target_mlp__two_stage__mask0.5,43,2025-2026,[0],100,100,97
+target_mlp__two_stage__mask0.5,43,2025-2026,[1],100,100,95
+target_mlp__two_stage__mask0.5,43,2025-2026,[2],100,67,37
+target_mlp__two_stage__mask0.5,43,2025-2026,[3],100,33,3
+target_mlp__two_stage__mask0.5,43,2025-2026,[4],100,100,95
+target_mlp__two_stage__mask0.5,43,2025-2026,[5],100,100,79
+target_mlp__two_stage__mask0.5,44,2023-2024,[0],100,79,49
+target_mlp__two_stage__mask0.5,44,2023-2024,[1],100,100,92
+target_mlp__two_stage__mask0.5,44,2023-2024,[2],100,52,22
+target_mlp__two_stage__mask0.5,44,2023-2024,[3],100,100,74
+target_mlp__two_stage__mask0.5,44,2023-2024,[4],100,100,75
+target_mlp__two_stage__mask0.5,44,2023-2024,[5],100,95,65
+target_mlp__two_stage__mask0.5,44,2024-2025,[0],100,69,39
+target_mlp__two_stage__mask0.5,44,2024-2025,[1],100,99,69
+target_mlp__two_stage__mask0.5,44,2024-2025,[2],100,100,97
+target_mlp__two_stage__mask0.5,44,2024-2025,[3],100,83,53
+target_mlp__two_stage__mask0.5,44,2024-2025,[4],100,100,99
+target_mlp__two_stage__mask0.5,44,2024-2025,[5],100,100,97
+target_mlp__two_stage__mask0.5,44,2025-2026,[0],100,60,30
+target_mlp__two_stage__mask0.5,44,2025-2026,[1],100,100,99
+target_mlp__two_stage__mask0.5,44,2025-2026,[2],100,100,99
+target_mlp__two_stage__mask0.5,44,2025-2026,[3],100,100,99
+target_mlp__two_stage__mask0.5,44,2025-2026,[4],100,100,96
+target_mlp__two_stage__mask0.5,44,2025-2026,[5],100,100,100
+target_mlp__direct_finalflag__mask0,42,2023-2024,[0],100,100,72
+target_mlp__direct_finalflag__mask0,42,2023-2024,[1],100,100,100
+target_mlp__direct_finalflag__mask0,42,2023-2024,[2],100,100,98
+target_mlp__direct_finalflag__mask0,42,2023-2024,[3],100,68,38
+target_mlp__direct_finalflag__mask0,42,2023-2024,[4],100,67,37
+target_mlp__direct_finalflag__mask0,42,2023-2024,[5],100,64,34
+target_mlp__direct_finalflag__mask0,42,2024-2025,[0],100,47,17
+target_mlp__direct_finalflag__mask0,42,2024-2025,[1],100,100,97
+target_mlp__direct_finalflag__mask0,42,2024-2025,[2],100,100,98
+target_mlp__direct_finalflag__mask0,42,2024-2025,[3],100,66,36
+target_mlp__direct_finalflag__mask0,42,2024-2025,[4],100,79,49
+target_mlp__direct_finalflag__mask0,42,2024-2025,[5],100,100,94
+target_mlp__direct_finalflag__mask0,42,2025-2026,[0],100,66,36
+target_mlp__direct_finalflag__mask0,42,2025-2026,[1],100,100,74
+target_mlp__direct_finalflag__mask0,42,2025-2026,[2],100,87,57
+target_mlp__direct_finalflag__mask0,42,2025-2026,[3],100,99,69
+target_mlp__direct_finalflag__mask0,42,2025-2026,[4],100,83,53
+target_mlp__direct_finalflag__mask0,42,2025-2026,[5],100,100,87
+target_mlp__direct_finalflag__mask0,43,2023-2024,[0],100,100,74
+target_mlp__direct_finalflag__mask0,43,2023-2024,[1],100,100,88
+target_mlp__direct_finalflag__mask0,43,2023-2024,[2],100,76,46
+target_mlp__direct_finalflag__mask0,43,2023-2024,[3],100,98,68
+target_mlp__direct_finalflag__mask0,43,2023-2024,[4],100,68,38
+target_mlp__direct_finalflag__mask0,43,2023-2024,[5],100,100,78
+target_mlp__direct_finalflag__mask0,43,2024-2025,[0],100,96,66
+target_mlp__direct_finalflag__mask0,43,2024-2025,[1],100,100,81
+target_mlp__direct_finalflag__mask0,43,2024-2025,[2],100,97,67
+target_mlp__direct_finalflag__mask0,43,2024-2025,[3],100,90,60
+target_mlp__direct_finalflag__mask0,43,2024-2025,[4],100,100,93
+target_mlp__direct_finalflag__mask0,43,2024-2025,[5],100,100,82
+target_mlp__direct_finalflag__mask0,43,2025-2026,[0],100,100,70
+target_mlp__direct_finalflag__mask0,43,2025-2026,[1],100,100,86
+target_mlp__direct_finalflag__mask0,43,2025-2026,[2],100,67,37
+target_mlp__direct_finalflag__mask0,43,2025-2026,[3],100,100,97
+target_mlp__direct_finalflag__mask0,43,2025-2026,[4],100,100,92
+target_mlp__direct_finalflag__mask0,43,2025-2026,[5],100,84,54
+target_mlp__direct_finalflag__mask0,44,2023-2024,[0],100,84,54
+target_mlp__direct_finalflag__mask0,44,2023-2024,[1],100,100,99
+target_mlp__direct_finalflag__mask0,44,2023-2024,[2],100,50,20
+target_mlp__direct_finalflag__mask0,44,2023-2024,[3],100,72,42
+target_mlp__direct_finalflag__mask0,44,2023-2024,[4],100,89,59
+target_mlp__direct_finalflag__mask0,44,2023-2024,[5],100,58,28
+target_mlp__direct_finalflag__mask0,44,2024-2025,[0],100,100,72
+target_mlp__direct_finalflag__mask0,44,2024-2025,[1],100,100,84
+target_mlp__direct_finalflag__mask0,44,2024-2025,[2],100,100,72
+target_mlp__direct_finalflag__mask0,44,2024-2025,[3],100,73,43
+target_mlp__direct_finalflag__mask0,44,2024-2025,[4],100,100,91
+target_mlp__direct_finalflag__mask0,44,2024-2025,[5],100,93,63
+target_mlp__direct_finalflag__mask0,44,2025-2026,[0],100,90,60
+target_mlp__direct_finalflag__mask0,44,2025-2026,[1],100,100,96
+target_mlp__direct_finalflag__mask0,44,2025-2026,[2],100,100,70
+target_mlp__direct_finalflag__mask0,44,2025-2026,[3],100,86,56
+target_mlp__direct_finalflag__mask0,44,2025-2026,[4],100,100,99
+target_mlp__direct_finalflag__mask0,44,2025-2026,[5],100,83,53
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[0],100,90,60
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[1],100,100,90
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[2],100,100,86
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[3],100,100,84
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[4],100,64,34
+target_mlp__direct_finalflag__mask0.25,42,2023-2024,[5],100,55,25
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[0],100,58,28
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[1],100,100,96
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[2],100,100,98
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[3],100,75,45
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[4],100,100,79
+target_mlp__direct_finalflag__mask0.25,42,2024-2025,[5],100,100,95
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[0],100,100,90
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[1],100,100,97
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[2],100,92,62
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[3],100,85,55
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[4],100,100,86
+target_mlp__direct_finalflag__mask0.25,42,2025-2026,[5],100,73,43
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[0],100,73,43
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[1],100,100,100
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[2],100,80,50
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[3],100,100,94
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[4],100,100,91
+target_mlp__direct_finalflag__mask0.25,43,2023-2024,[5],100,68,38
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[0],100,100,76
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[1],100,100,79
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[2],100,100,97
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[3],100,86,56
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[4],100,78,48
+target_mlp__direct_finalflag__mask0.25,43,2024-2025,[5],100,80,50
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[0],100,100,73
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[1],100,100,98
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[2],100,58,28
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[3],100,100,79
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[4],100,97,67
+target_mlp__direct_finalflag__mask0.25,43,2025-2026,[5],100,100,74
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[0],100,66,36
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[1],100,100,82
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[2],100,100,74
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[3],100,85,55
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[4],100,100,94
+target_mlp__direct_finalflag__mask0.25,44,2023-2024,[5],100,58,28
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[0],100,81,51
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[1],100,100,86
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[2],100,100,76
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[3],100,73,43
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[4],100,75,45
+target_mlp__direct_finalflag__mask0.25,44,2024-2025,[5],100,100,99
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[0],100,91,61
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[1],100,100,82
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[2],100,52,22
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[3],100,92,62
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[4],100,100,91
+target_mlp__direct_finalflag__mask0.25,44,2025-2026,[5],100,76,46
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[0],100,91,61
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[1],100,100,83
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[2],100,100,74
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[3],100,97,67
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[4],100,100,95
+target_mlp__direct_finalflag__recent_only,42,2023-2024,[5],100,63,33
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[0],100,62,32
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[1],100,100,89
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[2],100,98,68
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[3],100,79,49
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[4],100,100,99
+target_mlp__direct_finalflag__recent_only,42,2024-2025,[5],100,100,99
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[0],100,85,55
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[1],100,100,97
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[2],100,54,24
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[3],100,85,55
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[4],100,100,87
+target_mlp__direct_finalflag__recent_only,42,2025-2026,[5],100,100,79
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[0],100,95,65
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[1],100,100,94
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[2],100,100,89
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[3],100,98,68
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[4],100,68,38
+target_mlp__direct_finalflag__recent_only,43,2023-2024,[5],100,56,26
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[0],100,56,26
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[1],100,100,99
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[2],100,100,84
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[3],100,100,87
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[4],100,100,75
+target_mlp__direct_finalflag__recent_only,43,2024-2025,[5],100,100,79
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[0],100,81,51
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[1],100,100,100
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[2],100,66,36
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[3],100,100,75
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[4],100,100,82
+target_mlp__direct_finalflag__recent_only,43,2025-2026,[5],100,100,86
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[0],100,93,63
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[1],100,100,72
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[2],100,100,99
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[3],100,100,71
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[4],100,100,80
+target_mlp__direct_finalflag__recent_only,44,2023-2024,[5],100,62,32
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[0],100,71,41
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[1],100,100,95
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[2],100,98,68
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[3],100,96,66
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[4],100,100,79
+target_mlp__direct_finalflag__recent_only,44,2024-2025,[5],100,100,98
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[0],100,95,65
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[1],100,100,94
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[2],100,100,80
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[3],100,92,62
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[4],100,100,98
+target_mlp__direct_finalflag__recent_only,44,2025-2026,[5],100,100,95
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[0],100,100,98
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[1],100,91,61
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[2],100,81,51
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[3],100,82,52
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[4],100,67,37
+target_mlp__direct_finalflag__gap_only,42,2023-2024,[5],100,87,57
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[0],100,47,17
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[1],100,100,94
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[2],100,100,70
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[3],100,66,36
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[4],100,79,49
+target_mlp__direct_finalflag__gap_only,42,2024-2025,[5],100,100,94
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[0],100,66,36
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[1],100,100,99
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[2],100,100,89
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[3],100,100,80
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[4],100,100,96
+target_mlp__direct_finalflag__gap_only,42,2025-2026,[5],100,100,88
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[0],100,73,43
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[1],100,100,94
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[2],100,100,99
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[3],100,87,57
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[4],100,68,38
+target_mlp__direct_finalflag__gap_only,43,2023-2024,[5],100,75,45
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[0],100,100,76
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[1],100,100,88
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[2],100,100,76
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[3],100,89,59
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[4],100,100,80
+target_mlp__direct_finalflag__gap_only,43,2024-2025,[5],100,100,86
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[0],100,100,94
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[1],100,100,93
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[2],100,100,97
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[3],100,84,54
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[4],100,100,92
+target_mlp__direct_finalflag__gap_only,43,2025-2026,[5],100,84,54
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[0],100,84,54
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[1],100,100,80
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[2],100,100,90
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[3],100,76,46
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[4],100,100,87
+target_mlp__direct_finalflag__gap_only,44,2023-2024,[5],100,58,28
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[0],100,90,60
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[1],100,100,92
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[2],100,100,96
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[3],100,98,68
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[4],100,96,66
+target_mlp__direct_finalflag__gap_only,44,2024-2025,[5],100,100,92
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[0],100,77,47
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[1],100,100,87
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[2],100,100,72
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[3],100,92,62
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[4],100,100,78
+target_mlp__direct_finalflag__gap_only,44,2025-2026,[5],100,86,56
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[0],100,100,98
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[1],100,90,60
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[2],100,87,57
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[3],100,100,79
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[4],100,100,82
+target_mlp__direct_finalflag__outage_only,42,2023-2024,[5],100,72,42
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[0],100,81,51
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[1],100,100,97
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[2],100,94,64
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[3],100,66,36
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[4],100,100,96
+target_mlp__direct_finalflag__outage_only,42,2024-2025,[5],100,100,86
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[0],100,89,59
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[1],100,100,83
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[2],100,100,84
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[3],100,100,94
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[4],100,91,61
+target_mlp__direct_finalflag__outage_only,42,2025-2026,[5],100,66,36
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[0],100,59,29
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[1],100,90,60
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[2],100,73,43
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[3],100,54,24
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[4],100,100,82
+target_mlp__direct_finalflag__outage_only,43,2023-2024,[5],100,81,51
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[0],100,62,32
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[1],100,100,98
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[2],100,100,83
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[3],100,92,62
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[4],100,100,86
+target_mlp__direct_finalflag__outage_only,43,2024-2025,[5],100,100,88
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[0],100,100,99
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[1],100,100,98
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[2],100,80,50
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[3],100,80,50
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[4],100,100,94
+target_mlp__direct_finalflag__outage_only,43,2025-2026,[5],100,74,44
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[0],100,95,65
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[1],100,100,97
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[2],100,100,90
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[3],100,61,31
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[4],100,100,82
+target_mlp__direct_finalflag__outage_only,44,2023-2024,[5],100,100,96
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[0],100,68,38
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[1],100,100,100
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[2],100,100,87
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[3],100,57,27
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[4],100,100,100
+target_mlp__direct_finalflag__outage_only,44,2024-2025,[5],100,100,97
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[0],100,100,83
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[1],100,100,97
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[2],100,100,76
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[3],100,85,55
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[4],100,100,90
+target_mlp__direct_finalflag__outage_only,44,2025-2026,[5],100,87,57
+target_mlp__joint_aux025__outage_only,42,2023-2024,[0],100,64,34
+target_mlp__joint_aux025__outage_only,42,2023-2024,[1],100,92,62
+target_mlp__joint_aux025__outage_only,42,2023-2024,[2],100,69,39
+target_mlp__joint_aux025__outage_only,42,2023-2024,[3],100,100,79
+target_mlp__joint_aux025__outage_only,42,2023-2024,[4],100,100,76
+target_mlp__joint_aux025__outage_only,42,2023-2024,[5],100,100,99
+target_mlp__joint_aux025__outage_only,42,2024-2025,[0],100,82,52
+target_mlp__joint_aux025__outage_only,42,2024-2025,[1],100,100,97
+target_mlp__joint_aux025__outage_only,42,2024-2025,[2],100,81,51
+target_mlp__joint_aux025__outage_only,42,2024-2025,[3],100,100,87
+target_mlp__joint_aux025__outage_only,42,2024-2025,[4],100,100,96
+target_mlp__joint_aux025__outage_only,42,2024-2025,[5],100,100,93
+target_mlp__joint_aux025__outage_only,42,2025-2026,[0],100,100,79
+target_mlp__joint_aux025__outage_only,42,2025-2026,[1],100,100,86
+target_mlp__joint_aux025__outage_only,42,2025-2026,[2],100,100,79
+target_mlp__joint_aux025__outage_only,42,2025-2026,[3],100,100,80
+target_mlp__joint_aux025__outage_only,42,2025-2026,[4],100,100,76
+target_mlp__joint_aux025__outage_only,42,2025-2026,[5],100,95,65
+target_mlp__joint_aux025__outage_only,43,2023-2024,[0],100,91,61
+target_mlp__joint_aux025__outage_only,43,2023-2024,[1],100,74,44
+target_mlp__joint_aux025__outage_only,43,2023-2024,[2],100,98,68
+target_mlp__joint_aux025__outage_only,43,2023-2024,[3],100,100,73
+target_mlp__joint_aux025__outage_only,43,2023-2024,[4],100,100,97
+target_mlp__joint_aux025__outage_only,43,2023-2024,[5],100,100,96
+target_mlp__joint_aux025__outage_only,43,2024-2025,[0],100,73,43
+target_mlp__joint_aux025__outage_only,43,2024-2025,[1],100,100,97
+target_mlp__joint_aux025__outage_only,43,2024-2025,[2],100,100,84
+target_mlp__joint_aux025__outage_only,43,2024-2025,[3],100,90,60
+target_mlp__joint_aux025__outage_only,43,2024-2025,[4],100,100,86
+target_mlp__joint_aux025__outage_only,43,2024-2025,[5],100,100,86
+target_mlp__joint_aux025__outage_only,43,2025-2026,[0],100,100,89
+target_mlp__joint_aux025__outage_only,43,2025-2026,[1],100,100,98
+target_mlp__joint_aux025__outage_only,43,2025-2026,[2],100,100,92
+target_mlp__joint_aux025__outage_only,43,2025-2026,[3],100,100,99
+target_mlp__joint_aux025__outage_only,43,2025-2026,[4],100,100,95
+target_mlp__joint_aux025__outage_only,43,2025-2026,[5],100,100,84
+target_mlp__joint_aux025__outage_only,44,2023-2024,[0],100,100,85
+target_mlp__joint_aux025__outage_only,44,2023-2024,[1],100,89,59
+target_mlp__joint_aux025__outage_only,44,2023-2024,[2],100,100,100
+target_mlp__joint_aux025__outage_only,44,2023-2024,[3],100,63,33
+target_mlp__joint_aux025__outage_only,44,2023-2024,[4],100,100,94
+target_mlp__joint_aux025__outage_only,44,2023-2024,[5],100,100,96
+target_mlp__joint_aux025__outage_only,44,2024-2025,[0],100,82,52
+target_mlp__joint_aux025__outage_only,44,2024-2025,[1],100,100,99
+target_mlp__joint_aux025__outage_only,44,2024-2025,[2],100,100,100
+target_mlp__joint_aux025__outage_only,44,2024-2025,[3],100,88,58
+target_mlp__joint_aux025__outage_only,44,2024-2025,[4],100,100,100
+target_mlp__joint_aux025__outage_only,44,2024-2025,[5],100,100,97
+target_mlp__joint_aux025__outage_only,44,2025-2026,[0],100,99,69
+target_mlp__joint_aux025__outage_only,44,2025-2026,[1],100,100,96
+target_mlp__joint_aux025__outage_only,44,2025-2026,[2],100,100,85
+target_mlp__joint_aux025__outage_only,44,2025-2026,[3],100,92,62
+target_mlp__joint_aux025__outage_only,44,2025-2026,[4],100,100,87
+target_mlp__joint_aux025__outage_only,44,2025-2026,[5],100,91,61
+pathogen_mlp__direct__mask0.5,42,2023-2024,"[0, 3]",100,100,78
+pathogen_mlp__direct__mask0.5,42,2023-2024,"[1, 4]",100,75,45
+pathogen_mlp__direct__mask0.5,42,2023-2024,"[2, 5]",100,73,43
+pathogen_mlp__direct__mask0.5,42,2024-2025,"[0, 3]",100,52,22
+pathogen_mlp__direct__mask0.5,42,2024-2025,"[1, 4]",100,100,89
+pathogen_mlp__direct__mask0.5,42,2024-2025,"[2, 5]",100,100,97
+pathogen_mlp__direct__mask0.5,42,2025-2026,"[0, 3]",100,100,84
+pathogen_mlp__direct__mask0.5,42,2025-2026,"[1, 4]",100,100,86
+pathogen_mlp__direct__mask0.5,42,2025-2026,"[2, 5]",100,100,98
+pathogen_mlp__direct__mask0.5,43,2023-2024,"[0, 3]",100,67,37
+pathogen_mlp__direct__mask0.5,43,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__direct__mask0.5,43,2023-2024,"[2, 5]",100,93,63
+pathogen_mlp__direct__mask0.5,43,2024-2025,"[0, 3]",100,64,34
+pathogen_mlp__direct__mask0.5,43,2024-2025,"[1, 4]",100,100,99
+pathogen_mlp__direct__mask0.5,43,2024-2025,"[2, 5]",100,85,55
+pathogen_mlp__direct__mask0.5,43,2025-2026,"[0, 3]",100,100,86
+pathogen_mlp__direct__mask0.5,43,2025-2026,"[1, 4]",100,100,84
+pathogen_mlp__direct__mask0.5,43,2025-2026,"[2, 5]",100,100,81
+pathogen_mlp__direct__mask0.5,44,2023-2024,"[0, 3]",100,100,74
+pathogen_mlp__direct__mask0.5,44,2023-2024,"[1, 4]",100,67,37
+pathogen_mlp__direct__mask0.5,44,2023-2024,"[2, 5]",100,100,80
+pathogen_mlp__direct__mask0.5,44,2024-2025,"[0, 3]",100,91,61
+pathogen_mlp__direct__mask0.5,44,2024-2025,"[1, 4]",100,100,94
+pathogen_mlp__direct__mask0.5,44,2024-2025,"[2, 5]",100,100,71
+pathogen_mlp__direct__mask0.5,44,2025-2026,"[0, 3]",100,100,83
+pathogen_mlp__direct__mask0.5,44,2025-2026,"[1, 4]",100,100,93
+pathogen_mlp__direct__mask0.5,44,2025-2026,"[2, 5]",100,100,99
+pathogen_mlp__direct_finalflag__mask0.5,42,2023-2024,"[0, 3]",100,100,91
+pathogen_mlp__direct_finalflag__mask0.5,42,2023-2024,"[1, 4]",100,81,51
+pathogen_mlp__direct_finalflag__mask0.5,42,2023-2024,"[2, 5]",100,100,87
+pathogen_mlp__direct_finalflag__mask0.5,42,2024-2025,"[0, 3]",100,74,44
+pathogen_mlp__direct_finalflag__mask0.5,42,2024-2025,"[1, 4]",100,100,97
+pathogen_mlp__direct_finalflag__mask0.5,42,2024-2025,"[2, 5]",100,100,95
+pathogen_mlp__direct_finalflag__mask0.5,42,2025-2026,"[0, 3]",100,100,79
+pathogen_mlp__direct_finalflag__mask0.5,42,2025-2026,"[1, 4]",100,100,93
+pathogen_mlp__direct_finalflag__mask0.5,42,2025-2026,"[2, 5]",100,87,57
+pathogen_mlp__direct_finalflag__mask0.5,43,2023-2024,"[0, 3]",100,100,74
+pathogen_mlp__direct_finalflag__mask0.5,43,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__direct_finalflag__mask0.5,43,2023-2024,"[2, 5]",100,99,69
+pathogen_mlp__direct_finalflag__mask0.5,43,2024-2025,"[0, 3]",100,100,72
+pathogen_mlp__direct_finalflag__mask0.5,43,2024-2025,"[1, 4]",100,100,94
+pathogen_mlp__direct_finalflag__mask0.5,43,2024-2025,"[2, 5]",100,100,90
+pathogen_mlp__direct_finalflag__mask0.5,43,2025-2026,"[0, 3]",100,100,96
+pathogen_mlp__direct_finalflag__mask0.5,43,2025-2026,"[1, 4]",100,100,83
+pathogen_mlp__direct_finalflag__mask0.5,43,2025-2026,"[2, 5]",100,100,70
+pathogen_mlp__direct_finalflag__mask0.5,44,2023-2024,"[0, 3]",100,85,55
+pathogen_mlp__direct_finalflag__mask0.5,44,2023-2024,"[1, 4]",100,100,72
+pathogen_mlp__direct_finalflag__mask0.5,44,2023-2024,"[2, 5]",100,77,47
+pathogen_mlp__direct_finalflag__mask0.5,44,2024-2025,"[0, 3]",100,80,50
+pathogen_mlp__direct_finalflag__mask0.5,44,2024-2025,"[1, 4]",100,100,91
+pathogen_mlp__direct_finalflag__mask0.5,44,2024-2025,"[2, 5]",100,100,85
+pathogen_mlp__direct_finalflag__mask0.5,44,2025-2026,"[0, 3]",100,63,33
+pathogen_mlp__direct_finalflag__mask0.5,44,2025-2026,"[1, 4]",100,100,100
+pathogen_mlp__direct_finalflag__mask0.5,44,2025-2026,"[2, 5]",100,100,88
+pathogen_mlp__joint_aux025__mask0.5,42,2023-2024,"[0, 3]",100,100,91
+pathogen_mlp__joint_aux025__mask0.5,42,2023-2024,"[1, 4]",100,81,51
+pathogen_mlp__joint_aux025__mask0.5,42,2023-2024,"[2, 5]",100,77,47
+pathogen_mlp__joint_aux025__mask0.5,42,2024-2025,"[0, 3]",100,70,40
+pathogen_mlp__joint_aux025__mask0.5,42,2024-2025,"[1, 4]",100,100,100
+pathogen_mlp__joint_aux025__mask0.5,42,2024-2025,"[2, 5]",100,100,95
+pathogen_mlp__joint_aux025__mask0.5,42,2025-2026,"[0, 3]",100,100,77
+pathogen_mlp__joint_aux025__mask0.5,42,2025-2026,"[1, 4]",100,100,93
+pathogen_mlp__joint_aux025__mask0.5,42,2025-2026,"[2, 5]",100,90,60
+pathogen_mlp__joint_aux025__mask0.5,43,2023-2024,"[0, 3]",100,100,82
+pathogen_mlp__joint_aux025__mask0.5,43,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__joint_aux025__mask0.5,43,2023-2024,"[2, 5]",100,87,57
+pathogen_mlp__joint_aux025__mask0.5,43,2024-2025,"[0, 3]",100,78,48
+pathogen_mlp__joint_aux025__mask0.5,43,2024-2025,"[1, 4]",100,100,94
+pathogen_mlp__joint_aux025__mask0.5,43,2024-2025,"[2, 5]",100,93,63
+pathogen_mlp__joint_aux025__mask0.5,43,2025-2026,"[0, 3]",100,100,96
+pathogen_mlp__joint_aux025__mask0.5,43,2025-2026,"[1, 4]",100,100,90
+pathogen_mlp__joint_aux025__mask0.5,43,2025-2026,"[2, 5]",100,87,57
+pathogen_mlp__joint_aux025__mask0.5,44,2023-2024,"[0, 3]",100,100,74
+pathogen_mlp__joint_aux025__mask0.5,44,2023-2024,"[1, 4]",100,100,91
+pathogen_mlp__joint_aux025__mask0.5,44,2023-2024,"[2, 5]",100,100,97
+pathogen_mlp__joint_aux025__mask0.5,44,2024-2025,"[0, 3]",100,100,91
+pathogen_mlp__joint_aux025__mask0.5,44,2024-2025,"[1, 4]",100,100,94
+pathogen_mlp__joint_aux025__mask0.5,44,2024-2025,"[2, 5]",100,100,93
+pathogen_mlp__joint_aux025__mask0.5,44,2025-2026,"[0, 3]",100,63,33
+pathogen_mlp__joint_aux025__mask0.5,44,2025-2026,"[1, 4]",100,100,100
+pathogen_mlp__joint_aux025__mask0.5,44,2025-2026,"[2, 5]",100,100,88
+pathogen_mlp__two_stage__mask0.5,42,2023-2024,"[0, 3]",100,100,100
+pathogen_mlp__two_stage__mask0.5,42,2023-2024,"[1, 4]",100,100,95
+pathogen_mlp__two_stage__mask0.5,42,2023-2024,"[2, 5]",100,100,82
+pathogen_mlp__two_stage__mask0.5,42,2024-2025,"[0, 3]",100,100,85
+pathogen_mlp__two_stage__mask0.5,42,2024-2025,"[1, 4]",100,100,90
+pathogen_mlp__two_stage__mask0.5,42,2024-2025,"[2, 5]",100,100,96
+pathogen_mlp__two_stage__mask0.5,42,2025-2026,"[0, 3]",100,100,87
+pathogen_mlp__two_stage__mask0.5,42,2025-2026,"[1, 4]",100,100,99
+pathogen_mlp__two_stage__mask0.5,42,2025-2026,"[2, 5]",100,93,63
+pathogen_mlp__two_stage__mask0.5,43,2023-2024,"[0, 3]",100,84,54
+pathogen_mlp__two_stage__mask0.5,43,2023-2024,"[1, 4]",100,100,99
+pathogen_mlp__two_stage__mask0.5,43,2023-2024,"[2, 5]",100,72,42
+pathogen_mlp__two_stage__mask0.5,43,2024-2025,"[0, 3]",100,66,36
+pathogen_mlp__two_stage__mask0.5,43,2024-2025,"[1, 4]",100,100,99
+pathogen_mlp__two_stage__mask0.5,43,2024-2025,"[2, 5]",100,100,95
+pathogen_mlp__two_stage__mask0.5,43,2025-2026,"[0, 3]",100,100,92
+pathogen_mlp__two_stage__mask0.5,43,2025-2026,"[1, 4]",100,38,8
+pathogen_mlp__two_stage__mask0.5,43,2025-2026,"[2, 5]",100,100,77
+pathogen_mlp__two_stage__mask0.5,44,2023-2024,"[0, 3]",100,100,91
+pathogen_mlp__two_stage__mask0.5,44,2023-2024,"[1, 4]",100,100,95
+pathogen_mlp__two_stage__mask0.5,44,2023-2024,"[2, 5]",100,64,34
+pathogen_mlp__two_stage__mask0.5,44,2024-2025,"[0, 3]",100,64,34
+pathogen_mlp__two_stage__mask0.5,44,2024-2025,"[1, 4]",100,100,100
+pathogen_mlp__two_stage__mask0.5,44,2024-2025,"[2, 5]",100,100,98
+pathogen_mlp__two_stage__mask0.5,44,2025-2026,"[0, 3]",100,100,94
+pathogen_mlp__two_stage__mask0.5,44,2025-2026,"[1, 4]",100,100,100
+pathogen_mlp__two_stage__mask0.5,44,2025-2026,"[2, 5]",100,99,69
+pathogen_mlp__direct_finalflag__mask0,42,2023-2024,"[0, 3]",100,100,100
+pathogen_mlp__direct_finalflag__mask0,42,2023-2024,"[1, 4]",100,100,95
+pathogen_mlp__direct_finalflag__mask0,42,2023-2024,"[2, 5]",100,75,45
+pathogen_mlp__direct_finalflag__mask0,42,2024-2025,"[0, 3]",100,57,27
+pathogen_mlp__direct_finalflag__mask0,42,2024-2025,"[1, 4]",100,100,100
+pathogen_mlp__direct_finalflag__mask0,42,2024-2025,"[2, 5]",100,100,70
+pathogen_mlp__direct_finalflag__mask0,42,2025-2026,"[0, 3]",100,100,83
+pathogen_mlp__direct_finalflag__mask0,42,2025-2026,"[1, 4]",100,100,92
+pathogen_mlp__direct_finalflag__mask0,42,2025-2026,"[2, 5]",100,99,69
+pathogen_mlp__direct_finalflag__mask0,43,2023-2024,"[0, 3]",100,80,50
+pathogen_mlp__direct_finalflag__mask0,43,2023-2024,"[1, 4]",100,74,44
+pathogen_mlp__direct_finalflag__mask0,43,2023-2024,"[2, 5]",100,80,50
+pathogen_mlp__direct_finalflag__mask0,43,2024-2025,"[0, 3]",100,78,48
+pathogen_mlp__direct_finalflag__mask0,43,2024-2025,"[1, 4]",100,100,89
+pathogen_mlp__direct_finalflag__mask0,43,2024-2025,"[2, 5]",100,100,99
+pathogen_mlp__direct_finalflag__mask0,43,2025-2026,"[0, 3]",100,93,63
+pathogen_mlp__direct_finalflag__mask0,43,2025-2026,"[1, 4]",100,100,79
+pathogen_mlp__direct_finalflag__mask0,43,2025-2026,"[2, 5]",100,100,78
+pathogen_mlp__direct_finalflag__mask0,44,2023-2024,"[0, 3]",100,91,61
+pathogen_mlp__direct_finalflag__mask0,44,2023-2024,"[1, 4]",100,100,83
+pathogen_mlp__direct_finalflag__mask0,44,2023-2024,"[2, 5]",100,87,57
+pathogen_mlp__direct_finalflag__mask0,44,2024-2025,"[0, 3]",100,81,51
+pathogen_mlp__direct_finalflag__mask0,44,2024-2025,"[1, 4]",100,100,92
+pathogen_mlp__direct_finalflag__mask0,44,2024-2025,"[2, 5]",100,100,79
+pathogen_mlp__direct_finalflag__mask0,44,2025-2026,"[0, 3]",100,100,75
+pathogen_mlp__direct_finalflag__mask0,44,2025-2026,"[1, 4]",100,100,92
+pathogen_mlp__direct_finalflag__mask0,44,2025-2026,"[2, 5]",100,68,38
+pathogen_mlp__direct_finalflag__mask0.25,42,2023-2024,"[0, 3]",100,63,33
+pathogen_mlp__direct_finalflag__mask0.25,42,2023-2024,"[1, 4]",100,100,88
+pathogen_mlp__direct_finalflag__mask0.25,42,2023-2024,"[2, 5]",100,59,29
+pathogen_mlp__direct_finalflag__mask0.25,42,2024-2025,"[0, 3]",100,58,28
+pathogen_mlp__direct_finalflag__mask0.25,42,2024-2025,"[1, 4]",100,100,97
+pathogen_mlp__direct_finalflag__mask0.25,42,2024-2025,"[2, 5]",100,100,98
+pathogen_mlp__direct_finalflag__mask0.25,42,2025-2026,"[0, 3]",100,65,35
+pathogen_mlp__direct_finalflag__mask0.25,42,2025-2026,"[1, 4]",100,100,100
+pathogen_mlp__direct_finalflag__mask0.25,42,2025-2026,"[2, 5]",100,75,45
+pathogen_mlp__direct_finalflag__mask0.25,43,2023-2024,"[0, 3]",100,76,46
+pathogen_mlp__direct_finalflag__mask0.25,43,2023-2024,"[1, 4]",100,100,76
+pathogen_mlp__direct_finalflag__mask0.25,43,2023-2024,"[2, 5]",100,70,40
+pathogen_mlp__direct_finalflag__mask0.25,43,2024-2025,"[0, 3]",100,78,48
+pathogen_mlp__direct_finalflag__mask0.25,43,2024-2025,"[1, 4]",100,100,89
+pathogen_mlp__direct_finalflag__mask0.25,43,2024-2025,"[2, 5]",100,100,94
+pathogen_mlp__direct_finalflag__mask0.25,43,2025-2026,"[0, 3]",100,100,96
+pathogen_mlp__direct_finalflag__mask0.25,43,2025-2026,"[1, 4]",100,100,98
+pathogen_mlp__direct_finalflag__mask0.25,43,2025-2026,"[2, 5]",100,72,42
+pathogen_mlp__direct_finalflag__mask0.25,44,2023-2024,"[0, 3]",100,86,56
+pathogen_mlp__direct_finalflag__mask0.25,44,2023-2024,"[1, 4]",100,69,39
+pathogen_mlp__direct_finalflag__mask0.25,44,2023-2024,"[2, 5]",100,100,74
+pathogen_mlp__direct_finalflag__mask0.25,44,2024-2025,"[0, 3]",100,81,51
+pathogen_mlp__direct_finalflag__mask0.25,44,2024-2025,"[1, 4]",100,100,95
+pathogen_mlp__direct_finalflag__mask0.25,44,2024-2025,"[2, 5]",100,100,88
+pathogen_mlp__direct_finalflag__mask0.25,44,2025-2026,"[0, 3]",100,77,47
+pathogen_mlp__direct_finalflag__mask0.25,44,2025-2026,"[1, 4]",100,89,59
+pathogen_mlp__direct_finalflag__mask0.25,44,2025-2026,"[2, 5]",100,76,46
+pathogen_mlp__direct_finalflag__recent_only,42,2023-2024,"[0, 3]",100,63,33
+pathogen_mlp__direct_finalflag__recent_only,42,2023-2024,"[1, 4]",100,100,71
+pathogen_mlp__direct_finalflag__recent_only,42,2023-2024,"[2, 5]",100,86,56
+pathogen_mlp__direct_finalflag__recent_only,42,2024-2025,"[0, 3]",100,93,63
+pathogen_mlp__direct_finalflag__recent_only,42,2024-2025,"[1, 4]",100,100,97
+pathogen_mlp__direct_finalflag__recent_only,42,2024-2025,"[2, 5]",100,100,96
+pathogen_mlp__direct_finalflag__recent_only,42,2025-2026,"[0, 3]",100,100,97
+pathogen_mlp__direct_finalflag__recent_only,42,2025-2026,"[1, 4]",100,100,97
+pathogen_mlp__direct_finalflag__recent_only,42,2025-2026,"[2, 5]",100,60,30
+pathogen_mlp__direct_finalflag__recent_only,43,2023-2024,"[0, 3]",100,100,78
+pathogen_mlp__direct_finalflag__recent_only,43,2023-2024,"[1, 4]",100,76,46
+pathogen_mlp__direct_finalflag__recent_only,43,2023-2024,"[2, 5]",100,93,63
+pathogen_mlp__direct_finalflag__recent_only,43,2024-2025,"[0, 3]",100,73,43
+pathogen_mlp__direct_finalflag__recent_only,43,2024-2025,"[1, 4]",100,100,89
+pathogen_mlp__direct_finalflag__recent_only,43,2024-2025,"[2, 5]",100,100,97
+pathogen_mlp__direct_finalflag__recent_only,43,2025-2026,"[0, 3]",100,73,43
+pathogen_mlp__direct_finalflag__recent_only,43,2025-2026,"[1, 4]",100,100,96
+pathogen_mlp__direct_finalflag__recent_only,43,2025-2026,"[2, 5]",100,50,20
+pathogen_mlp__direct_finalflag__recent_only,44,2023-2024,"[0, 3]",100,93,63
+pathogen_mlp__direct_finalflag__recent_only,44,2023-2024,"[1, 4]",100,100,86
+pathogen_mlp__direct_finalflag__recent_only,44,2023-2024,"[2, 5]",100,92,62
+pathogen_mlp__direct_finalflag__recent_only,44,2024-2025,"[0, 3]",100,58,28
+pathogen_mlp__direct_finalflag__recent_only,44,2024-2025,"[1, 4]",100,100,95
+pathogen_mlp__direct_finalflag__recent_only,44,2024-2025,"[2, 5]",100,100,90
+pathogen_mlp__direct_finalflag__recent_only,44,2025-2026,"[0, 3]",100,52,22
+pathogen_mlp__direct_finalflag__recent_only,44,2025-2026,"[1, 4]",100,100,92
+pathogen_mlp__direct_finalflag__recent_only,44,2025-2026,"[2, 5]",100,100,80
+pathogen_mlp__direct_finalflag__gap_only,42,2023-2024,"[0, 3]",100,88,58
+pathogen_mlp__direct_finalflag__gap_only,42,2023-2024,"[1, 4]",100,100,96
+pathogen_mlp__direct_finalflag__gap_only,42,2023-2024,"[2, 5]",100,96,66
+pathogen_mlp__direct_finalflag__gap_only,42,2024-2025,"[0, 3]",100,57,27
+pathogen_mlp__direct_finalflag__gap_only,42,2024-2025,"[1, 4]",100,100,97
+pathogen_mlp__direct_finalflag__gap_only,42,2024-2025,"[2, 5]",100,100,70
+pathogen_mlp__direct_finalflag__gap_only,42,2025-2026,"[0, 3]",100,100,97
+pathogen_mlp__direct_finalflag__gap_only,42,2025-2026,"[1, 4]",100,100,74
+pathogen_mlp__direct_finalflag__gap_only,42,2025-2026,"[2, 5]",100,99,69
+pathogen_mlp__direct_finalflag__gap_only,43,2023-2024,"[0, 3]",100,80,50
+pathogen_mlp__direct_finalflag__gap_only,43,2023-2024,"[1, 4]",100,74,44
+pathogen_mlp__direct_finalflag__gap_only,43,2023-2024,"[2, 5]",100,56,26
+pathogen_mlp__direct_finalflag__gap_only,43,2024-2025,"[0, 3]",100,78,48
+pathogen_mlp__direct_finalflag__gap_only,43,2024-2025,"[1, 4]",100,100,100
+pathogen_mlp__direct_finalflag__gap_only,43,2024-2025,"[2, 5]",100,93,63
+pathogen_mlp__direct_finalflag__gap_only,43,2025-2026,"[0, 3]",100,93,63
+pathogen_mlp__direct_finalflag__gap_only,43,2025-2026,"[1, 4]",100,100,79
+pathogen_mlp__direct_finalflag__gap_only,43,2025-2026,"[2, 5]",100,100,77
+pathogen_mlp__direct_finalflag__gap_only,44,2023-2024,"[0, 3]",100,69,39
+pathogen_mlp__direct_finalflag__gap_only,44,2023-2024,"[1, 4]",100,100,88
+pathogen_mlp__direct_finalflag__gap_only,44,2023-2024,"[2, 5]",100,100,93
+pathogen_mlp__direct_finalflag__gap_only,44,2024-2025,"[0, 3]",100,59,29
+pathogen_mlp__direct_finalflag__gap_only,44,2024-2025,"[1, 4]",100,100,96
+pathogen_mlp__direct_finalflag__gap_only,44,2024-2025,"[2, 5]",100,100,98
+pathogen_mlp__direct_finalflag__gap_only,44,2025-2026,"[0, 3]",100,100,90
+pathogen_mlp__direct_finalflag__gap_only,44,2025-2026,"[1, 4]",100,100,92
+pathogen_mlp__direct_finalflag__gap_only,44,2025-2026,"[2, 5]",100,68,38
+pathogen_mlp__direct_finalflag__outage_only,42,2023-2024,"[0, 3]",100,99,69
+pathogen_mlp__direct_finalflag__outage_only,42,2023-2024,"[1, 4]",100,100,88
+pathogen_mlp__direct_finalflag__outage_only,42,2023-2024,"[2, 5]",100,87,57
+pathogen_mlp__direct_finalflag__outage_only,42,2024-2025,"[0, 3]",100,81,51
+pathogen_mlp__direct_finalflag__outage_only,42,2024-2025,"[1, 4]",100,100,93
+pathogen_mlp__direct_finalflag__outage_only,42,2024-2025,"[2, 5]",100,100,99
+pathogen_mlp__direct_finalflag__outage_only,42,2025-2026,"[0, 3]",100,83,53
+pathogen_mlp__direct_finalflag__outage_only,42,2025-2026,"[1, 4]",100,100,83
+pathogen_mlp__direct_finalflag__outage_only,42,2025-2026,"[2, 5]",100,97,67
+pathogen_mlp__direct_finalflag__outage_only,43,2023-2024,"[0, 3]",100,100,90
+pathogen_mlp__direct_finalflag__outage_only,43,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__direct_finalflag__outage_only,43,2023-2024,"[2, 5]",100,100,82
+pathogen_mlp__direct_finalflag__outage_only,43,2024-2025,"[0, 3]",100,82,52
+pathogen_mlp__direct_finalflag__outage_only,43,2024-2025,"[1, 4]",100,100,89
+pathogen_mlp__direct_finalflag__outage_only,43,2024-2025,"[2, 5]",100,82,52
+pathogen_mlp__direct_finalflag__outage_only,43,2025-2026,"[0, 3]",100,100,88
+pathogen_mlp__direct_finalflag__outage_only,43,2025-2026,"[1, 4]",100,100,93
+pathogen_mlp__direct_finalflag__outage_only,43,2025-2026,"[2, 5]",100,77,47
+pathogen_mlp__direct_finalflag__outage_only,44,2023-2024,"[0, 3]",100,100,73
+pathogen_mlp__direct_finalflag__outage_only,44,2023-2024,"[1, 4]",100,100,93
+pathogen_mlp__direct_finalflag__outage_only,44,2023-2024,"[2, 5]",100,100,70
+pathogen_mlp__direct_finalflag__outage_only,44,2024-2025,"[0, 3]",100,91,61
+pathogen_mlp__direct_finalflag__outage_only,44,2024-2025,"[1, 4]",100,100,99
+pathogen_mlp__direct_finalflag__outage_only,44,2024-2025,"[2, 5]",100,100,100
+pathogen_mlp__direct_finalflag__outage_only,44,2025-2026,"[0, 3]",100,100,89
+pathogen_mlp__direct_finalflag__outage_only,44,2025-2026,"[1, 4]",100,100,100
+pathogen_mlp__direct_finalflag__outage_only,44,2025-2026,"[2, 5]",100,60,30
+pathogen_mlp__joint_aux025__outage_only,42,2023-2024,"[0, 3]",100,100,89
+pathogen_mlp__joint_aux025__outage_only,42,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__joint_aux025__outage_only,42,2023-2024,"[2, 5]",100,87,57
+pathogen_mlp__joint_aux025__outage_only,42,2024-2025,"[0, 3]",100,81,51
+pathogen_mlp__joint_aux025__outage_only,42,2024-2025,"[1, 4]",100,100,90
+pathogen_mlp__joint_aux025__outage_only,42,2024-2025,"[2, 5]",100,100,88
+pathogen_mlp__joint_aux025__outage_only,42,2025-2026,"[0, 3]",100,83,53
+pathogen_mlp__joint_aux025__outage_only,42,2025-2026,"[1, 4]",100,100,83
+pathogen_mlp__joint_aux025__outage_only,42,2025-2026,"[2, 5]",100,84,54
+pathogen_mlp__joint_aux025__outage_only,43,2023-2024,"[0, 3]",100,100,90
+pathogen_mlp__joint_aux025__outage_only,43,2023-2024,"[1, 4]",100,78,48
+pathogen_mlp__joint_aux025__outage_only,43,2023-2024,"[2, 5]",100,100,82
+pathogen_mlp__joint_aux025__outage_only,43,2024-2025,"[0, 3]",100,82,52
+pathogen_mlp__joint_aux025__outage_only,43,2024-2025,"[1, 4]",100,100,96
+pathogen_mlp__joint_aux025__outage_only,43,2024-2025,"[2, 5]",100,100,94
+pathogen_mlp__joint_aux025__outage_only,43,2025-2026,"[0, 3]",100,100,97
+pathogen_mlp__joint_aux025__outage_only,43,2025-2026,"[1, 4]",100,100,98
+pathogen_mlp__joint_aux025__outage_only,43,2025-2026,"[2, 5]",100,100,73
+pathogen_mlp__joint_aux025__outage_only,44,2023-2024,"[0, 3]",100,95,65
+pathogen_mlp__joint_aux025__outage_only,44,2023-2024,"[1, 4]",100,100,96
+pathogen_mlp__joint_aux025__outage_only,44,2023-2024,"[2, 5]",100,100,79
+pathogen_mlp__joint_aux025__outage_only,44,2024-2025,"[0, 3]",100,91,61
+pathogen_mlp__joint_aux025__outage_only,44,2024-2025,"[1, 4]",100,100,99
+pathogen_mlp__joint_aux025__outage_only,44,2024-2025,"[2, 5]",100,100,74
+pathogen_mlp__joint_aux025__outage_only,44,2025-2026,"[0, 3]",100,92,62
+pathogen_mlp__joint_aux025__outage_only,44,2025-2026,"[1, 4]",100,86,56
+pathogen_mlp__joint_aux025__outage_only,44,2025-2026,"[2, 5]",100,100,79
+target_multiscale__direct__mask0.5,42,2023-2024,[0],100,100,78
+target_multiscale__direct__mask0.5,42,2023-2024,[1],100,100,91
+target_multiscale__direct__mask0.5,42,2023-2024,[2],100,100,90
+target_multiscale__direct__mask0.5,42,2023-2024,[3],100,65,35
+target_multiscale__direct__mask0.5,42,2023-2024,[4],100,100,88
+target_multiscale__direct__mask0.5,42,2023-2024,[5],100,73,43
+target_multiscale__direct__mask0.5,42,2024-2025,[0],100,74,44
+target_multiscale__direct__mask0.5,42,2024-2025,[1],100,100,97
+target_multiscale__direct__mask0.5,42,2024-2025,[2],100,100,79
+target_multiscale__direct__mask0.5,42,2024-2025,[3],100,89,59
+target_multiscale__direct__mask0.5,42,2024-2025,[4],100,100,96
+target_multiscale__direct__mask0.5,42,2024-2025,[5],100,100,93
+target_multiscale__direct__mask0.5,42,2025-2026,[0],100,100,90
+target_multiscale__direct__mask0.5,42,2025-2026,[1],100,100,91
+target_multiscale__direct__mask0.5,42,2025-2026,[2],100,89,59
+target_multiscale__direct__mask0.5,42,2025-2026,[3],100,100,98
+target_multiscale__direct__mask0.5,42,2025-2026,[4],100,100,88
+target_multiscale__direct__mask0.5,42,2025-2026,[5],100,88,58
+target_multiscale__direct__mask0.5,43,2023-2024,[0],100,100,80
+target_multiscale__direct__mask0.5,43,2023-2024,[1],100,100,95
+target_multiscale__direct__mask0.5,43,2023-2024,[2],100,100,89
+target_multiscale__direct__mask0.5,43,2023-2024,[3],100,76,46
+target_multiscale__direct__mask0.5,43,2023-2024,[4],100,100,91
+target_multiscale__direct__mask0.5,43,2023-2024,[5],100,100,85
+target_multiscale__direct__mask0.5,43,2024-2025,[0],100,100,91
+target_multiscale__direct__mask0.5,43,2024-2025,[1],100,99,69
+target_multiscale__direct__mask0.5,43,2024-2025,[2],100,100,100
+target_multiscale__direct__mask0.5,43,2024-2025,[3],100,100,75
+target_multiscale__direct__mask0.5,43,2024-2025,[4],100,100,97
+target_multiscale__direct__mask0.5,43,2024-2025,[5],100,100,90
+target_multiscale__direct__mask0.5,43,2025-2026,[0],100,100,86
+target_multiscale__direct__mask0.5,43,2025-2026,[1],100,100,90
+target_multiscale__direct__mask0.5,43,2025-2026,[2],100,100,100
+target_multiscale__direct__mask0.5,43,2025-2026,[3],100,100,80
+target_multiscale__direct__mask0.5,43,2025-2026,[4],100,64,34
+target_multiscale__direct__mask0.5,43,2025-2026,[5],100,79,49
+target_multiscale__direct__mask0.5,44,2023-2024,[0],100,100,96
+target_multiscale__direct__mask0.5,44,2023-2024,[1],100,100,95
+target_multiscale__direct__mask0.5,44,2023-2024,[2],100,100,73
+target_multiscale__direct__mask0.5,44,2023-2024,[3],100,100,99
+target_multiscale__direct__mask0.5,44,2023-2024,[4],100,100,96
+target_multiscale__direct__mask0.5,44,2023-2024,[5],100,100,75
+target_multiscale__direct__mask0.5,44,2024-2025,[0],100,100,76
+target_multiscale__direct__mask0.5,44,2024-2025,[1],100,100,100
+target_multiscale__direct__mask0.5,44,2024-2025,[2],100,100,84
+target_multiscale__direct__mask0.5,44,2024-2025,[3],100,82,52
+target_multiscale__direct__mask0.5,44,2024-2025,[4],100,90,60
+target_multiscale__direct__mask0.5,44,2024-2025,[5],100,100,92
+target_multiscale__direct__mask0.5,44,2025-2026,[0],100,63,33
+target_multiscale__direct__mask0.5,44,2025-2026,[1],100,100,73
+target_multiscale__direct__mask0.5,44,2025-2026,[2],100,64,34
+target_multiscale__direct__mask0.5,44,2025-2026,[3],100,100,98
+target_multiscale__direct__mask0.5,44,2025-2026,[4],100,100,87
+target_multiscale__direct__mask0.5,44,2025-2026,[5],100,100,79
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[0],100,88,58
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[1],100,100,87
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[2],100,100,90
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[3],100,86,56
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[4],100,100,88
+target_multiscale__direct_finalflag__mask0.5,42,2023-2024,[5],100,52,22
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[0],100,74,44
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[1],100,95,65
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[2],100,100,80
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[3],100,77,47
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[4],100,100,96
+target_multiscale__direct_finalflag__mask0.5,42,2024-2025,[5],100,94,64
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[0],100,100,90
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[1],100,100,95
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[2],100,99,69
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[3],100,87,57
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[4],100,100,85
+target_multiscale__direct_finalflag__mask0.5,42,2025-2026,[5],100,74,44
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[0],100,100,82
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[1],100,100,90
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[2],100,88,58
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[3],100,100,73
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[4],100,99,69
+target_multiscale__direct_finalflag__mask0.5,43,2023-2024,[5],100,100,76
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[0],100,82,52
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[1],100,100,100
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[2],100,100,98
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[3],100,100,94
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[4],100,100,97
+target_multiscale__direct_finalflag__mask0.5,43,2024-2025,[5],100,100,98
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[0],100,100,88
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[1],100,100,100
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[2],100,100,76
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[3],100,100,80
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[4],100,64,34
+target_multiscale__direct_finalflag__mask0.5,43,2025-2026,[5],100,79,49
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[0],100,95,65
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[1],100,100,95
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[2],100,100,82
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[3],100,81,51
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[4],100,100,96
+target_multiscale__direct_finalflag__mask0.5,44,2023-2024,[5],100,100,75
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[0],100,72,42
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[1],100,100,91
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[2],100,100,98
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[3],100,99,69
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[4],100,98,68
+target_multiscale__direct_finalflag__mask0.5,44,2024-2025,[5],100,100,92
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[0],100,100,83
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[1],100,100,94
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[2],100,67,37
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[3],100,100,73
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[4],100,100,87
+target_multiscale__direct_finalflag__mask0.5,44,2025-2026,[5],100,100,77
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[0],100,100,78
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[1],100,100,93
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[2],100,100,80
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[3],100,72,42
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[4],100,99,69
+target_multiscale__joint_aux025__mask0.5,42,2023-2024,[5],100,52,22
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[0],100,74,44
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[1],100,95,65
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[2],100,100,75
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[3],100,77,47
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[4],100,100,96
+target_multiscale__joint_aux025__mask0.5,42,2024-2025,[5],100,94,64
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[0],100,100,77
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[1],100,100,95
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[2],100,95,65
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[3],100,87,57
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[4],100,100,100
+target_multiscale__joint_aux025__mask0.5,42,2025-2026,[5],100,88,58
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[0],100,100,82
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[1],100,100,90
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[2],100,100,78
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[3],100,100,73
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[4],100,100,91
+target_multiscale__joint_aux025__mask0.5,43,2023-2024,[5],100,54,24
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[0],100,59,29
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[1],100,100,100
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[2],100,93,63
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[3],100,100,75
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[4],100,100,97
+target_multiscale__joint_aux025__mask0.5,43,2024-2025,[5],100,100,98
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[0],100,92,62
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[1],100,100,97
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[2],100,100,95
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[3],100,90,60
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[4],100,100,88
+target_multiscale__joint_aux025__mask0.5,43,2025-2026,[5],100,79,49
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[0],100,95,65
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[1],100,94,64
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[2],100,78,48
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[3],100,100,99
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[4],100,100,96
+target_multiscale__joint_aux025__mask0.5,44,2023-2024,[5],100,100,78
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[0],100,85,55
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[1],100,100,100
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[2],100,100,90
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[3],100,82,52
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[4],100,90,60
+target_multiscale__joint_aux025__mask0.5,44,2024-2025,[5],100,100,85
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[0],100,92,62
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[1],100,100,94
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[2],100,67,37
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[3],100,100,73
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[4],100,100,94
+target_multiscale__joint_aux025__mask0.5,44,2025-2026,[5],100,100,79
+target_multiscale__two_stage__mask0.5,42,2023-2024,[0],100,98,68
+target_multiscale__two_stage__mask0.5,42,2023-2024,[1],100,100,100
+target_multiscale__two_stage__mask0.5,42,2023-2024,[2],100,82,52
+target_multiscale__two_stage__mask0.5,42,2023-2024,[3],100,73,43
+target_multiscale__two_stage__mask0.5,42,2023-2024,[4],100,99,69
+target_multiscale__two_stage__mask0.5,42,2023-2024,[5],100,98,68
+target_multiscale__two_stage__mask0.5,42,2024-2025,[0],100,99,69
+target_multiscale__two_stage__mask0.5,42,2024-2025,[1],100,73,43
+target_multiscale__two_stage__mask0.5,42,2024-2025,[2],100,100,79
+target_multiscale__two_stage__mask0.5,42,2024-2025,[3],100,100,100
+target_multiscale__two_stage__mask0.5,42,2024-2025,[4],100,100,80
+target_multiscale__two_stage__mask0.5,42,2024-2025,[5],100,100,91
+target_multiscale__two_stage__mask0.5,42,2025-2026,[0],100,100,92
+target_multiscale__two_stage__mask0.5,42,2025-2026,[1],100,81,51
+target_multiscale__two_stage__mask0.5,42,2025-2026,[2],100,100,70
+target_multiscale__two_stage__mask0.5,42,2025-2026,[3],100,100,99
+target_multiscale__two_stage__mask0.5,42,2025-2026,[4],100,100,73
+target_multiscale__two_stage__mask0.5,42,2025-2026,[5],100,100,70
+target_multiscale__two_stage__mask0.5,43,2023-2024,[0],100,100,83
+target_multiscale__two_stage__mask0.5,43,2023-2024,[1],100,100,89
+target_multiscale__two_stage__mask0.5,43,2023-2024,[2],100,64,34
+target_multiscale__two_stage__mask0.5,43,2023-2024,[3],100,58,28
+target_multiscale__two_stage__mask0.5,43,2023-2024,[4],100,100,98
+target_multiscale__two_stage__mask0.5,43,2023-2024,[5],100,100,82
+target_multiscale__two_stage__mask0.5,43,2024-2025,[0],100,55,25
+target_multiscale__two_stage__mask0.5,43,2024-2025,[1],100,83,53
+target_multiscale__two_stage__mask0.5,43,2024-2025,[2],100,100,97
+target_multiscale__two_stage__mask0.5,43,2024-2025,[3],100,50,20
+target_multiscale__two_stage__mask0.5,43,2024-2025,[4],100,85,55
+target_multiscale__two_stage__mask0.5,43,2024-2025,[5],100,100,97
+target_multiscale__two_stage__mask0.5,43,2025-2026,[0],100,100,71
+target_multiscale__two_stage__mask0.5,43,2025-2026,[1],100,83,53
+target_multiscale__two_stage__mask0.5,43,2025-2026,[2],100,100,84
+target_multiscale__two_stage__mask0.5,43,2025-2026,[3],100,86,56
+target_multiscale__two_stage__mask0.5,43,2025-2026,[4],100,100,95
+target_multiscale__two_stage__mask0.5,43,2025-2026,[5],100,100,79
+target_multiscale__two_stage__mask0.5,44,2023-2024,[0],100,83,53
+target_multiscale__two_stage__mask0.5,44,2023-2024,[1],100,100,94
+target_multiscale__two_stage__mask0.5,44,2023-2024,[2],100,100,94
+target_multiscale__two_stage__mask0.5,44,2023-2024,[3],100,83,53
+target_multiscale__two_stage__mask0.5,44,2023-2024,[4],100,100,92
+target_multiscale__two_stage__mask0.5,44,2023-2024,[5],100,100,82
+target_multiscale__two_stage__mask0.5,44,2024-2025,[0],100,83,53
+target_multiscale__two_stage__mask0.5,44,2024-2025,[1],100,100,82
+target_multiscale__two_stage__mask0.5,44,2024-2025,[2],100,100,96
+target_multiscale__two_stage__mask0.5,44,2024-2025,[3],100,66,36
+target_multiscale__two_stage__mask0.5,44,2024-2025,[4],100,100,77
+target_multiscale__two_stage__mask0.5,44,2024-2025,[5],100,100,94
+target_multiscale__two_stage__mask0.5,44,2025-2026,[0],100,78,48
+target_multiscale__two_stage__mask0.5,44,2025-2026,[1],100,74,44
+target_multiscale__two_stage__mask0.5,44,2025-2026,[2],100,100,98
+target_multiscale__two_stage__mask0.5,44,2025-2026,[3],100,100,75
+target_multiscale__two_stage__mask0.5,44,2025-2026,[4],100,100,79
+target_multiscale__two_stage__mask0.5,44,2025-2026,[5],100,100,93
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[0],100,97,67
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[1],100,100,78
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[2],100,55,25
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[3],100,94,64
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[4],100,100,81
+target_multiscale__direct_finalflag__mask0,42,2023-2024,[5],100,72,42
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[0],100,100,70
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[1],100,99,69
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[2],100,100,90
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[3],100,70,40
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[4],100,100,92
+target_multiscale__direct_finalflag__mask0,42,2024-2025,[5],100,99,69
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[0],100,100,90
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[1],100,100,75
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[2],100,100,87
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[3],100,100,80
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[4],100,100,92
+target_multiscale__direct_finalflag__mask0,42,2025-2026,[5],100,100,96
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[0],100,100,98
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[1],100,100,97
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[2],100,98,68
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[3],100,60,30
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[4],100,70,40
+target_multiscale__direct_finalflag__mask0,43,2023-2024,[5],100,60,30
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[0],100,88,58
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[1],100,100,100
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[2],100,100,88
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[3],100,100,94
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[4],100,95,65
+target_multiscale__direct_finalflag__mask0,43,2024-2025,[5],100,100,98
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[0],100,100,94
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[1],100,100,88
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[2],100,100,93
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[3],100,87,57
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[4],100,100,98
+target_multiscale__direct_finalflag__mask0,43,2025-2026,[5],100,79,49
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[0],100,100,80
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[1],100,94,64
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[2],100,100,100
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[3],100,99,69
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[4],100,94,64
+target_multiscale__direct_finalflag__mask0,44,2023-2024,[5],100,65,35
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[0],100,83,53
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[1],100,100,92
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[2],100,100,83
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[3],100,97,67
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[4],100,98,68
+target_multiscale__direct_finalflag__mask0,44,2024-2025,[5],100,100,96
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[0],100,100,88
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[1],100,100,83
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[2],100,100,77
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[3],100,100,81
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[4],100,100,100
+target_multiscale__direct_finalflag__mask0,44,2025-2026,[5],100,87,57
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[0],100,100,79
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[1],100,100,74
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[2],100,55,25
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[3],100,100,95
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[4],100,62,32
+target_multiscale__direct_finalflag__mask0.25,42,2023-2024,[5],100,70,40
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[0],100,69,39
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[1],100,100,74
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[2],100,100,83
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[3],100,75,45
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[4],100,100,87
+target_multiscale__direct_finalflag__mask0.25,42,2024-2025,[5],100,100,96
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[0],100,100,80
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[1],100,100,88
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[2],100,75,45
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[3],100,91,61
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[4],100,85,55
+target_multiscale__direct_finalflag__mask0.25,42,2025-2026,[5],100,100,92
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[0],100,81,51
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[1],100,100,85
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[2],100,100,93
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[3],100,60,30
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[4],100,100,87
+target_multiscale__direct_finalflag__mask0.25,43,2023-2024,[5],100,60,30
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[0],100,82,52
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[1],100,100,92
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[2],100,100,88
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[3],100,83,53
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[4],100,100,99
+target_multiscale__direct_finalflag__mask0.25,43,2024-2025,[5],100,100,89
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[0],100,100,91
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[1],100,100,89
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[2],100,62,32
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[3],100,87,57
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[4],100,100,100
+target_multiscale__direct_finalflag__mask0.25,43,2025-2026,[5],100,100,87
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[0],100,100,88
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[1],100,94,64
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[2],100,100,99
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[3],100,91,61
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[4],100,66,36
+target_multiscale__direct_finalflag__mask0.25,44,2023-2024,[5],100,100,100
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[0],100,73,43
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[1],100,100,86
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[2],100,100,99
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[3],100,100,90
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[4],100,100,90
+target_multiscale__direct_finalflag__mask0.25,44,2024-2025,[5],100,95,65
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[0],100,100,88
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[1],100,100,85
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[2],100,87,57
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[3],100,100,95
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[4],100,100,89
+target_multiscale__direct_finalflag__mask0.25,44,2025-2026,[5],100,87,57
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[0],100,100,78
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[1],100,100,71
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[2],100,81,51
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[3],100,76,46
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[4],100,100,88
+target_multiscale__direct_finalflag__recent_only,42,2023-2024,[5],100,92,62
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[0],100,99,69
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[1],100,100,71
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[2],100,98,68
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[3],100,87,57
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[4],100,79,49
+target_multiscale__direct_finalflag__recent_only,42,2024-2025,[5],100,88,58
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[0],100,100,92
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[1],100,100,97
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[2],100,59,29
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[3],100,100,76
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[4],100,100,100
+target_multiscale__direct_finalflag__recent_only,42,2025-2026,[5],100,100,75
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[0],100,100,91
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[1],100,100,94
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[2],100,72,42
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[3],100,98,68
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[4],100,100,88
+target_multiscale__direct_finalflag__recent_only,43,2023-2024,[5],100,60,30
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[0],100,100,87
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[1],100,100,93
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[2],100,100,88
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[3],100,100,93
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[4],100,98,68
+target_multiscale__direct_finalflag__recent_only,43,2024-2025,[5],100,100,95
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[0],100,100,78
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[1],100,100,89
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[2],100,58,28
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[3],100,100,82
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[4],100,100,98
+target_multiscale__direct_finalflag__recent_only,43,2025-2026,[5],100,63,33
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[0],100,100,70
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[1],100,100,99
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[2],100,100,89
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[3],100,85,55
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[4],100,83,53
+target_multiscale__direct_finalflag__recent_only,44,2023-2024,[5],100,59,29
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[0],100,100,71
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[1],100,100,95
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[2],100,100,77
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[3],100,100,97
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[4],100,100,96
+target_multiscale__direct_finalflag__recent_only,44,2024-2025,[5],100,100,86
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[0],100,95,65
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[1],100,100,73
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[2],100,100,70
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[3],100,92,62
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[4],100,100,99
+target_multiscale__direct_finalflag__recent_only,44,2025-2026,[5],100,86,56
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[0],100,100,89
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[1],100,100,88
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[2],100,55,25
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[3],100,94,64
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[4],100,100,81
+target_multiscale__direct_finalflag__gap_only,42,2023-2024,[5],100,100,77
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[0],100,100,91
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[1],100,100,98
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[2],100,81,51
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[3],100,70,40
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[4],100,100,92
+target_multiscale__direct_finalflag__gap_only,42,2024-2025,[5],100,99,69
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[0],100,100,90
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[1],100,100,85
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[2],100,100,88
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[3],100,100,80
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[4],100,100,96
+target_multiscale__direct_finalflag__gap_only,42,2025-2026,[5],100,100,71
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[0],100,89,59
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[1],100,100,88
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[2],100,100,80
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[3],100,60,30
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[4],100,70,40
+target_multiscale__direct_finalflag__gap_only,43,2023-2024,[5],100,60,30
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[0],100,100,74
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[1],100,100,98
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[2],100,100,88
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[3],100,100,94
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[4],100,95,65
+target_multiscale__direct_finalflag__gap_only,43,2024-2025,[5],100,100,75
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[0],100,61,31
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[1],100,100,88
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[2],100,87,57
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[3],100,87,57
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[4],100,100,98
+target_multiscale__direct_finalflag__gap_only,43,2025-2026,[5],100,95,65
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[0],100,100,82
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[1],100,81,51
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[2],100,100,89
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[3],100,59,29
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[4],100,94,64
+target_multiscale__direct_finalflag__gap_only,44,2023-2024,[5],100,65,35
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[0],100,71,41
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[1],100,100,94
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[2],100,100,78
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[3],100,97,67
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[4],100,100,80
+target_multiscale__direct_finalflag__gap_only,44,2024-2025,[5],100,100,92
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[0],100,100,70
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[1],100,100,86
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[2],100,100,98
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[3],100,77,47
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[4],100,100,100
+target_multiscale__direct_finalflag__gap_only,44,2025-2026,[5],100,87,57
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[0],100,100,76
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[1],100,100,93
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[2],100,100,97
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[3],100,100,79
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[4],100,100,81
+target_multiscale__direct_finalflag__outage_only,42,2023-2024,[5],100,94,64
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[0],100,89,59
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[1],100,100,97
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[2],100,100,92
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[3],100,100,70
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[4],100,100,90
+target_multiscale__direct_finalflag__outage_only,42,2024-2025,[5],100,100,99
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[0],100,100,90
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[1],100,100,73
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[2],100,100,95
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[3],100,100,96
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[4],100,100,76
+target_multiscale__direct_finalflag__outage_only,42,2025-2026,[5],100,74,44
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[0],100,98,68
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[1],100,100,93
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[2],100,84,54
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[3],100,54,24
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[4],100,100,81
+target_multiscale__direct_finalflag__outage_only,43,2023-2024,[5],100,92,62
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[0],100,88,58
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[1],100,100,98
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[2],100,100,84
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[3],100,90,60
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[4],100,100,100
+target_multiscale__direct_finalflag__outage_only,43,2024-2025,[5],100,100,91
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[0],100,100,96
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[1],100,100,93
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[2],100,100,98
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[3],100,100,88
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[4],100,100,94
+target_multiscale__direct_finalflag__outage_only,43,2025-2026,[5],100,79,49
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[0],100,77,47
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[1],100,91,61
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[2],100,86,56
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[3],100,55,25
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[4],100,100,93
+target_multiscale__direct_finalflag__outage_only,44,2023-2024,[5],100,100,96
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[0],100,100,77
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[1],100,84,54
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[2],100,100,79
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[3],100,85,55
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[4],100,100,100
+target_multiscale__direct_finalflag__outage_only,44,2024-2025,[5],100,100,83
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[0],100,84,54
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[1],100,100,94
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[2],100,100,97
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[3],100,100,71
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[4],100,100,84
+target_multiscale__direct_finalflag__outage_only,44,2025-2026,[5],100,100,93
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[0],100,100,78
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[1],100,100,98
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[2],100,100,91
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[3],100,100,79
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[4],100,100,92
+target_multiscale__joint_aux025__outage_only,42,2023-2024,[5],100,60,30
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[0],100,100,91
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[1],100,100,90
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[2],100,100,89
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[3],100,100,70
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[4],100,100,87
+target_multiscale__joint_aux025__outage_only,42,2024-2025,[5],100,100,99
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[0],100,100,73
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[1],100,100,78
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[2],100,100,72
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[3],100,93,63
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[4],100,100,71
+target_multiscale__joint_aux025__outage_only,42,2025-2026,[5],100,74,44
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[0],100,98,68
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[1],100,100,94
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[2],100,84,54
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[3],100,54,24
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[4],100,100,76
+target_multiscale__joint_aux025__outage_only,43,2023-2024,[5],100,60,30
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[0],100,70,40
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[1],100,100,77
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[2],100,81,51
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[3],100,90,60
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[4],100,100,93
+target_multiscale__joint_aux025__outage_only,43,2024-2025,[5],100,100,97
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[0],100,100,94
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[1],100,100,71
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[2],100,100,91
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[3],100,100,88
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[4],100,100,94
+target_multiscale__joint_aux025__outage_only,43,2025-2026,[5],100,100,83
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[0],100,100,70
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[1],100,100,95
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[2],100,100,73
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[3],100,55,25
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[4],100,90,60
+target_multiscale__joint_aux025__outage_only,44,2023-2024,[5],100,100,76
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[0],100,82,52
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[1],100,84,54
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[2],100,100,92
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[3],100,100,89
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[4],100,100,92
+target_multiscale__joint_aux025__outage_only,44,2024-2025,[5],100,100,83
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[0],100,86,56
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[1],100,100,94
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[2],100,100,90
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[3],100,100,79
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[4],100,100,80
+target_multiscale__joint_aux025__outage_only,44,2025-2026,[5],100,98,68
+joint_mlp__direct__mask0.5,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,97,67
+joint_mlp__direct__mask0.5,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,91,61
+joint_mlp__direct__mask0.5,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,125,95
+joint_mlp__direct__mask0.5,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,133,103
+joint_mlp__direct__mask0.5,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,96,66
+joint_mlp__direct__mask0.5,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,114,84
+joint_mlp__direct__mask0.5,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,122,92
+joint_mlp__direct__mask0.5,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,99,69
+joint_mlp__direct__mask0.5,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,165,135
+joint_mlp__direct_finalflag__mask0.5,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,99,69
+joint_mlp__direct_finalflag__mask0.5,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,102,72
+joint_mlp__direct_finalflag__mask0.5,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,137,107
+joint_mlp__direct_finalflag__mask0.5,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,93,63
+joint_mlp__direct_finalflag__mask0.5,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,99,69
+joint_mlp__direct_finalflag__mask0.5,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,132,102
+joint_mlp__direct_finalflag__mask0.5,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,102,72
+joint_mlp__direct_finalflag__mask0.5,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,121,91
+joint_mlp__direct_finalflag__mask0.5,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,129,99
+joint_mlp__joint_aux025__mask0.5,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,117,87
+joint_mlp__joint_aux025__mask0.5,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,131,101
+joint_mlp__joint_aux025__mask0.5,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,137,107
+joint_mlp__joint_aux025__mask0.5,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,133,103
+joint_mlp__joint_aux025__mask0.5,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,78,48
+joint_mlp__joint_aux025__mask0.5,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,253,223
+joint_mlp__joint_aux025__mask0.5,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,94,64
+joint_mlp__joint_aux025__mask0.5,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,121,91
+joint_mlp__joint_aux025__mask0.5,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,129,99
+joint_mlp__two_stage__mask0.5,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,129,99
+joint_mlp__two_stage__mask0.5,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,114,84
+joint_mlp__two_stage__mask0.5,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,300,281
+joint_mlp__two_stage__mask0.5,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,150,120
+joint_mlp__two_stage__mask0.5,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,110,80
+joint_mlp__two_stage__mask0.5,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,112,82
+joint_mlp__two_stage__mask0.5,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,121,91
+joint_mlp__two_stage__mask0.5,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,210,180
+joint_mlp__two_stage__mask0.5,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,132,102
+joint_mlp__direct_finalflag__mask0,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,115,85
+joint_mlp__direct_finalflag__mask0,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,105,75
+joint_mlp__direct_finalflag__mask0,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,200,170
+joint_mlp__direct_finalflag__mask0,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,78,48
+joint_mlp__direct_finalflag__mask0,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,96,66
+joint_mlp__direct_finalflag__mask0,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,220,190
+joint_mlp__direct_finalflag__mask0,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,103,73
+joint_mlp__direct_finalflag__mask0,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,123,93
+joint_mlp__direct_finalflag__mask0,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,133,103
+joint_mlp__direct_finalflag__mask0.25,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,98,68
+joint_mlp__direct_finalflag__mask0.25,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,139,109
+joint_mlp__direct_finalflag__mask0.25,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,114,84
+joint_mlp__direct_finalflag__mask0.25,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,87,57
+joint_mlp__direct_finalflag__mask0.25,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,161,131
+joint_mlp__direct_finalflag__mask0.25,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,155,125
+joint_mlp__direct_finalflag__mask0.25,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,108,78
+joint_mlp__direct_finalflag__mask0.25,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,88,58
+joint_mlp__direct_finalflag__mask0.25,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,165,135
+joint_mlp__direct_finalflag__recent_only,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,87,57
+joint_mlp__direct_finalflag__recent_only,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,139,109
+joint_mlp__direct_finalflag__recent_only,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,199,169
+joint_mlp__direct_finalflag__recent_only,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,104,74
+joint_mlp__direct_finalflag__recent_only,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,90,60
+joint_mlp__direct_finalflag__recent_only,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,283,253
+joint_mlp__direct_finalflag__recent_only,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,109,79
+joint_mlp__direct_finalflag__recent_only,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,168,138
+joint_mlp__direct_finalflag__recent_only,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,149,119
+joint_mlp__direct_finalflag__gap_only,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,114,84
+joint_mlp__direct_finalflag__gap_only,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,216,186
+joint_mlp__direct_finalflag__gap_only,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,193,163
+joint_mlp__direct_finalflag__gap_only,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,101,71
+joint_mlp__direct_finalflag__gap_only,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,96,66
+joint_mlp__direct_finalflag__gap_only,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,198,168
+joint_mlp__direct_finalflag__gap_only,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,108,78
+joint_mlp__direct_finalflag__gap_only,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,121,91
+joint_mlp__direct_finalflag__gap_only,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,120,90
+joint_mlp__direct_finalflag__outage_only,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,160,130
+joint_mlp__direct_finalflag__outage_only,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,114,84
+joint_mlp__direct_finalflag__outage_only,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,151,121
+joint_mlp__direct_finalflag__outage_only,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,103,73
+joint_mlp__direct_finalflag__outage_only,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,137,107
+joint_mlp__direct_finalflag__outage_only,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,197,167
+joint_mlp__direct_finalflag__outage_only,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,102,72
+joint_mlp__direct_finalflag__outage_only,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,191,161
+joint_mlp__direct_finalflag__outage_only,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,92,62
+joint_mlp__joint_aux025__outage_only,42,2023-2024,"[0, 1, 2, 3, 4, 5]",300,154,124
+joint_mlp__joint_aux025__outage_only,42,2024-2025,"[0, 1, 2, 3, 4, 5]",300,129,99
+joint_mlp__joint_aux025__outage_only,42,2025-2026,"[0, 1, 2, 3, 4, 5]",300,108,78
+joint_mlp__joint_aux025__outage_only,43,2023-2024,"[0, 1, 2, 3, 4, 5]",300,93,63
+joint_mlp__joint_aux025__outage_only,43,2024-2025,"[0, 1, 2, 3, 4, 5]",300,113,83
+joint_mlp__joint_aux025__outage_only,43,2025-2026,"[0, 1, 2, 3, 4, 5]",300,194,164
+joint_mlp__joint_aux025__outage_only,44,2023-2024,"[0, 1, 2, 3, 4, 5]",300,155,125
+joint_mlp__joint_aux025__outage_only,44,2024-2025,"[0, 1, 2, 3, 4, 5]",300,218,188
+joint_mlp__joint_aux025__outage_only,44,2025-2026,"[0, 1, 2, 3, 4, 5]",300,150,120

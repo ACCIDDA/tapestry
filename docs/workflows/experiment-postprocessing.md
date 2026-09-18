@@ -14,7 +14,12 @@ attempt contains a `b1/` directory instead of `cv/`, holding one
 `configuration_ranking.csv` plus a `nowcast/` subfolder scored against
 preliminary-value persistence. See the
 [B1 output definitions](../design/b1.md#one-manager-one-scorer). The B0
-publishing/calibration commands below do not yet accept B1's artifact layout.
+publishing/calibration commands below do not accept B1's artifact layout.
+For the B1 overnight screen, use `.venv/bin/python scripts/plot_b1_overnight.py`:
+it writes the [B1 results page](../results/b1-overnight/index.md), forecast rankings,
+paired contrasts, stress diagnostics, coverage and fans directly from completed
+saved runs. It records the included attempts and explicitly labels incomplete
+seed sets. It omits standalone nowcast ranking because cell support differs.
 
 ## 1. Confirm it finished
 

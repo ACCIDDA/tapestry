@@ -1,0 +1,761 @@
+{
+  "runs": [
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct-mask0.5-a18eb85fd2dd/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct-mask0.5-a18eb85fd2dd/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct-mask0.5-a18eb85fd2dd/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-b12d6a7ec9fd/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-b12d6a7ec9fd/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-b12d6a7ec9fd/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-744bb502c209/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-744bb502c209/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-744bb502c209/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-two_stage-mask0.5-c2a50769643b/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-two_stage-mask0.5-c2a50769643b/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-two_stage-mask0.5-c2a50769643b/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0-dc8878dfcb2c/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0-dc8878dfcb2c/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0-dc8878dfcb2c/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.25",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.25-d49686f48878/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.25",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.25-d49686f48878/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.25",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.25-d49686f48878/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__recent_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-e46e03592cf3/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__recent_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-e46e03592cf3/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__recent_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-e46e03592cf3/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__gap_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-84b9453626ff/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__gap_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-84b9453626ff/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_mlp__direct_finalflag__gap_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-84b9453626ff/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__direct_finalflag__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-19f16fa9686e/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__direct_finalflag__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-19f16fa9686e/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__direct_finalflag__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-direct_finalflag-mask0.5-19f16fa9686e/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__joint_aux025__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-a3cd98ad15a0/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__joint_aux025__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-a3cd98ad15a0/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_mlp__joint_aux025__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-target-joint_aux025-mask0.5-a3cd98ad15a0/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct-mask0.5-569c90af6ff7/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct-mask0.5-569c90af6ff7/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct-mask0.5-569c90af6ff7/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cf6d1f42260/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cf6d1f42260/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cf6d1f42260/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-c05899feb26d/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-c05899feb26d/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-c05899feb26d/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-two_stage-mask0.5-5278d634e9fb/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-two_stage-mask0.5-5278d634e9fb/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-two_stage-mask0.5-5278d634e9fb/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0-5aa5b9e79c1c/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0-5aa5b9e79c1c/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0-5aa5b9e79c1c/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.25",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.25-6839c6fb8ae7/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.25",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.25-6839c6fb8ae7/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.25",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.25-6839c6fb8ae7/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__recent_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-a12828b8f9fb/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__recent_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-a12828b8f9fb/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__recent_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-a12828b8f9fb/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__gap_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-5e30b1b96dad/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__gap_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-5e30b1b96dad/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "pathogen_mlp__direct_finalflag__gap_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-5e30b1b96dad/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__direct_finalflag__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cb03bf0cfeb/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__direct_finalflag__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cb03bf0cfeb/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__direct_finalflag__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-direct_finalflag-mask0.5-2cb03bf0cfeb/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__joint_aux025__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-812ac090aeee/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__joint_aux025__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-812ac090aeee/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "pathogen_mlp__joint_aux025__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-pathogen-joint_aux025-mask0.5-812ac090aeee/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct-mask0.5-15b31636d0d8/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct-mask0.5-15b31636d0d8/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct-mask0.5-15b31636d0d8/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-39147fa8dc0d/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-39147fa8dc0d/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-39147fa8dc0d/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-2bcbe676ca62/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-2bcbe676ca62/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-2bcbe676ca62/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-two_stage-mask0.5-5c99c5b7ead7/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-two_stage-mask0.5-5c99c5b7ead7/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-two_stage-mask0.5-5c99c5b7ead7/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0-e7b5cd81d3ae/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0-e7b5cd81d3ae/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0-e7b5cd81d3ae/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.25",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.25-abe82affcec0/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.25",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.25-abe82affcec0/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.25",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.25-abe82affcec0/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__recent_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-a685c7767e55/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__recent_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-a685c7767e55/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__recent_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-a685c7767e55/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__gap_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-7d115e6faa0f/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__gap_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-7d115e6faa0f/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "target_multiscale__direct_finalflag__gap_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-7d115e6faa0f/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__direct_finalflag__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-6001c4e92356/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__direct_finalflag__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-6001c4e92356/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__direct_finalflag__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-direct_finalflag-mask0.5-6001c4e92356/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__joint_aux025__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-4cc0a9985afe/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__joint_aux025__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-4cc0a9985afe/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "target_multiscale__joint_aux025__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/multiscale_conv-target-joint_aux025-mask0.5-4cc0a9985afe/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct-mask0.5-f42b9b87d7f5/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct-mask0.5-f42b9b87d7f5/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct-mask0.5-f42b9b87d7f5/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-669c28227967/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-669c28227967/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-669c28227967/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-two_stage-mask0.5-096a6c212740/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-two_stage-mask0.5-096a6c212740/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-two_stage-mask0.5-096a6c212740/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0-55506c8f4d73/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0-55506c8f4d73/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.0:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0-55506c8f4d73/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.25",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.25-94c22e2119fc/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.25",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.25-94c22e2119fc/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.25:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.25",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.25-94c22e2119fc/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__recent_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-66954f80eb49/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__recent_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-66954f80eb49/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr1.0:mg0.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__recent_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-66954f80eb49/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__gap_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-a710a0a72469/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__gap_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-a710a0a72469/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg1.0:mo0.0",
+      "name": "joint_mlp__direct_finalflag__gap_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-a710a0a72469/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__direct_finalflag__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-20cf898d25e0/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__direct_finalflag__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-20cf898d25e0/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__direct_finalflag__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-direct_finalflag-mask0.5-20cf898d25e0/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__joint_aux025__outage_only",
+      "seed": 42,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-619e129d1b5f/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__joint_aux025__outage_only",
+      "seed": 43,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-619e129d1b5f/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.0:mg0.0:mo1.0",
+      "name": "joint_mlp__joint_aux025__outage_only",
+      "seed": 44,
+      "path": "data/experiments/B1-screen-256/mlp-all-joint_aux025-mask0.5-619e129d1b5f/s44/attempt-001/b1"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally with 80% weight; US ratio gets 20%. Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions 1 and ED .5. Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped.",
+  "score_version": "location-relative-season-first-us20-v1",
+  "us_weight": 0.2,
+  "runs_sha256": "4d354ed2d8b8bf174a38a9d0e8bdfe66d91e31a4b00163b9a4188bf2f2237794"
+}

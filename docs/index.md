@@ -42,6 +42,11 @@ That count is not a count of unicorns winning every target/season comparison.
 The top five configurations fit separate models by target or pathogen while
 receiving all six input histories.
 
+The [B1 overnight results](results/b1-overnight/index.md) compare direct forecasts,
+supplied-final flags, auxiliary nowcasts, and two-stage forecasts under vintage
+inputs and artificial masking, with rankings and matched forecast fan plots.
+The separate 300-epoch follow-up is excluded from that results snapshot.
+
 ## B0: six channels, no revision nowcasting
 
 B0 is the finalized-data experiment. The channels are:
