@@ -89,7 +89,11 @@ one GPU to nine workers across two GPUs without changing fits or budgets.
 The user asks whether 2025–26 is particularly bad for validation/coverage and
 requests ways to improve coverage. This is a question to investigate, not a
 user assertion that the season is anomalous or permission to discard it.
-Same-recipe, same-target historical coverage and proposed training-only
-calibration experiments are documented in
-[coverage notes](docs/results/Forward-2025/coverage-notes.md). The recommendations
-are proposals, not fitted improvements; no new model was trained for this answer.
+No new model was trained for that answer.
+
+**Publication decision, September 19, 2026:** the user requests removing the
+coverage-diagnosis and proposed-experiments page and publishing the completed
+forward experiment with a clear place in the menu. The supplementary page,
+its standalone season-comparison export and helper script were removed. The
+benchmark retains its measured coverage results and has a dedicated
+**Forward 2025–26** navigation section.

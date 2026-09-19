@@ -112,5 +112,3 @@ The exact-training/estimated-deployment mismatch remains present in the independ
 The script rescores saved predictions with the shared WIS scorer; it does not refit models. The [original manager plan, launch, status and rank commands](../../workflows/forward-2025.md#reproduce) reproduce the benchmark. Optional `--reuse-fans` retains previously generated full fan sheets while refreshing score summaries and the compact fan overview. Images were generated without visual inspection, as requested by the project instructions.
 
 Analysis recorded September 19, 2026.
-
-[Coverage across seasons and proposed calibration experiments](coverage-notes.md)

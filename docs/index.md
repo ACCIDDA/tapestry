@@ -51,6 +51,14 @@ with matched-seed comparisons and 100-vs-300-epoch fan plots.
 The [B1 broad conclusions](results/b1-conclusions.md) bring together architecture,
 masking, and nowcasting evidence, including the completed revision experiment.
 
+## Forward 2025–26 benchmark
+
+The [completed forward benchmark](results/Forward-2025/index.md) compares Direct B,
+Joint gated and an independently trained nowcast-to-forecast pipeline with
+parameters frozen before 2025–26. The separate pipeline leads the three forward
+candidates. See the [analysis, fan plots, heatmaps and matched B1 comparison](results/Forward-2025/analysis.md),
+plus the [experiment specification](workflows/forward-2025.md).
+
 ## B0: six channels, no revision nowcasting
 
 B0 is the finalized-data experiment. The channels are:
