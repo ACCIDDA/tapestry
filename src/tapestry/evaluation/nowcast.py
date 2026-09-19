@@ -54,6 +54,7 @@ def nowcast_cells(run, manifest):
     """
     prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
     parts, excluded, scored, support, supplied = [], 0, 0, [], 0
+    baseline_names = set()
     for held in SEASONS:
         path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-natural.npz'
         with np.load(path, allow_pickle=False) as data:
@@ -68,8 +69,12 @@ def nowcast_cells(run, manifest):
             locations = [str(loc) for loc in data['locations']]
             # The baseline is one value per channel/location for the episode; both
             # recent weeks are nowcast from the same latest visible observation.
-            base = np.broadcast_to(data['baseline'][:, None], truth.shape)
-            base_valid = np.broadcast_to(data['baseline_mask'][:, None], valid.shape)
+            baseline_names.add(str(data['baseline_kind']) if 'baseline_kind' in data else BASELINE)
+            if data['baseline'].ndim == truth.ndim:
+                base, base_valid = data['baseline'], data['baseline_mask']
+            else:
+                base = np.broadcast_to(data['baseline'][:, None], truth.shape)
+                base_valid = np.broadcast_to(data['baseline_mask'][:, None], valid.shape)
             in_season = np.array([[season(date.fromisoformat(str(d))) == held for d in row] for row in dates])
             final = (data['X_final'][:, -2:] if 'X_final' in data else np.zeros_like(valid))
             final = final & in_season[:, :, None, None]
@@ -101,9 +106,18 @@ def nowcast_cells(run, manifest):
                 summed = grouped.sum()
                 summed.insert(0, 'n', grouped.size())
                 parts.append(summed.reset_index().assign(target=target, season=held))
-    audit = dict(baseline=BASELINE, scored_cells=scored, excluded_no_history=excluded,
+    if len(baseline_names) != 1:
+        raise ValueError('Nowcast folds use different baseline definitions')
+    baseline_name = baseline_names.pop()
+    definition = SCORE_DEFINITION if baseline_name == BASELINE else (
+        'Native-unit WIS relative to the genuine same-week preliminary report on identical cells. '
+        'Visible supplied finals and cells without that report are excluded. Same season/target/geography '
+        'weights as forecast scoring; separate offsets -2/-1. This measures correction of observed '
+        'reports, not missing-value reconstruction. Nonpositive denominators follow shared scorer policy.')
+    version = SCORE_VERSION if baseline_name == BASELINE else 'nowcast-same-week-report-season-first-us20-v3'
+    audit = dict(baseline=baseline_name, scored_cells=scored, excluded_no_history=excluded,
                  excluded_supplied_final=supplied,
-                 by_target_season=support, definition=SCORE_DEFINITION, score_version=SCORE_VERSION)
+                 by_target_season=support, definition=definition, score_version=version)
     columns = ['target', 'season', 'geography', 'location', 'horizon', 'n',
                *[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]]
     return (pd.concat(parts, ignore_index=True)[columns] if parts else pd.DataFrame(columns=columns)), audit
@@ -135,6 +149,9 @@ def rank(runs, output):
     if not available:
         return None
     output.mkdir(parents=True, exist_ok=True)
+    audits = [json.loads((Path(run['path']) / 'nowcast-support.json').read_text()) for run in available]
+    if len({audit['score_version'] for audit in audits}) != 1:
+        raise ValueError('Cannot combine different nowcast baselines in one ranking')
     totals = pd.concat([pd.read_csv(Path(run['path']) / 'nowcast-totals.csv')
                         .assign(config_id=run['config_id'], seed=run['seed']) for run in available],
                        ignore_index=True)
@@ -154,6 +171,6 @@ def rank(runs, output):
     ranking.to_csv(output / 'configuration_ranking.csv', index=False)
     (output / 'manifest.json').write_text(json.dumps(dict(
         runs=[dict(run, path=str(run['path'])) for run in available],
-        quantile_levels=LEVELS.tolist(), us_weight=US_WEIGHT, baseline=BASELINE,
-        definition=SCORE_DEFINITION, score_version=SCORE_VERSION), indent=2) + '\n')
+        quantile_levels=LEVELS.tolist(), us_weight=US_WEIGHT, baseline=audits[0]['baseline'],
+        definition=audits[0]['definition'], score_version=audits[0]['score_version']), indent=2) + '\n')
     return ranking

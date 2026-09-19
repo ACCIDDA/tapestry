@@ -191,6 +191,8 @@ class B1Backend:
         'B1-direct-finalflag': dict(pipeline='direct_finalflag', mask_rate=.5),
         'B1-joint-aux025': dict(pipeline='joint_aux025', mask_rate=.5),
         'B1-overnight': {},
+        'B1-formulations': {},
+        'B1-revisions': {},
     }
 
     def scenarios(self, args):
@@ -201,9 +203,12 @@ class B1Backend:
         # an explicit flag overrides, which is what makes a cheap smoke run of
         # the real suite possible without redefining it.
         budget = {key: getattr(args, key) for key in self.BUDGET}
-        if args.suite == 'B1-overnight':
-            from .b1_overnight import scenarios
+        if args.suite == 'B1-revisions':
+            from .b1_revision_suite import scenarios
             return scenarios(**budget)
+        if args.suite in ('B1-overnight', 'B1-formulations'):
+            from .b1_overnight import scenarios
+            return scenarios(formulations_only=args.suite == 'B1-formulations', **budget)
         if args.suite in self.SUITES:
             recipes = b0_top4(**self.SUITES[args.suite], **budget)
             if args.suite in ('B1-decisive-A', 'B1-direct-finalflag', 'B1-joint-aux025'):
@@ -242,6 +247,10 @@ class B1Backend:
         extra = [root / 'docs/design/b1.md']
         if settings['suite'] == 'B1-overnight':
             extra.append(root / 'docs/workflows/b1-overnight.md')
+        if settings['suite'] == 'B1-formulations':
+            extra.append(root / 'docs/workflows/b1-300.md')
+        if settings['suite'] == 'B1-revisions':
+            extra.append(root / 'docs/workflows/b1-revisions.md')
         snapshot(folder, settings, extra=extra)
 
     def fit_commands(self, scenario, seed, settings, output):

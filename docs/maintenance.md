@@ -66,3 +66,15 @@ installs R for deleted integration tests.
 Validation: Python syntax parsing and whitespace review only; tests and research
 runs were not executed. This does not certify remaining tests against concurrent
 model changes.
+
+## Nowcasting publication log — 2026-09-18
+
+Every Markdown page under `docs/` is included in the site menu, including older
+B1 experiment notes and the archived architecture note. Research notes under
+`analysis/` remain repository documents, outside the published site.
+
+Assumption: the detailed revision-season `cells.csv` and preliminary 300-epoch
+CSV exports are regenerable local analysis outputs, not required website assets.
+They are ignored along with local audit logs and status snapshots. Published
+result CSVs, plotting inputs, compact seasonal summaries, provenance, scripts,
+and research notes are retained. Ignored outputs remain on disk.

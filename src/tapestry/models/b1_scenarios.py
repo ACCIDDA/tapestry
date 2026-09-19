@@ -7,8 +7,10 @@ import math
 
 from .scenarios import TrainingScenario, PREFIX, CODES
 
-PREFIXES = {**PREFIX, 'pipeline': 'pipe_', 'mask_rate': 'mask', 'mask_recent': 'mr', 'mask_gap': 'mg', 'mask_outage': 'mo'}
-OPTIONS = {**CODES, 'pipeline': {'direct': 'direct', 'two_stage': 'two', 'direct_finalflag': 'flag', 'joint_aux025': 'aux025'}}
+PREFIXES = {**PREFIX, 'pipeline': 'pipe_', 'mask_rate': 'mask', 'mask_recent': 'mr', 'mask_gap': 'mg', 'mask_outage': 'mo', 'nowcast_weight': 'nw', 'validation_mode': 'val', 'revision_rate': 'rev'}
+OPTIONS = {**CODES, 'pipeline': {'direct': 'direct', 'two_stage': 'two', 'direct_finalflag': 'flag', 'joint_aux025': 'aux025', 'joint_aux': 'aux', 'gated_revision': 'gate'},
+           'validation_mode': {'recipe': 'recipe', 'natural_forecast': 'natural'}}
+NEW_FIELDS = ('nowcast_weight', 'validation_mode', 'revision_rate')
 MODEL_FIELDS = ('encoder', 'spatial', 'decoder', 'heads', 'noise', 'head_sharing', 'count_transform',
                 'ed_transform', 'geography', 'dynamics', 'annual_calendar', 'location_embedding', 'us_error')
 
@@ -24,6 +26,9 @@ class B1Scenario(TrainingScenario):
     mask_recent: float = .5
     mask_gap: float = .3
     mask_outage: float = .2
+    nowcast_weight: float = .25
+    validation_mode: str = 'recipe'
+    revision_rate: float = 0.
 
     def __post_init__(self):
         for key, choices in OPTIONS.items():
@@ -41,6 +46,12 @@ class B1Scenario(TrainingScenario):
             raise ValueError('Finite positive learning rate and nonnegative weight decay required')
         if not math.isfinite(self.mask_rate) or not 0 <= self.mask_rate <= 1:
             raise ValueError('mask_rate must be between zero and one')
+        if not math.isfinite(self.nowcast_weight) or self.nowcast_weight < 0:
+            raise ValueError('Nowcast coefficient must be finite and nonnegative')
+        if not math.isfinite(self.revision_rate) or not 0 <= self.revision_rate <= 1:
+            raise ValueError('Revision augmentation probability must be in [0, 1]')
+        if self.pipeline in ('joint_aux', 'gated_revision') and self.validation_mode != 'natural_forecast':
+            raise ValueError('New revision formulations require natural forecast selection')
         mix = (self.mask_recent, self.mask_gap, self.mask_outage)
         if any(not math.isfinite(p) or p < 0 for p in mix) or not math.isclose(sum(mix), 1., abs_tol=1e-10):
             raise ValueError('Conditional recent/gap/outage probabilities must sum to one')
@@ -59,17 +70,20 @@ class B1Scenario(TrainingScenario):
                 return str(int(value))
             field = next(f for f in fields(self) if f.name == key)
             return repr(float(value)) if field.type is float else str(value)
-        return 'b1:v2:' + ':'.join(PREFIXES[k] + encode(k, v) for k, v in asdict(self).items())
+        legacy = all(getattr(self, k) == next(f.default for f in fields(self) if f.name == k) for k in NEW_FIELDS)
+        items = [(k, v) for k, v in asdict(self).items() if not legacy or k not in NEW_FIELDS]
+        return ('b1:v2:' if legacy else 'b1:v3:') + ':'.join(PREFIXES[k] + encode(k, v) for k, v in items)
 
     @classmethod
     def from_string(cls, value):
         """Complete strings only; every field round-trips without float truncation."""
         try:
             version, schema, *tokens = value.split(':')
-            if (version, schema) != ('b1', 'v2') or len(tokens) != len(fields(cls)):
+            selected_fields = [f for f in fields(cls) if schema != 'v2' or f.name not in NEW_FIELDS]
+            if version != 'b1' or schema not in ('v2', 'v3') or len(tokens) != len(selected_fields):
                 raise ValueError()
             options = {}
-            for field, token in zip(fields(cls), tokens):
+            for field, token in zip(selected_fields, tokens):
                 prefix = PREFIXES[field.name]
                 if not token.startswith(prefix):
                     raise ValueError()
@@ -98,8 +112,9 @@ class B1Scenario(TrainingScenario):
 
     def model_options(self):
         return dict({k: getattr(self, k) for k in MODEL_FIELDS},
-                    supplied_final=self.pipeline in ('direct_finalflag', 'joint_aux025'),
-                    parallel_recent=self.pipeline == 'joint_aux025')
+                    supplied_final=self.pipeline != 'direct',
+                    parallel_recent=self.pipeline in ('joint_aux025', 'joint_aux', 'gated_revision'),
+                    revision_bridge=self.pipeline == 'gated_revision')
 
 
 # B0.1's four best configurations, read from
@@ -152,7 +167,7 @@ PRESETS = {
 
 def add_scenario_args(parser):
     parser.add_argument('--preset', choices=tuple(PRESETS), help='B0-derived formulation; default target_mlp')
-    parser.add_argument('--scenario', help='Complete canonical b1:v2 string')
+    parser.add_argument('--scenario', help='Complete canonical b1:v2 or b1:v3 string')
     for field in fields(B1Scenario):
         option = '--' + field.name.replace('_', '-')
         kwargs = dict(default=None)

@@ -183,10 +183,12 @@ class B0(nn.Module):
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
-                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False):
+                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False, revision_bridge=False):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           supplied_final=supplied_final, parallel_recent=parallel_recent)
+                           supplied_final=supplied_final, parallel_recent=parallel_recent, revision_bridge=revision_bridge)
+        if revision_bridge and not (parallel_recent and supplied_final):
+            raise ValueError('Revision bridge requires a parallel recent head and final flags')
         if parallel_recent and (heads != "shared" or noise != "global" or us_error != "none"):
             raise ValueError("Parallel recent head currently supports the rank-1 shared/global backbone")
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
@@ -268,6 +270,17 @@ class B0(nn.Module):
             self.recent_horizon = nn.Linear(1, width)
             self.recent_norm = nn.LayerNorm(width)
             self.recent_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+        if revision_bridge:
+            # Distinct mechanisms: residual correction for observed reports,
+            # reconstruction for hidden histories. Forecast keeps B's original path.
+            self.missing_recent_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+            self.revision_adjustment = nn.Sequential(nn.Linear(6, width), nn.SiLU(), nn.Linear(width, len(horizons)))
+            self.revision_gate = nn.Linear(width, len(horizons))
+            nn.init.zeros_(self.revision_adjustment[-1].weight)
+            nn.init.zeros_(self.revision_adjustment[-1].bias)
+            nn.init.zeros_(self.revision_gate.weight)
+            nn.init.constant_(self.revision_gate.bias, -2.2)
+
 
     @staticmethod
     def _per_location(value, default):
@@ -285,7 +298,7 @@ class B0(nn.Module):
         """Learned magnitudes of the per-location latent term, by head."""
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
-    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None):
+    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None, z_recent=None):
         """x [N,P,C,2,L], calendar [N,3] when enabled; samples [M,N,H,C,L].
 
         Each member uses one global latent per episode shared across ALL locations,
@@ -374,15 +387,34 @@ class B0(nn.Module):
             if local_z.shape != (z.shape[0], n, l, LOCAL_LATENT):
                 raise ValueError('Local latent must have shape [members, episodes, locations, 4]')
 
-        def decode(heads, context=h):
-            outputs = [head(context[:, :, :, group], z, local_z)
+        def decode(heads, context=h, latent_z=z):
+            outputs = [head(context[:, :, :, group], latent_z, local_z)
                        for head, group in zip(heads, self.output_groups)]
             order = [channel for group in self.output_groups for channel in group]
             return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
         delta = decode(self.output_heads)
         if config["parallel_recent"]:
             recent_context = self.recent_norm(encoded[:, None] + self.recent_horizon(x.new_tensor([[-1.], [0.]]) / 4)[None, :, None, None])
-            delta = torch.cat((decode(self.recent_heads, recent_context), delta), dim=2)
+            if config['revision_bridge']:
+                if z_recent is None:
+                    z_recent = torch.randn_like(z)
+                if z_recent.shape != z.shape:
+                    raise ValueError('Recent and future noise shapes must match')
+                recent_delta = decode(self.recent_heads, recent_context, z_recent)
+                missing_delta = decode(self.missing_recent_heads, recent_context, z_recent)
+                recent_visible = valid[:, -2:].permute(0, 1, 3, 2)[None, ..., None]
+                recent_final = (x[:, -2:, :, 2].bool() & valid[:, -2:]).permute(0, 1, 3, 2)[None, ..., None]
+                recent_delta = torch.where(recent_visible, recent_delta, missing_delta)
+                recent_delta = torch.where(recent_final, 0., recent_delta)
+                correction = recent_delta.squeeze(-1).permute(0, 1, 3, 4, 2)
+                status = torch.stack((valid[:, -2:], x[:, -2:, :, 2].bool() & valid[:, -2:]), -1)
+                status = status.permute(0, 3, 2, 1, 4).reshape(n, l, c, 4).to(values.dtype)
+                features = torch.cat((correction, status[None].expand(z.shape[0], -1, -1, -1, -1)), -1)
+                adjustment = self.revision_adjustment(features) * self.revision_gate(encoded).sigmoid()[None]
+                delta = delta + adjustment.permute(0, 1, 4, 2, 3)[..., None]
+            else:
+                recent_delta = decode(self.recent_heads, recent_context)
+            delta = torch.cat((recent_delta, delta), dim=2)
         if config['heads'] == 'state_us':
             us = decode(self.us_output_heads)
             is_us = torch.tensor([loc == 'US' for loc in locations], device=x.device)
@@ -402,18 +434,24 @@ class B0(nn.Module):
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
         anchor = values.gather(1, idx[:, None]).squeeze(1)
         anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
-        counts = positive_residual(anchor[:, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
+        anchor = anchor[:, None]
+        if config['revision_bridge']:
+            recent_anchor = torch.where(valid[:, -2:], values[:, -2:], anchor)
+            anchor = torch.cat((recent_anchor, anchor.expand(-1, len(config['horizons']), -1, -1)), 1)
+        positive = anchor.clamp_min(.001)
+        base = positive + torch.log(-torch.expm1(-positive))
+        counts = F.softplus(base[None, :, :, :3] + delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
         counts = invert_counts(counts, population, config['count_transform'])
         if config['ed_transform'] == 'fourth_root':
-            root = positive_residual(anchor[:, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
+            root = F.softplus(base[None, :, :, 3:] + delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
             ed = root.pow(4).clamp(max=1)
         else:
             if config['ed_transform'] == 'logit':
-                logit = anchor[:, 3:] * input_scale[None, 3:, :] + offset[None, 3:, :]
+                logit = anchor[:, :, 3:] * input_scale[None, None, 3:, :] + offset[None, None, 3:, :]
             else:
-                proportion = (anchor[:, 3:] * input_scale[None, 3:, :]).clamp(*ED_BOUNDS)
+                proportion = (anchor[:, :, 3:] * input_scale[None, None, 3:, :]).clamp(*ED_BOUNDS)
                 logit = torch.logit(proportion)
-            ed = torch.sigmoid(logit[None, :, None] + delta[:, :, :, 3:])
+            ed = torch.sigmoid(logit[None] + delta[:, :, :, 3:])
         return torch.cat((counts, ed), dim=3)
 
 

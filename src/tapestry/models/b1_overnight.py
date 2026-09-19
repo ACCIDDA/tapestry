@@ -4,7 +4,7 @@ from dataclasses import replace
 from .b1_scenarios import B1Scenario, B0_TOP4_BASE
 
 
-def scenarios(**budget):
+def scenarios(formulations_only=False, **budget):
     base = B1Scenario(**B0_TOP4_BASE, pipeline='direct_finalflag', mask_rate=.5)
     # B0.1 ranks 1, 4, 5, 6, retaining their original epoch caps.
     references = {
@@ -19,6 +19,8 @@ def scenarios(**budget):
         # Four formulations at the working masking rate, on every architecture.
         for pipeline in ('direct', 'direct_finalflag', 'joint_aux025', 'two_stage'):
             candidates[f'{name}__{pipeline}__mask0.5'] = replace(anchor, pipeline=pipeline)
+        if formulations_only:
+            continue
         # Rate and mechanism contrasts focus on the first successful B recipe.
         for rate in (0., .25):
             candidates[f'{name}__direct_finalflag__mask{rate:g}'] = replace(anchor, mask_rate=rate)

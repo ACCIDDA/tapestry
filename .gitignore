@@ -25,6 +25,12 @@ site/
 /output/
 /tmp/
 /analysis/*/evidence/
+# Regenerable detailed audit cells and preliminary comparison exports
+/analysis/b1-revision-seasons/cells.csv
+/analysis/b1-300-preliminary/**/*.csv
+/analysis/b1-revisions-review/*.log
+/analysis/b1-revision-seasons/full-status.txt
+/analysis/b1-revision-seasons/pilot-ranking.txt
 
 # Downloaded papers, extracted text, and local data audits
 /references/*.pdf

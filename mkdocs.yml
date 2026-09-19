@@ -62,12 +62,19 @@ nav:
       - Screen and 300-epoch results: results/b1-overnight/index.md
       - Overnight experiment: workflows/b1-overnight.md
       - 300-epoch comparison: workflows/b1-300.md
+      - Revision and nowcasting experiment: workflows/b1-revisions.md
+      - First good results: results/first-good-b1.md
+      - Seed 42 screen: workflows/b1-seed42-results.md
+      - One-seed iteration: workflows/b1-one-seed.md
+      - Next-model experiment: workflows/b1-decisive-experiment.md
+      - Next-model execution: workflows/b1-decisive-execution.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md
       - Shared selection: data/selection.md
       - Storage and provenance: data/storage.md
       - Vintages and geography: data/vintages-and-geography.md
+      - Local measure inventory: data/local-inventory-2026-09-13.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md
@@ -86,3 +93,5 @@ nav:
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
   - Features and tests: maintenance.md
+  - Archive:
+      - Architecture note: design/old LLM things/architecture-candidates.md

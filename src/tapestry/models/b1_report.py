@@ -48,8 +48,12 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
             baseline_x = episode['X'].copy()
             baseline_x[:, :, 1] = visible
             base, base_valid = persistence(baseline_x)
-            baselines.append(base)
-            baseline_masks.append(base_valid)
+            if getattr(args, 'revision_baseline', False):
+                baselines.append(episode['X'][-2:, :, 0])
+                baseline_masks.append(visible[-2:] & ~known[-2:])
+            else:
+                baselines.append(base)
+                baseline_masks.append(base_valid)
             for (h, c, l), metric in zip(zip(*np.where(valid)), metrics):
                 target_day = episode['target_dates'][h + (2 if direct else 0)]
                 stress_rows.append(dict(_cell=(i, h, c, l), config_id=config_id, scenario_string=scenario_string, seed=seed, stress=stress,
@@ -64,6 +68,9 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
                                  'revision' if natural[-2 + h, c, l] and not known[-2 + h, c, l] else
                                  'natural_missing') if not direct and h < 2 else None,
                     observed=float(truth[h, c, l]), loss_scale=float(scales[c, l]),
+                    median_error=float(q[len(LEVELS)//2, h, c, l] - truth[h, c, l]),
+                    report_ae=(float(abs(episode['X'][-2 + h, c, 0, l] - truth[h, c, l]))
+                               if not direct and h < 2 and visible[-2+h, c, l] and not known[-2+h, c, l] else None),
                     crps=float(crps[h, c, l]), **metric,
                     coverage_50=float(q[6, h, c, l] <= truth[h, c, l] <= q[16, h, c, l]),
                     coverage_95=float(q[1, h, c, l] <= truth[h, c, l] <= q[21, h, c, l])))
@@ -88,8 +95,7 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
             target_dates=np.array([e['target_dates'][hs] for e in episodes]),
             issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
             channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4),
-            # Both nowcast offsets use the latest visible context value for this
-            # channel/location; it need not be the report for that target week.
+            baseline_kind='same-week genuine preliminary report' if getattr(args, 'revision_baseline', False) else 'latest-visible-input persistence (reports or supplied finals)',
             baseline=np.stack(baselines), baseline_mask=np.stack(baseline_masks))
     frame = pd.DataFrame(rows)
     frame['geography'] = np.where(frame.location == 'US', 'US', 'states_dc')
@@ -99,6 +105,15 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
         cells=('wis', 'size'), wis=('wis', 'mean'), crps=('crps', 'mean'),
         coverage_50=('coverage_50', 'mean'), coverage_95=('coverage_95', 'mean')).reset_index().to_csv(
             root / f'history-stratified-scores-{config_id}-s{seed}.csv', index=False)
+    recent = frame[frame.task == 'nowcast']
+    if not recent.empty:
+        recent.groupby(['config_id', 'seed', 'stress', 'recent_kind', 'target', 'season',
+                        'geography', 'location', 'horizon'], dropna=False).agg(
+            cells=('wis', 'size'), wis=('wis', 'mean'), crps=('crps', 'mean'),
+            median_mae=('ae_median', 'mean'), median_bias=('median_error', 'mean'),
+            unchanged_report_mae=('report_ae', 'mean'),
+            coverage_50=('coverage_50', 'mean'), coverage_95=('coverage_95', 'mean')).reset_index().to_csv(
+                root / f'recent-diagnostics-{config_id}-s{seed}.csv', index=False)
     return rows
 
 

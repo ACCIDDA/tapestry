@@ -321,7 +321,8 @@ def rank(folder, allow_incomplete=False, seeds=None):
     print(ranking.head(20).to_string(index=False), flush=True)
     nowcasts = nowcast.rank(runs, destination / 'nowcast')
     if nowcasts is not None:
-        print(f'\nNowcast, relative to {nowcast.BASELINE}:', flush=True)
+        baseline = json.loads((destination / 'nowcast' / 'manifest.json').read_text())['baseline']
+        print(f'\nNowcast, relative to {baseline}:', flush=True)
         print(nowcasts.head(20).to_string(index=False), flush=True)
     return destination
 

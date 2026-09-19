@@ -9,14 +9,12 @@ which scores forecasting, nowcasting and reconstruction as three separate questi
 
 !!! tip "If you read one thing"
 
-    The revision experiment's gated branch is the only formulation that earns a real
-    nowcast — **11% better than the published preliminary report** — without giving up
-    B's forecast path. It does *not* improve forecasting: the forecast leaders remain
-    the mask controls that carry no nowcast objective at all. Two scorer artefacts
-    found while analysing those runs are documented in place rather than reported as
-    results.
-
-
+    B gap-only/no-mask controls still have the best forecast means. The gated
+    branch improves matched target B and is the strongest tested revision family,
+    but its benefit depends on backbone and masking. The 11% nowcast headline is
+    conditional on a post-hoc near-zero-denominator exclusion. Reconstruction must
+    be assessed on matched, normalized errors; outage failures are model behavior,
+    not an established scorer artifact. See the corrected revision analysis below.
 
 <!-- epoch300:start -->
 ## 300-epoch results and comparison
@@ -508,10 +506,10 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 <!-- revisions:start -->
 ## Revision experiment: separating forecasting, nowcasting and reconstruction
 
-**160/160 runs complete**, generated 2026-09-18T08:25-04:00. This is a dated snapshot of
+**160/160 runs complete**, generated 2026-09-18T09:18-04:00. This is a dated snapshot of
 experiment `B1-revisions-20260917` (32 configurations × seeds 42–46). Every run uses
 cap 300, patience 30, and selects epochs on **future loss only with natural inputs**,
-so nothing in the selection rewards the nowcast head. Evaluation uses 1,024 draws.
+so recent accuracy is not an explicit selection criterion. Evaluation uses 1,024 draws.
 
 The three questions are scored on three different supports and are never combined
 into one number.
@@ -560,18 +558,34 @@ is better; 1 is parity. Seed SD is descriptive, not a confidence interval.
 
 ![Forecast ranking](revisions/figures/forecast-ranking.png)
 
-**The leader is Target MLP · B gap-only at 0.938.** The
-controls win: the two best configurations are gap-only and no-mask B variants that
-carry no nowcast objective at all. Every recent-head formulation is a small
-regression on the forecast task, and the two-stage family is far worse
-(1.093–1.282).
-This reproduces the earlier screens rather than overturning them.
+**The leader is Target MLP · B gap-only at 0.938.** The two
+best configuration means are B gap-only and B no-mask controls. That does not mean
+all recent-head models worsen forecasting: compare matched backbone, augmentation
+and seeds, rather than each model against the winner selected from a different recipe.
 
-**The gated branch does what it was designed to do: it is nearly free.** Across the
-gated configurations the forecast mean is 0.982 against
-0.989 for the matched B direct rows, and on the target backbone the
-branch is a small *improvement* at both weights. It preserves B's forecast path while
-adding a usable nowcast, which is the property the design asked for.
+| Backbone | Augmentation | Recent weight | B forecast | Gated forecast | Delta | Seed delta SD | Improved | Pairs |
+|---|---|---|---|---|---|---|---|---|
+| pathogen | 0.000 | 0.100 | 0.959 | 0.972 | 0.013 | 0.030 | 1 | 5 |
+| pathogen | 0.000 | 0.200 | 0.959 | 0.976 | 0.017 | 0.048 | 1 | 5 |
+| pathogen | 0.500 | 0.100 | 0.988 | 1.051 | 0.062 | 0.082 | 1 | 5 |
+| pathogen | 0.500 | 0.200 | 0.988 | 0.985 | -0.004 | 0.037 | 3 | 5 |
+| target | 0.000 | 0.100 | 0.997 | 0.949 | -0.049 | 0.053 | 4 | 5 |
+| target | 0.000 | 0.200 | 0.997 | 0.948 | -0.050 | 0.040 | 5 | 5 |
+| target | 0.500 | 0.100 | 1.010 | 0.990 | -0.021 | 0.065 | 3 | 5 |
+| target | 0.500 | 0.200 | 1.010 | 0.984 | -0.026 | 0.071 | 3 | 5 |
+
+Without augmentation, target gated-20% improves on matched B from **0.997 to 0.948**
+(delta -0.050; all five seeds improve). Target gated-10% improves in four of five.
+Pathogen gated variants without augmentation worsen on average and improve in only
+one of five seeds each. The branch is **promising on the target backbone, not a
+universally free addition**. The target gap-only control still has the best mean
+at 0.938; we did not cross gated nowcasting with gap-only masking.
+
+Two-stage remains worse than Hub in every configuration mean
+(1.093–1.282).
+C's weak nowcast outputs do not prevent competitive forecast performance: an
+auxiliary objective can help the shared representation without yielding the best
+recent-head checkpoint, because selection uses future loss only.
 
 ### Where the forecast skill sits
 
@@ -592,7 +606,7 @@ Scored against **each target week's own genuine preliminary report**, excluding
 supplied finals and cells without that report. Values below 1 mean the model
 improves on simply publishing the preliminary number.
 
-| Configuration | Report ratio | Seed SD | Pooled | Unfiltered |
+| Configuration | Adjusted location ratio | Seed SD | Pooled sensitivity | Registered unfiltered |
 |---|---|---|---|---|
 | Pathogen MLP · Gated branch · 20% · aug | 0.890 | 0.031 | 0.618 | 1302.329 |
 | Target MLP · Gated branch · 20% · aug | 0.896 | 0.050 | 0.629 | 1103.122 |
@@ -621,86 +635,148 @@ improves on simply publishing the preliminary number.
 
 ![Forecast against nowcast](revisions/figures/forecast-vs-nowcast.png)
 
-**Yes, for the gated branch, and only for it.** The gated configurations take the top
-eight places at 0.890–0.978,
-a genuine 11% improvement on the published report for the
-leader. Two-stage is around parity (1.004–1.129),
-so it pays a large forecast penalty for no nowcast gain. **C parallel is the clear
-failure**: at 2.69–2.86
-it is roughly three times worse than the preliminary report it is supposed to correct.
-The ordering is identical under pooled aggregation, so it does not depend on the
-weighting choice.
+**Gated is the strongest recent-head family under both displayed aggregations.**
+The eight gated means are 0.890–0.978
+under the location-relative metric **after the two-group exclusion below**. The best
+point estimate is about 11% lower WIS on that adjusted metric; it is not a universal
+11% reduction in count error or a proven improvement in every target/season.
 
-Note that the forecast and nowcast rankings disagree: the forecast leaders have no
-nowcast at all, and the nowcast leaders are mid-table on forecasting. Picking one
-model for both tasks is a trade-off, not a free choice.
+Two-stage is 1.004–1.129 under that metric, but **0.691–0.737 under pooled scoring**.
+It therefore improves on reports under one aggregation while failing to improve
+under the other. C is worse under both (2.69–2.86 adjusted location-relative;
+1.48–1.57 pooled). WIS ratios measure distributional score, not simply point error.
 
-!!! warning "The unfiltered nowcast ranking is not usable as printed"
+The **family ordering** gated < two-stage < C survives pooling; the exact
+configuration ordering does not. Pooling sums numerator and denominator within
+target/season before taking their ratio, thereby changing location importance and
+losing the prescribed states/DC 80% versus US 20% weighting. It is a sensitivity
+analysis, not a confirmation of the same estimand.
 
-    The scorer's headline `wis_ratio` averages *per-location* ratios. Two
-    location-cells — ID (RSV ED visits, 2023-2024); VA (RSV ED visits, 2023-2024) — have a preliminary report equal to the final
-    to floating-point tolerance, giving a baseline total WIS near 1e-10 and a ratio
-    near 1e6 that then dominates the mean. `totals.py` rejects only non-positive
-    denominators, so the guard never fires. The `Unfiltered` column above shows what
-    the scorer printed; those two cells carry no revision to correct and are excluded
-    from every other number here. Exactly 2 of 819 location-cells are affected, all in
-    2023-2024 RSV ED visits. The forecast ranking is unaffected (its largest ratio is
-    4.52).
+#### Reporting ages, accuracy and uncertainty
+
+| Formulation | Age (days) | Scaled CRPS | Report error | Relative CRPS | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|---|
+| C parallel | 11 | 0.045 | 0.018 | 2.534 | 0.456 | 0.863 |
+| C parallel | 4 | 0.023 | 0.027 | 0.853 | 0.631 | 0.942 |
+| Gated branch | 11 | 0.014 | 0.018 | 0.781 | 0.508 | 0.863 |
+| Gated branch | 4 | 0.020 | 0.027 | 0.727 | 0.444 | 0.837 |
+| Two-stage | 11 | 0.015 | 0.018 | 0.835 | 0.587 | 0.885 |
+| Two-stage | 4 | 0.021 | 0.027 | 0.770 | 0.492 | 0.865 |
+
+This additional full-support diagnostic divides each cell's CRPS and unchanged-report
+absolute error by its model's training-only target/location Q95 scale, then averages
+locations with states/DC 80% and US 20%, targets with admissions 1 and ED .5, and
+seasons equally, keeping ages separate. It retains the two near-zero-baseline groups:
+there is no division by their individual report errors. Relative CRPS is the ratio
+of the displayed aggregate scores. It is **a different, explicitly labelled metric**,
+not a replacement WIS ranking. Values shown are descriptive means across all eight
+configurations and five seeds in each family; they are not independent replicates
+or the performance of an ensemble. Target/season support can differ by reporting age.
+
+The age split matters: C has relative scaled CRPS about **2.53 for the preceding
+11-day-old week**, but **0.85 for the newest four-day-old week**. Calling C useless
+at every revision task is therefore incorrect. Gated improves both ages (about
+0.78 and 0.73), and two-stage also improves on this alternative metric (0.83 and
+0.77). C's anchoring both recent outputs to the latest observation is a concrete
+hypothesis for its older-week weakness, not a proven cause. **Gated is not fully
+calibrated**: natural 95% coverage is only about 86% and 84%, respectively, despite
+its competitive error scores. Newest-week 50% coverage is about 44%.
+
+!!! warning "Near-zero report error makes the registered ratio unstable"
+
+    The unfiltered registered scorer averages per-location ratios. Two
+    target/season/location groups — ID (RSV ED visits, 2023-2024); VA (RSV ED visits, 2023-2024) — have report-versus-final
+    errors near floating-point precision. Positive denominators near 1e-10 yield
+    extremely large ratios. This is a fragile metric in the presence of a nearly
+    perfect baseline, not evidence of a thousandfold error in predictions.
+
+    The adjusted columns exclude groups with total baseline WIS below **1e-6 in
+    native units**, an explicitly **post-hoc** threshold. This excludes 2 of 819
+    target/season/location groups, not two individual forecast observations.
+    They still matter for absolute error: a model should not damage an accurate
+    report. Only the adjusted nowcast ratio columns exclude them; the new scaled
+    diagnostics retain them. Forecast rankings are unchanged. See
+    [small denominators](revisions/small-nowcast-denominators.csv) and
+    [threshold sensitivity](revisions/nowcast-threshold-sensitivity.csv).
+    Each group contains ten observations per run. Cutoffs from 1e-9 through 1e-5
+    remove the same two groups and give identical adjusted scores; this numerical
+    sensitivity result does not turn the post-hoc choice into a predefined endpoint.
+
+    The prelaunch audit checked for exactly zero aggregate errors and found none.
+    That statement was literally true but insufficient to check numerical stability;
+    it did not rule out near-zero positive denominators. Neither deleting these
+    groups nor changing to pooling should silently replace the predefined endpoint.
 
 ### 3. Can it reconstruct missing observations?
 
 The per-cell diagnostics separate a **genuine revision** of a visible report from an
 **artificially hidden** observation, which is the reconstruction task.
 
-| Configuration | Revision CRPS | Revision 50% | Reconstruction CRPS | Reconstruction 50% |
-|---|---|---|---|---|
-| Target MLP · Gated branch · 10% · no aug | 7.080 | 0.497 | 17.939 | 0.474 |
-| Pathogen MLP · Gated branch · 10% · no aug | 7.151 | 0.523 | 18.852 | 0.490 |
-| Pathogen MLP · Gated branch · 20% · aug | 7.179 | 0.509 | 17.913 | 0.493 |
-| Target MLP · Gated branch · 20% · no aug | 7.207 | 0.484 | 18.869 | 0.469 |
-| Pathogen MLP · Gated branch · 20% · no aug | 7.223 | 0.495 | 18.093 | 0.496 |
-| Target MLP · Gated branch · 20% · aug | 7.371 | 0.508 | 19.045 | 0.459 |
-| Target MLP · Gated branch · 10% · aug | 7.470 | 0.510 | 18.248 | 0.464 |
-| Pathogen MLP · Gated branch · 10% · aug | 7.491 | 0.496 | 19.376 | 0.486 |
-| Pathogen MLP · Two-stage · 20% · no aug | 8.004 | 0.559 | 20.314 | 0.326 |
-| Pathogen MLP · Two-stage · 10% · aug | 8.016 | 0.602 | 19.850 | 0.315 |
-| Pathogen MLP · Two-stage · 10% · no aug | 8.224 | 0.585 | 20.312 | 0.299 |
-| Target MLP · Two-stage · 10% · aug | 8.407 | 0.601 | 20.488 | 0.327 |
-| Target MLP · Two-stage · 20% · aug | 8.407 | 0.581 | 20.009 | 0.350 |
-| Target MLP · Two-stage · 20% · no aug | 8.519 | 0.567 | 20.577 | 0.360 |
-| Target MLP · Two-stage · 10% · no aug | 8.628 | 0.575 | 20.817 | 0.325 |
-| Pathogen MLP · Two-stage · 20% · aug | 8.672 | 0.569 | 19.223 | 0.346 |
-| Pathogen MLP · C parallel · 20% · no aug | 16.133 | 0.560 | 20.765 | 0.393 |
-| Pathogen MLP · C parallel · 10% · aug | 16.192 | 0.552 | 20.925 | 0.391 |
-| Target MLP · C parallel · 20% · aug | 16.534 | 0.542 | 21.177 | 0.390 |
-| Target MLP · C parallel · 10% · no aug | 16.546 | 0.553 | 21.837 | 0.404 |
-| Pathogen MLP · C parallel · 20% · aug | 16.569 | 0.564 | 20.996 | 0.398 |
-| Pathogen MLP · C parallel · 10% · no aug | 16.653 | 0.556 | 21.722 | 0.387 |
-| Target MLP · C parallel · 10% · aug | 16.751 | 0.555 | 22.183 | 0.407 |
-| Target MLP · C parallel · 20% · no aug | 16.902 | 0.527 | 21.615 | 0.391 |
+| Formulation | Age (days) | Report condition | Scaled CRPS | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|
+| C parallel | 11 | hidden | 0.051 | 0.443 | 0.864 |
+| C parallel | 11 | visible | 0.042 | 0.460 | 0.862 |
+| C parallel | 4 | hidden | 0.063 | 0.336 | 0.731 |
+| C parallel | 4 | visible | 0.021 | 0.651 | 0.945 |
+| Gated branch | 11 | hidden | 0.045 | 0.538 | 0.890 |
+| Gated branch | 11 | visible | 0.014 | 0.517 | 0.856 |
+| Gated branch | 4 | hidden | 0.055 | 0.480 | 0.864 |
+| Gated branch | 4 | visible | 0.018 | 0.452 | 0.843 |
+| Two-stage | 11 | hidden | 0.047 | 0.354 | 0.709 |
+| Two-stage | 11 | visible | 0.014 | 0.591 | 0.882 |
+| Two-stage | 4 | hidden | 0.063 | 0.297 | 0.640 |
+| Two-stage | 4 | visible | 0.019 | 0.506 | 0.874 |
 
 ![Revision against reconstruction](revisions/figures/recent-kinds.png)
 
-**Reconstruction is much harder than correction, and calibration splits the same way.**
-On recent-stress cells the gated branch reaches
-7.1 CRPS on genuine revisions but only
-17.9 on hidden observations. Coverage tells
-the more useful story: gated holds 50% coverage near nominal on both kinds
-(~0.50 on reconstruction),
-while two-stage collapses to ~0.30–0.36 on reconstruction despite looking well
-calibrated on revisions. A model can correct reports well and still be overconfident
-about values it never saw.
+**Hiding an observation worsens recent estimation, but the old 7-versus-18
+CRPS comparison was not a valid scientific aggregate.** It averaged admissions
+counts and ED proportions in native units with cell-count weights, and compared
+different sets of observations. The replacement table/figure pairs each genuinely
+preliminary report hidden by the recent stress with its own natural-input result,
+normalizes CRPS by the training-only Q95 scale, and applies the scientific weights.
+Supplied finals are not in this paired comparison. Both 50% and 95% coverage are
+shown by age; approximate overall 50% coverage alone does not establish calibration.
 
-!!! warning "Outage reconstruction is degenerate and is not ranked"
+The table averages the eight configurations and five seeds within each family.
+It is descriptive of these fitted recipes; paired masking identifies the effect
+of this whole stress intervention, which can hide multiple channels/locations at once.
 
-    Under the outage stress, 16 of 24 configurations — every gated and every
-    C parallel run — return effectively the same reconstruction CRPS seed by seed: a
-    spread of 0.001 around 84.11 across architecturally different
-    models, against the 8 two-stage runs that spread
-    genuinely from 45.9 to 73.0.
-    A shared fallback prior is being scored, not the recent heads, so these numbers do
-    not rank models. The recent-stress panel above is the one that differentiates.
-    Raw values are kept in [outage-reconstruction.csv](revisions/outage-reconstruction.csv).
+For gated, hiding the same report increases scaled CRPS from about 0.014 to 0.045
+at 11 days, and 0.018 to 0.055 at four days. Reconstruction 95% coverage is about
+89% and 86%, below nominal; two-stage is substantially lower, about 71% and 64%.
+The near-nominal gated 50% coverage is encouraging, but is not full calibration.
+
+Full-channel outage is a separate, more severe condition (all reconstruction
+cells here, including hidden supplied finals; not the matched report-only subset):
+
+| Formulation | Age (days) | Scaled CRPS | Predict-zero error | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|
+| C parallel | 11 | 0.289 | 0.325 | 0.137 | 0.226 |
+| C parallel | 4 | 0.286 | 0.321 | 0.137 | 0.219 |
+| Gated branch | 11 | 0.285 | 0.325 | 0.145 | 0.239 |
+| Gated branch | 4 | 0.281 | 0.321 | 0.150 | 0.243 |
+| Two-stage | 11 | 0.248 | 0.325 | 0.168 | 0.322 |
+| Two-stage | 4 | 0.242 | 0.321 | 0.181 | 0.338 |
+
+!!! warning "Outage scores reveal a model failure mode, not a demonstrated scorer bug"
+
+    The old native-unit aggregate places 16 C/gated configurations very close to
+    84.11 for seed 42. Similar aggregate scores do not prove identical predictions
+    or a bypassed recent head. The frozen code **does execute** C's recent heads
+    and the gated model's separate missing-value heads under outage. When focal
+    history is absent, both use B's small 0.01 transformed anchor, and decoded
+    admission nowcasts remain near zero. Across all audited C/gated runs, every
+    exported outage admission median is zero after count rounding, while ED
+    predictions differ. That is model behavior worth reporting,
+    not a reason to discard the condition. Exact causal attribution to anchoring
+    requires an ablation; the near-zero behavior is consistent with this design.
+
+    Count-dominated raw pooling can conceal differences in ED outputs. See
+    [outage by target](revisions/outage-by-target.csv) for predicted medians and
+    comparison to predicting zero, and [scaled diagnostics](revisions/recent-scaled-run-diagnostics.csv)
+    for normalization and coverage. The old raw summary is retained only as an
+    audit artifact, not as a ranking or evidence that the scorer substitutes a prior.
 
 ### Factors: augmentation and objective weight
 
@@ -722,27 +798,57 @@ about values it never saw.
 
 ![Paired factor changes](revisions/figures/paired-contrasts.png)
 
-**Revision augmentation helps the nowcast and mildly hurts the forecast.** Matched on
-backbone, formulation and seed it moves the nowcast by
--0.055
-on average while moving the forecast by
-+0.014.
-That is the expected direction — it trains the recent head on realistic reporting
-errors — but the seed spread is comparable to the effect, so this is a weak preference,
-not a settled result.
+**Augmentation produces a trade-off, not a uniform gain.** On the adjusted
+nowcast metric it improves the mean in all three recent-head families. Its forecast
+effect depends on formulation: B +0.021, C +0.008, gated **+0.041** (worse), two-stage
+-0.012 (better). For gated models only 5/20 matched forecast contrasts improve.
+Do not label the pooled +0.014 across families as a universal mild effect.
+The natural revision error is not interchangeable with reconstruction error.
 
-**10% versus 20% barely matters.** Neither task moves by more than about 0.02 in the
-mean, and no formulation improves in more than two-thirds of matched pairs. The
-objective weight is not the lever worth tuning next.
+**The 10%→20% effect is formulation-dependent.** C's adjusted nowcast mean improves
+by 0.055, two-stage by 0.021, while gated changes by +0.004. Forecast changes are
+small on average (gated -0.017, C +0.005, two-stage +0.003). The prior statement
+that neither task moves by more than 0.02 was incorrect. There is no universal
+winner between the weights, but the screen does not establish that weight is irrelevant.
 
-### What this does and does not establish
+Error bars show **SD of paired differences**, pooled over several related settings;
+they are not confidence intervals. Crossing zero is not a significance test. Five
+seeds measure fitting variability on the same seasons, not uncertainty over future
+epidemics. These tables provide effect sizes and direction counts, not a formal
+claim of superiority or equivalence.
 
-- The gated branch is the only formulation that buys a real nowcast without giving up
-  B's forecast path. That was the design's central claim and it holds.
-- It does **not** show that nowcasting improves forecasting. The forecast leaders
-  remain the mask controls with no recent objective.
-- Five seeds quantify fitting variability, not independent epidemic seasons. Seed SD
-  is often as large as the differences between neighbouring configurations.
-- All inputs retain the retrospective finalized-history policy; no claim of
-  Wednesday-operational performance is made.
+### Conclusions and next decisions
+
+- For forecasting alone, retain **target B gap-only** and **pathogen B no-mask** as
+  strong controls. Target gated without augmentation is a competitive joint-output
+  candidate and improves matched mixed-mask B; it does not yet beat the best control.
+- Forecasts and nowcasts need not come from the same fitted model. B forecasts
+  plus gated recent estimates are a valid separate-output option; this does not
+  establish a coherent joint trajectory distribution or a new combined score.
+- For revision correction, gated is the most promising tested family. Its advantage
+  over C/two-stage survives the two displayed aggregation choices, while the claim
+  that *only* gated beats the report does not. The 11% headline is conditional on
+  the post-hoc location-relative calculation; inspect age-specific scaled errors
+  and coverage too.
+- For reconstruction, use matched, scaled, age-specific diagnostics. Treat near-zero
+  outage admissions as a real failure to address, rather than discarding the test.
+- The next useful architecture control is a parallel recent head anchored to **each
+  week's own report**, with a learned missing-history anchor. C currently anchors
+  both recent outputs to the latest visible focal value, unlike the gated branch.
+  This could explain part of its older-week weakness, but is not isolated by these
+  runs. The experiment changes several architectural details, so it does not prove
+  that the gate or forecast feedback alone causes the improvement.
+- Try the gated branch with the successful gap-only mask and no revision augmentation;
+  retain B with the same recipe. Do not select augmentation merely because it helps
+  the revision endpoint while worsening the primary forecast endpoint.
+- Natural forecast-only validation is now consistent across candidates, but there
+  is no contemporaneous masked-validation control in this experiment. Its independent
+  causal benefit is not identified by comparing with older screens.
+- All results remain retrospective development CV with finalized older history and
+  supplied-final fallbacks. None resolves untouched future-season performance or
+  establishes the effect of seasonal reporting shifts.
+
+The audit/regeneration commands are `.venv/bin/python analysis/b1-revisions-review/audit.py`
+and `.venv/bin/python scripts/plot_b1_revisions.py`. They aggregate saved scores;
+no models are retrained or repredicted. Corrections dated 2026-09-18.
 <!-- revisions:end -->
