@@ -154,11 +154,11 @@ class VintageArchive:
         return values, available, provenance, reasons
 
 
-def read_archive(data_root):
-    archive = VintageArchive()
+def read_archive(data_root, *, sources=SOURCES, archive=None):
+    archive = VintageArchive() if archive is None else archive
     selected = SelectedData(data_root)
     seen_manifests = set()
-    for key in SOURCES:
+    for key in sources:
         for table in selected.selected_tables(dataset_key=key):
             is_git = getattr(table, 'source_path', '') == 'git-history.ndjson.gz'
             source_key = key + ':git' if is_git else key

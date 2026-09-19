@@ -14,6 +14,15 @@ When running on longleaf, we have two choices:
   - g1803jles01.ll.unc.edu:  512GB ram 56 physical CPU cores Quantity 4 of Nvidia L40, 48GB
   - g1803jles02.ll.unc.edu: 64 physical CPU cores 2Tb RAM 2x Nvidia H100, 96 GB
 
+## User decisions and priorities
+
+Read [`icare.md`](icare.md) before making research or implementation decisions.
+When the user explicitly states a decision, constraint or scientific context they
+feel strongly about, record it there with the date and keep it current. Preserve
+their intent; distinguish user-provided premises, measured evidence and hypotheses.
+If wording is ambiguous, preserve it and flag the ambiguity rather than silently
+turning it into an assumption.
+
 ## Launching training and scoring jobs
 
 Whenever you launch a job that trains or scores, **always give the user the

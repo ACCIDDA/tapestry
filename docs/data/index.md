@@ -20,6 +20,12 @@ tapestry.data
     └── hub_history.py  Canonical target-file Git vintages
 ```
 
+## Explore reporting availability
+
+[What is available when we forecast?](reporting-availability.md) explains the
+Wednesday/Saturday timeline, NHSN and NSSP availability and revisions, reporting
+regimes, and what these data imply for validating forecasts and nowcasts.
+
 ## Core guarantees
 
 1. Publisher-native values are retained; acquisition does not impute missing

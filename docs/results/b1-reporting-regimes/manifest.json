@@ -1,0 +1,19 @@
+{
+  "dataset": "data/processed/build_b1_wednesday_calendar.npz",
+  "sha256": "451d004d7a9626f8b6cdc4815347ac2729d41ecf57d8607f714b06f89b27e2e7",
+  "truth_cutoff": "2026-09-16",
+  "paired_report_cells": 40736,
+  "regime_boundaries_source": "User instruction, 2026-09-18; not independently verified in this analysis.",
+  "assumptions": [
+    "Regime assigned by observation week-ending date; boundary weeks can straddle policies.",
+    "NHSN boundaries are not NSSP policy boundaries; NSSP tables use these dates only for comparison.",
+    "Matched plots pair ages on observation/location/provider; all-reports plot uses each age own support. Unavailable dates remain gaps.",
+    "Net = 100 sum(final-report)/sum(final); absolute = 100 sum(abs(final-report))/sum(final).",
+    "States/DC pooled; US separate in CSVs. Admissions use count mass; ED sums equally weighted location proportions, not national ED visits.",
+    "Coverage = locations with genuine report and final / 51; it measures B1 archive availability, not hospital participation.",
+    "Pinned reference finals may revise. Zero finals retained; zero total gives undefined metric.",
+    "No causal test of reporting regime or effect on trained models. Source selection and calendar support may change.",
+    "COVID admissions age-4 outlier on 2024-11-16 omitted from plotted lines and axis scaling, annotated with its value; retained in all CSVs and summaries.",
+    "No visual inspection of generated graphs; no training or model scoring."
+  ]
+}

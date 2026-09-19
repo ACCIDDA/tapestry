@@ -1,0 +1,13 @@
+target,age_days,inputs,supplied_final_fraction
+wk inc flu hosp,11,1456,0.027472527472527472
+wk inc flu hosp,4,1456,0.03708791208791209
+wk inc flu prop ed visits,11,1456,0.019230769230769232
+wk inc flu prop ed visits,4,1456,0.019230769230769232
+wk inc covid hosp,11,2340,0.0
+wk inc covid hosp,4,2340,0.022222222222222223
+wk inc covid prop ed visits,11,1485,0.014141414141414142
+wk inc covid prop ed visits,4,1485,0.014141414141414142
+wk inc rsv hosp,11,1508,0.0
+wk inc rsv hosp,4,1508,0.034482758620689655
+wk inc rsv prop ed visits,11,1468,0.019754768392370572
+wk inc rsv prop ed visits,4,1468,0.04904632152588556

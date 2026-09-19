@@ -59,17 +59,25 @@ nav:
       - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
   - B1:
       - Masked-vintage model: design/b1.md
-      - Screen and 300-epoch results: results/b1-overnight/index.md
+      - Forward benchmark data: data/forward-2025.md
+      - Initial A/B/C experiment plan: workflows/b1-decisive-experiment.md
+      - Initial A/B/C execution: workflows/b1-decisive-execution.md
+      - One-seed iteration: workflows/b1-one-seed.md
+      - Seed 42 screen: workflows/b1-seed42-results.md
+      - First good results: results/first-good-b1.md
       - Overnight experiment: workflows/b1-overnight.md
       - 300-epoch comparison: workflows/b1-300.md
       - Revision and nowcasting experiment: workflows/b1-revisions.md
-      - First good results: results/first-good-b1.md
-      - Seed 42 screen: workflows/b1-seed42-results.md
-      - One-seed iteration: workflows/b1-one-seed.md
-      - Next-model experiment: workflows/b1-decisive-experiment.md
-      - Next-model execution: workflows/b1-decisive-execution.md
+      - Screen, 300-epoch and revision results: results/b1-overnight/index.md
+      - Overview and conclusions: results/b1-conclusions.md
+      - Forward benchmark specification: workflows/forward-2025.md
+      - Frozen forward benchmark: results/Forward-2025/index.md
+      - Forward analysis, fans and B1 comparison: results/Forward-2025/analysis.md
+      - Coverage diagnosis and next experiments: results/Forward-2025/coverage-notes.md
+      - Reporting regimes and revisions: results/b1-reporting-regimes/index.md
   - Data repository:
       - Overview: data/index.md
+      - Reporting availability exploration: data/reporting-availability.md
       - Source catalog: data/sources.md
       - Shared selection: data/selection.md
       - Storage and provenance: data/storage.md

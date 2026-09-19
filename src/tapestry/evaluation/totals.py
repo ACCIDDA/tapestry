@@ -125,6 +125,9 @@ def score_run(run, frozen):
     which have no Hub ensemble and are scored against preliminary persistence.
     """
     run, frozen = Path(run), Path(frozen)
+    if json.loads((run / 'manifest.json').read_text()).get('model') == 'Forward':
+        from .forward import score
+        return score(run, frozen)
     totals = cells_totals(forecast_cells(run, frozen))
     if json.loads((run / 'manifest.json').read_text()).get('model') == 'B1':
         stress_parts = []

@@ -355,12 +355,14 @@ def main():
     target_details = target_details.reset_index()
     target_details['target'] = target_details.target.map(NAMES)
     target_details = target_details.rename(columns={'season': 'Season', 'target': 'Target'})
-    body = f'''# B1 — First screen and 300-epoch comparison
+    body = f'''# B1 — First screen, 300-epoch comparison, and the revision experiment
 
 **{int((configs.combined_mean < 1).sum())} of {len(configs)} configurations beat the Hub ensemble** on the combined forecast score.
 The leading configuration is **{winner.label}**, at **{winner.combined_mean:.3f}** ({100*(1-winner.combined_mean):.1f}% lower relative WIS).
 These headline numbers describe the original overnight screen. The separate
 [300-epoch comparison](#300-epoch-results-and-comparison) is reported below.
+Sections follow experiment order: overnight screen, 300-epoch follow-up, then
+revision experiment when available. See [broad conclusions across B1](../b1-conclusions.md).
 
 ## Snapshot and experiment
 
@@ -542,7 +544,17 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
     body = body.replace('## Masking around B', interpretation(configs, contrasts, stress_table, coverage) + '## Masking around B')
     followup = out / 'epoch300/section.txt'
     if followup.exists():
-        body = body.replace('## Snapshot and experiment', followup.read_text() + '\n## Snapshot and experiment', 1)
+        section = followup.read_text().replace(
+            'Original-screen results follow below.', 'The revision experiment follows below.')
+        body = body.rstrip() + '\n\n' + section
+    # Keep the later revision report when refreshing the original screen.
+    index = out / 'index.md'
+    if index.exists():
+        previous = index.read_text()
+        start, end = '<!-- revisions:start -->', '<!-- revisions:end -->'
+        if start in previous:
+            revision = previous[previous.index(start):previous.index(end) + len(end)]
+            body = body.rstrip() + '\n\n' + revision + '\n'
     (out / 'index.md').write_text(body)
     print(f'Wrote {out / "index.md"}', flush=True)
 

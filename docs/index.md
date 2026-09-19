@@ -48,6 +48,9 @@ inputs and artificial masking, with rankings and matched forecast fan plots.
 The page also reports the [completed 300-epoch follow-up](results/b1-overnight/index.md#300-epoch-results-and-comparison),
 with matched-seed comparisons and 100-vs-300-epoch fan plots.
 
+The [B1 broad conclusions](results/b1-conclusions.md) bring together architecture,
+masking, and nowcasting evidence, including the completed revision experiment.
+
 ## B0: six channels, no revision nowcasting
 
 B0 is the finalized-data experiment. The channels are:

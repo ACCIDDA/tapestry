@@ -7,6 +7,10 @@ These headline numbers describe the original overnight screen. The separate
 by the [revision experiment](#revision-experiment-separating-forecasting-nowcasting-and-reconstruction),
 which scores forecasting, nowcasting and reconstruction as three separate questions.
 
+[Broad conclusions across B1](../b1-conclusions.md) summarize architecture, masking,
+and nowcasting. Sections below follow experiment order: overnight screen,
+300-epoch follow-up, then revision experiment.
+
 !!! tip "If you read one thing"
 
     B gap-only/no-mask controls still have the best forecast means. The gated
@@ -16,143 +20,7 @@ which scores forecasting, nowcasting and reconstruction as three separate questi
     be assessed on matched, normalized errors; outage failures are model behavior,
     not an established scorer artifact. See the corrected revision analysis below.
 
-<!-- epoch300:start -->
-## 300-epoch results and comparison
 
-**48/48 runs complete**, generated 2026-09-17T22:20-04:00. This is a dated snapshot.
-The follow-up contains 16 configurations (four architectures × four formulations),
-all at mixed 50% masking, with seeds 42/43/44. Caps are maxima with patience 30,
-not fixed epoch counts. The original screen below also includes masking variants
-that were not repeated here, including its gap-only winner.
-
-### Ranking at cap 300
-
-**4/16 available configuration means beat the ensemble.**
-Lower relative WIS is better; 1 is ensemble parity. Each seed is a complete three-season run.
-Incomplete configurations retain their seed counts; missing runs are not imputed.
-
-| Configuration | Seeds / 3 | WIS ratio | Seed SD | States/DC | US |
-|---|---|---|---|---|---|
-| Pathogen MLP · B · mixed 50% | 3 | 0.941 | 0.059 | 0.953 | 0.890 |
-| Pathogen MLP · C · mixed 50% | 3 | 0.945 | 0.051 | 0.959 | 0.889 |
-| Joint MLP · C · mixed 50% | 3 | 0.983 | 0.071 | 0.988 | 0.964 |
-| Joint MLP · B · mixed 50% | 3 | 0.991 | 0.054 | 0.997 | 0.966 |
-| Target MLP · C · mixed 50% | 3 | 1.003 | 0.023 | 1.013 | 0.961 |
-| Target convolution · C · mixed 50% | 3 | 1.010 | 0.085 | 1.026 | 0.944 |
-| Target MLP · B · mixed 50% | 3 | 1.029 | 0.071 | 1.036 | 0.997 |
-| Target convolution · B · mixed 50% | 3 | 1.032 | 0.030 | 1.045 | 0.982 |
-| Target MLP · A · mixed 50% | 3 | 1.038 | 0.029 | 1.038 | 1.037 |
-| Target convolution · A · mixed 50% | 3 | 1.070 | 0.042 | 1.079 | 1.032 |
-| Joint MLP · A · mixed 50% | 3 | 1.086 | 0.241 | 1.086 | 1.086 |
-| Pathogen MLP · A · mixed 50% | 3 | 1.126 | 0.138 | 1.118 | 1.157 |
-| Joint MLP · Two-stage · mixed 50% | 3 | 1.194 | 0.097 | 1.178 | 1.256 |
-| Target MLP · Two-stage · mixed 50% | 3 | 1.203 | 0.056 | 1.198 | 1.225 |
-| Target convolution · Two-stage · mixed 50% | 3 | 1.215 | 0.043 | 1.218 | 1.203 |
-| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.292 | 0.272 | 1.293 | 1.292 |
-
-[Ranking CSV](epoch300/configuration-ranking.csv) · [Per-seed scores](epoch300/ranking/run_scores.csv).
-
-### What changed from the first screen
-
-Every row below uses the same architecture, formulation, masking, and completed seed
-on both sides. Input hashes and scored target/season/location/horizon support match.
-The target MLP, pathogen MLP, and target convolution change cap 100 → 300.
-**Joint MLP was already capped at 300: its rows are repeat controls.**
-Negative changes favor the follow-up; seed SD is descriptive, not a confidence interval.
-
-| Configuration | Paired seeds | Original screen | Cap 300 | Δ WIS | Seed Δ SD | Seeds improved |
-|---|---|---|---|---|---|---|
-| Target MLP · A · mixed 50% | 3 | 1.029 | 1.038 | 0.009 | 0.006 | 0 |
-| Target MLP · B · mixed 50% | 3 | 0.980 | 1.029 | 0.048 | 0.033 | 0 |
-| Target MLP · C · mixed 50% | 3 | 0.985 | 1.003 | 0.018 | 0.013 | 0 |
-| Target MLP · Two-stage · mixed 50% | 3 | 1.179 | 1.203 | 0.024 | 0.050 | 1 |
-| Pathogen MLP · A · mixed 50% | 3 | 1.045 | 1.126 | 0.081 | 0.144 | 1 |
-| Pathogen MLP · B · mixed 50% | 3 | 0.952 | 0.941 | -0.011 | 0.011 | 3 |
-| Pathogen MLP · C · mixed 50% | 3 | 0.957 | 0.945 | -0.011 | 0.019 | 2 |
-| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.104 | 1.292 | 0.189 | 0.291 | 1 |
-| Target convolution · A · mixed 50% | 3 | 1.100 | 1.070 | -0.030 | 0.052 | 2 |
-| Target convolution · B · mixed 50% | 3 | 1.031 | 1.032 | 0.001 | 0.012 | 2 |
-| Target convolution · C · mixed 50% | 3 | 1.005 | 1.010 | 0.005 | 0.007 | 1 |
-| Target convolution · Two-stage · mixed 50% | 3 | 1.206 | 1.215 | 0.009 | 0.029 | 2 |
-| Joint MLP · A · mixed 50% | 3 | 1.012 | 1.086 | 0.074 | 0.126 | 1 |
-| Joint MLP · B · mixed 50% | 3 | 0.990 | 0.991 | 0.000 | 0.000 | 0 |
-| Joint MLP · C · mixed 50% | 3 | 0.972 | 0.983 | 0.011 | 0.020 | 1 |
-| Joint MLP · Two-stage · mixed 50% | 3 | 1.211 | 1.194 | -0.017 | 0.027 | 2 |
-
-![Matched budget comparisons](epoch300/figures/comparison.png)
-
-**Pathogen B and C remain the strongest candidates in this follow-up.** B changes
-from 0.952 to 0.941, improving in 3/3 seeds;
-C changes from 0.957 to 0.945, improving in 2/3.
-Their small gap does not establish a reliable preference between flags alone and auxiliary nowcasting.
-
-**Longer training does not rescue the current two-stage formulation.** Its follow-up
-configuration means remain above ensemble parity in every architecture. Pathogen two-stage
-changes from 1.104 to 1.292; the paired seed table shows a large
-deterioration for seed 42. This weakens the explanation that the initial poor results
-were simply due to the 100-epoch cap. It does not identify which part of the formulation fails.
-
-**More training is not a universal gain.** Use the paired rows, not the best score from
-each differently sized suite, to judge a recipe. Target B changes from 0.980
-to 1.029, and target C from 0.985 to 1.003;
-neither improves in any of the three matched seeds. The original gap-only leader is not
-included in this budget contrast. Repeat variability also matters: joint-direct seed 44
-changes from 1.144 to 1.363 despite retaining cap 300. The cause is not established here;
-the saved fitting code is unchanged between source snapshots, whose changes add suite routing.
-
-**Calibration remains a limitation.** The cap-300 leader's weighted 50% and 95%
-coverage are 43.3% and 84.6%.
-These use the same geography/target/season weights as the ranking.
-
-### Where performance changes
-
-Disease → target → chronological season, matching the fan order. Values are paired
-seed-mean changes, not changes between averages with different seeds. Joint rows
-remain repeat controls. Color saturation does not truncate the printed values.
-
-![Changes by disease, target, and year](epoch300/figures/target-season-change.png)
-
-### Matched 100-vs-300 fan plots
-
-Pathogen MLP B, C, and two-stage at both caps, followed by the Hub ensemble.
-Every model uses seed 42, the same fixed seed as the original formulation fans.
-It is illustrative, not an average: pathogen two-stage seed 42 is also the largest
-observed deterioration, so judge the overall result using all three seeds above.
-Dates match B0.1's full saved-season calendar; truth and ensemble retain their frozen
-availability. Missing values are not filled in. Display dates extend beyond scoring support.
-
-![Influenza admissions, 2023-2024 — matched training budgets](epoch300/figures/budget-flu_hosp-2023-2024.png)
-
-![Influenza admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-flu_hosp-2024-2025.png)
-
-![Influenza admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_hosp-2025-2026.png)
-
-![Influenza ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_prop_ed_visits-2025-2026.png)
-
-![COVID-19 admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-covid_hosp-2024-2025.png)
-
-![COVID-19 admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_hosp-2025-2026.png)
-
-![COVID-19 ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_prop_ed_visits-2025-2026.png)
-
-![RSV admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_hosp-2025-2026.png)
-
-![RSV ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_prop_ed_visits-2025-2026.png)
-
-### Scope, provenance, and reproduction
-
-This remains retrospective development CV on seasons used for model development,
-not prospective evidence. Three seeds do not resolve small differences. Changing the
-cap permits longer training and can change checkpoint selection; it does not mean
-every component trained for 300 epochs. Forecast skill is not a standalone nowcast score.
-
-[Matched seed data](epoch300/paired-seeds.csv) · [Target/season comparisons](epoch300/target-season-pairs.csv) ·
-[Coverage](epoch300/coverage.csv) · [Snapshot](epoch300/snapshot.json) · [Run status](epoch300/run-status.csv).
-
-Regenerate from saved scores and forecasts with `.venv/bin/python scripts/plot_b1_300.py`.
-No training or scoring jobs are launched. Original-screen results follow below.
-
-<!-- epoch300:end -->
 
 ## Snapshot and experiment
 
@@ -495,13 +363,151 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 
 ## Log
 
-- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.
-
 - 2026-09-17: added the original overnight screen report while the separate 300-epoch experiment was queued. Reused saved forecast totals, the shared scientific aggregation and B1 forecast export. Explicitly separated forecast performance from nowcast accuracy and marked incomplete seed sets.
 - 2026-09-17: expanded the page to all 40 ranked configurations and a numeric target/season breakdown of the leader and matched pathogen formulations; clarified that training without artificial masking remains competitive.
 - 2026-09-17: matched fan dates to B0.1's full saved seasonal calendar; retained frozen support for scores and truth. Standardized disease, target, and chronological season order in fans, target/season tables, and the heatmap.
 
 - 2026-09-17: corrected the two-stage flag description after inspecting the frozen screen code: `encode` consumes known-final flags and `forward` bypasses visible finals. This was a prose error; no results or experiment snapshots changed.
+
+- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.
+
+<!-- epoch300:start -->
+## 300-epoch results and comparison
+
+**48/48 runs complete**, generated 2026-09-17T22:20-04:00. This is a dated snapshot.
+The follow-up contains 16 configurations (four architectures × four formulations),
+all at mixed 50% masking, with seeds 42/43/44. Caps are maxima with patience 30,
+not fixed epoch counts. The original screen below also includes masking variants
+that were not repeated here, including its gap-only winner.
+
+### Ranking at cap 300
+
+**4/16 available configuration means beat the ensemble.**
+Lower relative WIS is better; 1 is ensemble parity. Each seed is a complete three-season run.
+Incomplete configurations retain their seed counts; missing runs are not imputed.
+
+| Configuration | Seeds / 3 | WIS ratio | Seed SD | States/DC | US |
+|---|---|---|---|---|---|
+| Pathogen MLP · B · mixed 50% | 3 | 0.941 | 0.059 | 0.953 | 0.890 |
+| Pathogen MLP · C · mixed 50% | 3 | 0.945 | 0.051 | 0.959 | 0.889 |
+| Joint MLP · C · mixed 50% | 3 | 0.983 | 0.071 | 0.988 | 0.964 |
+| Joint MLP · B · mixed 50% | 3 | 0.991 | 0.054 | 0.997 | 0.966 |
+| Target MLP · C · mixed 50% | 3 | 1.003 | 0.023 | 1.013 | 0.961 |
+| Target convolution · C · mixed 50% | 3 | 1.010 | 0.085 | 1.026 | 0.944 |
+| Target MLP · B · mixed 50% | 3 | 1.029 | 0.071 | 1.036 | 0.997 |
+| Target convolution · B · mixed 50% | 3 | 1.032 | 0.030 | 1.045 | 0.982 |
+| Target MLP · A · mixed 50% | 3 | 1.038 | 0.029 | 1.038 | 1.037 |
+| Target convolution · A · mixed 50% | 3 | 1.070 | 0.042 | 1.079 | 1.032 |
+| Joint MLP · A · mixed 50% | 3 | 1.086 | 0.241 | 1.086 | 1.086 |
+| Pathogen MLP · A · mixed 50% | 3 | 1.126 | 0.138 | 1.118 | 1.157 |
+| Joint MLP · Two-stage · mixed 50% | 3 | 1.194 | 0.097 | 1.178 | 1.256 |
+| Target MLP · Two-stage · mixed 50% | 3 | 1.203 | 0.056 | 1.198 | 1.225 |
+| Target convolution · Two-stage · mixed 50% | 3 | 1.215 | 0.043 | 1.218 | 1.203 |
+| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.292 | 0.272 | 1.293 | 1.292 |
+
+[Ranking CSV](epoch300/configuration-ranking.csv) · [Per-seed scores](epoch300/ranking/run_scores.csv).
+
+### What changed from the first screen
+
+Every row below uses the same architecture, formulation, masking, and completed seed
+on both sides. Input hashes and scored target/season/location/horizon support match.
+The target MLP, pathogen MLP, and target convolution change cap 100 → 300.
+**Joint MLP was already capped at 300: its rows are repeat controls.**
+Negative changes favor the follow-up; seed SD is descriptive, not a confidence interval.
+
+| Configuration | Paired seeds | Original screen | Cap 300 | Δ WIS | Seed Δ SD | Seeds improved |
+|---|---|---|---|---|---|---|
+| Target MLP · A · mixed 50% | 3 | 1.029 | 1.038 | 0.009 | 0.006 | 0 |
+| Target MLP · B · mixed 50% | 3 | 0.980 | 1.029 | 0.048 | 0.033 | 0 |
+| Target MLP · C · mixed 50% | 3 | 0.985 | 1.003 | 0.018 | 0.013 | 0 |
+| Target MLP · Two-stage · mixed 50% | 3 | 1.179 | 1.203 | 0.024 | 0.050 | 1 |
+| Pathogen MLP · A · mixed 50% | 3 | 1.045 | 1.126 | 0.081 | 0.144 | 1 |
+| Pathogen MLP · B · mixed 50% | 3 | 0.952 | 0.941 | -0.011 | 0.011 | 3 |
+| Pathogen MLP · C · mixed 50% | 3 | 0.957 | 0.945 | -0.011 | 0.019 | 2 |
+| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.104 | 1.292 | 0.189 | 0.291 | 1 |
+| Target convolution · A · mixed 50% | 3 | 1.100 | 1.070 | -0.030 | 0.052 | 2 |
+| Target convolution · B · mixed 50% | 3 | 1.031 | 1.032 | 0.001 | 0.012 | 2 |
+| Target convolution · C · mixed 50% | 3 | 1.005 | 1.010 | 0.005 | 0.007 | 1 |
+| Target convolution · Two-stage · mixed 50% | 3 | 1.206 | 1.215 | 0.009 | 0.029 | 2 |
+| Joint MLP · A · mixed 50% | 3 | 1.012 | 1.086 | 0.074 | 0.126 | 1 |
+| Joint MLP · B · mixed 50% | 3 | 0.990 | 0.991 | 0.000 | 0.000 | 0 |
+| Joint MLP · C · mixed 50% | 3 | 0.972 | 0.983 | 0.011 | 0.020 | 1 |
+| Joint MLP · Two-stage · mixed 50% | 3 | 1.211 | 1.194 | -0.017 | 0.027 | 2 |
+
+![Matched budget comparisons](epoch300/figures/comparison.png)
+
+**Pathogen B and C remain the strongest candidates in this follow-up.** B changes
+from 0.952 to 0.941, improving in 3/3 seeds;
+C changes from 0.957 to 0.945, improving in 2/3.
+Their small gap does not establish a reliable preference between flags alone and auxiliary nowcasting.
+
+**Longer training does not rescue the current two-stage formulation.** Its follow-up
+configuration means remain above ensemble parity in every architecture. Pathogen two-stage
+changes from 1.104 to 1.292; the paired seed table shows a large
+deterioration for seed 42. This weakens the explanation that the initial poor results
+were simply due to the 100-epoch cap. It does not identify which part of the formulation fails.
+
+**More training is not a universal gain.** Use the paired rows, not the best score from
+each differently sized suite, to judge a recipe. Target B changes from 0.980
+to 1.029, and target C from 0.985 to 1.003;
+neither improves in any of the three matched seeds. The original gap-only leader is not
+included in this budget contrast. Repeat variability also matters: joint-direct seed 44
+changes from 1.144 to 1.363 despite retaining cap 300. The cause is not established here;
+the saved fitting code is unchanged between source snapshots, whose changes add suite routing.
+
+**Calibration remains a limitation.** The cap-300 leader's weighted 50% and 95%
+coverage are 43.3% and 84.6%.
+These use the same geography/target/season weights as the ranking.
+
+### Where performance changes
+
+Disease → target → chronological season, matching the fan order. Values are paired
+seed-mean changes, not changes between averages with different seeds. Joint rows
+remain repeat controls. Color saturation does not truncate the printed values.
+
+![Changes by disease, target, and year](epoch300/figures/target-season-change.png)
+
+### Matched 100-vs-300 fan plots
+
+Pathogen MLP B, C, and two-stage at both caps, followed by the Hub ensemble.
+Every model uses seed 42, the same fixed seed as the original formulation fans.
+It is illustrative, not an average: pathogen two-stage seed 42 is also the largest
+observed deterioration, so judge the overall result using all three seeds above.
+Dates match B0.1's full saved-season calendar; truth and ensemble retain their frozen
+availability. Missing values are not filled in. Display dates extend beyond scoring support.
+
+![Influenza admissions, 2023-2024 — matched training budgets](epoch300/figures/budget-flu_hosp-2023-2024.png)
+
+![Influenza admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-flu_hosp-2024-2025.png)
+
+![Influenza admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_hosp-2025-2026.png)
+
+![Influenza ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_prop_ed_visits-2025-2026.png)
+
+![COVID-19 admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-covid_hosp-2024-2025.png)
+
+![COVID-19 admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_hosp-2025-2026.png)
+
+![COVID-19 ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_prop_ed_visits-2025-2026.png)
+
+![RSV admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_hosp-2025-2026.png)
+
+![RSV ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_prop_ed_visits-2025-2026.png)
+
+### Scope, provenance, and reproduction
+
+This remains retrospective development CV on seasons used for model development,
+not prospective evidence. Three seeds do not resolve small differences. Changing the
+cap permits longer training and can change checkpoint selection; it does not mean
+every component trained for 300 epochs. Forecast skill is not a standalone nowcast score.
+
+[Matched seed data](epoch300/paired-seeds.csv) · [Target/season comparisons](epoch300/target-season-pairs.csv) ·
+[Coverage](epoch300/coverage.csv) · [Snapshot](epoch300/snapshot.json) · [Run status](epoch300/run-status.csv).
+
+Regenerate from saved scores and forecasts with `.venv/bin/python scripts/plot_b1_300.py`.
+No training or scoring jobs are launched. The revision experiment follows below.
+
+<!-- epoch300:end -->
 
 <!-- revisions:start -->
 ## Revision experiment: separating forecasting, nowcasting and reconstruction

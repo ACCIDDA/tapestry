@@ -27,6 +27,9 @@ ARRAY_CHUNK = 1000
 
 
 def parse_scenario(value):
+    if value.startswith('forward:'):
+        from .forward import ForwardScenario
+        return ForwardScenario.from_string(value)
     if value.startswith('b1:'):
         from .b1_scenarios import B1Scenario
         return B1Scenario.from_string(value)
@@ -35,7 +38,7 @@ def parse_scenario(value):
 
 def scenario_directory(value):
     # Complete B1 strings exceed a filesystem component's 255-byte limit.
-    return parse_scenario(value).run_id if value.startswith('b1:') else value
+    return parse_scenario(value).run_id if value.startswith(('b1:', 'forward:')) else value
 
 
 def output_directory(scenario):
@@ -181,22 +184,15 @@ def run_seed(folder, job, seed, settings):
     return True
 
 
-def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1, seeds=None):
-    """Fit the selected tasks, up to `fit_workers` CONFIGURATIONS at a time.
+def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1, seeds=None,
+        parallel_seeds=False):
+    """Fit up to `fit_workers` configurations, or individual seeds when requested.
 
-    A worker owns one configuration and fits its seeds in sequence, so seeds of a
-    configuration never overlap while `fit_workers` different configurations run
-    side by side on one card. This is the shape that keeps a GPU busy: a task has
-    only three seeds, so parallelising seeds caps concurrency at three, while
-    parallelising configurations has no such ceiling.
-
-    One fit uses a small fraction of a GPU (28k-142k parameters, batch 8), so the
-    card idles between kernel launches and several fits share it well. Each seed is
-    a separate subprocess writing its own attempt folder, created with
-    `exist_ok=False`, so concurrent fits cannot share state or race for a folder.
-    CPU is the binding resource: each fit pins two torch threads, so keep
-    `fit_workers` at or below half the allocated cores. GPU memory is the other
-    limit: the heaviest configuration peaks near 6 GiB, so ~6 lanes fit a 44 GiB L40.
+    By default each worker runs a configuration's seeds in sequence. With
+    `parallel_seeds`, each configuration/seed pair is a separate pool item;
+    `fit_workers` still caps the total concurrent fitting subprocesses.
+    Each seed writes its own attempt directory. Size concurrency for available
+    GPU memory and CPU threads; this local runner does not share dispatcher locks.
     """
     settings = json.loads((folder / 'experiment.json').read_text())
     if device:
@@ -215,12 +211,9 @@ def run(folder, tasks=None, device=None, keep_going=False, fit_workers=1, seeds=
             raise ValueError('No requested seeds occur in the selected planned tasks')
     if fit_workers < 1:
         raise ValueError('fit_workers must be positive')
-    # One unit of work is a whole configuration, not a seed: that is what keeps a
-    # configuration's seeds in sequence while several configurations run at once.
-    # The pool's max_workers does the throttling: submit everything and let it queue.
-    # Without --keep-going a failure stops configurations that have not started;
-    # lanes already running finish their current seed, and a skipped seed stays
-    # 'planned' for the next run to pick up.
+    if parallel_seeds:
+        jobs = [dict(job, seeds=[seed]) for job in jobs for seed in job['seeds']]
+    # Without keep-going, failures stop pool items that have not started yet.
     failures, stop = 0, threading.Event()
 
     def fit(job):
@@ -319,6 +312,10 @@ def rank(folder, allow_incomplete=False, seeds=None):
             for row in sorted(done, key=lambda row: row['attempt'])]
     ranking = rank_runs(runs, destination)
     print(ranking.head(20).to_string(index=False), flush=True)
+    if settings.get('model') == 'Forward':
+        from tapestry.evaluation.forward import report
+        report(runs, destination, folder.name)
+        return destination
     nowcasts = nowcast.rank(runs, destination / 'nowcast')
     if nowcasts is not None:
         baseline = json.loads((destination / 'nowcast' / 'manifest.json').read_text())['baseline']
@@ -357,7 +354,7 @@ def main(argv=None):
     parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare', 'decisive'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
-    parser.add_argument('--suite', choices=[*SUITES, 'B1', *BACKENDS['B1'].SUITES], default='essential')
+    parser.add_argument('--suite', choices=[*SUITES, 'Forward-2025', 'B1', *BACKENDS['B1'].SUITES], default='essential')
     parser.add_argument('-s', '--scenario', nargs='+', help='Named aliases or full scenario strings; overrides suite')
     parser.add_argument('--seeds', nargs='+', type=int, default=None)
     parser.add_argument('--dataset')
@@ -371,21 +368,23 @@ def main(argv=None):
     parser.add_argument('--keep-going', action='store_true', help='run: continue with remaining seeds after a failure')
     parser.add_argument('--workers', type=int, default=2, help='compare: concurrent EpiBench cases')
     parser.add_argument('--fit-workers', type=int, default=1,
-                        help='run: configurations fitted concurrently on one GPU, each running its '
-                             'seeds in sequence; every fit pins two torch threads')
+                        help='run: maximum concurrent fitting processes; configurations by default, '
+                             'individual seeds with --parallel-seeds')
+    parser.add_argument('--parallel-seeds', action='store_true',
+                        help='run: schedule each configuration/seed pair independently within --fit-workers')
     parser.add_argument('--report-output', default='data/experiments/B1-decisive-report',
                         help='decisive: output for paired seeds, mixtures, calibration and uncertainty')
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     b1_suites = {'B1', *BACKENDS['B1'].SUITES}
-    model = 'B1' if args.suite in b1_suites or (args.scenario and all(s.startswith('b1:') for s in args.scenario)) else 'B0'
+    model = 'Forward' if args.suite == 'Forward-2025' else 'B1' if args.suite in b1_suites or (args.scenario and all(s.startswith('b1:') for s in args.scenario)) else 'B0'
     backend = BACKENDS[model]
     args.dataset = args.dataset or DATASETS[model]
-    args.population_file = args.population_file or LOCATIONS
+    args.population_file = args.population_file or ('data/metadata/forward_2025_locations.csv' if model == 'Forward' else LOCATIONS)
     args.eval_members = args.eval_members if args.eval_members is not None else EVAL_MEMBERS[model]
     # Both models are ranked on the frozen ensemble-supported tasks, so the
     # frozen support is required for either; a run that cannot be scored failed.
-    args.frozen = args.frozen or FROZEN
+    args.frozen = args.frozen or ('data/evaluation/forward_2025' if model == 'Forward' else FROZEN)
     requested_seeds = args.seeds
     if args.seeds is None:
         if args.suite == 'B0.1':
@@ -403,6 +402,9 @@ def main(argv=None):
         # Both models fit one run per configuration/seed and one process per fold.
         counts = dict(configurations=count, seeds=len(args.seeds), runs=count * len(args.seeds),
                       season_fits=count * len(args.seeds) * len(SEASONS))
+        if model == 'Forward':
+            counts['season_fits'] = count * len(args.seeds)
+            counts['component_fits'] = sum(12 if s.candidate == 'separate' else 6 for s in scenarios.values()) * len(args.seeds)
         if model == 'B1':
             # A B1 fold fits one model per independently fitted component group.
             counts['component_fits'] = sum({'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
@@ -429,12 +431,15 @@ def main(argv=None):
         settings = dict(dataset=args.dataset, population_file=args.population_file, frozen=args.frozen,
                         eval_members=args.eval_members, device=args.device or 'cpu',
                         suite=args.suite, **backend.settings(args))
+        if model == 'Forward':
+            from tapestry.evaluation.forward import prepare_support
+            prepare_support(args.dataset, FROZEN, args.frozen)
         check_inputs(settings)
         plan(folder, scenarios, args.seeds, settings)
         backend.prepare(folder, settings)
         print(json.dumps(dict(experiment=str(folder), **counts)), flush=True)
     elif args.command == 'run':
-        if run(folder, args.task, args.device, args.keep_going, args.fit_workers, requested_seeds):
+        if run(folder, args.task, args.device, args.keep_going, args.fit_workers, requested_seeds, args.parallel_seeds):
             raise SystemExit(1)
         return
     elif args.command == 'rank':

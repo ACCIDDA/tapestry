@@ -21,8 +21,8 @@ from tapestry.model_data.wednesday import DEFAULT_DATASET as B1_DATASET
 
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 LOCATIONS = 'data/metadata/locations.csv'
-DATASETS = {'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET}
-EVAL_MEMBERS = {'B0': 256, 'B1': 256}
+DATASETS = {'Forward': 'data/processed/forward_2025.npz', 'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET}
+EVAL_MEMBERS = {'Forward': 256, 'B0': 256, 'B1': 256}
 
 
 def sha(path):
@@ -109,7 +109,7 @@ def model_of(value):
     """The model that owns a scenario string or an experiment's settings."""
     if isinstance(value, dict):
         return value.get('model', 'B0')
-    return 'B1' if str(value).startswith('b1:') else 'B0'
+    return 'Forward' if str(value).startswith('forward:') else 'B1' if str(value).startswith('b1:') else 'B0'
 
 
 class B0Backend:
@@ -306,7 +306,9 @@ class B1Backend:
             return False
 
 
-BACKENDS = {'B0': B0Backend(), 'B1': B1Backend()}
+from .forward import ForwardBackend
+
+BACKENDS = {'Forward': ForwardBackend(), 'B0': B0Backend(), 'B1': B1Backend()}
 
 
 def backend_for(value):

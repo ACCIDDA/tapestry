@@ -180,7 +180,7 @@ data/experiments/<experiment>/
 ```
 
 `plan` appends scenarios and seeds to `jobs.csv`; existing task numbers never
-change. One task runs its scenario's seeds in sequence (by default three seeds,
+change. By default the local runner executes a task's seeds in sequence (three seeds,
 each fitting three season folds). A seed is complete when an attempt's `run.json`
 says so and its manifest, `totals.csv`, and all three folds' artifacts exist; `run`
 then skips it. Otherwise `run` starts the next `attempt-NNN`, preserving failed and
@@ -399,3 +399,19 @@ two on `g1803jles02`, using `scripts/jlessler.sbatch` as shown in the design.
 All six allocations draw from one shared queue; large and small jobs are spread
 by estimated workload, and each seed can move to another GPU when it starts.
 Sources are read from the prepared snapshot. Never refresh it during a run.
+
+### Parallel seeds
+
+For the local runner, `--parallel-seeds` schedules each configuration/seed pair
+as an independent work item. `--fit-workers` caps the total concurrent fits
+across both configurations and seeds:
+
+```bash
+.venv/bin/python -m tapestry.models.manager run -e NAME --parallel-seeds --fit-workers 9 --device cuda
+```
+
+The shared Slurm dispatcher already parallelizes seeds. Set `LANES` to control
+concurrent fits per GPU and the array size to control GPU allocations. Active
+allocations share the seed queue, so additional workers claim only pending work.
+Use the local runner as an alternative to the dispatcher, not simultaneously
+against the same experiment.
