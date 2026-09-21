@@ -46,7 +46,7 @@ def export(run, stress="natural"):
     """
     run = Path(run)
     manifest = json.loads((run / 'manifest.json').read_text())
-    return export_b1(run, manifest, stress) if manifest.get('model') == 'B1' else export_b0(run)
+    return export_b1(run, manifest, stress) if manifest.get('model') in ('B1', 'B2') else export_b0(run)
 
 
 def export_b0(run):

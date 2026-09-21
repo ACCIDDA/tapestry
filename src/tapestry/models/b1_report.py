@@ -13,9 +13,10 @@ from .quantiles import LEVELS
 from .season_cv import persistence
 
 
-def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=None):
+def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=None, sample_fn=None):
     import pandas as pd
-    from .b1_run import sample, task_weights, supervision_mask, known_finals
+    from .b1_run import sample as b1_sample, task_weights, supervision_mask, known_finals
+    sample = b1_sample if sample_fn is None else sample_fn
     from tapestry.evaluation.totals import quantile_scores
     rows = []
     direct = models[0].config['direct']
@@ -85,6 +86,7 @@ def evaluate(models, episodes, ds, args, config_id, seed, root, scenario_string=
             truth=np.stack([e['Y'][hs, :, 0] for e in episodes]),
             mask=np.stack(masks), X_final=known_finals(episodes),
             history_mode=ds.metadata['history_mode'],
+            input_mode=episodes[0].get('input_mode', 'wednesday'),
             target_dates=np.array([e['target_dates'][hs] for e in episodes]),
             issuance_dates=[e['issuance_date'] for e in episodes], locations=ds.locations,
             channels=CHANNELS, horizons=np.arange(0 if direct else -2, 4),

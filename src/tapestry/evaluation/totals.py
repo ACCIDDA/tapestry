@@ -126,7 +126,7 @@ def score_run(run, frozen):
     """
     run, frozen = Path(run), Path(frozen)
     totals = cells_totals(forecast_cells(run, frozen))
-    if json.loads((run / 'manifest.json').read_text()).get('model') == 'B1':
+    if json.loads((run / 'manifest.json').read_text()).get('model') in ('B1', 'B2'):
         stress_parts = []
         for stress in ('natural', 'recent', 'gap', 'outage'):
             cells = forecast_cells(run, frozen, stress)

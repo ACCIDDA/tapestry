@@ -209,7 +209,7 @@ _SPECS = [
         title="Delphi NHSN revision archive",
         provider="CMU Delphi",
         fetcher="delphi_v5",
-        source_url="https://delphi.cmu.edu/epidata/v5/",
+        source_url="https://delphi.cmu.edu/epidata/v5/aux_data/",
         description="Versioned NHSN admissions, reporting coverage, and bed signals.",
         revision_mode=RevisionMode.REPORT_TIME,
         temporal_resolution="weekly",
@@ -289,6 +289,54 @@ _SPECS = [
         groups=("all", "delphi", "core"),
     ),
     DatasetSpec(
+        key="delphi_nwss_aux",
+        title="Delphi NWSS versioned auxiliary data",
+        provider="CMU Delphi",
+        fetcher="delphi_v5_aux",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description=(
+            "Versioned NWSS sample metadata used to join sewersheds to states and "
+            "separate laboratory methods without using future auxiliary rows."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="sample",
+        geographic_resolutions=("sewershed",),
+        measures=("state_territory", "major_lab_method", "population_served"),
+        natural_key=("report_time", "geo_value", "reference_time", "nwss_source",
+                     "sample_index", "pcr_target"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={"source": "nwss", "limit": 100_000_000},
+        groups=("derived",),
+    ),
+    DatasetSpec(
+        key="derived_nwss_state_indices",
+        title="Origin-safe NWSS state indices",
+        provider="Tapestry, derived from CMU Delphi NWSS",
+        fetcher="derived",
+        source_url="https://github.com/ACCIDDA/tapestry/blob/main/docs/data/wastewater.md",
+        description=(
+            "Weekly state and national WVAL-like and within-site percentile-rank "
+            "indices rebuilt at each real Delphi NWSS publisher vintage."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation"),
+        measures=("wval_like", "pct_rank"),
+        natural_key=("pathogen", "report_time", "geo_type", "geo_value", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="derived_at_native_report_time",
+        config={
+            "parent_source": "delphi_nwss",
+            "minimum_group_weeks": 26,
+            "minimum_state_sites": 3,
+            "measures": ("wval_like", "pct_rank"),
+        },
+        groups=("derived",),
+    ),
+    DatasetSpec(
         key="delphi_claims_inpatient",
         title="Delphi inpatient claims revision archive",
         provider="CMU Delphi",
@@ -339,6 +387,28 @@ _SPECS = [
             "geo_types": ("county", "hrr", "msa", "state", "hhs", "census_division", "census_region", "nation"),
         },
         groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="pophive_kinsa_ili",
+        title="PopHIVE Kinsa cough, cold and flu signal",
+        provider="PopHIVE (Kinsa Insights)",
+        fetcher="pophive_git",
+        source_url="https://github.com/PopHIVE/Ingest/tree/main/data/kinsa_ili/standard",
+        description=(
+            "National daily share of Kinsa smart-thermometer users reporting cough, cold or flu "
+            "symptoms. The PopHIVE Git history is the report-time archive: each row's report time "
+            "is the first commit containing it. Commits before 2026-05-04 are a backfill."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="daily",
+        geographic_resolutions=("nation",),
+        measures=("kinsa_cough_cold_flu",),
+        natural_key=("report_time", "geo_type", "geo_value", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="git_commit_time",
+        config={"repository": "PopHIVE/Ingest", "path": "data/kinsa_ili/standard/data.csv.gz", "branch": "main"},
+        groups=("all", "pophive"),
     ),
 
 ]

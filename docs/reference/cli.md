@@ -22,7 +22,7 @@ python scripts/pull_covariates.py --data-root data show cdc_nhsn_final
 python scripts/pull_covariates.py --data-root data verify cdc_nhsn_final
 ```
 
-Groups are `all`, `core`, `cdc`, `delphi`, and `hubverse`. Dataset keys can be
+Groups are `all`, `core`, `cdc`, `delphi`, `hubverse`, and `pophive`. Dataset keys can be
 given instead of a group.
 
 ### Delphi selection and resume

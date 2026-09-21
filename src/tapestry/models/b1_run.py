@@ -101,6 +101,31 @@ def arrays(episodes, device):
     return tuple(torch.as_tensor(a, device=device) for a in (x[:, :, :, 0], x[:, :, :, 1].astype(bool), y, cal))
 
 
+def covariate_array(episodes, device):
+    """Optional B2 covariates [episode,week,covariate,value/available,location]."""
+    present = ['C' in e for e in episodes]
+    if any(present) and not all(present):
+        raise ValueError('Covariates must be present in every episode or none')
+    if not present or not present[0]:
+        return None
+    return torch.as_tensor(np.stack([e['C'] for e in episodes]), device=device)
+
+
+def covariate_scales(episodes):
+    """Per-covariate/location mean and SD from observed fitting cells only."""
+    c = np.stack([e['C'] for e in episodes])
+    values, available = c[:, :, :, 0], c[:, :, :, 1].astype(bool)
+    available &= np.isfinite(values)
+    support = available.sum(axis=(0, 1))
+    total = np.where(available, values, 0.).sum(axis=(0, 1))
+    offset = np.divide(total, support, out=np.zeros_like(total), where=support > 0)
+    squared = np.where(available, (values - offset[None, None]) ** 2, 0.).sum(axis=(0, 1))
+    variance = np.divide(squared, support, out=np.zeros_like(squared), where=support > 0)
+    scale = np.sqrt(variance)
+    scale = np.where(scale > 1e-6, scale, 1.)
+    return offset.tolist(), scale.tolist(), (support > 0).tolist()
+
+
 def populations(path, locations):
     values = {}
     with open(path) as stream:
@@ -135,10 +160,12 @@ def partitions(ds, args, direct=True):
 def crop_episodes(episodes, lookback):
     if any(len(e['context_dates']) < lookback for e in episodes):
         raise ValueError(f'Materialize at least {lookback} context weeks; do not pad an unavailable longer history')
-    return [{**e, 'X': e['X'][-lookback:], 'context_dates': e['context_dates'][-lookback:]} for e in episodes]
+    return [{**e, 'X': e['X'][-lookback:],
+             **({'C': e['C'][-lookback:]} if 'C' in e else {}),
+             'context_dates': e['context_dates'][-lookback:]} for e in episodes]
 
 
-def fit_component(train, validation, targets, component, options, args, scenario, epochs=None):
+def fit_component(train, validation, targets, component, options, args, scenario, epochs=None, model_class=B1):
     """Fit one component. With `validation`, select the best epoch on it; without,
     fit `epochs` epochs on `train` with no early-stopping decision (B0's refit)."""
     direct = scenario.pipeline in ('direct', 'direct_finalflag')
@@ -146,7 +173,6 @@ def fit_component(train, validation, targets, component, options, args, scenario
     seed = args.seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    model = B1(target=targets, direct=direct, **options).to(args.device)
     selecting = validation is not None
     budget = scenario.epochs if epochs is None else epochs
     # Each fitted component uses only episodes with at least one of its labels.
@@ -157,12 +183,19 @@ def fit_component(train, validation, targets, component, options, args, scenario
         validation = [e for e in validation if e['Y'][eligibility][:, targets, 1].any()]
     if not train or (selecting and not validation):
         raise ValueError(f'No training/validation labels for channels {targets}')
+    if options.get('covariate_names'):
+        offset, scale, trained = covariate_scales(train)
+        options = dict(options, covariate_offset=offset, covariate_scale=scale,
+                       covariate_trained=trained)
+    model = model_class(target=targets, direct=direct, **options).to(args.device)
     x, a, y, cal = arrays(train, args.device)
+    cov = covariate_array(train, args.device)
     known = torch.as_tensor(known_finals(train), device=args.device)
     y = y[:, hs][:, :, targets]
     weights = torch.as_tensor(objective_weights(train, targets, scenario)[:, :, targets], device=args.device)
     if selecting:
         vx, va, vy, vcal = arrays(validation, args.device)
+        vcov = covariate_array(validation, args.device)
         vknown = torch.as_tensor(known_finals(validation), device=args.device)
         vy = vy[:, hs][:, :, targets]
         vw = torch.as_tensor(objective_weights(validation, targets, scenario, validation=True)[:, :, targets], device=args.device)
@@ -191,7 +224,8 @@ def fit_component(train, validation, targets, component, options, args, scenario
         model.train()
         for ids in torch.randperm(len(train), device=args.device).split(scenario.batch_size):
             optimizer.zero_grad()
-            samples = model(x[ids], a[ids], cal[ids], scenario.members, dropout[ids], known_final=known[ids])
+            samples = model(x[ids], a[ids], cal[ids], scenario.members, dropout[ids], known_final=known[ids],
+                            covariates=None if cov is None else cov[ids])
             score = fair_crps_cells(samples, y[ids, :, :, 0], y[ids, :, :, 1])
             loss = (weights[ids] * score / model.scale[targets]).sum() * len(train) / len(ids)
             if not torch.isfinite(loss):
@@ -208,6 +242,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
                 for ids in torch.arange(len(validation), device=args.device).split(scenario.batch_size):
                     samples = model(vx[ids], va[ids], vcal[ids], dropout=vd[ids],
                                     known_final=vknown[ids],
+                                    covariates=None if vcov is None else vcov[ids],
                                     **{k: v[:, ids] for k, v in fixed.items()})
                     score = fair_crps_cells(samples, vy[ids, :, :, 0], vy[ids, :, :, 1])
                     val += float((vw[ids] * score / model.scale[targets]).sum())
@@ -229,6 +264,9 @@ def fit_component(train, validation, targets, component, options, args, scenario
         selected_epoch=(best_epoch if scenario.patience else scenario.epochs) if selecting else budget,
         phase='select' if selecting else 'refit', epochs=budget,
         fitting_episodes=len(train), validation_episodes=len(validation) if selecting else 0, history=history)
+    if options.get('covariate_names'):
+        support = np.stack([e['C'][:, :, 1].astype(bool) for e in train]).sum(axis=(0, 1, 3))
+        record['covariate_support_cells'] = dict(zip(options['covariate_names'], support.tolist()))
     audit_arrays = dict(dropout_packed=np.stack(audit), dropout_shape=np.array(a.shape),
         train_issuance_dates=[e['issuance_date'] for e in train])
     if selecting:

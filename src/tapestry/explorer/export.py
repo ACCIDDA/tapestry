@@ -23,12 +23,10 @@ before that date — one rule for every source.
 
 Thinning, so the file stays small enough to commit:
 
-* Releases are collapsed to the last one per Wednesday week: a release counts
-  toward the first Wednesday on or after its date.
+* Releases are collapsed to Wednesday/Saturday views: a release counts
+  toward the first Wednesday or Saturday on or after its date.
 * Rows that repeat the previous kept value for the same observation are dropped.
-* Delphi claims (daily releases) keep Wednesday snapshots only while
-  ``release week <= event + CLAIMS_REVISION_DAYS``, plus each observation's
-  latest value.
+* All observations retain late revisions and latest values; no revision-age cap.
 * Full-snapshot Hub target files are converted from whole snapshots into this
   change log, including removals, so resolution matches the local server.
 """
@@ -47,9 +45,8 @@ import numpy as np
 
 from .index import ExplorerIndex, _print_progress
 
-CLAIMS_REVISION_DAYS = 56
 ROW_GROUP_SIZE = 16_000
-WEDNESDAY = 2  # Monday = 0
+HISTORY_WEEKDAYS = (2, 5)  # Wednesday/Saturday, Monday = 0
 
 
 def _days(values: Any) -> np.ndarray:
@@ -66,27 +63,25 @@ def _days(values: Any) -> np.ndarray:
     return np.where(present.to_numpy(zero_copy_only=False), days.to_numpy(zero_copy_only=False), -1).astype(np.int64)
 
 
-def _wednesday_bucket(release: np.ndarray) -> np.ndarray:
+def _history_bucket(release: np.ndarray) -> np.ndarray:
     weekday = (release + 3) % 7  # 1970-01-01 was a Thursday
-    return np.where(release < 0, -1, release + (WEDNESDAY - weekday) % 7)
+    shift = np.minimum.reduce([(day - weekday) % 7 for day in HISTORY_WEEKDAYS])
+    return np.where(release < 0, -1, release + shift)
 
 
 def _thin(state: np.ndarray, event: np.ndarray, release: np.ndarray, value: np.ndarray,
-          samples: np.ndarray, *, claims: bool) -> np.ndarray:
+          samples: np.ndarray) -> np.ndarray:
     """Indices to keep from rows sorted by state, event, then release order."""
     n = len(state)
     if not n:
         return np.zeros(0, dtype=np.int64)
     same_obs_next = np.zeros(n, dtype=bool)
     same_obs_next[:-1] = (state[1:] == state[:-1]) & (event[1:] == event[:-1])
-    last_of_obs = ~same_obs_next
-    bucket = _wednesday_bucket(release)
-    # Last release in each Wednesday week (unversioned rows share bucket -1).
+    bucket = _history_bucket(release)
+    # Last release before each Wednesday/Saturday (unversioned rows share bucket -1).
     same_bucket_next = np.zeros(n, dtype=bool)
     same_bucket_next[:-1] = same_obs_next[:-1] & (bucket[1:] == bucket[:-1])
     keep = ~same_bucket_next
-    if claims:
-        keep &= (bucket <= event + CLAIMS_REVISION_DAYS) | last_of_obs
     kept = np.flatnonzero(keep)
     # Drop kept rows that repeat the previous kept value of the same observation.
     k_state, k_event, k_value, k_samples = state[kept], event[kept], value[kept], samples[kept]
@@ -96,6 +91,66 @@ def _thin(state: np.ndarray, event: np.ndarray, release: np.ndarray, value: np.n
     equal = np.zeros(len(kept), dtype=bool)
     equal[1:] = (both_missing | (k_value[1:] == k_value[:-1])) & (k_samples[1:] == k_samples[:-1])
     return kept[~(same_obs_prev & equal)]
+
+
+def compact_history(connection: sqlite3.Connection, ledger_path: Path,
+                    progress: Callable[[str], None] = _print_progress) -> int:
+    """Keep exact Wednesday/Saturday histories and latest; no revision-age cap.
+
+    Reuse the static export's change thinning, retaining float64 values and
+    original release timestamps. Whole snapshots are selected as whole releases
+    so omissions/retractions remain meaningful. Raw archives are untouched.
+    """
+    import pyarrow as pa
+    import pyarrow.dataset as ds
+    import pyarrow.parquet as pq
+
+    ledger = ds.dataset(ledger_path, format="parquet")
+    destination = ledger_path.with_name(ledger_path.name + ".compact")
+    count = 0
+    source_count = 0
+    series = connection.execute("SELECT id, dataset_key, source_path, full_snapshots, snapshot_id FROM series ORDER BY id").fetchall()
+    try:
+        with pq.ParquetWriter(destination, ledger.schema, compression="zstd",
+                             use_dictionary=["state", "release_time", "source_snapshot"]) as writer:
+            for sid, key, path, full, snapshot in series:
+                table = ledger.to_table(filter=ds.field("series_id") == sid)
+                source_count += table.num_rows
+                if full:
+                    vintages = [r[0] for r in connection.execute(
+                        "SELECT vintage FROM releases WHERE dataset_key=? AND source_path=? ORDER BY vintage", (key, path))]
+                    buckets = _history_bucket(_days(vintages))
+                    # The final bucket also retains the latest available release.
+                    kept = {int(b): v for b, v in zip(buckets, vintages)}
+                    table = table.filter(pa.compute.is_in(table['release_time'], value_set=pa.array(list(kept.values()), pa.string())))
+                else:
+                    grouped = table.group_by(["state", "event_date", "release_time"]).aggregate(
+                        [("value", "sum"), ("samples", "sum")]
+                    ).sort_by([("state", "ascending"), ("event_date", "ascending"), ("release_time", "ascending")])
+                    del table
+                    values, samples = StaticExport._mean(grouped)
+                    keep = _thin(grouped['state'].to_numpy(), _days(grouped['event_date']),
+                                 _days(grouped['release_time']), values, samples)
+                    grouped = grouped.take(pa.array(keep, pa.int64()))
+                    n = len(keep)
+                    table = pa.Table.from_arrays([
+                        pa.array(np.full(n, sid, dtype=np.int64)), grouped['state'], grouped['event_date'],
+                        grouped['release_time'], grouped['value_sum'], grouped['samples_sum'],
+                        pa.array([snapshot] * n, pa.string()),
+                    ], schema=ledger.schema)
+                    del grouped, values, samples, keep
+                writer.write_table(table, row_group_size=25_000)
+                count += table.num_rows
+                del table
+                progress(f"    compacted series {sid}: {count:,} kept / {source_count:,} source rows")
+        destination.replace(ledger_path)
+    finally:
+        destination.unlink(missing_ok=True)
+    connection.executemany("INSERT OR REPLACE INTO meta VALUES (?, ?)", [
+        ("history_days", "Wednesday,Saturday"), ("history_final", "latest available source values"),
+        ("revision_source_row_count", str(source_count)), ("revision_row_count", str(count)),
+    ])
+    return count
 
 
 class StaticExport:
@@ -146,7 +201,7 @@ class StaticExport:
                 if full:
                     columns = self._snapshot_changes(connection, key, path, table)
                 else:
-                    columns = self._revision_columns(table, claims=key.startswith("delphi_claims_"))
+                    columns = self._revision_columns(table)
                 count = len(columns["state"])
                 if count:
                     states = columns["state"]
@@ -169,7 +224,7 @@ class StaticExport:
         overview = self.index.overview()
         overview["meta"] = {**overview["meta"], "exported_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                             "export_rows": str(offset), "export_source_rows": str(source_rows),
-                            "claims_revision_days": str(CLAIMS_REVISION_DAYS)}
+                            "history_days": "Wednesday,Saturday"}
         self._write_json(staging / "catalog.json", overview)
         self._write_json(staging / "ranges.json", ranges)
         coverage_fields = ("date_min", "date_max", "point_count", "max_samples_per_point")
@@ -205,12 +260,12 @@ class StaticExport:
         value = np.where(samples > 0, np.nan_to_num(total) / np.maximum(samples, 1), np.nan)
         return value, samples
 
-    def _revision_columns(self, table, *, claims: bool) -> dict[str, np.ndarray]:
+    def _revision_columns(self, table) -> dict[str, np.ndarray]:
         state = table["state"].to_numpy(zero_copy_only=False).astype(object)
         event = _days(table["event_date"])
         release = _days(table["release_time"])
         value, samples = self._mean(table)
-        keep = _thin(state, event, release, value, samples, claims=claims)
+        keep = _thin(state, event, release, value, samples)
         return {"state": state[keep], "event": event[keep], "release": release[keep],
                 "value": value[keep], "samples": samples[keep]}
 
@@ -251,7 +306,7 @@ class StaticExport:
         order = np.lexsort((vint, event, state.astype(str)))
         state, event, release, change_value, change_n = (state[order], event[order], release[order],
                                                          change_value[order], change_n[order])
-        keep = _thin(state, event, release, change_value, change_n, claims=False)
+        keep = _thin(state, event, release, change_value, change_n)
         return {"state": state[keep], "event": event[keep], "release": release[keep],
                 "value": change_value[keep], "samples": change_n[keep]}
 

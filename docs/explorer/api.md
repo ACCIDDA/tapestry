@@ -69,7 +69,9 @@ Each point is `[event_date, value, contributing_rows]`. When scaling is enabled,
 the response includes the original maximum and divisor, computed within the displayed version.
 
 Add `as_of=YYYY-MM-DD` to select an information cutoff (UTC end of day); omit it
-or use `latest` for the latest view. Versioned rows use publisher release dates.
+or use `latest` for finalized/latest values. Historical dates round back to the
+preceding Wednesday or Saturday, and the response reports the resolved `as_of`.
+Daily observation dates are unchanged. Versioned rows use publisher release dates.
 Full `as_of` snapshots select a single release, while report-time archives select
 the latest eligible revision per event date. Unversioned sources only cut event
 dates at the selected date. Missing historical values remain missing.
@@ -77,8 +79,8 @@ dates at the selected date. Missing historical values remain missing.
 ### `GET /api/versions`
 
 `/api/versions?state=NY&series=12,19` returns sorted dates for arrow navigation.
-Dates come from the selected series’ recorded releases,
-or event dates for unversioned data.
+Dates are Wednesday/Saturday cutoffs, derived from retained changes (or event
+dates for unversioned data), through today. Finalized/latest is a separate view.
 
 Series metadata includes `parent_dataset`, `parent_column`, `parent_transform`,
 and `lineage_status`. Unmapped columns have a null parent column.

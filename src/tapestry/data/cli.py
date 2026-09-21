@@ -9,7 +9,7 @@ from typing import Sequence
 
 from .catalog import CATALOG, get_spec, specs_in_group
 from .repository import RawDataRepository
-from .sources import DelphiV5Fetcher, HubverseFetcher, SocrataFetcher
+from .sources import DelphiV5AuxFetcher, DelphiV5Fetcher, HubverseFetcher, PopHiveGitFetcher, SocrataFetcher
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -29,7 +29,7 @@ def _parser() -> argparse.ArgumentParser:
 
     pull = subparsers.add_parser("pull", help="Pull named datasets or a catalog group")
     pull.add_argument("datasets", nargs="*", help="Catalog dataset keys")
-    pull.add_argument("--group", choices=("all", "core", "cdc", "delphi", "hubverse"))
+    pull.add_argument("--group", choices=("all", "core", "cdc", "delphi", "hubverse", "pophive"))
     pull.add_argument("--dry-run", action="store_true", help="Print the pull plan only")
     pull.add_argument("--page-size", type=int, default=50_000, help="Socrata rows per page")
     pull.add_argument("--where", help="Optional Socrata $where expression")
@@ -47,6 +47,10 @@ def _parser() -> argparse.ArgumentParser:
         "--resume-from",
         type=Path,
         help="Reuse gzip CRC-valid Delphi V5 CSV gzip files from an interrupted staging directory",
+    )
+    pull.add_argument(
+        "--import-file", type=Path,
+        help="Explicitly import a complete cached file (currently delphi_nwss_aux only); provenance records the local path and checksum",
     )
     pull.add_argument("--hub-ref", help="Hub Git branch, tag, or commit (default: catalog branch)")
     pull.add_argument(
@@ -94,6 +98,14 @@ def _pull_one(repository: RawDataRepository, spec, args: argparse.Namespace):
             workers=args.workers,
             resume_from=args.resume_from,
         )
+    if spec.fetcher == "delphi_v5_aux":
+        return DelphiV5AuxFetcher().fetch(
+            repository,
+            spec,
+            import_file=args.import_file,
+        )
+    if spec.fetcher == "pophive_git":
+        return PopHiveGitFetcher().fetch(repository, spec)
     if spec.fetcher == "hubverse":
         return HubverseFetcher().fetch(
             repository,
@@ -144,6 +156,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "pull":
         specs = _selected_specs(args)
+        if args.import_file and any(spec.fetcher != "delphi_v5_aux" for spec in specs):
+            raise SystemExit("--import-file is only valid when every selected dataset uses delphi_v5_aux")
         if args.dry_run:
             print(json.dumps([spec.to_dict() for spec in specs], indent=2))
             return 0

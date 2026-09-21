@@ -1,6 +1,6 @@
 # Source catalog
 
-The checked-in catalog defines 25 independently retrievable datasets. The table
+The checked-in catalog defines 26 independently retrievable datasets. The table
 below summarizes acquisition and modeling metadata; run
 `python scripts/pull_covariates.py catalog` for the complete machine-readable
 specifications, signals, natural keys, and source URLs.
@@ -32,13 +32,14 @@ specifications, signals, natural keys, and source URLs.
 | `hub_flusight_legacy` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |
 | `hub_rsv_current` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |
 | `hub_rsvnet` | Hubverse community | `hubverse` | `weekly` | yes | catchment, nation |
+| `pophive_kinsa_ili` | PopHIVE (Kinsa Insights) | `pophive_git` | `daily` | yes | nation |
 
 The `Versioned` column includes both preserved initial releases and archives
 with multiple release dates. A `yes` does not necessarily mean every revision
 is available; see the NHSN distinction below.
 
 For the consumer-facing organization and retained measures, see
-[Shared selection](selection.md): 25 acquisitions map to 15 logical groups.
+[Shared selection](selection.md): 26 acquisitions map to 13 logical groups.
 
 ## Source families
 
@@ -136,6 +137,16 @@ Source details:
 Full reference-date history is not necessarily full historical release coverage.
 Inspect the saved `reference_time_range` and `report_time_range` before selecting
 backtest periods.
+
+### PopHIVE Git history
+
+`pophive_git` reads one PopHIVE Ingest `standard/data.csv.gz` table and turns its
+commit history into a report-time archive: a row's report time is the first
+commit that contains it. It lists the file's commits through the GitHub API and
+downloads each version from raw.githubusercontent.com rather than mirroring the
+10 GB repository. Commits can be backfills, so the earliest report times
+are when a value entered PopHIVE, not when its publisher released it. Details,
+terms and the Kinsa commit history are in [Kinsa (PopHIVE)](kinsa.md).
 
 ### Hubverse
 

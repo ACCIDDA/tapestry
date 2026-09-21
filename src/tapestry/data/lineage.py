@@ -30,7 +30,40 @@ NHSN_DELPHI = {
 def with_lineage(spec: DatasetSpec) -> DatasetSpec:
     key = spec.key
     rules = []
-    if key.startswith("cdc_"):
+    if key == "pophive_kinsa_ili":
+        parent = "Kinsa Insights API"
+        rules = [{
+            "column": "kinsa_cough_cold_flu",
+            "parent_dataset": parent,
+            "parent_column": "percent_ill",
+            "transform": "identity: national COUGH_COLD_FLU percent_ill, standardized and re-published by PopHIVE",
+            "source_url": spec.source_url,
+        }]
+    elif key == "derived_nwss_state_indices":
+        parent = "NWSS"
+        rules = [
+            {
+                "column": "wval_like",
+                "parent_dataset": parent,
+                "parent_column": "pcr_target_avg_conc_lin",
+                "transform": (
+                    "per publisher vintage: exp((log concentration - group p10) / group sd); "
+                    "mean within group-week, median across groups within site, median across sites"
+                ),
+                "source_url": spec.source_url,
+            },
+            {
+                "column": "pct_rank",
+                "parent_dataset": parent,
+                "parent_column": "pcr_target_avg_conc_lin",
+                "transform": (
+                    "per publisher vintage: empirical percentile of log concentration within group; "
+                    "mean within group-week, median across groups within site, median across sites"
+                ),
+                "source_url": spec.source_url,
+            },
+        ]
+    elif key.startswith("cdc_"):
         parent = key.split("_")[1].upper()
         rules = [{"column": "*", "parent_dataset": parent, "parent_column": "{column}",
                   "transform": "identity", "source_url": spec.source_url}]

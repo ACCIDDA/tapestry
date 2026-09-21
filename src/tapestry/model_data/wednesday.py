@@ -272,7 +272,7 @@ class WednesdayDataset:
         return WednesdayDataset(arrays, metadata)
 
     def episodes(self, *, start=None, end=None, target_start=None, target_end=None, supervised=True,
-                 min_availability=0.):
+                 min_availability=0., allow_empty_context=False):
         """Keep episodes with inputs and labels, including supplied-final inputs.
 
         Optional min_availability filters on availability after final filling;
@@ -289,7 +289,8 @@ class WednesdayDataset:
             for h, day in enumerate(a['target_dates'][i]):
                 if (target_start and day < target_start) or (target_end and day > target_end):
                     valid[h] = False
-            if not a['X_available'][i].any() or (supervised and not valid.any()):
+            if ((not allow_empty_context and not a['X_available'][i].any()) or
+                    (supervised and not valid.any())):
                 continue
             yield dict(X=np.stack((a['X_values'][i], a['X_available'][i], a['X_final'][i]), axis=2),
                        Y=np.stack((np.where(valid, y, 0), valid), axis=2),

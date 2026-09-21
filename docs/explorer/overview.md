@@ -5,8 +5,36 @@ The explorer consumes the shared [post-intake selection](../data/selection.md):
 and wastewater-site data are excluded before profiling and indexing. A state
 label on a site or county row does not make it a state observation.
 
+The B2 covariates follow the same rule. Delphi inpatient and outpatient claims
+are ordinary raw, versioned explorer sources. Wastewater uses the registered
+`derived_nwss_state_indices` source, an immutable repository snapshot built from
+the registered Delphi NWSS signal and auxiliary snapshots. Its `data.csv.gz`
+contains `report_time`, `geo_type`, `geo_value`, `reference_time`, `pathogen`,
+`wval_like`, `pct_rank`, and `n_sites`; each row is one real publisher vintage,
+state or nation, and week. The explorer indexes `wval_like` and `pct_rank` and
+keeps the site count in the artifact for audit. Because this is a normal raw
+repository artifact, its manifest hash, source snapshot IDs, and transformation
+metadata participate in the same discovery and stale-index checks as every
+other source.
+
+Kinsa's national cough, cold and flu signal is a normal raw source too:
+`pophive_kinsa_ili`, whose report times are PopHIVE Git commit times (see
+[Kinsa (PopHIVE)](../data/kinsa.md)). Its `archive.csv.gz` has the columns
+`report_time`, `geo_type`, `geo_value`, `reference_time` and
+`kinsa_cough_cold_flu`. It is a national series, filed under acute respiratory
+illness with provider kind `pophive`.
+
+In the local 2026-09-16 claims snapshots, the selected influenza and COVID-19
+series in both claims products begin their publisher-vintage history on
+2020-05-29. The wastewater start is intentionally reported from the processed
+derived snapshot rather than assumed: it depends on the first vintage meeting the
+26-week group-history and three-site state thresholds.
+
 There is one streaming Python indexer. SQLite holds metadata and latest points;
-Parquet holds publisher revisions. National observations are stored once under
+Parquet holds compact Wednesday/Saturday history plus finalized (latest available)
+values. The raw scan reads all reports once; the saved ledger retains only the
+revisions needed for those views and drops repeated unchanged values. There is
+no revision-age limit. National observations are stored once under
 `US` and can be shown as explicitly labeled national context in state plots.
 Raw snapshots remain unchanged. The index is disposable: outdated or missing
 indexes are rebuilt, with no migration path.
@@ -49,6 +77,19 @@ python scripts/explore_covariates.py --data-root data index --strict
 
 # Serve an existing index without checking the raw inventory.
 python scripts/explore_covariates.py --data-root data serve --no-index --no-browser
+```
+
+The reproducible B2 wastewater path is three explicit steps: acquire the
+versioned NWSS signals and auxiliary join table, build and register the derived
+state-index snapshot, then rebuild the explorer. The auxiliary endpoint is
+roughly 10 GB; `--import-file` can register a previously downloaded complete
+CSV or CSV.gz while retaining its path and checksum in the immutable manifest.
+
+```bash
+.venv/bin/python -m tapestry.data --data-root data pull delphi_nwss --mode archive --fill-method source --geo-type sewershed --signal flu_avg_conc_lin --signal covid_avg_conc_lin --signal rsv_avg_conc_lin --workers 3
+.venv/bin/python -m tapestry.data --data-root data pull delphi_nwss_aux
+.venv/bin/python -m tapestry.model_data build-b2-nwss --data-root data
+.venv/bin/python -m tapestry.explorer.cli --data-root data index
 ```
 
 `--batch-rows` bounds the revision buffer; `--cache-mb` sets the SQLite page-cache
@@ -142,9 +183,18 @@ dashed line in the same color. "Latest" is the reference for finalized values
 here; the publisher may still revise it. The selected date's weekday is shown
 beside the picker and in the legend, so publisher release days (e.g. Wednesday)
 are easy to spot. A dashed crimson line marks the as-of date on the chart;
-clicking anywhere on the chart sets the as-of date to that day. **← Wed**
+clicking anywhere on the chart selects the corresponding historical cutoff. **← Wed**
 and **Wed →** step the date to the previous or next calendar Wednesday (from
 today when showing latest values); the next step stops at today.
+The **← / →** version arrows step through Wednesday and Saturday as-of views.
+Typed dates and chart clicks round back to the preceding Wednesday or Saturday;
+they never move the information cutoff forward. The API applies the same rule.
+Daily observation dates remain daily; only the historical information cutoffs
+are restricted. A Tuesday report contributes to the Wednesday view, for example.
+**Finalized (latest)** always shows the latest available source values, including
+reports after the most recent historical cutoff. “Finalized” is the project's
+latest-value convention, not a claim that publishers cannot revise them again.
+Raw archives and the B2 training dataset are unchanged.
 
 The **As of** control uses publisher revisions already present
 in the selected raw snapshot. Delphi's last eligible advertised value remains
@@ -180,23 +230,23 @@ ranged reads of a single large Parquet file do not work there.
 The copy is a thinned export of the local index, committed to
 `docs/explorer/data/`. It is not updated live or by CI:
 
-- Releases collapse to one per Wednesday week (the last release on or before
-  each Wednesday), and rows that repeat the previous kept value are dropped.
-  Those rows still have an as-of version: the retained value persists until its
-  next change. This is change-log compression, not missing historical coverage.
-- Delphi inpatient/outpatient claims keep Wednesday snapshots only for the first
-  8 weeks after each date, plus each date's latest value.
+- New exports use the same Wednesday/Saturday histories and latest values as
+  the local index, dropping repeated unchanged values. Retained values carry
+  forward until their next change.
+- There is no eight-week claims revision limit: later revisions are preserved.
 - Full-snapshot Hub target files become a change log that keeps removals, so an
   as-of date resolves as it does locally.
-- **As of** dates are Wednesdays only: chart clicks and typed dates snap to the
-  nearest Wednesday (never after today), and ← / → step through Wednesday weeks
-  with releases. These match the local explorer's values for that Wednesday.
+- Typed dates and chart clicks round back to Wednesday/Saturday, as locally.
+
+The already published copy is not regenerated or deployed by a local index
+rebuild. Its saved export date describes its contents.
 
 The published banner adds that the online version is not updated (with its export
 date) and that the local explorer is the ground-truth source. The docs header links
 to it as **Live explorer**.
 
-The September 2026 export keeps 6.0 million of 165.5 million ledger rows
+The previously published September 2026 export used Wednesday-only histories
+and an eight-week claims revision limit. It keeps 6.0 million of 165.5 million ledger rows
 (28 MB: 373 per-series Parquet files, the largest about 5 MB for daily claims,
 plus series metadata). In a sampled check against
 the local server, latest values and Wednesday as-of dates matched exactly for
@@ -216,3 +266,17 @@ The script runs `index` (a no-op when raw data is unchanged) and then
 the Documentation workflow builds MkDocs, which copies the committed data, adds
 `index.html`, `app.js`, and `style.css` from `src/tapestry/explorer/static/`, and
 deploys the site.
+
+## History policy — 2026-09-20
+
+At the user's request, the explorer retains Wednesday and Saturday historical
+views plus final/latest values. Compaction reuses the export's change selection,
+keeps original publisher timestamps and float64 values in the local index, and
+selects complete-snapshot releases as whole states to preserve omissions.
+Repeated contributions within the same observation/release retain their
+unweighted mean and sample count. Source-vintage ranges remain provenance for
+the original reports, not the compact navigation schedule.
+
+The completed local build retained 56,603,122 of 172,822,223 revision rows
+(67.2% fewer); its compact Parquet ledger is 417.7 MB. The focused preservation
+check is `tests/test_explorer_history.py`.

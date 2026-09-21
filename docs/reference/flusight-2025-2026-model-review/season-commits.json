@@ -1,0 +1,32 @@
+[
+  [
+    "cdcepi/FluSight-forecast-hub",
+    "fd6cfaabe10c147d0268c2b34087e0aa036df357",
+    "2026-05-29T17:56:21Z"
+  ],
+  [
+    "cmu-delphi/exploration-tooling",
+    "e86834be5f681fda60591dee0105d3d81df179c0",
+    "2026-05-27T21:49:07Z"
+  ],
+  [
+    "CDDEP-DC/nbeats-xd",
+    "87f255c68b13e5dfd721035c45c672cacf6790ee",
+    "2024-12-17T05:25:30Z"
+  ],
+  [
+    "brendandaisy/inla-forecasting-paper",
+    "c980776fe342df05cc21546c2153bbd786500537",
+    "2026-01-15T21:54:06Z"
+  ],
+  [
+    "google-research/google-research",
+    "d103c013a33d73280164301baad5c48382edbcec",
+    "2026-05-29T16:50:43Z"
+  ],
+  [
+    "reichlab/idmodels",
+    "e42312fb9c76e5cb8c21a1a1a5df388dc8086a6e",
+    "2026-05-28T20:54:36Z"
+  ]
+]

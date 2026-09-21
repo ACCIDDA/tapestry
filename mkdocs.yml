@@ -62,12 +62,20 @@ nav:
       - Screen and 300-epoch results: results/b1-overnight/index.md
       - Overnight experiment: workflows/b1-overnight.md
       - 300-epoch comparison: workflows/b1-300.md
+  - B2:
+      - Covariate results and diagnosis: results/B2-screen/index.md
+      - Kinsa-only results: results/B2-kinsa/index.md
+      - Covariate experiment: design/b2.md
+      - Dataset and vintage support: data/b2.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md
       - Shared selection: data/selection.md
       - Storage and provenance: data/storage.md
       - Vintages and geography: data/vintages-and-geography.md
+      - Wastewater (WVAL and Delphi NWSS): data/wastewater.md
+      - Clinical covariates (claims, PopHIVE): data/covariates.md
+      - Kinsa cough, cold and flu (PopHIVE): data/kinsa.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md

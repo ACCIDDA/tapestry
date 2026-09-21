@@ -49,6 +49,12 @@ def main(argv=None):
     if arguments and arguments[0] == 'build-wednesday':
         from .wednesday import main as build_wednesday_main
         return build_wednesday_main(arguments[1:])
+    if arguments and arguments[0] == 'build-b2':
+        from .b2 import main as build_b2_main
+        return build_b2_main(arguments[1:])
+    if arguments and arguments[0] == 'build-b2-nwss':
+        from .b2 import main_nwss
+        return main_nwss(arguments[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     build = commands.add_parser("build", help="Materialize the two local CDC snapshots")

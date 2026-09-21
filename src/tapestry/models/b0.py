@@ -183,7 +183,8 @@ class B0(nn.Module):
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
-                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False):
+                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False,
+                 covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
                            supplied_final=supplied_final, parallel_recent=parallel_recent)
@@ -208,6 +209,10 @@ class B0(nn.Module):
                            ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error,
                            head_sharing=head_sharing, annual_calendar=annual_calendar,
                            location_embedding=location_embedding, location_ids=location_ids or list(populations or {}))
+        covariate_names = list(covariate_names)
+        if len(set(covariate_names)) != len(covariate_names):
+            raise ValueError('Covariate names must be unique')
+        self.config['covariate_names'] = covariate_names
         # Transformed input scales, always per channel AND location, kept separate from
         # the native-unit loss normalization in `scale`. A single pooled scale put the
         # US at ~40x model units against a state's 0.8, which collapsed its intervals;
@@ -218,21 +223,35 @@ class B0(nn.Module):
         if ed_transform == 'logit':
             self.register_buffer('input_offset', self._per_location(input_offset, 0.))
         self.register_buffer('scale', self._per_location(scale, 1.))
+        if covariate_names:
+            self.register_buffer('covariate_offset', self._per_covariate(covariate_offset, len(covariate_names), 0.))
+            self.register_buffer('covariate_scale', self._per_covariate(covariate_scale, len(covariate_names), 1.))
+            trained = self._per_covariate(covariate_trained, len(covariate_names), 1.).bool()
+            self.register_buffer('covariate_trained', trained)
+        else:
+            # Keep legacy B0/B1 state dictionaries unchanged when covariates are absent.
+            self.covariate_offset = torch.empty(0, 1)
+            self.covariate_scale = torch.empty(0, 1)
+            self.covariate_trained = torch.empty(0, 1, dtype=torch.bool)
         # Save shape and location scales so checkpoints reconstruct their buffers.
         self.config['scale'] = self.scale.tolist()
         self.config['input_scale'] = self.input_scale.tolist()
         if ed_transform == 'logit':
             self.config['input_offset'] = self.input_offset.tolist()
+        self.config['covariate_offset'] = self.covariate_offset.tolist()
+        self.config['covariate_scale'] = self.covariate_scale.tolist()
+        self.config['covariate_trained'] = self.covariate_trained.tolist()
         from .architecture import MultiscaleEncoder, ForecastHead
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         fields_per_cell = 3 if supplied_final else 2
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
-        self.context = nn.Sequential(nn.Linear((lookback * 6 * fields_per_cell if encoder == 'mlp' else width) + extra_width, width),
+        context_fields = 6 * fields_per_cell + 2 * len(covariate_names)
+        self.context = nn.Sequential(nn.Linear((lookback * context_fields if encoder == 'mlp' else width) + extra_width, width),
                                      nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
                       if encoder == 'mlp' else temporal(fields_per_cell, width))
         if encoder != 'mlp':
-            self.temporal_context = temporal(6 * fields_per_cell, width)
+            self.temporal_context = temporal(context_fields, width)
         self.source = nn.Embedding(6, width)
         self.horizon = nn.Linear(1, width)
         self.norm = nn.LayerNorm(width)
@@ -281,11 +300,24 @@ class B0(nn.Module):
             raise ValueError(f'Per-location scales must be [6] or [6, locations], got {tuple(tensor.shape)}')
         return tensor.contiguous()
 
+    @staticmethod
+    def _per_covariate(value, count, default):
+        """Covariate statistics are [K] or [K,L], with L optionally broadcast."""
+        if value is None:
+            return torch.full((count, 1), float(default))
+        tensor = torch.as_tensor(value).float()
+        if tensor.ndim == 1:
+            tensor = tensor[:, None]
+        if tensor.ndim != 2 or tensor.shape[0] != count:
+            raise ValueError(f'Covariate statistics must be [{count}] or [{count}, locations], got {tuple(tensor.shape)}')
+        return tensor.contiguous()
+
     def local_noise_scales(self):
         """Learned magnitudes of the per-location latent term, by head."""
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
-    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None):
+    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None,
+                covariates=None):
         """x [N,P,C,2,L], calendar [N,3] when enabled; samples [M,N,H,C,L].
 
         Each member uses one global latent per episode shared across ALL locations,
@@ -316,9 +348,30 @@ class B0(nn.Module):
         fields = torch.stack((values, mask, (x[:, :, :, 2, :].bool() & valid).to(values.dtype))
                              if config["supplied_final"] else (values, mask), dim=-1)
         fpc = fields.shape[-1]
-        context = fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)
-        if config['encoder'] != 'mlp':
-            context = self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * fpc, p)).reshape(n, l, -1)
+        cov_fields = None
+        k = len(config['covariate_names'])
+        if k:
+            expected = (n, p, k, 2, l)
+            if covariates is None or tuple(covariates.shape) != expected:
+                raise ValueError(f'B0 expects covariates {expected}')
+            cov_available = covariates[:, :, :, 1].bool() & self.covariate_trained[None, None]
+            if self.covariate_scale.shape[-1] not in (1, l):
+                raise ValueError(f'Covariate scale holds {self.covariate_scale.shape[-1]} locations, not {l}')
+            cov_values = (covariates[:, :, :, 0] - self.covariate_offset[None, None]) / self.covariate_scale[None, None]
+            cov_values = torch.where(cov_available, cov_values, 0)
+            cov_fields = torch.stack((cov_values, cov_available.to(cov_values.dtype)), -1)
+        elif covariates is not None and covariates.shape[2]:
+            raise ValueError('Model was fitted without covariates')
+        if config['encoder'] == 'mlp':
+            pieces = [fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)]
+            if cov_fields is not None:
+                pieces.append(cov_fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1))
+            context = torch.cat(pieces, -1)
+        else:
+            pieces = [fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * fpc, p)]
+            if cov_fields is not None:
+                pieces.append(cov_fields.permute(0, 3, 2, 4, 1).reshape(n * l, 2 * k, p))
+            context = self.temporal_context(torch.cat(pieces, 1)).reshape(n, l, -1)
         extras, geo_features = [], []
         if config['annual_calendar']:
             if calendar.shape[-1] != 3:

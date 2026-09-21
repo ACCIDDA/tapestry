@@ -1,0 +1,11 @@
+{
+  "ranking": "docs/results/B2-screen/ranking",
+  "configurations": 32,
+  "seeds": [
+    42
+  ],
+  "plots": [
+    "covariate-screen",
+    "season-effects"
+  ]
+}

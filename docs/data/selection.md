@@ -29,8 +29,9 @@ Publisher → intake → immutable raw snapshots
 | NWSS | 5 | 1 |
 | NREVSS | 4 | 4 |
 | Inpatient and outpatient claims | 2 | 2 |
+| Kinsa (via PopHIVE) | 1 | 1 |
 | Current and historical forecast hubs | 6 | 3 additional (current hubs join NHSN/NSSP) |
-| **Total** | **25** | **12** |
+| **Total** | **26** | **13** |
 
 These are catalog definitions, not claims that every source has been downloaded
 or every geography is displayable. The selection summary reports missing

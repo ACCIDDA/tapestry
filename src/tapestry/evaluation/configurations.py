@@ -25,9 +25,9 @@ def identify(run, relative_to=None):
     """
     run = Path(run)
     manifest = json.loads((run / 'manifest.json').read_text())
-    if manifest.get('model') == 'B1':
-        from tapestry.models.b1_scenarios import B1Scenario
-        scenario = B1Scenario.from_string(manifest['scenario'])
+    if manifest.get('model') in ('B1', 'B2'):
+        from tapestry.models.manager import parse_scenario
+        scenario = parse_scenario(manifest['scenario'])
         seed, eval_members = manifest['seed'], manifest.get('eval_members')
         # The full b1:v2: string exceeds a filesystem name limit, so runs are
         # identified by the readable run_id; the full string stays in manifests.

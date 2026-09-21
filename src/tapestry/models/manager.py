@@ -27,6 +27,9 @@ ARRAY_CHUNK = 1000
 
 
 def parse_scenario(value):
+    if value.startswith('b2:'):
+        from .b2_scenarios import B2Scenario
+        return B2Scenario.from_string(value)
     if value.startswith('b1:'):
         from .b1_scenarios import B1Scenario
         return B1Scenario.from_string(value)
@@ -35,7 +38,7 @@ def parse_scenario(value):
 
 def scenario_directory(value):
     # Complete B1 strings exceed a filesystem component's 255-byte limit.
-    return parse_scenario(value).run_id if value.startswith('b1:') else value
+    return parse_scenario(value).run_id if value.startswith(('b1:', 'b2:')) else value
 
 
 def output_directory(scenario):
@@ -80,7 +83,7 @@ def plan(folder, scenarios, seeds, settings):
     path = folder / 'experiment.json'
     previous = json.loads(path.read_text()) if path.exists() else {}
     if previous and model_of(previous) != model_of(settings):
-        raise ValueError('Use separate experiment names for B0 and B1')
+        raise ValueError('Use separate experiment names for different model families')
     changed = sorted(key for key, value in settings.items() if key in previous and previous[key] != value)
     # Data, scoring support and protocol define what the scores mean; changing one
     # mid-experiment would silently pool incomparable runs. Device is a machine detail.
@@ -356,7 +359,7 @@ def main(argv=None):
     parser.add_argument('command', choices=['list', 'plan', 'run', 'status', 'rank', 'compare', 'decisive'])
     parser.add_argument('-e', '--experiment', help='Persistent experiment name')
     parser.add_argument('--root', default='data/experiments')
-    parser.add_argument('--suite', choices=[*SUITES, 'B1', *BACKENDS['B1'].SUITES], default='essential')
+    parser.add_argument('--suite', choices=[*SUITES, 'B1', *BACKENDS['B1'].SUITES, 'B2', *BACKENDS['B2'].SUITES], default='essential')
     parser.add_argument('-s', '--scenario', nargs='+', help='Named aliases or full scenario strings; overrides suite')
     parser.add_argument('--seeds', nargs='+', type=int, default=None)
     parser.add_argument('--dataset')
@@ -377,7 +380,13 @@ def main(argv=None):
     parser.add_argument('--allow-incomplete', action='store_true', help='rank/compare: use only completed runs')
     args = parser.parse_args(argv)
     b1_suites = {'B1', *BACKENDS['B1'].SUITES}
-    model = 'B1' if args.suite in b1_suites or (args.scenario and all(s.startswith('b1:') for s in args.scenario)) else 'B0'
+    if args.scenario:
+        models = {model_of(s) for s in args.scenario}
+        if len(models) != 1:
+            parser.error('Each experiment must contain a single model family')
+        model = models.pop()
+    else:
+        model = 'B2' if args.suite in {'B2', *BACKENDS['B2'].SUITES} else 'B1' if args.suite in b1_suites else 'B0'
     backend = BACKENDS[model]
     args.dataset = args.dataset or DATASETS[model]
     args.population_file = args.population_file or LOCATIONS
@@ -402,7 +411,7 @@ def main(argv=None):
         # Both models fit one run per configuration/seed and one process per fold.
         counts = dict(configurations=count, seeds=len(args.seeds), runs=count * len(args.seeds),
                       season_fits=count * len(args.seeds) * len(SEASONS))
-        if model == 'B1':
+        if model in ('B1', 'B2'):
             # A B1 fold fits one model per independently fitted component group.
             counts['component_fits'] = sum({'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
                                            for s in set(scenarios.values())) * len(args.seeds) * len(SEASONS)

@@ -150,6 +150,11 @@ still needs to be evaluated.
 
 ## Working with Tapestry
 
+The [B2 covariate results](results/B2-screen/index.md) include the completed
+32-run screen, heatmaps, forecast fans and an explanation of the source-timing
+and training-support limitations. The [B2-kinsa results](results/B2-kinsa/index.md)
+add the national Kinsa signal (PopHIVE) to that comparison.
+
 Start with [Getting started](getting-started.md), the
 [training workflow](workflows/training.md), or the [data explorer](explorer/overview.md).
 The [architecture notes](design/architecture.md) explain the model and masks; the [B1 page](design/b1.md) documents the current vintage-aware work.
