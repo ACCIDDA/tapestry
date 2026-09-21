@@ -1,149 +1,26 @@
-# B1 — First screen and 300-epoch comparison
+# B1 — First screen, 300-epoch comparison, and the revision experiment
 
 **15 of 40 configurations beat the Hub ensemble** on the combined forecast score.
 The leading configuration is **Target MLP · B · gap only**, at **0.939** (6.1% lower relative WIS).
 These headline numbers describe the original overnight screen. The separate
-[300-epoch comparison](#300-epoch-results-and-comparison) is reported below.
+[300-epoch comparison](#300-epoch-results-and-comparison) is reported below, followed
+by the [revision experiment](#revision-experiment-separating-forecasting-nowcasting-and-reconstruction),
+which scores forecasting, nowcasting and reconstruction as three separate questions.
+
+[Broad conclusions across B1](../b1-conclusions.md) summarize architecture, masking,
+and nowcasting. Sections below follow experiment order: overnight screen,
+300-epoch follow-up, then revision experiment.
+
+!!! tip "If you read one thing"
+
+    B gap-only/no-mask controls still have the best forecast means. The gated
+    branch improves matched target B and is the strongest tested revision family,
+    but its benefit depends on backbone and masking. The 11% nowcast headline is
+    conditional on a post-hoc near-zero-denominator exclusion. Reconstruction must
+    be assessed on matched, normalized errors; outage failures are model behavior,
+    not an established scorer artifact. See the corrected revision analysis below.
 
 
-
-<!-- epoch300:start -->
-## 300-epoch results and comparison
-
-**48/48 runs complete**, generated 2026-09-17T22:20-04:00. This is a dated snapshot.
-The follow-up contains 16 configurations (four architectures × four formulations),
-all at mixed 50% masking, with seeds 42/43/44. Caps are maxima with patience 30,
-not fixed epoch counts. The original screen below also includes masking variants
-that were not repeated here, including its gap-only winner.
-
-### Ranking at cap 300
-
-**4/16 available configuration means beat the ensemble.**
-Lower relative WIS is better; 1 is ensemble parity. Each seed is a complete three-season run.
-Incomplete configurations retain their seed counts; missing runs are not imputed.
-
-| Configuration | Seeds / 3 | WIS ratio | Seed SD | States/DC | US |
-|---|---|---|---|---|---|
-| Pathogen MLP · B · mixed 50% | 3 | 0.941 | 0.059 | 0.953 | 0.890 |
-| Pathogen MLP · C · mixed 50% | 3 | 0.945 | 0.051 | 0.959 | 0.889 |
-| Joint MLP · C · mixed 50% | 3 | 0.983 | 0.071 | 0.988 | 0.964 |
-| Joint MLP · B · mixed 50% | 3 | 0.991 | 0.054 | 0.997 | 0.966 |
-| Target MLP · C · mixed 50% | 3 | 1.003 | 0.023 | 1.013 | 0.961 |
-| Target convolution · C · mixed 50% | 3 | 1.010 | 0.085 | 1.026 | 0.944 |
-| Target MLP · B · mixed 50% | 3 | 1.029 | 0.071 | 1.036 | 0.997 |
-| Target convolution · B · mixed 50% | 3 | 1.032 | 0.030 | 1.045 | 0.982 |
-| Target MLP · A · mixed 50% | 3 | 1.038 | 0.029 | 1.038 | 1.037 |
-| Target convolution · A · mixed 50% | 3 | 1.070 | 0.042 | 1.079 | 1.032 |
-| Joint MLP · A · mixed 50% | 3 | 1.086 | 0.241 | 1.086 | 1.086 |
-| Pathogen MLP · A · mixed 50% | 3 | 1.126 | 0.138 | 1.118 | 1.157 |
-| Joint MLP · Two-stage · mixed 50% | 3 | 1.194 | 0.097 | 1.178 | 1.256 |
-| Target MLP · Two-stage · mixed 50% | 3 | 1.203 | 0.056 | 1.198 | 1.225 |
-| Target convolution · Two-stage · mixed 50% | 3 | 1.215 | 0.043 | 1.218 | 1.203 |
-| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.292 | 0.272 | 1.293 | 1.292 |
-
-[Ranking CSV](epoch300/configuration-ranking.csv) · [Per-seed scores](epoch300/ranking/run_scores.csv).
-
-### What changed from the first screen
-
-Every row below uses the same architecture, formulation, masking, and completed seed
-on both sides. Input hashes and scored target/season/location/horizon support match.
-The target MLP, pathogen MLP, and target convolution change cap 100 → 300.
-**Joint MLP was already capped at 300: its rows are repeat controls.**
-Negative changes favor the follow-up; seed SD is descriptive, not a confidence interval.
-
-| Configuration | Paired seeds | Original screen | Cap 300 | Δ WIS | Seed Δ SD | Seeds improved |
-|---|---|---|---|---|---|---|
-| Target MLP · A · mixed 50% | 3 | 1.029 | 1.038 | 0.009 | 0.006 | 0 |
-| Target MLP · B · mixed 50% | 3 | 0.980 | 1.029 | 0.048 | 0.033 | 0 |
-| Target MLP · C · mixed 50% | 3 | 0.985 | 1.003 | 0.018 | 0.013 | 0 |
-| Target MLP · Two-stage · mixed 50% | 3 | 1.179 | 1.203 | 0.024 | 0.050 | 1 |
-| Pathogen MLP · A · mixed 50% | 3 | 1.045 | 1.126 | 0.081 | 0.144 | 1 |
-| Pathogen MLP · B · mixed 50% | 3 | 0.952 | 0.941 | -0.011 | 0.011 | 3 |
-| Pathogen MLP · C · mixed 50% | 3 | 0.957 | 0.945 | -0.011 | 0.019 | 2 |
-| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.104 | 1.292 | 0.189 | 0.291 | 1 |
-| Target convolution · A · mixed 50% | 3 | 1.100 | 1.070 | -0.030 | 0.052 | 2 |
-| Target convolution · B · mixed 50% | 3 | 1.031 | 1.032 | 0.001 | 0.012 | 2 |
-| Target convolution · C · mixed 50% | 3 | 1.005 | 1.010 | 0.005 | 0.007 | 1 |
-| Target convolution · Two-stage · mixed 50% | 3 | 1.206 | 1.215 | 0.009 | 0.029 | 2 |
-| Joint MLP · A · mixed 50% | 3 | 1.012 | 1.086 | 0.074 | 0.126 | 1 |
-| Joint MLP · B · mixed 50% | 3 | 0.990 | 0.991 | 0.000 | 0.000 | 0 |
-| Joint MLP · C · mixed 50% | 3 | 0.972 | 0.983 | 0.011 | 0.020 | 1 |
-| Joint MLP · Two-stage · mixed 50% | 3 | 1.211 | 1.194 | -0.017 | 0.027 | 2 |
-
-![Matched budget comparisons](epoch300/figures/comparison.png)
-
-**Pathogen B and C remain the strongest candidates in this follow-up.** B changes
-from 0.952 to 0.941, improving in 3/3 seeds;
-C changes from 0.957 to 0.945, improving in 2/3.
-Their small gap does not establish a reliable preference between flags alone and auxiliary nowcasting.
-
-**Longer training does not rescue the current two-stage formulation.** Its follow-up
-configuration means remain above ensemble parity in every architecture. Pathogen two-stage
-changes from 1.104 to 1.292; the paired seed table shows a large
-deterioration for seed 42. This weakens the explanation that the initial poor results
-were simply due to the 100-epoch cap. It does not identify which part of the formulation fails.
-
-**More training is not a universal gain.** Use the paired rows, not the best score from
-each differently sized suite, to judge a recipe. Target B changes from 0.980
-to 1.029, and target C from 0.985 to 1.003;
-neither improves in any of the three matched seeds. The original gap-only leader is not
-included in this budget contrast. Repeat variability also matters: joint-direct seed 44
-changes from 1.144 to 1.363 despite retaining cap 300. The cause is not established here;
-the saved fitting code is unchanged between source snapshots, whose changes add suite routing.
-
-**Calibration remains a limitation.** The cap-300 leader's weighted 50% and 95%
-coverage are 43.3% and 84.6%.
-These use the same geography/target/season weights as the ranking.
-
-### Where performance changes
-
-Disease → target → chronological season, matching the fan order. Values are paired
-seed-mean changes, not changes between averages with different seeds. Joint rows
-remain repeat controls. Color saturation does not truncate the printed values.
-
-![Changes by disease, target, and year](epoch300/figures/target-season-change.png)
-
-### Matched 100-vs-300 fan plots
-
-Pathogen MLP B, C, and two-stage at both caps, followed by the Hub ensemble.
-Every model uses seed 42, the same fixed seed as the original formulation fans.
-It is illustrative, not an average: pathogen two-stage seed 42 is also the largest
-observed deterioration, so judge the overall result using all three seeds above.
-Dates match B0.1's full saved-season calendar; truth and ensemble retain their frozen
-availability. Missing values are not filled in. Display dates extend beyond scoring support.
-
-![Influenza admissions, 2023-2024 — matched training budgets](epoch300/figures/budget-flu_hosp-2023-2024.png)
-
-![Influenza admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-flu_hosp-2024-2025.png)
-
-![Influenza admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_hosp-2025-2026.png)
-
-![Influenza ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_prop_ed_visits-2025-2026.png)
-
-![COVID-19 admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-covid_hosp-2024-2025.png)
-
-![COVID-19 admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_hosp-2025-2026.png)
-
-![COVID-19 ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_prop_ed_visits-2025-2026.png)
-
-![RSV admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_hosp-2025-2026.png)
-
-![RSV ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_prop_ed_visits-2025-2026.png)
-
-### Scope, provenance, and reproduction
-
-This remains retrospective development CV on seasons used for model development,
-not prospective evidence. Three seeds do not resolve small differences. Changing the
-cap permits longer training and can change checkpoint selection; it does not mean
-every component trained for 300 epochs. Forecast skill is not a standalone nowcast score.
-
-[Matched seed data](epoch300/paired-seeds.csv) · [Target/season comparisons](epoch300/target-season-pairs.csv) ·
-[Coverage](epoch300/coverage.csv) · [Snapshot](epoch300/snapshot.json) · [Run status](epoch300/run-status.csv).
-
-Regenerate from saved scores and forecasts with `.venv/bin/python scripts/plot_b1_300.py`.
-No training or scoring jobs are launched. Original-screen results follow below.
-
-<!-- epoch300:end -->
 
 ## Snapshot and experiment
 
@@ -486,10 +363,498 @@ This regenerates the snapshot and figures from completed runs; it launches no tr
 
 ## Log
 
-- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.
-
 - 2026-09-17: added the original overnight screen report while the separate 300-epoch experiment was queued. Reused saved forecast totals, the shared scientific aggregation and B1 forecast export. Explicitly separated forecast performance from nowcast accuracy and marked incomplete seed sets.
 - 2026-09-17: expanded the page to all 40 ranked configurations and a numeric target/season breakdown of the leader and matched pathogen formulations; clarified that training without artificial masking remains competitive.
 - 2026-09-17: matched fan dates to B0.1's full saved seasonal calendar; retained frozen support for scores and truth. Standardized disease, target, and chronological season order in fans, target/season tables, and the heatmap.
 
 - 2026-09-17: corrected the two-stage flag description after inspecting the frozen screen code: `encode` consumes known-final flags and `forward` bypasses visible finals. This was a prose error; no results or experiment snapshots changed.
+
+- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.
+
+<!-- epoch300:start -->
+## 300-epoch results and comparison
+
+**48/48 runs complete**, generated 2026-09-17T22:20-04:00. This is a dated snapshot.
+The follow-up contains 16 configurations (four architectures × four formulations),
+all at mixed 50% masking, with seeds 42/43/44. Caps are maxima with patience 30,
+not fixed epoch counts. The original screen below also includes masking variants
+that were not repeated here, including its gap-only winner.
+
+### Ranking at cap 300
+
+**4/16 available configuration means beat the ensemble.**
+Lower relative WIS is better; 1 is ensemble parity. Each seed is a complete three-season run.
+Incomplete configurations retain their seed counts; missing runs are not imputed.
+
+| Configuration | Seeds / 3 | WIS ratio | Seed SD | States/DC | US |
+|---|---|---|---|---|---|
+| Pathogen MLP · B · mixed 50% | 3 | 0.941 | 0.059 | 0.953 | 0.890 |
+| Pathogen MLP · C · mixed 50% | 3 | 0.945 | 0.051 | 0.959 | 0.889 |
+| Joint MLP · C · mixed 50% | 3 | 0.983 | 0.071 | 0.988 | 0.964 |
+| Joint MLP · B · mixed 50% | 3 | 0.991 | 0.054 | 0.997 | 0.966 |
+| Target MLP · C · mixed 50% | 3 | 1.003 | 0.023 | 1.013 | 0.961 |
+| Target convolution · C · mixed 50% | 3 | 1.010 | 0.085 | 1.026 | 0.944 |
+| Target MLP · B · mixed 50% | 3 | 1.029 | 0.071 | 1.036 | 0.997 |
+| Target convolution · B · mixed 50% | 3 | 1.032 | 0.030 | 1.045 | 0.982 |
+| Target MLP · A · mixed 50% | 3 | 1.038 | 0.029 | 1.038 | 1.037 |
+| Target convolution · A · mixed 50% | 3 | 1.070 | 0.042 | 1.079 | 1.032 |
+| Joint MLP · A · mixed 50% | 3 | 1.086 | 0.241 | 1.086 | 1.086 |
+| Pathogen MLP · A · mixed 50% | 3 | 1.126 | 0.138 | 1.118 | 1.157 |
+| Joint MLP · Two-stage · mixed 50% | 3 | 1.194 | 0.097 | 1.178 | 1.256 |
+| Target MLP · Two-stage · mixed 50% | 3 | 1.203 | 0.056 | 1.198 | 1.225 |
+| Target convolution · Two-stage · mixed 50% | 3 | 1.215 | 0.043 | 1.218 | 1.203 |
+| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.292 | 0.272 | 1.293 | 1.292 |
+
+[Ranking CSV](epoch300/configuration-ranking.csv) · [Per-seed scores](epoch300/ranking/run_scores.csv).
+
+### What changed from the first screen
+
+Every row below uses the same architecture, formulation, masking, and completed seed
+on both sides. Input hashes and scored target/season/location/horizon support match.
+The target MLP, pathogen MLP, and target convolution change cap 100 → 300.
+**Joint MLP was already capped at 300: its rows are repeat controls.**
+Negative changes favor the follow-up; seed SD is descriptive, not a confidence interval.
+
+| Configuration | Paired seeds | Original screen | Cap 300 | Δ WIS | Seed Δ SD | Seeds improved |
+|---|---|---|---|---|---|---|
+| Target MLP · A · mixed 50% | 3 | 1.029 | 1.038 | 0.009 | 0.006 | 0 |
+| Target MLP · B · mixed 50% | 3 | 0.980 | 1.029 | 0.048 | 0.033 | 0 |
+| Target MLP · C · mixed 50% | 3 | 0.985 | 1.003 | 0.018 | 0.013 | 0 |
+| Target MLP · Two-stage · mixed 50% | 3 | 1.179 | 1.203 | 0.024 | 0.050 | 1 |
+| Pathogen MLP · A · mixed 50% | 3 | 1.045 | 1.126 | 0.081 | 0.144 | 1 |
+| Pathogen MLP · B · mixed 50% | 3 | 0.952 | 0.941 | -0.011 | 0.011 | 3 |
+| Pathogen MLP · C · mixed 50% | 3 | 0.957 | 0.945 | -0.011 | 0.019 | 2 |
+| Pathogen MLP · Two-stage · mixed 50% | 3 | 1.104 | 1.292 | 0.189 | 0.291 | 1 |
+| Target convolution · A · mixed 50% | 3 | 1.100 | 1.070 | -0.030 | 0.052 | 2 |
+| Target convolution · B · mixed 50% | 3 | 1.031 | 1.032 | 0.001 | 0.012 | 2 |
+| Target convolution · C · mixed 50% | 3 | 1.005 | 1.010 | 0.005 | 0.007 | 1 |
+| Target convolution · Two-stage · mixed 50% | 3 | 1.206 | 1.215 | 0.009 | 0.029 | 2 |
+| Joint MLP · A · mixed 50% | 3 | 1.012 | 1.086 | 0.074 | 0.126 | 1 |
+| Joint MLP · B · mixed 50% | 3 | 0.990 | 0.991 | 0.000 | 0.000 | 0 |
+| Joint MLP · C · mixed 50% | 3 | 0.972 | 0.983 | 0.011 | 0.020 | 1 |
+| Joint MLP · Two-stage · mixed 50% | 3 | 1.211 | 1.194 | -0.017 | 0.027 | 2 |
+
+![Matched budget comparisons](epoch300/figures/comparison.png)
+
+**Pathogen B and C remain the strongest candidates in this follow-up.** B changes
+from 0.952 to 0.941, improving in 3/3 seeds;
+C changes from 0.957 to 0.945, improving in 2/3.
+Their small gap does not establish a reliable preference between flags alone and auxiliary nowcasting.
+
+**Longer training does not rescue the current two-stage formulation.** Its follow-up
+configuration means remain above ensemble parity in every architecture. Pathogen two-stage
+changes from 1.104 to 1.292; the paired seed table shows a large
+deterioration for seed 42. This weakens the explanation that the initial poor results
+were simply due to the 100-epoch cap. It does not identify which part of the formulation fails.
+
+**More training is not a universal gain.** Use the paired rows, not the best score from
+each differently sized suite, to judge a recipe. Target B changes from 0.980
+to 1.029, and target C from 0.985 to 1.003;
+neither improves in any of the three matched seeds. The original gap-only leader is not
+included in this budget contrast. Repeat variability also matters: joint-direct seed 44
+changes from 1.144 to 1.363 despite retaining cap 300. The cause is not established here;
+the saved fitting code is unchanged between source snapshots, whose changes add suite routing.
+
+**Calibration remains a limitation.** The cap-300 leader's weighted 50% and 95%
+coverage are 43.3% and 84.6%.
+These use the same geography/target/season weights as the ranking.
+
+### Where performance changes
+
+Disease → target → chronological season, matching the fan order. Values are paired
+seed-mean changes, not changes between averages with different seeds. Joint rows
+remain repeat controls. Color saturation does not truncate the printed values.
+
+![Changes by disease, target, and year](epoch300/figures/target-season-change.png)
+
+### Matched 100-vs-300 fan plots
+
+Pathogen MLP B, C, and two-stage at both caps, followed by the Hub ensemble.
+Every model uses seed 42, the same fixed seed as the original formulation fans.
+It is illustrative, not an average: pathogen two-stage seed 42 is also the largest
+observed deterioration, so judge the overall result using all three seeds above.
+Dates match B0.1's full saved-season calendar; truth and ensemble retain their frozen
+availability. Missing values are not filled in. Display dates extend beyond scoring support.
+
+![Influenza admissions, 2023-2024 — matched training budgets](epoch300/figures/budget-flu_hosp-2023-2024.png)
+
+![Influenza admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-flu_hosp-2024-2025.png)
+
+![Influenza admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_hosp-2025-2026.png)
+
+![Influenza ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-flu_prop_ed_visits-2025-2026.png)
+
+![COVID-19 admissions, 2024-2025 — matched training budgets](epoch300/figures/budget-covid_hosp-2024-2025.png)
+
+![COVID-19 admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_hosp-2025-2026.png)
+
+![COVID-19 ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-covid_prop_ed_visits-2025-2026.png)
+
+![RSV admissions, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_hosp-2025-2026.png)
+
+![RSV ED visits, 2025-2026 — matched training budgets](epoch300/figures/budget-rsv_prop_ed_visits-2025-2026.png)
+
+### Scope, provenance, and reproduction
+
+This remains retrospective development CV on seasons used for model development,
+not prospective evidence. Three seeds do not resolve small differences. Changing the
+cap permits longer training and can change checkpoint selection; it does not mean
+every component trained for 300 epochs. Forecast skill is not a standalone nowcast score.
+
+[Matched seed data](epoch300/paired-seeds.csv) · [Target/season comparisons](epoch300/target-season-pairs.csv) ·
+[Coverage](epoch300/coverage.csv) · [Snapshot](epoch300/snapshot.json) · [Run status](epoch300/run-status.csv).
+
+Regenerate from saved scores and forecasts with `.venv/bin/python scripts/plot_b1_300.py`.
+No training or scoring jobs are launched. The revision experiment follows below.
+
+<!-- epoch300:end -->
+
+<!-- revisions:start -->
+## Revision experiment: separating forecasting, nowcasting and reconstruction
+
+**160/160 runs complete**, generated 2026-09-18T09:18-04:00. This is a dated snapshot of
+experiment `B1-revisions-20260917` (32 configurations × seeds 42–46). Every run uses
+cap 300, patience 30, and selects epochs on **future loss only with natural inputs**,
+so recent accuracy is not an explicit selection criterion. Evaluation uses 1,024 draws.
+
+The three questions are scored on three different supports and are never combined
+into one number.
+
+### 1. Best everyday forecast
+
+**19/32 configuration means beat the Hub ensemble.** Lower relative WIS
+is better; 1 is parity. Seed SD is descriptive, not a confidence interval.
+
+| Configuration | Seeds | WIS ratio | Seed SD |
+|---|---|---|---|
+| Target MLP · B gap-only | 5 | 0.938 | 0.030 |
+| Pathogen MLP · B no-mask | 5 | 0.943 | 0.032 |
+| Pathogen MLP · C parallel · 20% · no aug | 5 | 0.947 | 0.045 |
+| Target MLP · Gated branch · 20% · no aug | 5 | 0.948 | 0.022 |
+| Target MLP · Gated branch · 10% · no aug | 5 | 0.949 | 0.036 |
+| Pathogen MLP · C parallel · 10% · aug | 5 | 0.952 | 0.014 |
+| Pathogen MLP · B gap-only | 5 | 0.952 | 0.032 |
+| Target MLP · B no-mask | 5 | 0.956 | 0.036 |
+| Pathogen MLP · B direct · no aug | 5 | 0.959 | 0.035 |
+| Pathogen MLP · C parallel · 10% · no aug | 5 | 0.964 | 0.026 |
+| Pathogen MLP · C parallel · 20% · aug | 5 | 0.969 | 0.057 |
+| Pathogen MLP · Gated branch · 10% · no aug | 5 | 0.972 | 0.044 |
+| Pathogen MLP · Gated branch · 20% · no aug | 5 | 0.976 | 0.024 |
+| Target MLP · C parallel · 10% · no aug | 5 | 0.981 | 0.027 |
+| Target MLP · Gated branch · 20% · aug | 5 | 0.984 | 0.037 |
+| Pathogen MLP · Gated branch · 20% · aug | 5 | 0.985 | 0.063 |
+| Pathogen MLP · B direct · aug | 5 | 0.988 | 0.078 |
+| Target MLP · Gated branch · 10% · aug | 5 | 0.990 | 0.051 |
+| Target MLP · B direct · no aug | 5 | 0.997 | 0.040 |
+| Target MLP · C parallel · 20% · aug | 5 | 1.000 | 0.062 |
+| Target MLP · C parallel · 20% · no aug | 5 | 1.001 | 0.029 |
+| Target MLP · C parallel · 10% · aug | 5 | 1.002 | 0.021 |
+| Target MLP · B direct · aug | 5 | 1.010 | 0.067 |
+| Pathogen MLP · Gated branch · 10% · aug | 5 | 1.051 | 0.136 |
+| Pathogen MLP · Two-stage · 10% · no aug | 5 | 1.093 | 0.106 |
+| Pathogen MLP · Two-stage · 20% · no aug | 5 | 1.127 | 0.091 |
+| Pathogen MLP · Two-stage · 10% · aug | 5 | 1.157 | 0.097 |
+| Target MLP · Two-stage · 20% · aug | 5 | 1.158 | 0.057 |
+| Pathogen MLP · Two-stage · 20% · aug | 5 | 1.183 | 0.062 |
+| Target MLP · Two-stage · 10% · aug | 5 | 1.222 | 0.189 |
+| Target MLP · Two-stage · 10% · no aug | 5 | 1.267 | 0.122 |
+| Target MLP · Two-stage · 20% · no aug | 5 | 1.282 | 0.099 |
+
+[Forecast run scores](revisions/forecast-run-scores.csv) · [Ranking CSV](revisions/configuration-ranking.csv).
+
+![Forecast ranking](revisions/figures/forecast-ranking.png)
+
+**The leader is Target MLP · B gap-only at 0.938.** The two
+best configuration means are B gap-only and B no-mask controls. That does not mean
+all recent-head models worsen forecasting: compare matched backbone, augmentation
+and seeds, rather than each model against the winner selected from a different recipe.
+
+| Backbone | Augmentation | Recent weight | B forecast | Gated forecast | Delta | Seed delta SD | Improved | Pairs |
+|---|---|---|---|---|---|---|---|---|
+| pathogen | 0.000 | 0.100 | 0.959 | 0.972 | 0.013 | 0.030 | 1 | 5 |
+| pathogen | 0.000 | 0.200 | 0.959 | 0.976 | 0.017 | 0.048 | 1 | 5 |
+| pathogen | 0.500 | 0.100 | 0.988 | 1.051 | 0.062 | 0.082 | 1 | 5 |
+| pathogen | 0.500 | 0.200 | 0.988 | 0.985 | -0.004 | 0.037 | 3 | 5 |
+| target | 0.000 | 0.100 | 0.997 | 0.949 | -0.049 | 0.053 | 4 | 5 |
+| target | 0.000 | 0.200 | 0.997 | 0.948 | -0.050 | 0.040 | 5 | 5 |
+| target | 0.500 | 0.100 | 1.010 | 0.990 | -0.021 | 0.065 | 3 | 5 |
+| target | 0.500 | 0.200 | 1.010 | 0.984 | -0.026 | 0.071 | 3 | 5 |
+
+Without augmentation, target gated-20% improves on matched B from **0.997 to 0.948**
+(delta -0.050; all five seeds improve). Target gated-10% improves in four of five.
+Pathogen gated variants without augmentation worsen on average and improve in only
+one of five seeds each. The branch is **promising on the target backbone, not a
+universally free addition**. The target gap-only control still has the best mean
+at 0.938; we did not cross gated nowcasting with gap-only masking.
+
+Two-stage remains worse than Hub in every configuration mean
+(1.093–1.282).
+C's weak nowcast outputs do not prevent competitive forecast performance: an
+auxiliary objective can help the shared representation without yielding the best
+recent-head checkpoint, because selection uses future loss only.
+
+### Where the forecast skill sits
+
+![Forecast skill by disease, target and season](revisions/figures/forecast-heatmap.png)
+
+Skill is not uniform, and the column structure matters more than the row order.
+Influenza admissions 2024-2025 is where nearly every configuration wins (0.79–1.02),
+and RSV ED visits 2025-2026 is the other consistent gain. COVID-19 ED visits
+2025-2026 is the weak column: most configurations sit above parity there. The
+two-stage penalty is not spread evenly either — it concentrates in influenza
+admissions 2023-2024 and COVID-19 ED visits, where it reaches 1.4–1.7, while
+two-stage remains competitive on RSV. Disease → target → chronological season,
+matching the fan order.
+
+### 2. Does nowcasting improve the report?
+
+Scored against **each target week's own genuine preliminary report**, excluding
+supplied finals and cells without that report. Values below 1 mean the model
+improves on simply publishing the preliminary number.
+
+| Configuration | Adjusted location ratio | Seed SD | Pooled sensitivity | Registered unfiltered |
+|---|---|---|---|---|
+| Pathogen MLP · Gated branch · 20% · aug | 0.890 | 0.031 | 0.618 | 1302.329 |
+| Target MLP · Gated branch · 20% · aug | 0.896 | 0.050 | 0.629 | 1103.122 |
+| Target MLP · Gated branch · 10% · aug | 0.909 | 0.063 | 0.643 | 1130.843 |
+| Target MLP · Gated branch · 10% · no aug | 0.924 | 0.066 | 0.631 | 2093.271 |
+| Pathogen MLP · Gated branch · 10% · no aug | 0.928 | 0.102 | 0.631 | 1403.606 |
+| Pathogen MLP · Gated branch · 10% · aug | 0.943 | 0.079 | 0.646 | 1224.309 |
+| Pathogen MLP · Gated branch · 20% · no aug | 0.957 | 0.040 | 0.639 | 1968.076 |
+| Target MLP · Gated branch · 20% · no aug | 0.978 | 0.025 | 0.649 | 2269.560 |
+| Target MLP · Two-stage · 20% · aug | 1.004 | 0.056 | 0.699 | 1555.523 |
+| Target MLP · Two-stage · 10% · aug | 1.008 | 0.056 | 0.695 | 2002.376 |
+| Pathogen MLP · Two-stage · 10% · aug | 1.013 | 0.078 | 0.696 | 1651.862 |
+| Pathogen MLP · Two-stage · 20% · aug | 1.019 | 0.058 | 0.701 | 1522.900 |
+| Pathogen MLP · Two-stage · 20% · no aug | 1.037 | 0.060 | 0.691 | 1446.413 |
+| Pathogen MLP · Two-stage · 10% · no aug | 1.064 | 0.051 | 0.710 | 1857.362 |
+| Target MLP · Two-stage · 20% · no aug | 1.069 | 0.068 | 0.711 | 1904.148 |
+| Target MLP · Two-stage · 10% · no aug | 1.129 | 0.136 | 0.737 | 2050.993 |
+| Pathogen MLP · C parallel · 20% · aug | 2.687 | 0.108 | 1.480 | 18292.175 |
+| Pathogen MLP · C parallel · 20% · no aug | 2.711 | 0.139 | 1.485 | 19166.067 |
+| Target MLP · C parallel · 10% · aug | 2.728 | 0.060 | 1.509 | 18560.344 |
+| Target MLP · C parallel · 20% · aug | 2.737 | 0.139 | 1.501 | 17134.153 |
+| Pathogen MLP · C parallel · 10% · aug | 2.757 | 0.043 | 1.519 | 20909.445 |
+| Target MLP · C parallel · 20% · no aug | 2.790 | 0.117 | 1.522 | 16862.246 |
+| Target MLP · C parallel · 10% · no aug | 2.805 | 0.060 | 1.535 | 19606.933 |
+| Pathogen MLP · C parallel · 10% · no aug | 2.857 | 0.121 | 1.569 | 20907.380 |
+
+![Forecast against nowcast](revisions/figures/forecast-vs-nowcast.png)
+
+**Gated is the strongest recent-head family under both displayed aggregations.**
+The eight gated means are 0.890–0.978
+under the location-relative metric **after the two-group exclusion below**. The best
+point estimate is about 11% lower WIS on that adjusted metric; it is not a universal
+11% reduction in count error or a proven improvement in every target/season.
+
+Two-stage is 1.004–1.129 under that metric, but **0.691–0.737 under pooled scoring**.
+It therefore improves on reports under one aggregation while failing to improve
+under the other. C is worse under both (2.69–2.86 adjusted location-relative;
+1.48–1.57 pooled). WIS ratios measure distributional score, not simply point error.
+
+The **family ordering** gated < two-stage < C survives pooling; the exact
+configuration ordering does not. Pooling sums numerator and denominator within
+target/season before taking their ratio, thereby changing location importance and
+losing the prescribed states/DC 80% versus US 20% weighting. It is a sensitivity
+analysis, not a confirmation of the same estimand.
+
+#### Reporting ages, accuracy and uncertainty
+
+| Formulation | Age (days) | Scaled CRPS | Report error | Relative CRPS | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|---|
+| C parallel | 11 | 0.045 | 0.018 | 2.534 | 0.456 | 0.863 |
+| C parallel | 4 | 0.023 | 0.027 | 0.853 | 0.631 | 0.942 |
+| Gated branch | 11 | 0.014 | 0.018 | 0.781 | 0.508 | 0.863 |
+| Gated branch | 4 | 0.020 | 0.027 | 0.727 | 0.444 | 0.837 |
+| Two-stage | 11 | 0.015 | 0.018 | 0.835 | 0.587 | 0.885 |
+| Two-stage | 4 | 0.021 | 0.027 | 0.770 | 0.492 | 0.865 |
+
+This additional full-support diagnostic divides each cell's CRPS and unchanged-report
+absolute error by its model's training-only target/location Q95 scale, then averages
+locations with states/DC 80% and US 20%, targets with admissions 1 and ED .5, and
+seasons equally, keeping ages separate. It retains the two near-zero-baseline groups:
+there is no division by their individual report errors. Relative CRPS is the ratio
+of the displayed aggregate scores. It is **a different, explicitly labelled metric**,
+not a replacement WIS ranking. Values shown are descriptive means across all eight
+configurations and five seeds in each family; they are not independent replicates
+or the performance of an ensemble. Target/season support can differ by reporting age.
+
+The age split matters: C has relative scaled CRPS about **2.53 for the preceding
+11-day-old week**, but **0.85 for the newest four-day-old week**. Calling C useless
+at every revision task is therefore incorrect. Gated improves both ages (about
+0.78 and 0.73), and two-stage also improves on this alternative metric (0.83 and
+0.77). C's anchoring both recent outputs to the latest observation is a concrete
+hypothesis for its older-week weakness, not a proven cause. **Gated is not fully
+calibrated**: natural 95% coverage is only about 86% and 84%, respectively, despite
+its competitive error scores. Newest-week 50% coverage is about 44%.
+
+!!! warning "Near-zero report error makes the registered ratio unstable"
+
+    The unfiltered registered scorer averages per-location ratios. Two
+    target/season/location groups — ID (RSV ED visits, 2023-2024); VA (RSV ED visits, 2023-2024) — have report-versus-final
+    errors near floating-point precision. Positive denominators near 1e-10 yield
+    extremely large ratios. This is a fragile metric in the presence of a nearly
+    perfect baseline, not evidence of a thousandfold error in predictions.
+
+    The adjusted columns exclude groups with total baseline WIS below **1e-6 in
+    native units**, an explicitly **post-hoc** threshold. This excludes 2 of 819
+    target/season/location groups, not two individual forecast observations.
+    They still matter for absolute error: a model should not damage an accurate
+    report. Only the adjusted nowcast ratio columns exclude them; the new scaled
+    diagnostics retain them. Forecast rankings are unchanged. See
+    [small denominators](revisions/small-nowcast-denominators.csv) and
+    [threshold sensitivity](revisions/nowcast-threshold-sensitivity.csv).
+    Each group contains ten observations per run. Cutoffs from 1e-9 through 1e-5
+    remove the same two groups and give identical adjusted scores; this numerical
+    sensitivity result does not turn the post-hoc choice into a predefined endpoint.
+
+    The prelaunch audit checked for exactly zero aggregate errors and found none.
+    That statement was literally true but insufficient to check numerical stability;
+    it did not rule out near-zero positive denominators. Neither deleting these
+    groups nor changing to pooling should silently replace the predefined endpoint.
+
+### 3. Can it reconstruct missing observations?
+
+The per-cell diagnostics separate a **genuine revision** of a visible report from an
+**artificially hidden** observation, which is the reconstruction task.
+
+| Formulation | Age (days) | Report condition | Scaled CRPS | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|
+| C parallel | 11 | hidden | 0.051 | 0.443 | 0.864 |
+| C parallel | 11 | visible | 0.042 | 0.460 | 0.862 |
+| C parallel | 4 | hidden | 0.063 | 0.336 | 0.731 |
+| C parallel | 4 | visible | 0.021 | 0.651 | 0.945 |
+| Gated branch | 11 | hidden | 0.045 | 0.538 | 0.890 |
+| Gated branch | 11 | visible | 0.014 | 0.517 | 0.856 |
+| Gated branch | 4 | hidden | 0.055 | 0.480 | 0.864 |
+| Gated branch | 4 | visible | 0.018 | 0.452 | 0.843 |
+| Two-stage | 11 | hidden | 0.047 | 0.354 | 0.709 |
+| Two-stage | 11 | visible | 0.014 | 0.591 | 0.882 |
+| Two-stage | 4 | hidden | 0.063 | 0.297 | 0.640 |
+| Two-stage | 4 | visible | 0.019 | 0.506 | 0.874 |
+
+![Revision against reconstruction](revisions/figures/recent-kinds.png)
+
+**Hiding an observation worsens recent estimation, but the old 7-versus-18
+CRPS comparison was not a valid scientific aggregate.** It averaged admissions
+counts and ED proportions in native units with cell-count weights, and compared
+different sets of observations. The replacement table/figure pairs each genuinely
+preliminary report hidden by the recent stress with its own natural-input result,
+normalizes CRPS by the training-only Q95 scale, and applies the scientific weights.
+Supplied finals are not in this paired comparison. Both 50% and 95% coverage are
+shown by age; approximate overall 50% coverage alone does not establish calibration.
+
+The table averages the eight configurations and five seeds within each family.
+It is descriptive of these fitted recipes; paired masking identifies the effect
+of this whole stress intervention, which can hide multiple channels/locations at once.
+
+For gated, hiding the same report increases scaled CRPS from about 0.014 to 0.045
+at 11 days, and 0.018 to 0.055 at four days. Reconstruction 95% coverage is about
+89% and 86%, below nominal; two-stage is substantially lower, about 71% and 64%.
+The near-nominal gated 50% coverage is encouraging, but is not full calibration.
+
+Full-channel outage is a separate, more severe condition (all reconstruction
+cells here, including hidden supplied finals; not the matched report-only subset):
+
+| Formulation | Age (days) | Scaled CRPS | Predict-zero error | 50% coverage | 95% coverage |
+|---|---|---|---|---|---|
+| C parallel | 11 | 0.289 | 0.325 | 0.137 | 0.226 |
+| C parallel | 4 | 0.286 | 0.321 | 0.137 | 0.219 |
+| Gated branch | 11 | 0.285 | 0.325 | 0.145 | 0.239 |
+| Gated branch | 4 | 0.281 | 0.321 | 0.150 | 0.243 |
+| Two-stage | 11 | 0.248 | 0.325 | 0.168 | 0.322 |
+| Two-stage | 4 | 0.242 | 0.321 | 0.181 | 0.338 |
+
+!!! warning "Outage scores reveal a model failure mode, not a demonstrated scorer bug"
+
+    The old native-unit aggregate places 16 C/gated configurations very close to
+    84.11 for seed 42. Similar aggregate scores do not prove identical predictions
+    or a bypassed recent head. The frozen code **does execute** C's recent heads
+    and the gated model's separate missing-value heads under outage. When focal
+    history is absent, both use B's small 0.01 transformed anchor, and decoded
+    admission nowcasts remain near zero. Across all audited C/gated runs, every
+    exported outage admission median is zero after count rounding, while ED
+    predictions differ. That is model behavior worth reporting,
+    not a reason to discard the condition. Exact causal attribution to anchoring
+    requires an ablation; the near-zero behavior is consistent with this design.
+
+    Count-dominated raw pooling can conceal differences in ED outputs. See
+    [outage by target](revisions/outage-by-target.csv) for predicted medians and
+    comparison to predicting zero, and [scaled diagnostics](revisions/recent-scaled-run-diagnostics.csv)
+    for normalization and coverage. The old raw summary is retained only as an
+    audit artifact, not as a ranking or evidence that the scorer substitutes a prior.
+
+### Factors: augmentation and objective weight
+
+| Factor | Formulation | Task | Δ WIS | Seed Δ SD | Improved |
+|---|---|---|---|---|---|
+| Revision augmentation on | B direct | forecast | 0.021 | 0.054 | 4/10 |
+| Revision augmentation on | C parallel | forecast | 0.008 | 0.031 | 8/20 |
+| Revision augmentation on | C parallel | nowcast | -0.063 | 0.117 | 14/20 |
+| Revision augmentation on | Two-stage | forecast | -0.012 | 0.137 | 13/20 |
+| Revision augmentation on | Two-stage | nowcast | -0.064 | 0.110 | 15/20 |
+| Revision augmentation on | Gated branch | forecast | 0.041 | 0.071 | 5/20 |
+| Revision augmentation on | Gated branch | nowcast | -0.038 | 0.079 | 14/20 |
+| Nowcast weight 10%→20% | C parallel | forecast | 0.005 | 0.046 | 12/20 |
+| Nowcast weight 10%→20% | C parallel | nowcast | -0.055 | 0.119 | 13/20 |
+| Nowcast weight 10%→20% | Two-stage | forecast | 0.003 | 0.123 | 10/20 |
+| Nowcast weight 10%→20% | Two-stage | nowcast | -0.021 | 0.095 | 9/20 |
+| Nowcast weight 10%→20% | Gated branch | forecast | -0.017 | 0.054 | 13/20 |
+| Nowcast weight 10%→20% | Gated branch | nowcast | 0.004 | 0.070 | 8/20 |
+
+![Paired factor changes](revisions/figures/paired-contrasts.png)
+
+**Augmentation produces a trade-off, not a uniform gain.** On the adjusted
+nowcast metric it improves the mean in all three recent-head families. Its forecast
+effect depends on formulation: B +0.021, C +0.008, gated **+0.041** (worse), two-stage
+-0.012 (better). For gated models only 5/20 matched forecast contrasts improve.
+Do not label the pooled +0.014 across families as a universal mild effect.
+The natural revision error is not interchangeable with reconstruction error.
+
+**The 10%→20% effect is formulation-dependent.** C's adjusted nowcast mean improves
+by 0.055, two-stage by 0.021, while gated changes by +0.004. Forecast changes are
+small on average (gated -0.017, C +0.005, two-stage +0.003). The prior statement
+that neither task moves by more than 0.02 was incorrect. There is no universal
+winner between the weights, but the screen does not establish that weight is irrelevant.
+
+Error bars show **SD of paired differences**, pooled over several related settings;
+they are not confidence intervals. Crossing zero is not a significance test. Five
+seeds measure fitting variability on the same seasons, not uncertainty over future
+epidemics. These tables provide effect sizes and direction counts, not a formal
+claim of superiority or equivalence.
+
+### Conclusions and next decisions
+
+- For forecasting alone, retain **target B gap-only** and **pathogen B no-mask** as
+  strong controls. Target gated without augmentation is a competitive joint-output
+  candidate and improves matched mixed-mask B; it does not yet beat the best control.
+- Forecasts and nowcasts need not come from the same fitted model. B forecasts
+  plus gated recent estimates are a valid separate-output option; this does not
+  establish a coherent joint trajectory distribution or a new combined score.
+- For revision correction, gated is the most promising tested family. Its advantage
+  over C/two-stage survives the two displayed aggregation choices, while the claim
+  that *only* gated beats the report does not. The 11% headline is conditional on
+  the post-hoc location-relative calculation; inspect age-specific scaled errors
+  and coverage too.
+- For reconstruction, use matched, scaled, age-specific diagnostics. Treat near-zero
+  outage admissions as a real failure to address, rather than discarding the test.
+- The next useful architecture control is a parallel recent head anchored to **each
+  week's own report**, with a learned missing-history anchor. C currently anchors
+  both recent outputs to the latest visible focal value, unlike the gated branch.
+  This could explain part of its older-week weakness, but is not isolated by these
+  runs. The experiment changes several architectural details, so it does not prove
+  that the gate or forecast feedback alone causes the improvement.
+- Try the gated branch with the successful gap-only mask and no revision augmentation;
+  retain B with the same recipe. Do not select augmentation merely because it helps
+  the revision endpoint while worsening the primary forecast endpoint.
+- Natural forecast-only validation is now consistent across candidates, but there
+  is no contemporaneous masked-validation control in this experiment. Its independent
+  causal benefit is not identified by comparing with older screens.
+- All results remain retrospective development CV with finalized older history and
+  supplied-final fallbacks. None resolves untouched future-season performance or
+  establishes the effect of seasonal reporting shifts.
+
+The audit/regeneration commands are `.venv/bin/python analysis/b1-revisions-review/audit.py`
+and `.venv/bin/python scripts/plot_b1_revisions.py`. They aggregate saved scores;
+no models are retrained or repredicted. Corrections dated 2026-09-18.
+<!-- revisions:end -->

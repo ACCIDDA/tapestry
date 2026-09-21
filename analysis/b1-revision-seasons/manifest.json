@@ -1,0 +1,17 @@
+{
+  "dataset": "data/processed/build_b1_wednesday_calendar.npz",
+  "sha256": "451d004d7a9626f8b6cdc4815347ac2729d41ecf57d8607f714b06f89b27e2e7",
+  "truth_cutoff": "2026-09-16",
+  "n_report_cells": 49961,
+  "assumptions": [
+    "Season assigned by observation week, not issuance.",
+    "Only genuine available reports with valid final labels enter revision metrics; supplied finals excluded.",
+    "States/DC pooled by final-value mass; US separate. These are descriptive metrics, not scientific forecast score weights.",
+    "Net revision = 100 sum(final-report)/sum(final); absolute revision = 100 sum(abs(final-report))/sum(final). Negative net means downward revisions.",
+    "Median reported/final excludes zero finals; sum metrics retain zeros.",
+    "Matched comparisons intersect week within CDC season and location, optionally exact provider; cannot eliminate within-season epidemic intensity differences.",
+    "Cells and adjacent weeks are dependent; no significance test or causal attribution.",
+    "Reference finals use pinned truth cutoff and may still revise.",
+    "Full available seasonal calendar includes summer; winter sensitivity is October-March."
+  ]
+}

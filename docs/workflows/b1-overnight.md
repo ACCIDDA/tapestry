@@ -33,8 +33,8 @@ All four references receive the same panels:
 Pipelines are A `direct`, B `direct_finalflag`, C `joint_aux025`, and
 `two_stage`. C uses forecast loss + .25 recent loss, a parallel recent head,
 supplied-final flags, and forecast-only checkpoint selection. The two-stage
-model feeds sampled recent values into the forecast, lacks the explicit
-supplied-final feature, and selects on equally weighted recent/future loss.
+model feeds sampled recent values into the forecast, consumes supplied-final
+flags and bypasses visible finals, and selects on equally weighted recent/future loss.
 Thus two-stage comparisons evaluate a whole formulation; they do not isolate
 feedback or auxiliary-loss strength. Varying that strength is outside this sweep.
 
@@ -145,3 +145,5 @@ use the explicit commands above to preserve the six-GPU, 12-hour layout.
   B masking rates and every masking mechanism, plus C's outage comparison.
   Dropped secondary architecture/cap panels and most pipeline/mask interactions.
   Replaced the unlaunched large plan with `B1-screen-256`; no jobs submitted.
+
+- 2026-09-17: corrected the two-stage flag description against the frozen implementation; it does consume known-final flags.

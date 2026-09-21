@@ -1,0 +1,13 @@
+{
+  "generated": "2026-09-17T21:58:00.774104-04:00",
+  "status": {
+    "complete": 41,
+    "running": 7
+  },
+  "assumptions": [
+    "Completed seed runs only; screen comparisons use exactly matched seeds and mixed 50% masking.",
+    "Retrospective development CV, common frozen Hub score; relative WIS below 1 beats ensemble.",
+    "Joint MLP already used cap 300; these are repeat controls, not an epoch-cap effect.",
+    "Only forecast ranking is included; no standalone nowcast comparison."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "source": "data/processed/b1-audit/source-coverage-locations.csv",
+  "sha256": "3263d7a8f248e6f41257ed35ef311f2c1768f5c78f34b104ef7ce2c1c47f1818",
+  "assumptions": [
+    "X axis is Wednesday issuance, comparing latest and preceding observation weeks at the same cutoff.",
+    "Availability is any eligible archived report in the provider audit (Hub/Git/Delphi), before B1 precedence; no final-label eligibility requirement.",
+    "Dates missing either age in the audit are omitted, including the first calendar boundary; they are not counted as unavailable.",
+    "Denominator is all 51 states/DC; US excluded. Supplied-final fallbacks do not count as archived reports.",
+    "Yellow means at least one same location has an 11-day report but no 4-day report on that Wednesday.",
+    "Solid step lines carry each weekly status to the next Wednesday for display; no claim about intervening release days.",
+    "Archive availability cannot establish actual publication absence. No visual inspection or model scoring."
+  ]
+}

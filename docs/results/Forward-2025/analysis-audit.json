@@ -1,0 +1,13 @@
+{
+  "runs": 21,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "season": "2025-2026",
+  "tasks_per_run": 37844,
+  "identical_task_support": true,
+  "forward_ranking_reproduced": true,
+  "missing_baselines_undefined": true
+}

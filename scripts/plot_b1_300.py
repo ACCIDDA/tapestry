@@ -235,7 +235,7 @@ every component trained for 300 epochs. Forecast skill is not a standalone nowca
 [Coverage](epoch300/coverage.csv) · [Snapshot](epoch300/snapshot.json) · [Run status](epoch300/run-status.csv).
 
 Regenerate from saved scores and forecasts with `.venv/bin/python scripts/plot_b1_300.py`.
-No training or scoring jobs are launched. Original-screen results follow below.
+No training or scoring jobs are launched. The revision experiment follows below.
 
 <!-- epoch300:end -->
 '''
@@ -247,7 +247,10 @@ No training or scoring jobs are launched. Original-screen results follow below.
         body = body[:body.index(start)] + body[body.index(end)+len(end):]
     body = body.replace('This page reports the original overnight screen, **not the new 300-epoch experiment**.',
                         'These headline numbers describe the original overnight screen. The separate\n[300-epoch comparison](#300-epoch-results-and-comparison) is reported below.')
-    body = body.replace('## Snapshot and experiment', section+'\n## Snapshot and experiment', 1)
+    if '<!-- revisions:start -->' in body:
+        body = body.replace('<!-- revisions:start -->', section + '\n<!-- revisions:start -->', 1)
+    else:
+        body = body.rstrip() + '\n\n' + section
     log = '- 2026-09-17: added the completed 300-epoch follow-up, paired seed comparisons, target/season changes, coverage, and matched-budget fans. Joint MLP repeats are explicitly treated as same-budget controls.\n'
     if log not in body:
         body = body.replace('## Log\n', '## Log\n\n' + log, 1)

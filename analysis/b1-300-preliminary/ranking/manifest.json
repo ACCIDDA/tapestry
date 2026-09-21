@@ -1,0 +1,287 @@
+{
+  "runs": [
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-target-direct-mask0.5-f982aea70c5a/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-target-direct_finalflag-mask0.5-c71a8413c510/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-target-direct_finalflag-mask0.5-c71a8413c510/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-target-joint_aux025-mask0.5-75b29329c086/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-target-joint_aux025-mask0.5-75b29329c086/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-target-joint_aux025-mask0.5-75b29329c086/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-target-two_stage-mask0.5-05863eb8f021/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-target-two_stage-mask0.5-05863eb8f021/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-target-two_stage-mask0.5-05863eb8f021/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct-mask0.5-024b5369ba70/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct-mask0.5-024b5369ba70/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct-mask0.5-024b5369ba70/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct_finalflag-mask0.5-6a08e3e500c0/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct_finalflag-mask0.5-6a08e3e500c0/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-direct_finalflag-mask0.5-6a08e3e500c0/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-joint_aux025-mask0.5-3ec1a74ecf90/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-joint_aux025-mask0.5-3ec1a74ecf90/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-joint_aux025-mask0.5-3ec1a74ecf90/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-two_stage-mask0.5-771c485b009f/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-two_stage-mask0.5-771c485b009f/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "pathogen_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-pathogen-two_stage-mask0.5-771c485b009f/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-direct-mask0.5-244e74d4ebe8/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-direct-mask0.5-244e74d4ebe8/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-direct_finalflag-mask0.5-6128da6c57b9/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-direct_finalflag-mask0.5-6128da6c57b9/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-direct_finalflag-mask0.5-6128da6c57b9/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-two_stage-mask0.5-bdd912e9a559/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-two_stage-mask0.5-bdd912e9a559/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_msc:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "target_multiscale__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/multiscale_conv-target-two_stage-mask0.5-bdd912e9a559/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct-mask0.5-f42b9b87d7f5/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct-mask0.5-f42b9b87d7f5/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_direct:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct-mask0.5-f42b9b87d7f5/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_flag:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__direct_finalflag__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-all-direct_finalflag-mask0.5-914d6aa264c4/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-all-joint_aux025-mask0.5-669c28227967/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-all-joint_aux025-mask0.5-669c28227967/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_aux025:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__joint_aux025__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-all-joint_aux025-mask0.5-669c28227967/s44/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 42,
+      "path": "data/experiments/B1-formulations-300/mlp-all-two_stage-mask0.5-096a6c212740/s42/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 43,
+      "path": "data/experiments/B1-formulations-300/mlp-all-two_stage-mask0.5-096a6c212740/s43/attempt-001/b1"
+    },
+    {
+      "config_id": "b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_joint:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_path:cal1:id0:fit_all:vm256:wd0.0:pipe_two:mask0.5:mr0.5:mg0.3:mo0.2",
+      "name": "joint_mlp__two_stage__mask0.5",
+      "seed": 44,
+      "path": "data/experiments/B1-formulations-300/mlp-all-two_stage-mask0.5-096a6c212740/s44/attempt-001/b1"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally with 80% weight; US ratio gets 20%. Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions 1 and ED .5. Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped.",
+  "score_version": "location-relative-season-first-us20-v1",
+  "us_weight": 0.2,
+  "runs_sha256": "0031b1ca223eb1ceb7258f94be549345d6af5db7eaad5482548f4b391eb5aa14"
+}

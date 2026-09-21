@@ -1,0 +1,52 @@
+{
+  "denominator_threshold": 0.0001,
+  "experiment": "Forward-2025",
+  "report_sha256": "45ac59ef1e54404f3bff66ccdcf1574dae15babc683930975860ca39b7466f0c",
+  "runs": [
+    {
+      "candidate": "direct",
+      "path": "data/experiments/Forward-2025/forward-direct-100-64-128-8/s42/attempt-001/forward",
+      "seed": 42
+    },
+    {
+      "candidate": "direct",
+      "path": "data/experiments/Forward-2025/forward-direct-100-64-128-8/s43/attempt-001/forward",
+      "seed": 43
+    },
+    {
+      "candidate": "direct",
+      "path": "data/experiments/Forward-2025/forward-direct-100-64-128-8/s44/attempt-001/forward",
+      "seed": 44
+    },
+    {
+      "candidate": "joint",
+      "path": "data/experiments/Forward-2025/forward-joint-100-64-128-8/s42/attempt-001/forward",
+      "seed": 42
+    },
+    {
+      "candidate": "joint",
+      "path": "data/experiments/Forward-2025/forward-joint-100-64-128-8/s43/attempt-001/forward",
+      "seed": 43
+    },
+    {
+      "candidate": "joint",
+      "path": "data/experiments/Forward-2025/forward-joint-100-64-128-8/s44/attempt-001/forward",
+      "seed": 44
+    },
+    {
+      "candidate": "separate",
+      "path": "data/experiments/Forward-2025/forward-separate-100-64-128-8/s42/attempt-001/forward",
+      "seed": 42
+    },
+    {
+      "candidate": "separate",
+      "path": "data/experiments/Forward-2025/forward-separate-100-64-128-8/s43/attempt-001/forward",
+      "seed": 43
+    },
+    {
+      "candidate": "separate",
+      "path": "data/experiments/Forward-2025/forward-separate-100-64-128-8/s44/attempt-001/forward",
+      "seed": 44
+    }
+  ]
+}
