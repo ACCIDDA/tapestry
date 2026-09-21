@@ -31,7 +31,7 @@ from ..data.tables import Artifact, TableSource
 from ..data.selection import SelectedData, POLICY_VERSION, describe, measure_columns
 
 
-INDEX_SCHEMA_VERSION = 14
+INDEX_SCHEMA_VERSION = 15
 # Schema profiling only needs a representative prefix. The indexer makes a
 # second full pass and discovers numeric columns that appear later.
 PROFILE_ROW_LIMIT = 25_000
@@ -446,6 +446,8 @@ class ExplorerIndex(SelectedData):
                     "INSERT INTO meta VALUES (?, ?)",
                     ("revision_row_count", str(revision_count)),
                 )
+                from .export import compact_history
+                revision_count = compact_history(connection, ledger_temporary, progress)
                 connection.execute("ANALYZE")
                 self._check_build(connection, ledger_temporary, fingerprint)
                 connection.executemany("INSERT INTO meta VALUES (?, ?)", [
@@ -1210,6 +1212,13 @@ class ExplorerIndex(SelectedData):
                      LIMIT ? OFFSET ?""",
                 [*params, *having_params, limit, offset],
             )
+            release_bounds = {
+                (row[0], row[1]): (row[2], row[3])
+                for row in connection.execute(
+                    """SELECT dataset_key, source_path, MIN(vintage), MAX(vintage)
+                       FROM releases GROUP BY dataset_key, source_path"""
+                )
+            }
             items = []
             for row in rows:
                 item = dict(row)
@@ -1231,6 +1240,9 @@ class ExplorerIndex(SelectedData):
                     "freshness": "current" if date_max >= cutoff else "lagging",
                     "freshness_days": cutoff_days,
                 })
+                item["vintage_min"], item["vintage_max"] = release_bounds.get(
+                    (item["dataset_key"], item["source_path"]), (None, None)
+                )
                 item.update(series_lineage(metadata, item["value_column"], item["source_path"], item["dimensions"]))
                 item.update(describe(item["dataset_key"], item["value_column"], item["source_path"], item["dimensions"], catalog=catalog))
                 items.append(item)
@@ -1252,9 +1264,12 @@ class ExplorerIndex(SelectedData):
         if not as_of or as_of == "latest":
             return None, None
         try:
-            day = date.fromisoformat(as_of).isoformat()
+            requested = date.fromisoformat(as_of)
         except ValueError as error:
             raise ValueError("as_of must be an ISO date (YYYY-MM-DD) or latest") from error
+        # Historical views are end-of-day Wednesday/Saturday; never round forward
+        # and expose a report that was unavailable on the requested date.
+        day = (requested - timedelta(days=min((requested.weekday() - d) % 7 for d in (2, 5)))).isoformat()
         return day, day + "T23:59:59.999999"
 
     def versions(self, state: str, series_ids: Sequence[int]) -> dict[str, Any]:
@@ -1272,7 +1287,9 @@ class ExplorerIndex(SelectedData):
                     (row["event_date"] if not row["release_time"] else row["release_time"])[:10]
                     for row in self._revision_rows(sid, code)
                 )
-        return {"state": code, "dates": sorted(dates)}
+        cutoffs = {date.fromisoformat(day) + timedelta(days=min((d - date.fromisoformat(day).weekday()) % 7 for d in (2, 5)))
+                   for day in dates}
+        return {"state": code, "dates": sorted(day.isoformat() for day in cutoffs if day <= date.today())}
 
     def data(self, state: str, series_ids: Sequence[int], *, scale: bool = False,
              as_of: str | None = None) -> dict[str, Any]:
@@ -1344,4 +1361,3 @@ class ExplorerIndex(SelectedData):
                     item["version_note"] = "Availability is bounded by the saved snapshot/commit date; no row publication dates are recorded."
                 output.append(item)
         return {"state": code, "state_name": "United States (US)" if code == "US" else STATE_NAMES[code], "scaled": scale, "as_of": day, "series": output}
-

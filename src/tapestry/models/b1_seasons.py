@@ -68,6 +68,17 @@ def _mask_context(episode, blocked):
     return x
 
 
+def _mask_covariates(episode, blocked):
+    """Apply the same scientific fold boundary to optional B2 covariates."""
+    if 'C' not in episode:
+        return None
+    c = episode['C'].copy()
+    for j, day in enumerate(episode['context_dates']):
+        if str(day) in blocked:
+            c[j] = 0
+    return c
+
+
 def _origin_in(episode, allowed):
     """B0 selects origins by calendar membership of the context-ending Saturday.
 
@@ -77,7 +88,7 @@ def _origin_in(episode, allowed):
     return str(episode['context_dates'][-1]) in allowed
 
 
-def _keep_labels(episode, x, allowed, direct=True):
+def _keep_labels(episode, x, allowed, direct=True, blocked=(), allow_empty_context=False):
     """Retain only labels whose target week is in `allowed`; drop unsupervised episodes.
 
     `direct` restricts the "is anything still supervised?" test to the four forecast
@@ -90,12 +101,16 @@ def _keep_labels(episode, x, allowed, direct=True):
         if str(day) not in allowed:
             y[h] = 0
     supervised = y[2:] if direct else y
-    if not supervised[:, :, 1].any() or not x[:, :, 1].any():
+    if not supervised[:, :, 1].any() or (not allow_empty_context and not x[:, :, 1].any()):
         return None
-    return {**episode, 'X': x, 'Y': y}
+    result = {**episode, 'X': x, 'Y': y}
+    c = _mask_covariates(episode, blocked)
+    if c is not None:
+        result['C'] = c
+    return result
 
 
-def fold(ds, held_out, min_availability=0., direct=True):
+def fold(ds, held_out, min_availability=0., direct=True, input_mode=None, allow_empty_context=False):
     """Return (fitting, validation, refit, evaluation) episodes for one held-out season.
 
     Four explicit partitions, each reconstructed from the original episodes rather
@@ -140,12 +155,13 @@ def fold(ds, held_out, min_availability=0., direct=True):
     training_blocked = held_weeks | outside
 
     fitting, validation, refit, evaluation = [], [], [], []
-    for episode in ds.episodes(supervised=False):
+    episode_options = {} if input_mode is None else {'input_mode': input_mode}
+    for episode in ds.episodes(supervised=False, **episode_options):
         inner_context = _mask_context(episode, inner_blocked)
         training_context = _mask_context(episode, training_blocked)
         sparse = min_availability and inner_context[:, :, 1].mean() < min_availability
         if _origin_in(episode, inner) and not sparse:
-            kept = _keep_labels(episode, inner_context, inner, direct)
+            kept = _keep_labels(episode, inner_context, inner, direct, inner_blocked, allow_empty_context)
             if kept is not None:
                 fitting.append(kept)
         # B0's validation origins are the training origins that can reach a hidden
@@ -154,16 +170,17 @@ def fold(ds, held_out, min_availability=0., direct=True):
             supervised = [str(d) for d in episode['target_dates'][2:]] if direct \
                 else [str(d) for d in episode['target_dates']]
             if hidden.intersection(supervised):
-                kept = _keep_labels(episode, training_context, hidden, direct)
+                kept = _keep_labels(episode, training_context, hidden, direct, training_blocked, allow_empty_context)
                 if kept is not None:
                     validation.append(kept)
-            kept = _keep_labels(episode, training_context, training_weeks, direct)
+            kept = _keep_labels(episode, training_context, training_weeks, direct, training_blocked, allow_empty_context)
             if kept is not None:
                 refit.append(kept)
         # Evaluation keeps the retrospective conditioning state: nothing is hidden
         # at prediction time except weeks B0's panel does not have either.
         if _origin_in(episode, held_weeks):
-            kept = _keep_labels(episode, _mask_context(episode, outside), held_weeks, direct)
+            kept = _keep_labels(episode, _mask_context(episode, outside), held_weeks, direct, outside,
+                                allow_empty_context)
             if kept is not None:
                 evaluation.append(kept)
     if not fitting or not validation or not refit or not evaluation:

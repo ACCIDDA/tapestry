@@ -21,8 +21,9 @@ from tapestry.model_data.wednesday import DEFAULT_DATASET as B1_DATASET
 
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 LOCATIONS = 'data/metadata/locations.csv'
-DATASETS = {'Forward': 'data/processed/forward_2025.npz', 'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET}
-EVAL_MEMBERS = {'Forward': 256, 'B0': 256, 'B1': 256}
+DATASETS = {'B0': 'data/processed/build_b_finalized.npz', 'B1': B1_DATASET,
+            'B2': 'data/processed/build_b2.npz'}
+EVAL_MEMBERS = {'B0': 256, 'B1': 256, 'B2': 256}
 
 
 def sha(path):
@@ -81,7 +82,7 @@ def snapshot(folder, settings, extra=()):
         hashes[str(source.relative_to(root))] = sha(source)
     frozen = Path(settings['frozen'])
     inputs = {settings['dataset'], settings['population_file'], str(frozen / 'manifest.json')}
-    if settings.get('model') == 'B1':
+    if settings.get('model') in ('B1', 'B2'):
         from tapestry.model_data.wednesday import WednesdayDataset
         calendar_source = WednesdayDataset.load(settings['dataset']).metadata.get('calendar_source')
         if calendar_source:
@@ -109,7 +110,7 @@ def model_of(value):
     """The model that owns a scenario string or an experiment's settings."""
     if isinstance(value, dict):
         return value.get('model', 'B0')
-    return 'Forward' if str(value).startswith('forward:') else 'B1' if str(value).startswith('b1:') else 'B0'
+    return 'B2' if str(value).startswith('b2:') else 'B1' if str(value).startswith('b1:') else 'B0'
 
 
 class B0Backend:
@@ -191,8 +192,6 @@ class B1Backend:
         'B1-direct-finalflag': dict(pipeline='direct_finalflag', mask_rate=.5),
         'B1-joint-aux025': dict(pipeline='joint_aux025', mask_rate=.5),
         'B1-overnight': {},
-        'B1-formulations': {},
-        'B1-revisions': {},
     }
 
     def scenarios(self, args):
@@ -203,12 +202,9 @@ class B1Backend:
         # an explicit flag overrides, which is what makes a cheap smoke run of
         # the real suite possible without redefining it.
         budget = {key: getattr(args, key) for key in self.BUDGET}
-        if args.suite == 'B1-revisions':
-            from .b1_revision_suite import scenarios
-            return scenarios(**budget)
-        if args.suite in ('B1-overnight', 'B1-formulations'):
+        if args.suite == 'B1-overnight':
             from .b1_overnight import scenarios
-            return scenarios(formulations_only=args.suite == 'B1-formulations', **budget)
+            return scenarios(**budget)
         if args.suite in self.SUITES:
             recipes = b0_top4(**self.SUITES[args.suite], **budget)
             if args.suite in ('B1-decisive-A', 'B1-direct-finalflag', 'B1-joint-aux025'):
@@ -247,10 +243,6 @@ class B1Backend:
         extra = [root / 'docs/design/b1.md']
         if settings['suite'] == 'B1-overnight':
             extra.append(root / 'docs/workflows/b1-overnight.md')
-        if settings['suite'] == 'B1-formulations':
-            extra.append(root / 'docs/workflows/b1-300.md')
-        if settings['suite'] == 'B1-revisions':
-            extra.append(root / 'docs/workflows/b1-revisions.md')
         snapshot(folder, settings, extra=extra)
 
     def fit_commands(self, scenario, seed, settings, output):
@@ -301,14 +293,58 @@ class B1Backend:
     def complete(self, output):
         try:
             manifest = json.loads((output / 'manifest.json').read_text())
-            return manifest.get('model') == 'B1' and sorted(manifest['seasons']) == sorted(SEASONS)
+            return manifest.get('model') == self.model and sorted(manifest['seasons']) == sorted(SEASONS)
         except (KeyError, ValueError, TypeError):
             return False
 
 
-from .forward import ForwardBackend
+class B2Backend(B1Backend):
+    model = 'B2'
+    output_dir = 'b2'
+    SUITES = {'B2-covariates': {}, 'B2-screen': {}, 'B2-kinsa': {}}
 
-BACKENDS = {'Forward': ForwardBackend(), 'B0': B0Backend(), 'B1': B1Backend()}
+    def scenarios(self, args):
+        from .b2_scenarios import B2Scenario, SUITE_SETS, scenarios
+        if args.scenario:
+            return {s.run_id: s for s in map(B2Scenario.from_string, args.scenario)}
+        return scenarios(SUITE_SETS.get(args.suite, SUITE_SETS['B2-covariates']),
+                         **{key: getattr(args, key) for key in self.BUDGET})
+
+    def settings(self, args):
+        return dict(model='B2', protocol='season_cv_refit_v1', retrospective=args.retrospective)
+
+    def check_inputs(self, settings):
+        if not settings.get('retrospective'):
+            raise ValueError('B2 season CV uses pinned final outcomes; pass --retrospective')
+        super().check_inputs(settings)
+        from tapestry.model_data.b2 import B2Dataset
+        from .b1_seasons import fold
+        data = B2Dataset.load(settings['dataset'])
+        if data.metadata.get('model') != 'B2':
+            raise ValueError('B2 requires its covariate dataset')
+        for mode in ('finalized', 'wednesday'):
+            for held in SEASONS:
+                fold(data, held, input_mode=mode, allow_empty_context=True)
+
+    def prepare(self, folder, settings):
+        from .provenance import save
+        from .b2_scenarios import SOURCE_GROUPS, INPUT_MODES, SUITE_SETS
+        snapshot(folder, settings, extra=[Path(__file__).parents[3] / 'docs/design/b2.md'])
+        save(folder / 'design.json', dict(model='B2', source_groups=SOURCE_GROUPS,
+             covariate_sets=SUITE_SETS.get(settings['suite'], SUITE_SETS['B2-covariates']),
+             input_modes=INPUT_MODES,
+             controls='No covariates, separately within each recipe and input mode',
+             outcome='Final outcomes on unchanged frozen Hub scoring support',
+             anchors=['Target MLP B gap-only, cap 100', 'Pathogen MLP B mixed 50%, cap 300']))
+
+    def fit_commands(self, scenario, seed, settings, output):
+        commands = super().fit_commands(scenario, seed, settings, output)
+        for command in commands:
+            command[command.index('b1')] = 'b2'
+        return commands
+
+
+BACKENDS = {'B0': B0Backend(), 'B1': B1Backend(), 'B2': B2Backend()}
 
 
 def backend_for(value):

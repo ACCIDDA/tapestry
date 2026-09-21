@@ -45,21 +45,18 @@
     const shift = direction < 0 ? -(((weekdayIndex - 3 + 7) % 7) || 7) : (((3 - weekdayIndex + 7) % 7) || 7);
     return isoDate(time + shift * DAY);
   };
-  // Nearest Wednesday to a day, never after today (the published copy keeps Wednesday snapshots only).
-  const nearestWednesday = day => {
+  // History uses Wednesday/Saturday cutoffs; latest values remain a separate view.
+  const projectVersionOnOrAfter = day => {
     const time = dateTime(day);
-    let shift = 3 - new Date(time).getUTCDay();
-    if (shift > 3) shift -= 7;
-    if (shift < -3) shift += 7;
-    const result = isoDate(time + shift * DAY);
-    return result > today() ? isoDate(dateTime(result) - 7 * DAY) : result;
+    const dow = new Date(time).getUTCDay();
+    return isoDate(time + Math.min((3 - dow + 7) % 7, (6 - dow + 7) % 7) * DAY);
   };
-  // A release is visible from the first Wednesday on or after it.
-  const wednesdayOnOrAfter = day => {
-    const time = dateTime(day);
-    return isoDate(time + ((3 - new Date(time).getUTCDay() + 7) % 7) * DAY);
+  const projectVersionOnOrBefore = day => {
+    const time = dateTime(day > today() ? today() : day);
+    const dow = new Date(time).getUTCDay();
+    return isoDate(time - Math.min((dow - 3 + 7) % 7, (dow - 6 + 7) % 7) * DAY);
   };
-  const versionLabel = day => day ? `${weekday(day, "short")} ${day}` : "Latest";
+  const versionLabel = day => day ? `${weekday(day, "short")} ${day}` : "Finalized (latest)";
   const tooltip = document.getElementById("tooltip");
 
   const model = {
@@ -313,10 +310,9 @@
       const params = new URLSearchParams({state: model.state, series: [...model.selected.keys()].join(",")});
       const payload = await requestJSON(`api/versions?${params}`);
       if (token !== model.versionRequest) return;
-      // The published copy only resolves Wednesday snapshots: step through those weeks.
-      model.versionDates = staticData.isPublished()
-        ? [...new Set(payload.dates.map(wednesdayOnOrAfter).filter(day => day <= today()))].sort()
-        : payload.dates;
+      // Step through the compact Wednesday/Saturday history.
+      const viewDate = projectVersionOnOrAfter;
+      model.versionDates = [...new Set(payload.dates.map(viewDate).filter(day => day <= today()))].sort();
       renderVersionControls();
     } catch (error) {
       if (token === model.versionRequest) showError(error);
@@ -333,7 +329,7 @@
   }
 
   function setVersion(day) {
-    model.asOf = day && staticData.isPublished() ? nearestWednesday(day) : day;
+    model.asOf = day ? projectVersionOnOrBefore(day) : "";
     renderVersionControls();
     updatePlot();
   }
@@ -389,7 +385,7 @@
   }
 
   function providers(items) {
-    const names = {cdc: "CDC", delphi: "Delphi", hub: "Forecast Hub"};
+    const names = {cdc: "CDC", delphi: "Delphi", hub: "Forecast Hub", derived: "Tapestry derived", pophive: "PopHIVE"};
     return [...new Set(items.map(item => names[item.provider_kind] || item.provider_kind))].join(" · ");
   }
 
@@ -400,12 +396,16 @@
     const providerClass = item.provider_kind === "delphi" ? " delphi-option"
       : item.provider_kind === "hub" ? " hub-option" : "";
     const source = `${item.measure_id || item.value_column} · ${item.parent_dataset || ""}${item.parent_column ? ` · ${item.parent_column}` : ""}`;
+    const vintageRange = item.vintage_min
+      ? `Publisher vintages ${item.vintage_min.slice(0, 10)} to ${(item.vintage_max || item.vintage_min).slice(0, 10)}`
+      : "";
     const card = checked ? `<span class="series-card">
         <span>${formatNumber(item.point_count)} points · ${escapeHTML(item.date_min)} to ${escapeHTML(item.date_max)}</span>
+        ${vintageRange ? `<span>${escapeHTML(vintageRange)}</span>` : ""}
         <span>${escapeHTML(signalMetadata(item))}</span>
         <span>${escapeHTML(source)}</span>
       </span>` : "";
-    return `<label class="series-option${providerClass}${checked ? " is-checked" : ""}" title="${escapeHTML(`${label}\n${signalMetadata(item)}\n${source}\n${formatNumber(item.point_count)} points · ${item.date_min} to ${item.date_max}`)}">
+    return `<label class="series-option${providerClass}${checked ? " is-checked" : ""}" title="${escapeHTML(`${label}\n${signalMetadata(item)}\n${source}\n${formatNumber(item.point_count)} points · ${item.date_min} to ${item.date_max}${vintageRange ? `\n${vintageRange}` : ""}`)}">
       <input type="checkbox" data-series-id="${item.id}"${checked ? " checked" : ""}>
       <span class="series-option-label">${escapeHTML(label)}</span>${card}
     </label>`;
@@ -447,6 +447,7 @@
     const release = (item.variant_label || "").split(" · ")[0];
     let name = item.provider_kind === "delphi" ? "Delphi"
       : item.provider_kind === "hub" ? release.replace(/ target data$/, "")
+      : item.provider_kind === "pophive" ? "PopHIVE Kinsa"
       : release.startsWith("CDC") ? release
       : release.startsWith("cdc_") ? `CDC ${item.parent_dataset || ""}`.trim()
       : `CDC ${item.parent_dataset || ""} ${release.toLowerCase()}`.replace(/\s+/g, " ").trim();

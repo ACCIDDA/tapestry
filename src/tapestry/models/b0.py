@@ -183,12 +183,11 @@ class B0(nn.Module):
                  count_transform="raw", populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
-                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False, revision_bridge=False):
+                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False, parallel_recent=False,
+                 covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           supplied_final=supplied_final, parallel_recent=parallel_recent, revision_bridge=revision_bridge)
-        if revision_bridge and not (parallel_recent and supplied_final):
-            raise ValueError('Revision bridge requires a parallel recent head and final flags')
+                           supplied_final=supplied_final, parallel_recent=parallel_recent)
         if parallel_recent and (heads != "shared" or noise != "global" or us_error != "none"):
             raise ValueError("Parallel recent head currently supports the rank-1 shared/global backbone")
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
@@ -210,6 +209,10 @@ class B0(nn.Module):
                            ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error,
                            head_sharing=head_sharing, annual_calendar=annual_calendar,
                            location_embedding=location_embedding, location_ids=location_ids or list(populations or {}))
+        covariate_names = list(covariate_names)
+        if len(set(covariate_names)) != len(covariate_names):
+            raise ValueError('Covariate names must be unique')
+        self.config['covariate_names'] = covariate_names
         # Transformed input scales, always per channel AND location, kept separate from
         # the native-unit loss normalization in `scale`. A single pooled scale put the
         # US at ~40x model units against a state's 0.8, which collapsed its intervals;
@@ -220,21 +223,35 @@ class B0(nn.Module):
         if ed_transform == 'logit':
             self.register_buffer('input_offset', self._per_location(input_offset, 0.))
         self.register_buffer('scale', self._per_location(scale, 1.))
+        if covariate_names:
+            self.register_buffer('covariate_offset', self._per_covariate(covariate_offset, len(covariate_names), 0.))
+            self.register_buffer('covariate_scale', self._per_covariate(covariate_scale, len(covariate_names), 1.))
+            trained = self._per_covariate(covariate_trained, len(covariate_names), 1.).bool()
+            self.register_buffer('covariate_trained', trained)
+        else:
+            # Keep legacy B0/B1 state dictionaries unchanged when covariates are absent.
+            self.covariate_offset = torch.empty(0, 1)
+            self.covariate_scale = torch.empty(0, 1)
+            self.covariate_trained = torch.empty(0, 1, dtype=torch.bool)
         # Save shape and location scales so checkpoints reconstruct their buffers.
         self.config['scale'] = self.scale.tolist()
         self.config['input_scale'] = self.input_scale.tolist()
         if ed_transform == 'logit':
             self.config['input_offset'] = self.input_offset.tolist()
+        self.config['covariate_offset'] = self.covariate_offset.tolist()
+        self.config['covariate_scale'] = self.covariate_scale.tolist()
+        self.config['covariate_trained'] = self.covariate_trained.tolist()
         from .architecture import MultiscaleEncoder, ForecastHead
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         fields_per_cell = 3 if supplied_final else 2
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
-        self.context = nn.Sequential(nn.Linear((lookback * 6 * fields_per_cell if encoder == 'mlp' else width) + extra_width, width),
+        context_fields = 6 * fields_per_cell + 2 * len(covariate_names)
+        self.context = nn.Sequential(nn.Linear((lookback * context_fields if encoder == 'mlp' else width) + extra_width, width),
                                      nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
                       if encoder == 'mlp' else temporal(fields_per_cell, width))
         if encoder != 'mlp':
-            self.temporal_context = temporal(6 * fields_per_cell, width)
+            self.temporal_context = temporal(context_fields, width)
         self.source = nn.Embedding(6, width)
         self.horizon = nn.Linear(1, width)
         self.norm = nn.LayerNorm(width)
@@ -270,17 +287,6 @@ class B0(nn.Module):
             self.recent_horizon = nn.Linear(1, width)
             self.recent_norm = nn.LayerNorm(width)
             self.recent_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
-        if revision_bridge:
-            # Distinct mechanisms: residual correction for observed reports,
-            # reconstruction for hidden histories. Forecast keeps B's original path.
-            self.missing_recent_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
-            self.revision_adjustment = nn.Sequential(nn.Linear(6, width), nn.SiLU(), nn.Linear(width, len(horizons)))
-            self.revision_gate = nn.Linear(width, len(horizons))
-            nn.init.zeros_(self.revision_adjustment[-1].weight)
-            nn.init.zeros_(self.revision_adjustment[-1].bias)
-            nn.init.zeros_(self.revision_gate.weight)
-            nn.init.constant_(self.revision_gate.bias, -2.2)
-
 
     @staticmethod
     def _per_location(value, default):
@@ -294,11 +300,24 @@ class B0(nn.Module):
             raise ValueError(f'Per-location scales must be [6] or [6, locations], got {tuple(tensor.shape)}')
         return tensor.contiguous()
 
+    @staticmethod
+    def _per_covariate(value, count, default):
+        """Covariate statistics are [K] or [K,L], with L optionally broadcast."""
+        if value is None:
+            return torch.full((count, 1), float(default))
+        tensor = torch.as_tensor(value).float()
+        if tensor.ndim == 1:
+            tensor = tensor[:, None]
+        if tensor.ndim != 2 or tensor.shape[0] != count:
+            raise ValueError(f'Covariate statistics must be [{count}] or [{count}, locations], got {tuple(tensor.shape)}')
+        return tensor.contiguous()
+
     def local_noise_scales(self):
         """Learned magnitudes of the per-location latent term, by head."""
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
-    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None, z_recent=None):
+    def forward(self, x, calendar, members=8, z=None, locations=None, local_z=None, national_z=None,
+                covariates=None):
         """x [N,P,C,2,L], calendar [N,3] when enabled; samples [M,N,H,C,L].
 
         Each member uses one global latent per episode shared across ALL locations,
@@ -329,9 +348,30 @@ class B0(nn.Module):
         fields = torch.stack((values, mask, (x[:, :, :, 2, :].bool() & valid).to(values.dtype))
                              if config["supplied_final"] else (values, mask), dim=-1)
         fpc = fields.shape[-1]
-        context = fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)
-        if config['encoder'] != 'mlp':
-            context = self.temporal_context(fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * fpc, p)).reshape(n, l, -1)
+        cov_fields = None
+        k = len(config['covariate_names'])
+        if k:
+            expected = (n, p, k, 2, l)
+            if covariates is None or tuple(covariates.shape) != expected:
+                raise ValueError(f'B0 expects covariates {expected}')
+            cov_available = covariates[:, :, :, 1].bool() & self.covariate_trained[None, None]
+            if self.covariate_scale.shape[-1] not in (1, l):
+                raise ValueError(f'Covariate scale holds {self.covariate_scale.shape[-1]} locations, not {l}')
+            cov_values = (covariates[:, :, :, 0] - self.covariate_offset[None, None]) / self.covariate_scale[None, None]
+            cov_values = torch.where(cov_available, cov_values, 0)
+            cov_fields = torch.stack((cov_values, cov_available.to(cov_values.dtype)), -1)
+        elif covariates is not None and covariates.shape[2]:
+            raise ValueError('Model was fitted without covariates')
+        if config['encoder'] == 'mlp':
+            pieces = [fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1)]
+            if cov_fields is not None:
+                pieces.append(cov_fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1))
+            context = torch.cat(pieces, -1)
+        else:
+            pieces = [fields.permute(0, 3, 2, 4, 1).reshape(n * l, c * fpc, p)]
+            if cov_fields is not None:
+                pieces.append(cov_fields.permute(0, 3, 2, 4, 1).reshape(n * l, 2 * k, p))
+            context = self.temporal_context(torch.cat(pieces, 1)).reshape(n, l, -1)
         extras, geo_features = [], []
         if config['annual_calendar']:
             if calendar.shape[-1] != 3:
@@ -387,34 +427,15 @@ class B0(nn.Module):
             if local_z.shape != (z.shape[0], n, l, LOCAL_LATENT):
                 raise ValueError('Local latent must have shape [members, episodes, locations, 4]')
 
-        def decode(heads, context=h, latent_z=z):
-            outputs = [head(context[:, :, :, group], latent_z, local_z)
+        def decode(heads, context=h):
+            outputs = [head(context[:, :, :, group], z, local_z)
                        for head, group in zip(heads, self.output_groups)]
             order = [channel for group in self.output_groups for channel in group]
             return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
         delta = decode(self.output_heads)
         if config["parallel_recent"]:
             recent_context = self.recent_norm(encoded[:, None] + self.recent_horizon(x.new_tensor([[-1.], [0.]]) / 4)[None, :, None, None])
-            if config['revision_bridge']:
-                if z_recent is None:
-                    z_recent = torch.randn_like(z)
-                if z_recent.shape != z.shape:
-                    raise ValueError('Recent and future noise shapes must match')
-                recent_delta = decode(self.recent_heads, recent_context, z_recent)
-                missing_delta = decode(self.missing_recent_heads, recent_context, z_recent)
-                recent_visible = valid[:, -2:].permute(0, 1, 3, 2)[None, ..., None]
-                recent_final = (x[:, -2:, :, 2].bool() & valid[:, -2:]).permute(0, 1, 3, 2)[None, ..., None]
-                recent_delta = torch.where(recent_visible, recent_delta, missing_delta)
-                recent_delta = torch.where(recent_final, 0., recent_delta)
-                correction = recent_delta.squeeze(-1).permute(0, 1, 3, 4, 2)
-                status = torch.stack((valid[:, -2:], x[:, -2:, :, 2].bool() & valid[:, -2:]), -1)
-                status = status.permute(0, 3, 2, 1, 4).reshape(n, l, c, 4).to(values.dtype)
-                features = torch.cat((correction, status[None].expand(z.shape[0], -1, -1, -1, -1)), -1)
-                adjustment = self.revision_adjustment(features) * self.revision_gate(encoded).sigmoid()[None]
-                delta = delta + adjustment.permute(0, 1, 4, 2, 3)[..., None]
-            else:
-                recent_delta = decode(self.recent_heads, recent_context)
-            delta = torch.cat((recent_delta, delta), dim=2)
+            delta = torch.cat((decode(self.recent_heads, recent_context), delta), dim=2)
         if config['heads'] == 'state_us':
             us = decode(self.us_output_heads)
             is_us = torch.tensor([loc == 'US' for loc in locations], device=x.device)
@@ -434,24 +455,18 @@ class B0(nn.Module):
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
         anchor = values.gather(1, idx[:, None]).squeeze(1)
         anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
-        anchor = anchor[:, None]
-        if config['revision_bridge']:
-            recent_anchor = torch.where(valid[:, -2:], values[:, -2:], anchor)
-            anchor = torch.cat((recent_anchor, anchor.expand(-1, len(config['horizons']), -1, -1)), 1)
-        positive = anchor.clamp_min(.001)
-        base = positive + torch.log(-torch.expm1(-positive))
-        counts = F.softplus(base[None, :, :, :3] + delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
+        counts = positive_residual(anchor[:, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
         counts = invert_counts(counts, population, config['count_transform'])
         if config['ed_transform'] == 'fourth_root':
-            root = F.softplus(base[None, :, :, 3:] + delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
+            root = positive_residual(anchor[:, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
             ed = root.pow(4).clamp(max=1)
         else:
             if config['ed_transform'] == 'logit':
-                logit = anchor[:, :, 3:] * input_scale[None, None, 3:, :] + offset[None, None, 3:, :]
+                logit = anchor[:, 3:] * input_scale[None, 3:, :] + offset[None, 3:, :]
             else:
-                proportion = (anchor[:, :, 3:] * input_scale[None, None, 3:, :]).clamp(*ED_BOUNDS)
+                proportion = (anchor[:, 3:] * input_scale[None, 3:, :]).clamp(*ED_BOUNDS)
                 logit = torch.logit(proportion)
-            ed = torch.sigmoid(logit[None] + delta[:, :, :, 3:])
+            ed = torch.sigmoid(logit[None, :, None] + delta[:, :, :, 3:])
         return torch.cat((counts, ed), dim=3)
 
 

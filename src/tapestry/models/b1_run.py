@@ -73,10 +73,7 @@ def task_weights(episodes, target, direct=False, dropout=None):
 def objective_weights(episodes, targets, scenario, dropout=None, validation=False):
     direct = scenario.pipeline in ('direct', 'direct_finalflag')
     weights = task_weights(episodes, targets, direct, dropout)
-    if not direct and scenario.validation_mode == 'natural_forecast':
-        weights[:, :2] *= 0 if validation else 2 * scenario.nowcast_weight
-        weights[:, 2:] *= 2
-    elif scenario.pipeline == 'joint_aux025':
+    if scenario.pipeline == 'joint_aux025':
         weights[:, :2] *= 0 if validation else .5
         weights[:, 2:] *= 2
     return weights
@@ -102,6 +99,31 @@ def arrays(episodes, device):
     y = np.stack([e['Y'] for e in episodes])
     cal = calendar([e['context_dates'][-1] for e in episodes], True)
     return tuple(torch.as_tensor(a, device=device) for a in (x[:, :, :, 0], x[:, :, :, 1].astype(bool), y, cal))
+
+
+def covariate_array(episodes, device):
+    """Optional B2 covariates [episode,week,covariate,value/available,location]."""
+    present = ['C' in e for e in episodes]
+    if any(present) and not all(present):
+        raise ValueError('Covariates must be present in every episode or none')
+    if not present or not present[0]:
+        return None
+    return torch.as_tensor(np.stack([e['C'] for e in episodes]), device=device)
+
+
+def covariate_scales(episodes):
+    """Per-covariate/location mean and SD from observed fitting cells only."""
+    c = np.stack([e['C'] for e in episodes])
+    values, available = c[:, :, :, 0], c[:, :, :, 1].astype(bool)
+    available &= np.isfinite(values)
+    support = available.sum(axis=(0, 1))
+    total = np.where(available, values, 0.).sum(axis=(0, 1))
+    offset = np.divide(total, support, out=np.zeros_like(total), where=support > 0)
+    squared = np.where(available, (values - offset[None, None]) ** 2, 0.).sum(axis=(0, 1))
+    variance = np.divide(squared, support, out=np.zeros_like(squared), where=support > 0)
+    scale = np.sqrt(variance)
+    scale = np.where(scale > 1e-6, scale, 1.)
+    return offset.tolist(), scale.tolist(), (support > 0).tolist()
 
 
 def populations(path, locations):
@@ -138,40 +160,42 @@ def partitions(ds, args, direct=True):
 def crop_episodes(episodes, lookback):
     if any(len(e['context_dates']) < lookback for e in episodes):
         raise ValueError(f'Materialize at least {lookback} context weeks; do not pad an unavailable longer history')
-    return [{**e, 'X': e['X'][-lookback:], 'context_dates': e['context_dates'][-lookback:]} for e in episodes]
+    return [{**e, 'X': e['X'][-lookback:],
+             **({'C': e['C'][-lookback:]} if 'C' in e else {}),
+             'context_dates': e['context_dates'][-lookback:]} for e in episodes]
 
 
-def fit_component(train, validation, targets, component, options, args, scenario, epochs=None):
+def fit_component(train, validation, targets, component, options, args, scenario, epochs=None, model_class=B1):
     """Fit one component. With `validation`, select the best epoch on it; without,
     fit `epochs` epochs on `train` with no early-stopping decision (B0's refit)."""
     direct = scenario.pipeline in ('direct', 'direct_finalflag')
-    joint = scenario.pipeline in ('joint_aux025', 'joint_aux', 'gated_revision')
-    forecast_selection = direct or joint or scenario.validation_mode == 'natural_forecast'
+    joint = scenario.pipeline == 'joint_aux025'
     seed = args.seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    model = B1(target=targets, direct=direct, **options).to(args.device)
     selecting = validation is not None
     budget = scenario.epochs if epochs is None else epochs
     # Each fitted component uses only episodes with at least one of its labels.
     hs = slice(2, 6) if direct else slice(0, 6)
-    eligibility = slice(2, 6) if forecast_selection else hs
+    eligibility = slice(2, 6) if direct or joint else hs
     train = [e for e in train if e['Y'][eligibility][:, targets, 1].any()]
     if selecting:
         validation = [e for e in validation if e['Y'][eligibility][:, targets, 1].any()]
     if not train or (selecting and not validation):
         raise ValueError(f'No training/validation labels for channels {targets}')
+    if options.get('covariate_names'):
+        offset, scale, trained = covariate_scales(train)
+        options = dict(options, covariate_offset=offset, covariate_scale=scale,
+                       covariate_trained=trained)
+    model = model_class(target=targets, direct=direct, **options).to(args.device)
     x, a, y, cal = arrays(train, args.device)
+    cov = covariate_array(train, args.device)
     known = torch.as_tensor(known_finals(train), device=args.device)
-    augmenter = None
-    if scenario.revision_rate:
-        from .b1_revision import RevisionAugmenter
-        augmenter = RevisionAugmenter(model, x, a, known, y[:, :2, :, 0], y[:, :2, :, 1])
-    revision_rng = np.random.default_rng(seed + 4000)
     y = y[:, hs][:, :, targets]
     weights = torch.as_tensor(objective_weights(train, targets, scenario)[:, :, targets], device=args.device)
     if selecting:
         vx, va, vy, vcal = arrays(validation, args.device)
+        vcov = covariate_array(validation, args.device)
         vknown = torch.as_tensor(known_finals(validation), device=args.device)
         vy = vy[:, hs][:, :, targets]
         vw = torch.as_tensor(objective_weights(validation, targets, scenario, validation=True)[:, :, targets], device=args.device)
@@ -182,31 +206,26 @@ def fit_component(train, validation, targets, component, options, args, scenario
     if selecting:
         generator = torch.Generator().manual_seed(seed + 2000)
         fixed = {}
-        stages = (('future',) if direct or (joint and scenario.pipeline != 'gated_revision') else
-                  ('future', 'recent') if scenario.validation_mode == 'natural_forecast' else ('recent', 'future'))
-        for stage in stages:
+        for stage in (('future',) if direct or joint else ('recent', 'future')):
             for name, value in model.draw_noise(scenario.validation_members, len(validation), generator).items():
                 if value is not None:
                     fixed[f'{"z" if name == "z" else name}_{stage}'] = value
-        vd = (torch.zeros_like(va) if scenario.validation_mode == 'natural_forecast' else
-              torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device))
+        vd = torch.as_tensor(draw_dropout(va.cpu().numpy(), np.random.default_rng(seed + 2000), probabilities), device=args.device)
         vw = torch.as_tensor(objective_weights(validation, targets, scenario, vd.cpu().numpy(), validation=True)[:, :, targets], device=args.device)
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     best, best_state, best_epoch = float('inf'), None, 0
-    history, audit, revision_audit = [], [], []
+    history, audit = [], []
     for epoch in range(budget):
         d = draw_dropout(a.cpu().numpy(), rng, probabilities)
         dropout = torch.as_tensor(d, device=args.device)
         weights = torch.as_tensor(objective_weights(train, targets, scenario, d)[:, :, targets], device=args.device)
         audit.append(np.packbits(d.reshape(-1)))
-        train_x, donors, revised = (augmenter.apply(x, dropout, revision_rng, scenario.revision_rate)
-            if augmenter is not None else (x, np.full(len(x), -1, dtype=np.int64), 0))
-        revision_audit.append(donors)
         total = 0.
         model.train()
         for ids in torch.randperm(len(train), device=args.device).split(scenario.batch_size):
             optimizer.zero_grad()
-            samples = model(train_x[ids], a[ids], cal[ids], scenario.members, dropout[ids], known_final=known[ids])
+            samples = model(x[ids], a[ids], cal[ids], scenario.members, dropout[ids], known_final=known[ids],
+                            covariates=None if cov is None else cov[ids])
             score = fair_crps_cells(samples, y[ids, :, :, 0], y[ids, :, :, 1])
             loss = (weights[ids] * score / model.scale[targets]).sum() * len(train) / len(ids)
             if not torch.isfinite(loss):
@@ -223,6 +242,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
                 for ids in torch.arange(len(validation), device=args.device).split(scenario.batch_size):
                     samples = model(vx[ids], va[ids], vcal[ids], dropout=vd[ids],
                                     known_final=vknown[ids],
+                                    covariates=None if vcov is None else vcov[ids],
                                     **{k: v[:, ids] for k, v in fixed.items()})
                     score = fair_crps_cells(samples, vy[ids, :, :, 0], vy[ids, :, :, 1])
                     val += float((vw[ids] * score / model.scale[targets]).sum())
@@ -231,7 +251,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
             if val < best:
                 best, best_epoch = val, epoch + 1
                 best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
-        history.append(dict(epoch=epoch + 1, loss=total, validation_loss=val, hidden=int(d.sum()), revised_cells=revised))
+        history.append(dict(epoch=epoch + 1, loss=total, validation_loss=val, hidden=int(d.sum())))
         print(json.dumps(dict(run_id=scenario.run_id, targets=[CHANNELS[c] for c in targets], seed=args.seed,
                               phase='select' if selecting else 'refit', **history[-1])), flush=True)
         if selecting and scenario.patience and epoch + 1 - best_epoch >= scenario.patience:
@@ -243,9 +263,11 @@ def fit_component(train, validation, targets, component, options, args, scenario
     record = dict(targets=targets, best_epoch=best_epoch,
         selected_epoch=(best_epoch if scenario.patience else scenario.epochs) if selecting else budget,
         phase='select' if selecting else 'refit', epochs=budget,
-        fitting_episodes=len(train), validation_episodes=len(validation) if selecting else 0, history=history,
-        revision_donor_support=augmenter.support if augmenter is not None else None)
-    audit_arrays = dict(revision_donor_indices=np.stack(revision_audit), dropout_packed=np.stack(audit), dropout_shape=np.array(a.shape),
+        fitting_episodes=len(train), validation_episodes=len(validation) if selecting else 0, history=history)
+    if options.get('covariate_names'):
+        support = np.stack([e['C'][:, :, 1].astype(bool) for e in train]).sum(axis=(0, 1, 3))
+        record['covariate_support_cells'] = dict(zip(options['covariate_names'], support.tolist()))
+    audit_arrays = dict(dropout_packed=np.stack(audit), dropout_shape=np.array(a.shape),
         train_issuance_dates=[e['issuance_date'] for e in train])
     if selecting:
         audit_arrays.update(validation_dropout=vd.cpu().numpy(),
@@ -256,7 +278,7 @@ def fit_component(train, validation, targets, component, options, args, scenario
 def train(args, scenario=None):
     scenario = resolve(args) if scenario is None else scenario
     ds = WednesdayDataset.load(args.dataset)
-    fitting, validation, refit = partitions(ds, args, direct=scenario.pipeline != 'two_stage' or scenario.validation_mode == 'natural_forecast')
+    fitting, validation, refit = partitions(ds, args, direct=scenario.pipeline != 'two_stage')
     fitting = [e for e in crop_episodes(fitting, scenario.lookback) if e['X'][:, :, 1].any()]
     validation = [e for e in crop_episodes(validation, scenario.lookback) if e['X'][:, :, 1].any()]
     refit = [e for e in crop_episodes(refit, scenario.lookback) if e['X'][:, :, 1].any()]
@@ -306,11 +328,9 @@ def train(args, scenario=None):
         population_file_sha256=hashlib.sha256(Path(args.population_file).read_bytes()).hexdigest(),
         mask_probabilities=list(scenario.mask_probabilities), training_members=scenario.members,
         validation_members=scenario.validation_members, eval_members=args.eval_members, records=records,
-        selection_objective='forecast' if scenario.pipeline != 'two_stage' or scenario.validation_mode == 'natural_forecast' else 'equal recent and forecast',
-        validation_mode=scenario.validation_mode, revision_rate=scenario.revision_rate,
-        auxiliary_coefficient=scenario.nowcast_weight if scenario.validation_mode == 'natural_forecast' and scenario.pipeline not in ('direct', 'direct_finalflag') else .25 if scenario.pipeline == 'joint_aux025' else None,
-        objective=(f'forecast + {scenario.nowcast_weight:g} recent for recent-head models, direct future only; natural-input forecast-only validation; partition-wide scientific weights; visible finals excluded'
-                   if scenario.validation_mode == 'natural_forecast' else 'forecast + .25 recent; each task uses partition-wide scientific weights, visible finals excluded'
+        selection_objective='forecast' if scenario.pipeline != 'two_stage' else 'equal recent and forecast',
+        auxiliary_coefficient=.25 if scenario.pipeline == 'joint_aux025' else None,
+        objective=('forecast + .25 recent; each task uses partition-wide scientific weights, visible finals excluded'
                    if scenario.pipeline == 'joint_aux025' else '.5 recent + .5 future native fair CRPS / fitting-only Q95; visible supplied finals excluded from recent loss. Partition-wide season/target/geography weights recomputed after dropout; absent task share stays zero. Direct: future only.'),
         cross_target_dependence='Independent draws across fitted components. Shared components allow within-group dependence; marginal scores do not establish joint calibration.')
     torch.save(dict(components=components, metadata=metadata), out / 'model.pt')
@@ -321,12 +341,11 @@ def train(args, scenario=None):
     from .b1_seasons import fold as season_fold
     fitted = load_models(out / 'model.pt', args.device)[0]
     _, _, _, evaluation, info = season_fold(ds, args.held_out_season,
-                                            direct=scenario.pipeline != 'two_stage' or scenario.validation_mode == 'natural_forecast')
+                                            direct=scenario.pipeline != 'two_stage')
     evaluation = [e for e in crop_episodes(evaluation, scenario.lookback) if e['X'][:, :, 1].any()]
     if not evaluation:
         raise ValueError(f'No usable evaluation episodes for held-out {args.held_out_season}')
-    settings = argparse.Namespace(device=args.device, evaluation_members=args.eval_members,
-                                  revision_baseline=scenario.validation_mode == 'natural_forecast')
+    settings = argparse.Namespace(device=args.device, evaluation_members=args.eval_members)
     evaluate(fitted, evaluation, ds, settings, scenario.run_id, args.seed, out, scenario.scenario_string)
     metadata['fold'] = info
     (out / 'manifest.json').write_text(json.dumps(metadata, indent=2) + '\n')

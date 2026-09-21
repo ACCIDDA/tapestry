@@ -59,30 +59,21 @@ nav:
       - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
   - B1:
       - Masked-vintage model: design/b1.md
-      - Initial A/B/C experiment plan: workflows/b1-decisive-experiment.md
-      - Initial A/B/C execution: workflows/b1-decisive-execution.md
-      - One-seed iteration: workflows/b1-one-seed.md
-      - Seed 42 screen: workflows/b1-seed42-results.md
-      - First good results: results/first-good-b1.md
+      - Screen and 300-epoch results: results/b1-overnight/index.md
       - Overnight experiment: workflows/b1-overnight.md
       - 300-epoch comparison: workflows/b1-300.md
-      - Revision and nowcasting experiment: workflows/b1-revisions.md
-      - Screen, 300-epoch and revision results: results/b1-overnight/index.md
-      - Overview and conclusions: results/b1-conclusions.md
-      - Reporting regimes and revisions: results/b1-reporting-regimes/index.md
-  - Forward 2025–26:
-      - Results and ranking: results/Forward-2025/index.md
-      - Analysis, fans and B1 comparison: results/Forward-2025/analysis.md
-      - Experiment specification: workflows/forward-2025.md
-      - Data and cutoff assumptions: data/forward-2025.md
+  - B2:
+      - Covariate results and diagnosis: results/B2-screen/index.md
+      - Covariate experiment: design/b2.md
+      - Dataset and vintage support: data/b2.md
   - Data repository:
       - Overview: data/index.md
-      - Reporting availability exploration: data/reporting-availability.md
       - Source catalog: data/sources.md
       - Shared selection: data/selection.md
       - Storage and provenance: data/storage.md
       - Vintages and geography: data/vintages-and-geography.md
-      - Local measure inventory: data/local-inventory-2026-09-13.md
+      - Wastewater (WVAL and Delphi NWSS): data/wastewater.md
+      - Clinical covariates (claims, PopHIVE): data/covariates.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md
@@ -101,5 +92,3 @@ nav:
       - EpiBench scoring and reports: workflows/configuration-evaluation.md
       - Emily’s challenge configs: workflows/emily-configs.md
   - Features and tests: maintenance.md
-  - Archive:
-      - Architecture note: design/old LLM things/architecture-candidates.md

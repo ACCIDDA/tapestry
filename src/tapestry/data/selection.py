@@ -27,6 +27,7 @@ FAMILY_TITLES = {
     "nhsn": "NHSN · Hospital surveillance",
     "nssp": "NSSP · Emergency department surveillance",
     "nwss": "NWSS · Wastewater surveillance",
+    "kinsa": "Kinsa · Thermometer symptom surveillance (via PopHIVE)",
 }
 PATHOGENS = {"c19": "COVID-19", "flu": "Influenza", "rsv": "RSV"}
 NHSN_MEASURES: dict[str, str] = {}
@@ -71,6 +72,8 @@ NWSS_LABELS = {
     "flow_population_normalized": "Flow/population normalized concentration",
     "microbial_normalized": "Microbial normalized concentration",
     "activity_level": "Wastewater activity level",
+    "wval_like": "WVAL-like relative activity index",
+    "pct_rank": "Within-site percentile-rank index",
 }
 HUB_FILES = {
     "hub_flusight_current": ("target-data/time-series.csv",),
@@ -91,6 +94,8 @@ RELEASE_LABELS = {
     "hub_covid_current": "COVID-19 Hub target data",
     "hub_flusight_current": "FluSight Hub target data",
     "hub_rsv_current": "RSV Hub target data",
+    "derived_nwss_state_indices": "Tapestry state index",
+    "pophive_kinsa_ili": "PopHIVE Git history",
 }
 # Menu order; unlisted pathogens follow alphabetically, then non-pathogen measures.
 PATHOGEN_TITLES = {
@@ -108,7 +113,9 @@ def pathogen_of(key: str, name: str, pathogen: str = "") -> tuple[str, str, int]
     """Canonical pathogen key, title, and menu rank; ``unspecified`` rather than a guess."""
     explicit = pathogen.lower()
     text = " ".join([explicit, name.lower(), key.lower()])
-    if explicit in {"sars-cov-2", "covid-19", "c19"} or re.search(r"covid|c19|sars", text):
+    if key == "pophive_kinsa_ili":
+        canonical = "ari"
+    elif explicit in {"sars-cov-2", "covid-19", "c19"} or re.search(r"covid|c19|sars", text):
         canonical = "covid"
     elif explicit == "flu" or re.search(r"flu", text):
         canonical = "influenza"
@@ -130,6 +137,10 @@ def pathogen_of(key: str, name: str, pathogen: str = "") -> tuple[str, str, int]
 
 
 def family(key: str) -> str:
+    if key == "derived_nwss_state_indices":
+        return "nwss"
+    if key == "pophive_kinsa_ili":
+        return "kinsa"
     for name in FAMILY_TITLES:
         if key.startswith((f"cdc_{name}_", f"delphi_{name}")):
             return name
@@ -168,6 +179,10 @@ def measure_columns(key: str, columns: Sequence[str], path: str = "") -> tuple[s
         allowed = {"site_wval"} if key == "cdc_nwss_wval" else NWSS_COLUMNS
     elif key == "delphi_nwss":
         allowed = {"value"}
+    elif key == "derived_nwss_state_indices":
+        allowed = {"wval_like", "pct_rank"}
+    elif key == "pophive_kinsa_ili":
+        allowed = {"kinsa_cough_cold_flu"}
     elif key in HUB_FILES or key == "hub_rsvnet":
         allowed = {"observation"} if key.endswith("_current") else {"value"}
     else:
@@ -223,6 +238,9 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
         pathogen = {"sars-cov-2": "covid", "covid-19": "covid", "influenza a": "flu"}.get(pathogen.lower(), pathogen.lower())
         title = f"{pathogen.upper()} · {NWSS_LABELS.get(name, name)}"
         name = f"{pathogen}_{name}"
+    elif group == "kinsa":
+        name = column
+        title = "Cough, cold and flu symptoms · share of Kinsa users (%)"
     elif key.startswith("hub_"):
         name = str(dimensions.get("target", dimensions.get("target_variable", "")))
         if not name:
@@ -292,7 +310,7 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
         "column_name": publisher_column["name"] if publisher_column else title,
         "column_description": publisher_column.get("description", "") if publisher_column else "",
         "column_metadata_dataset": publisher_dataset,
-        "provider_kind": "delphi" if key.startswith("delphi_") else "hub" if key.startswith("hub_") else "cdc",
+        "provider_kind": "pophive" if key.startswith("pophive_") else "derived" if key.startswith("derived_") else "delphi" if key.startswith("delphi_") else "hub" if key.startswith("hub_") else "cdc",
         "variant_label": " · ".join(filter(None, details)),
         "variant_rank": (int(support != "native state"), rank, int(smoothing == "Smoothed")),
         "selection_policy": POLICY_VERSION,
@@ -435,6 +453,10 @@ class SelectedData(RawTables):
     def _table_sources(self, artifact: Artifact) -> Iterator[TableSource]:
         from dataclasses import replace
         key = str(artifact.dataset["key"])
+        if key == "delphi_nwss_aux":
+            self.audit.append({"dataset_key": key, "source_path": artifact.relative_path,
+                               "status": "excluded", "message": "Auxiliary join metadata; not an observation series"})
+            return
         signal = source_signal(artifact.relative_path)
         if key == "delphi_nhsn" and signal and signal not in NHSN_DELPHI:
             self.audit.append({"dataset_key": key, "source_path": artifact.relative_path,

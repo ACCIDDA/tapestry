@@ -87,7 +87,8 @@ class B1(nn.Module):
                  encoder='mlp', spatial='none', decoder='legacy', heads='shared', noise='global',
                  head_sharing='shared', count_transform='fourth_root', ed_transform='logit',
                  geography=True, dynamics=True, annual_calendar=True, location_embedding=0, us_error='none',
-                 supplied_final=False, parallel_recent=False, revision_bridge=False):
+                 supplied_final=False, parallel_recent=False, covariate_names=(), covariate_offset=None,
+                 covariate_scale=None, covariate_trained=None):
         super().__init__()
         targets = [target] if isinstance(target, int) else list(target)
         if not targets or len(set(targets)) != len(targets) or any(c not in range(6) for c in targets):
@@ -109,8 +110,12 @@ class B1(nn.Module):
         if any(loc not in populations or not np.isfinite(populations[loc]) or populations[loc] <= 0 for loc in locations):
             raise ValueError('Finite positive population required for every location')
         self.targets = targets
+        if covariate_names and not (direct or parallel_recent):
+            raise ValueError('Covariates are supported by the direct B1/B2 backbone only')
         self.config = dict(target=targets, populations=populations, locations=list(locations), lookback=lookback,
-            width=width, latent=latent, direct=direct, supplied_final=supplied_final, parallel_recent=parallel_recent, revision_bridge=revision_bridge, input_scale=input_scale, input_offset=input_offset, scale=scale, **options)
+            width=width, latent=latent, direct=direct, supplied_final=supplied_final, parallel_recent=parallel_recent, input_scale=input_scale, input_offset=input_offset, scale=scale, **options)
+        self.config.update(covariate_names=list(covariate_names), covariate_offset=covariate_offset,
+                           covariate_scale=covariate_scale, covariate_trained=covariate_trained)
         self.register_buffer('input_scale', B0._per_location(input_scale, 1))
         self.register_buffer('input_offset', B0._per_location(input_offset, 0))
         self.register_buffer('scale', B0._per_location(scale, 1))
@@ -122,7 +127,9 @@ class B1(nn.Module):
             # predictor: reuse B0's dynamics, decoder and missing-history prior.
             self.direct_model = B0(lookback=lookback, width=width, latent=latent, scale=scale,
                 populations=populations, input_scale=input_scale, input_offset=input_offset,
-                location_ids=list(locations), supplied_final=supplied_final, parallel_recent=parallel_recent, revision_bridge=revision_bridge, **options)
+                location_ids=list(locations), supplied_final=supplied_final, parallel_recent=parallel_recent,
+                covariate_names=covariate_names, covariate_offset=covariate_offset,
+                covariate_scale=covariate_scale, covariate_trained=covariate_trained, **options)
             return
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         extra = 3 * annual_calendar + 2 * geography + 24 * dynamics + location_embedding
@@ -297,7 +304,8 @@ class B1(nn.Module):
             national=draw((*shape, 6 if self.config['direct'] else len(self.targets))) if self.config['us_error'] == 'shared_factor' else None)
 
     def forward(self, values, available, calendar, members=128, dropout=None, z_recent=None, z_future=None,
-                local_recent=None, local_future=None, national_recent=None, national_future=None, known_final=None):
+                local_recent=None, local_future=None, national_recent=None, national_future=None, known_final=None,
+                covariates=None):
         """Native samples [member, episode, output week, component target, location]."""
         expected = (values.shape[0], self.config['lookback'], 6, len(self.config['locations']))
         if tuple(values.shape) != expected or available.shape != values.shape:
@@ -313,7 +321,7 @@ class B1(nn.Module):
                             if self.config['supplied_final'] else (values, visible.to(values.dtype)), dim=3)
             result = self.direct_model(x, calendar, members=members, z=z_future,
                 locations=self.config['locations'], local_z=local_future,
-                national_z=national_future, z_recent=z_recent)[:, :, :, self.targets]
+                national_z=national_future, covariates=covariates)[:, :, :, self.targets]
             if self.config['parallel_recent']:
                 recent = torch.where(known_final[:, -2:, self.targets][None],
                                      values[:, -2:, self.targets][None], result[:, :, :2])
