@@ -7,7 +7,7 @@ reporting states and corrections for recent weeks.
 
 The [front page](../index.md) has the motivation and unicorn results. This page
 explains the model and the masks. Exact experiment settings live in
-[B0.1](b0.1.md); the vintage implementation is described in [B1](b1.md).
+[B0.1](../legacy-v0/design/b0.1.md); the vintage implementation is described in [B1](../legacy-v0/design/b1.md).
 
 ## Where the ideas come from {#2-what-is-borrowed-from-each-paper}
 
@@ -52,7 +52,7 @@ The experiments tested shared output heads, separate pathogen/target heads,
 and independent models by pathogen or target. Even a separately fitted flu-admission model can
 use all six local histories. In B0.1 the leading configurations use separate
 fits and simple encoders. The stochastic-trend decoder performed poorly
-and was removed. See the [comparisons](../results/b0-1-crosses/index.md).
+and was removed. See the [comparisons](../legacy-v0/results/b0-1-crosses/index.md).
 
 A member is a sampled future, not a predicted mean with an interval added
 later. Shared noise can connect its outputs, but good marginal CRPS or WIS
@@ -96,7 +96,7 @@ B0 reads a saved finalized panel with axes
 `[week, channel, value_or_mask, location]`. A history window has shape
 `[lookback, 6, 2, 52]`; its four-week label window has shape `[4, 6, 2, 52]`.
 The 52 locations are states, DC, and native US. No state-to-US summation is used.
-The [B0 data page](../data/build-b-finalized.md) gives units and source details.
+The [B0 data page](../legacy-v0/data/build-b-finalized.md) gives units and source details.
 
 B1 saves finalized older history and two recent weeks of Wednesday reports,
 falling back to flagged reference finals where reports are absent. It corrects
@@ -220,7 +220,7 @@ not measure an operational information boundary or an untouched holdout.
   ensemble-relative WIS. This replaces pooled channel loss scaling and the
   target-first pooled-WIS selection score. Fixed shared-factor validation draws;
   US is a direct forecast, so state-error cancellation is not its mechanism.
-  See [B0 follow-up](../results/b0-crosses/next-steps.md) for rationale and
+  See [B0 follow-up](../legacy-v0/results/b0-crosses/next-steps.md) for rationale and
   remaining hypotheses. No new model-performance claim follows from these edits.
 
 - **2026-09-16 — Documentation:** replaced the proposal-style architecture

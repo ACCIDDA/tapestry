@@ -29,8 +29,8 @@ six-channel data; B1 adds vintages and masking, and B3 adds wastewater.
   using identical tasks within that target and season. Average state ratios,
   combine with US, combine targets within season, then average seasons.
 
-See [design choices for loss](../../design/architecture.md#82-design-choices-for-b0-loss-and-weights)
-and [selection](../../design/architecture.md#103-metrics) for the complete contract.
+See [design choices for loss](../../../design/architecture.md#82-design-choices-for-b0-loss-and-weights)
+and [selection](../../../design/architecture.md#103-metrics) for the complete contract.
 
 ### What the Q95 division means
 

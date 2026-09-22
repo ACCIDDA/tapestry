@@ -17,17 +17,30 @@ python -m tapestry.data --data-root data pull delphi_nhsn delphi_nssp \
 ```
 
 Only needed when acquiring or refreshing sources; see
-[the source catalog](../data/sources.md). `derived_nwss_state_indices` (the
-two wastewater indices, `wval_like` and `pct_rank`) is built from
-`delphi_nwss`/`delphi_nwss_aux` separately -- see
-[wastewater](../data/wastewater.md).
+[the source catalog](../data/sources.md). `delphi_nwss` needs the archive
+options shown in [the explorer overview](../explorer/overview.md) (sewershed
+`*_avg_conc_lin` signals).
 
 ## 2. Build the dataset panel
+
+After pulling `delphi_nwss` or `delphi_nwss_aux`, first rebuild the two wastewater
+indices per pathogen (`wval_like`, `pct_rank`), a derived raw snapshot
+`derived_nwss_state_indices`, from the selected NWSS snapshots:
+
+```bash
+python -m tapestry.dataset.build nwss-indices --data-root data   # several minutes, streams the 1.2 GB aux archive
+```
+
+It is a separate command rather than a step of `build` because it is slow and its
+inputs change only when NWSS is re-pulled; `build` reads whichever snapshot is
+selected. Definitions and policy: [wastewater](../data/wastewater.md#production-indices-derived_nwss_state_indices).
+Then build the panel:
 
 ```bash
 python -m tapestry.dataset.build build --data-root data   # about a minute, one process per source
 python -m tapestry.dataset.build show
 python -m tapestry.dataset.build check    # stored panel == direct extract() at sampled issuances
+python -m tapestry.dataset.analyze_dataset   # rewrites docs/data/panel.md (fallback, revisions, covariates, wastewater)
 ```
 
 Produces one array, `data/processed/panel.npz`: a weekly Saturday calendar

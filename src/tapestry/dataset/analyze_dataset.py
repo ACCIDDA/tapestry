@@ -24,6 +24,8 @@ Saturday four days before the Wednesday), j = 1 the week before, and so on.
   available but no as-of value at the cutoff, share of cells with final truth.
   Kinsa's as-of archive starts 2026-04-06, so its share is also given from then on.
 - Season = `cv.season` of the context end (CDC epiweek 31-30).
+- **Wastewater** (section 5): the two NWSS indices per pathogen from the panel's truth
+  and as-of arrays; coverage = number of states + DC with a value per week (US excluded).
 """
 from __future__ import annotations
 
@@ -49,6 +51,7 @@ WEEKS = 9  # j = 0..8 weeks before issuance
 KINSA_ASOF_START = '2026-04-06'
 OUTPUT = 'docs/data/panel.md'
 PLACES = ('US', 'NC')
+WASTEWATER_PLACES = ('US', 'NC', 'CA', 'NY', 'TX')  # section 5: US, NC and a few large states
 
 
 def _png(fig):
@@ -221,6 +224,65 @@ def _covariate_lines(panel):
     return _png(fig)
 
 
+def _wastewater(panel):
+    """NWSS indices at WASTEWATER_PLACES (final line, as-of dots) and state coverage per week."""
+    names = [str(n) for n in panel['covariate_names']]
+    locations = [str(l) for l in panel['locations']]
+    dates = pd.to_datetime(panel['dates'])
+    ends = pd.to_datetime(panel['issuance_dates']) - pd.Timedelta(days=4)
+    week = {d: t for t, d in enumerate(dates)}
+    pathogens, indices = ('flu', 'covid', 'rsv'), ('wval_like', 'pct_rank')
+    colour = {'flu': 'C0', 'covid': 'C1', 'rsv': 'C2'}
+    k_of = {(p, i): names.index(f'nwss_{p}_{i}') for p in pathogens for i in indices}
+    has = ~np.isnan(panel['covariates'][:, :, list(k_of.values())]).all(axis=(1, 2))
+    first, last = dates[has].min(), dates[has].max()
+    figures = []
+    for index in indices:
+        places = [p for p in WASTEWATER_PLACES if p in locations]
+        fig, axes = plt.subplots(len(places), len(pathogens), figsize=(15, 2.3 * len(places)), sharex=True,
+                                 sharey=index == 'pct_rank', squeeze=False, constrained_layout=True)
+        for row, place in zip(axes, places):
+            l = locations.index(place)
+            for ax, pathogen in zip(row, pathogens):
+                k = k_of[pathogen, index]
+                ax.plot(dates, panel['covariates'][:, l, k], color=colour[pathogen], lw=1.3, label='final')
+                latest = [panel['asof_covariates'][w, week[e], l, k] if e in week else np.nan
+                          for w, e in enumerate(ends)]
+                ax.plot(ends, latest, ls='none', marker='.', ms=4, color='k', alpha=.5,
+                        label='context-end week as of each Wednesday')
+                ax.set_title(f'{place} {pathogen}', fontsize=9)
+                ax.set_xlim(first - pd.Timedelta(weeks=2), last + pd.Timedelta(weeks=2))
+                ax.tick_params(axis='x', labelrotation=30)
+            row[0].set_ylabel(index)
+        axes[0, 0].legend(fontsize=7, loc='upper left')
+        fig.suptitle(f'NWSS {index}: final (truth-day) value, and the latest week as visible at each Wednesday cutoff')
+        figures.append(_png(fig))
+    states = [i for i, l in enumerate(locations) if l != 'US']
+    counts, rows = {}, []
+    fig, axes = plt.subplots(1, len(indices), figsize=(15, 3.6), sharey=True, constrained_layout=True)
+    for ax, index in zip(axes, indices):
+        for pathogen in pathogens:
+            k = k_of[pathogen, index]
+            final = (~np.isnan(panel['covariates'][:, states, k])).sum(axis=1)
+            asof = [(~np.isnan(panel['asof_covariates'][w, week[e], states, k])).sum() if e in week else np.nan
+                    for w, e in enumerate(ends)]
+            ax.plot(dates, final, color=colour[pathogen], lw=1.3, label=f'{pathogen} final')
+            ax.plot(ends, asof, color=colour[pathogen], ls='none', marker='.', ms=4, alpha=.6,
+                    label=f'{pathogen} as of Wednesday (context-end week)')
+            seen = final[has]
+            rows.append(dict(index=index, pathogen=pathogen, weeks_with_any_state=int((final > 0).sum()),
+                             states_median=float(np.median(seen)), states_max=int(seen.max()),
+                             issuances_with_asof=int(np.nansum(np.array(asof) > 0))))
+        ax.set_title(index)
+        ax.set_ylabel('states + DC with a value')
+        ax.set_xlim(first - pd.Timedelta(weeks=2), last + pd.Timedelta(weeks=2))
+        ax.tick_params(axis='x', labelrotation=30)
+    axes[-1].legend(fontsize=7, loc='upper left', bbox_to_anchor=(1.01, 1), frameon=False)
+    fig.suptitle('NWSS coverage: number of states + DC with a value per week (US excluded)')
+    table = pd.DataFrame(rows)
+    return figures, _png(fig), table, (first.date(), last.date())
+
+
 def _markdown(frame, digits=1):
     frame = frame.round(digits)
     head = '| ' + ' | '.join(map(str, frame.columns)) + ' |'
@@ -242,6 +304,7 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
                   .pivot_table(index='target', columns='j', values='fallback', aggfunc='mean') * 100)
     revision_table, revision_figure = _revisions(cells)
     covariate_table, covariate_figure, covariate_line = _covariates(panel, eps)
+    ww_figures, ww_coverage, ww_table, (ww_first, ww_last) = _wastewater(panel)
     sha = hashlib.sha256(Path(dataset).read_bytes()).hexdigest()
     headline = pd.concat({'states+US': overall, 'US': overall_us}, axis=1)
     headline.columns = [f'{scope} j={j}' for scope, j in headline.columns]
@@ -305,6 +368,20 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
         'Wednesday issuance as visible at its cutoff, same scale (the latest as-of value an episode sees). '
         'A covariate with no value at a location is listed in the legend as not available.', '',
         _covariate_lines(panel), '',
+        '## 5. Wastewater indices (NWSS)', '',
+        'The two indices per pathogen, `wval_like` and `pct_rank`, from the '
+        '`derived_nwss_state_indices` snapshot (rebuilt by `python -m tapestry.dataset.build nwss-indices`; '
+        'definitions in [wastewater](wastewater.md)). Lines: final (truth-day) value per week; dots: the '
+        'context-end week as visible at each Wednesday cutoff (NaN before the first Delphi archive vintage, '
+        f'2026-02-25). Weeks with any value: {ww_first} to {ww_last}; plotted range restricted to it. States '
+        'need at least 3 eligible sites.', '',
+        *[x for figure in ww_figures for x in (figure, '')],
+        '### Coverage', '',
+        'Number of states + DC with a value per week (US excluded): final truth (line) and the '
+        'context-end week as of each Wednesday (dots). `issuances_with_asof` = Wednesdays whose '
+        'context-end week had a value for at least one state.', '',
+        ww_coverage, '',
+        _markdown(ww_table, 1), '',
     ]
     Path(output).parent.mkdir(parents=True, exist_ok=True)
     Path(output).write_text('\n'.join(lines))

@@ -13,7 +13,7 @@ interaction panels, and independent-model and convolution controls.
 See the [specification](../../design/b0.1.md).
 
 Lower scores are better; 1 means parity with the hub ensemble. The
-[objective](../../design/architecture.md#82-design-choices-for-b0-loss-and-weights)
+[objective](../../../design/architecture.md#82-design-choices-for-b0-loss-and-weights)
 uses location-relative WIS, equal season weights, and 80% states/DC plus 20% US.
 The B0.0 results page uses a different score; the comparison below uses rescored
 B0.0 forecasts.

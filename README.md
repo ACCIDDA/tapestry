@@ -36,7 +36,7 @@ The dataset contains weekly NHSN admissions and NSSP ED proportions for
 flu/COVID/RSV, with values and availability masks for 50 states, DC, and native US.
 Training reads the saved dataset; it does not need to download data or run the explorer.
 Use a new output directory for a new experiment. See the
-[dataset contract](docs/data/build-b-finalized.md) and
+[dataset contract](docs/legacy-v0/data/build-b-finalized.md) and
 [training/prediction guide](docs/workflows/training.md).
 
 This is finalized retrospective research: NSSP's latest saved values are assumed
@@ -54,7 +54,7 @@ weeks are forecast from the resulting recent values. This is retrospective
 conditional forecasting; later finals are not claimed available on Wednesday.
 MLP, convolution, multiscale and spatial formulations have canonical scenario
 strings, with independently configurable masking rates.
-See the [B1 implementation and commands](docs/design/b1.md).
+See the [B1 implementation and commands](docs/legacy-v0/design/b1.md).
 
 ## Explore and compare
 
@@ -85,8 +85,9 @@ Python (`tapestry.evaluation.totals`).
 | `analysis/wval/` | Standalone wastewater analysis and evidence |
 | `scripts/` | Slurm launchers, notifier, data/explorer checkout launchers, CSV conversion |
 | `docs/workflows/` | Current commands and behavior |
-| `docs/results/` | Completed experiment findings |
-| `docs/design/` | Research proposals |
+| `docs/results/` | Experiment reports written by `planner rank` |
+| `docs/design/` | The unified-model design |
+| `docs/legacy-v0/` | Pre-2026-09-22 B0/B1/B2 designs, results and workflows |
 | `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
 
 Downloaded data, checkpoints, and generated results live in `data/`, `output/`,

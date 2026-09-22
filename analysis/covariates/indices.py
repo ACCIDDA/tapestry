@@ -13,7 +13,13 @@ Keys
   pct_rank        empirical percentile of x within g's history, unweighted median
 
 These are the only two indices `dataset.build`/`COVARIATE_GROUPS` promotes into
-the production covariate panel (`ww_wval_like`/`ww_pct_rank`). Four other
+the production covariate panel (`ww_wval_like`/`ww_pct_rank`). The two formulas and
+thresholds live in `tapestry.dataset.nwss` (2026-09-22) and are imported here, so the
+analysis and the production build cannot drift. This module remains the full-history
+(not origin-safe) analysis variant: it reads local CSV extracts, takes the state from
+the site table, and applies no minimum-site rule to the national median; the
+production snapshot is built per report time by
+`python -m tapestry.dataset.build nwss-indices`. Four other
 candidates that were screened but not promoted — `robust_z`, `flowpop_wval`,
 `conc_matched`, `wval_popw` — moved to `analysis/covariates/exploratory.py`
 (docs/design/restructure-2026-unified.md §2).
@@ -21,8 +27,8 @@ candidates that were screened but not promoted — `robust_z`, `flowpop_wval`,
 import numpy as np
 import pandas as pd
 
-MIN_WEEKS = 26
-MIN_SITES = 3
+from tapestry.dataset.nwss import MIN_SITES, MIN_WEEKS, score_pct_rank, score_wval
+
 FLOWPOP_COVERAGE = 0.80
 
 
@@ -50,15 +56,6 @@ def eligible(d):
     spread = grp['x'].std()
     keep = nweeks[nweeks >= MIN_WEEKS].index.intersection(spread[spread > 0].index)
     return d[d['g'].isin(keep)].copy()
-
-
-def score_wval(d):
-    grp = d.groupby('g')['x']
-    return np.exp((d['x'] - d['g'].map(grp.quantile(0.10))) / d['g'].map(grp.std()))
-
-
-def score_pct_rank(d):
-    return d.groupby('g')['x'].rank(pct=True)
 
 
 def weighted_median(values, weights):

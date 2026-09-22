@@ -646,3 +646,46 @@ cells; the rebuilt panel equals the previous one array for array. pytest: 68 pas
 `epochs=4,patience=2`, seeds 42/43, 32 evaluation members): `rank --seeds 42` and
 `rank --us-weight 0.5` wrote rankings and figures but no page, the complete default
 `rank` wrote it; a page missing a marker raised.
+
+### Wastewater indices regenerable again, legacy docs, explorer as-of test — 2026-09-22
+
+**User requests.** (1) The derived wastewater indices must be rebuildable by one
+command in the current workflow; (2) the failing explorer test must be fixed at
+its root cause; (3) every pre-restructure page moves into a "Legacy (v0)" section.
+
+(1) `src/tapestry/dataset/nwss.py` restores the deleted
+`model_data/b2.py:build_nwss_covariates` (removed in `4a0b172`) unchanged in policy,
+as `python -m tapestry.dataset.build nwss-indices --data-root data`. Decisions:
+a separate subcommand, not part of `build build`, because it streams the 1.2 GB
+auxiliary archive (11 minutes, 12 GB peak RSS here) while its inputs change only
+when NWSS is re-pulled; the two index formulas (`score_wval`, `score_pct_rank`)
+and the 26-week/3-site thresholds live in that production module and are imported
+by `analysis/covariates/indices.py`, so `analysis/` is not a build dependency and
+the formulas cannot drift. Reproduction from the same input snapshots: 880,352 rows
+against the stored 880,384, every shared row bit-identical; the 32 stored rows not
+reproduced are one US row per report time for reference week 2020-02-29 with
+`n_sites = 1`, excluded by the committed >= 3 site rule (so the stored snapshot came
+from a variant without that rule nationally). That week precedes the calendar start,
+and the rebuilt `panel.npz` is identical to the previous one array for array (only
+the recorded snapshot id and timings differ); `build check --samples 4`: exact.
+`analyze_dataset` gained §5: both indices per pathogen for US, NC, CA, NY, TX
+(final line, as-of dots) and state coverage per week.
+
+(2) `tests/test_hub_history.py` asserted that the explorer shows a Thursday
+revision on Thursday. `ExplorerIndex.data` rounds an as-of date back to the
+preceding Wednesday or Saturday end of day (`_cutoff`), which is the documented
+API rule (explorer/overview.md: "The API applies the same rule", never forward),
+so the expectation was wrong, not the code: the test now asserts the Thursday view
+equals the Wednesday one and that Saturday sees the Friday whole-file deletion.
+The `extract.resolve` assertions on the exact days are unchanged and still cover
+the revision and the deletion.
+
+(3) `docs/legacy-v0/` holds the pre-2026-09-22 B0/B0.1/B1/B2 design, data, results
+and workflow pages (the old `docs/archive/workflows-2026-09` became
+`legacy-v0/workflows`), keeping their relative layout so links between them survive;
+`docs/legacy-v0/index.md` explains the boundary. `design/architecture.md` stays in
+the main nav: it describes the network, masks and CRPS objective that `Model` still
+implements. All relative links were rewritten mechanically (resolve each link at the
+page's old location, repoint to the target's new one) and `mkdocs build --strict`
+passes, which it did not before this change (30 warnings, mostly links broken by the
+earlier archive move).

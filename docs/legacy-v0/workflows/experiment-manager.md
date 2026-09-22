@@ -279,7 +279,7 @@ name are passed to the manager, for example `--root`.
 `rank` reads every complete run's `totals.csv` and writes `ranking-<set-hash>/`.
 The hash includes the scoring version and run set. It refuses incomplete runs
 unless `--allow-incomplete` is given. The score follows
-[architecture §10.3](../design/architecture.md#103-metrics):
+[architecture §10.3](../../design/architecture.md#103-metrics):
 
 1. Per target/season/location: total native model WIS / total ensemble WIS over
    identical dates and horizons 0–3, on the hub's 23 quantiles.

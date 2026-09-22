@@ -66,7 +66,10 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
         sid = db.execute('SELECT id FROM series WHERE source_path=?', (HISTORY_FILE,)).fetchone()[0]
     def points(day):
         return index.data('NC', [sid], as_of=day)['series'][0]['points']
+    # The explorer API rounds an as-of date back to the preceding Wednesday or
+    # Saturday end of day (docs/explorer/overview.md), never forward: Thursday's
+    # revision is not visible on Thursday; Saturday sees Friday's whole-file deletion.
     assert points('2023-11-20') == []
     assert [p[1] for p in points('2023-11-22')] == [10, 20]
-    assert [p[1] for p in points('2023-11-23')] == [30]
-    assert points('2023-11-24') == []
+    assert [p[1] for p in points('2023-11-23')] == [10, 20]
+    assert points('2023-11-25') == []

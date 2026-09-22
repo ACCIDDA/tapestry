@@ -3,7 +3,7 @@
 Sweep rankings use [total-WIS ratios](experiment-manager.md#ranking), computed
 for every run. This page covers the full EpiBench pipeline with plots and fans,
 intended for shortlisted configurations. Earlier published B0 reports were
-withdrawn. See [Longleaf setup](../longleaf-setup.md) for the execution workflow.
+withdrawn. See [Longleaf setup](../../longleaf-setup.md) for the execution workflow.
 
 Our challenges are **unversioned custom scoring configs**, with finalized,
 non-vintaged evaluation truth. They are not registered as versioned
@@ -18,7 +18,7 @@ and the official ensemble are freshly scored together. The local R bridge is
 used only by the [frozen hub support](hub-evaluation.md) workflow.
 
 Install the research environment and R packages before registering an experiment;
-keep dependencies fixed during execution. See [Longleaf setup](../longleaf-setup.md).
+keep dependencies fixed during execution. See [Longleaf setup](../../longleaf-setup.md).
 
 To score the collected B0 runs and publish the completed report:
 

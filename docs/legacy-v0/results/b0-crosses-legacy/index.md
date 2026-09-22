@@ -33,7 +33,7 @@ choices, not winners picked from the partial sweep.
 
 ## Score definition
 
-The selection score follows [architecture §10.3](../../design/architecture.md) and is
+The selection score follows [architecture §10.3](../../../design/architecture.md) and is
 computed by `tapestry.evaluation.totals` from each run's `totals.csv`:
 
 1. **Per target and season:** total model WIS ÷ total ensemble WIS over identical

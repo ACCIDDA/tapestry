@@ -58,7 +58,7 @@ report stable scaled errors, coverage, scientific weighting and fitting
 variability without treating seeds or places as independent seasons.
 
 Implementation assumptions and exact dates are in
-[the data specification](docs/data/forward-2025.md): July 26, 2025 UTC
+[the data specification](docs/legacy-v0/data/forward-2025.md): July 26, 2025 UTC
 cutoff and 28-day mature cutoff-final proxies. These are implementation
 choices, not user assertions of certified finality. The user explicitly requested
 acquiring missing archives; both Delphi acquisitions completed and passed checksum
@@ -74,7 +74,7 @@ pairs only for the past two observation weeks at each Wednesday issuance
 forward benchmark using the completed paired data. Training and scoring are now
 authorized. The prior data-only stop applied to the previous step. Exact fitting,
 scoring and denominator decisions are predeclared in
-[the experiment specification](docs/workflows/forward-2025.md). Fixed 100 epochs
+[the experiment specification](docs/legacy-v0/workflows/forward-2025.md). Fixed 100 epochs
 and three seeds are implementation choices, not user-specified optimal budgets.
 
 **Concurrency preference, September 18, 2026:** the user requests running all
@@ -217,3 +217,30 @@ Implementation choices (not user decisions), in
 decision log: loss scales from truth only (changes vintaged scales); heatmap
 files named `heatmap-C<k>.png` (the scenario string is in title and heading);
 `status` prints the resume commands.
+
+## Regenerable wastewater indices and a legacy docs section — 2026-09-22 (later)
+
+**User decisions, September 22, 2026:**
+
+- **The derived wastewater indices must be regenerable.**
+  `derived_nwss_state_indices` (`wval_like`, `pct_rank` per pathogen and state)
+  had no rebuild command after the restructure. One command in the current
+  workflow now rebuilds it from `delphi_nwss`/`delphi_nwss_aux`:
+  `python -m tapestry.dataset.build nwss-indices --data-root data`. It must
+  reproduce the existing snapshot, and the panel analysis page must plot the
+  indices and their state coverage.
+- **Docs history is kept, not deleted, but separated.** Every pre-restructure
+  page (B0/B0.1/B1/B2 designs, their results, the archived workflows, pages
+  describing removed modules) lives under `docs/legacy-v0/` in a "Legacy (v0)"
+  nav section; the current pages stay in the main nav.
+- **A failing test is fixed at its root cause**, code or expectation, with the
+  reason stated.
+
+Measured, not user premises: the restored builder reproduces every shared row of
+the 2026-09-21 snapshot exactly and drops 32 rows (one US row per report time for
+reference week 2020-02-29, `n_sites = 1`) that violate the >= 3 site rule; that
+week precedes the calendar start, so `panel.npz` is unchanged array for array.
+The explorer was right and the test wrong: the as-of API rounds a date back to
+the preceding Wednesday/Saturday and never forward
+([explorer overview](docs/explorer/overview.md)). Details:
+[the unified design](docs/design/restructure-2026-unified.md) decision log.

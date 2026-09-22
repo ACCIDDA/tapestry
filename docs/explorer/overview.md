@@ -91,7 +91,7 @@ CSV or CSV.gz while retaining its path and checksum in the immutable manifest.
 .venv/bin/python -m tapestry.explorer.cli --data-root data index
 ```
 
-The `tapestry.model_data build-b2-nwss` step that built `derived_nwss_state_indices` was removed in the 2026-09 restructuring (commit 4a0b172; recover it from git history). `tapestry.dataset.build` reads the existing derived snapshot; there is currently no command to rebuild it.
+Then rebuild the derived indices with `.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data` (`src/tapestry/dataset/nwss.py`, restored 2026-09-22 from the removed `tapestry.model_data build-b2-nwss` step, same policy; see [wastewater](../data/wastewater.md#production-indices-derived_nwss_state_indices)). It registers a new `derived_nwss_state_indices` snapshot, which `tapestry.dataset.build build` and the explorer index read.
 
 `--batch-rows` bounds the revision buffer; `--cache-mb` sets the SQLite page-cache
 budget. These are not a total process-memory limit. Every format uses the same

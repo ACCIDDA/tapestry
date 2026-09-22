@@ -278,7 +278,7 @@ sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore
 Task numbers are rows of `data/experiments/b0-explore/jobs.csv` (one per
 scenario). Each seed attempt writes only its own folder, so there is no prepare
 or collect step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
-(`NTFY=0` to disable); see [`scripts/b01_notify.py`](../scripts/b01_notify.py).
+(`NTFY=0` to disable); see `scripts/b01_notify.py`.
 
 ## Monitor and resume
 

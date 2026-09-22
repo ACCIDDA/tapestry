@@ -4,7 +4,7 @@ Research review, 19 September 2026. The main finding is that the leading systems
 
 ## Evaluation source and interpretation
 
-The ranking source is the user-supplied [FluSight 2025–2026 Evaluation](../../../influpaint/Flusight/FluSight_2025-26_Evaluation.docx). The file is outside this repository. Its public publication status was not established. Its Table 1, rather than an earlier paper's preliminary evaluation, is authoritative for the numbers below.
+The ranking source is the user-supplied FluSight 2025–2026 Evaluation (`../influpaint/Flusight/FluSight_2025-26_Evaluation.docx`, relative to the repository root). The file is outside this repository. Its public publication status was not established. Its Table 1, rather than an earlier paper's preliminary evaluation, is authoritative for the numbers below.
 
 The report evaluates weekly influenza hospital-admission forecasts at horizons 0–3, uses final target data published July 1, 2026, excludes national forecasts and Puerto Rico, and requires at least 75% submission completeness. It describes solicitation through May 20, 2026, but gives inconsistent November start dates. The exact scored reference-date sequence is not supplied in the text.
 

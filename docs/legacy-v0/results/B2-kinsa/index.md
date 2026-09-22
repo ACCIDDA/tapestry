@@ -12,7 +12,7 @@ with three held-out seasons per run. That is 24 season fits and 108 component fi
 in 21.5 minutes on both patron nodes (Slurm arrays 1877664 and 1877665). The
 [experiment specification](../../design/b2.md#kinsa-only-experiment-b2-kinsa) states
 every assumption, and the [dataset page](../../data/b2.md#kinsa-national-only) and
-[source page](../../data/kinsa.md) describe the signal and its PopHIVE vintages.
+[source page](../../../data/kinsa.md) describe the signal and its PopHIVE vintages.
 
 ## Result
 

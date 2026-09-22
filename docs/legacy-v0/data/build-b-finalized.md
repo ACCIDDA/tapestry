@@ -4,13 +4,13 @@
 > `build_b_finalized.npz` were removed in the 2026-09 restructuring (commit 4a0b172).
 > The current dataset is `data/processed/panel.npz`, built by
 > `python -m tapestry.dataset.build build`; see
-> [the unified design](../design/restructure-2026-unified.md) §3. This page records
+> [the unified design](../../design/restructure-2026-unified.md) §3. This page records
 > how B0's finalized dataset was defined.
 
 This page defines the finalized six-channel dataset used by B0: intake through
 `SelectedData`, the tensor materializer, and the window querier. For the model,
-see [training and prediction](../workflows/training.md). The
-[architecture](../design/architecture.md) records the broader proposals.
+see [training and prediction](../../workflows/training.md). The
+[architecture](../../design/architecture.md) records the broader proposals.
 
 ## Contract and assumptions
 

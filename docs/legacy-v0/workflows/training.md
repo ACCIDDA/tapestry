@@ -3,7 +3,7 @@
 B0 is a small PyTorch model for the finalized six-channel dataset. `train` and
 `predict` fit and sample one model; season cross-validation is described below.
 Use the repository root as the working directory and run `uv sync --upgrade-package epibenchmark`
-first; see [environment setup](../getting-started.md).
+first; see [environment setup](../../getting-started.md).
 
 Train with an explicit last permitted training-label date:
 
@@ -63,7 +63,7 @@ native-unit channel/location Q95. Admission/ED weights default to
 within each season. States/DC share 80% equally and native US has 20%. Sparse
 loss scales pool toward the channel Q95 below 26 observed weeks, with floors of
 1 admission and .001 ED proportion. See
-[design choices for loss](../design/architecture.md#82-design-choices-for-b0-loss-and-weights).
+[design choices for loss](../../design/architecture.md#82-design-choices-for-b0-loss-and-weights).
 This training normalization is a surrogate for the location-relative ensemble
 WIS used in ranking, not the same denominator. Missing labels are masked before
 arithmetic; observed zeros remain eligible. Whole-partition cell weights preserve

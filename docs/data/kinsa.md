@@ -50,7 +50,7 @@ The history has three regimes:
 - **Before 2026-04-06 nothing existed in PopHIVE.** A Wednesday origin earlier
   than that has no Kinsa data, and the real-time archive is about five months
   old. It is a lower bound on when Kinsa could have supplied a value. No release
-  lag is assumed or filled in; see the [B2 dataset](b2.md#kinsa-national-only).
+  lag is assumed or filled in; see the [B2 dataset](../legacy-v0/data/b2.md#kinsa-national-only).
 - The first commit holds one junk row whose time is the string `NA`. It is
   skipped and counted in the manifest, and PopHIVE removed it on 2026-05-04.
 

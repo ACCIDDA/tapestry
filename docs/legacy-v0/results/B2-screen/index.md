@@ -100,7 +100,7 @@ season with earlier vintage-supported training, or a separately defined
 within-season chronological study, would address this specific limitation.
 
 This is not the same as proving that wastewater is biologically late. The
-[earlier source analysis](../../data/wastewater.md) reported sample-level
+[earlier source analysis](../../../data/wastewater.md) reported sample-level
 median reporting latency of about 11 days, versus four days for NHSN. Such a
 delay can consume a lead in event time. But that analysis used a synthetic
 18-day wastewater availability rule for its regressions; those regressions
@@ -116,7 +116,7 @@ it rules out the wholesale lack of overlap seen for Wednesday wastewater.
 Native claims vintages begin on 2020-05-29; B2 nevertheless trains only on
 the two non-held-out seasons in its three-season calendar.
 
-In the [earlier exploratory claims sample](../../data/covariates.md), median
+In the [earlier exploratory claims sample](../../../data/covariates.md), median
 reporting latency was zero days for outpatient claims and two days for
 inpatient claims. That sample had approximately 94% and 86% availability at
 its Wednesday origin, respectively. These are measurements from that earlier

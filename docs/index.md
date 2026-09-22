@@ -33,7 +33,7 @@ to this available support, not a complete six-by-three grid. These same seasons
 guided architecture selection, so this is exploratory cross-validation, not an
 untouched final evaluation.
 
-[**Results — Fan plots.**](results/b0-1-crosses/index.md#fan-plots)
+[**Results — Fan plots.**](legacy-v0/results/b0-1-crosses/index.md#fan-plots)
 Green shows the new models; grey shows the ensemble. Measured interval coverage
 remains below nominal levels.
 
@@ -43,10 +43,10 @@ That count is not a count of unicorns winning every target/season comparison.
 The top five configurations fit separate models by target or pathogen while
 receiving all six input histories.
 
-The [B1 overnight results](results/b1-overnight/index.md) compare direct forecasts,
+The [B1 overnight results](legacy-v0/results/b1-overnight/index.md) compare direct forecasts,
 supplied-final flags, auxiliary nowcasts, and two-stage forecasts under vintage
 inputs and artificial masking, with rankings and matched forecast fan plots.
-The page also reports the [completed 300-epoch follow-up](results/b1-overnight/index.md#300-epoch-results-and-comparison),
+The page also reports the [completed 300-epoch follow-up](legacy-v0/results/b1-overnight/index.md#300-epoch-results-and-comparison),
 with matched-seed comparisons and 100-vs-300-epoch fan plots.
 
 ## B0: six channels, no revision nowcasting
@@ -81,7 +81,7 @@ Admission-rate transforms and normalization are fitted inside each training
 partition. B0 treats the frozen latest NSSP values as retrospective truth;
 they are not guaranteed immutable. The input mask handles existing gaps, but
 this experiment does not establish performance with arbitrary missing sources
-or historical reporting delays. See the [data contract](data/build-b-finalized.md).
+or historical reporting delays. See the [data contract](legacy-v0/data/build-b-finalized.md).
 
 ## Architectures tried
 
@@ -109,8 +109,8 @@ flowchart TD
 | Uncertainty | Noise-modulated residual decoders, global/local noise, stochastic trend decoder | The trend decoder worsened all four matched comparisons and has been removed from the active grid. Historical results retain it. |
 
 The completed experiment crossed **172 configurations and three random seeds**,
-with three held-out-season folds per seed. The [B0.1 specification](design/b0.1.md)
-has the exact recipes; the [results](results/b0-1-crosses/index.md) have the
+with three held-out-season folds per seed. The [B0.1 specification](legacy-v0/design/b0.1.md)
+has the exact recipes; the [results](legacy-v0/results/b0-1-crosses/index.md) have the
 comparisons. These findings are about the tested combinations, not a general
 ranking of MLPs, convolutions, and transformers.
 
@@ -118,7 +118,7 @@ ranking of MLPs, convolutions, and transformers.
 
 The next steps are to evaluate masking with arbitrary source availability,
 add covariates, and establish nowcasting performance.
-The [B1 implementation](design/b1.md) has the Wednesday-vintage data
+The [B1 implementation](legacy-v0/design/b1.md) has the Wednesday-vintage data
 and correction/forecast path; the unicorn results above are still **B0 results**.
 Nowcasting here means estimating the eventual values of recently completed
 weeks whose reports are missing or provisional.
@@ -151,14 +151,16 @@ still needs to be evaluated.
 
 ## Working with Tapestry
 
-The [B2 covariate results](results/B2-screen/index.md) include the completed
+The [B2 covariate results](legacy-v0/results/B2-screen/index.md) include the completed
 32-run screen, heatmaps, forecast fans and an explanation of the source-timing
-and training-support limitations. The [B2-kinsa results](results/B2-kinsa/index.md)
+and training-support limitations. The [B2-kinsa results](legacy-v0/results/B2-kinsa/index.md)
 add the national Kinsa signal (PopHIVE) to that comparison.
 
 Start with [Getting started](getting-started.md), the
 [training workflow](workflows/training.md), or the [data explorer](explorer/overview.md).
-The [architecture notes](design/architecture.md) explain the model and masks; the [B1 page](design/b1.md) documents the current vintage-aware work.
+The [architecture notes](design/architecture.md) explain the model and masks. Since 2026-09-22 B0, B1 and B2 are one
+model and one scenario space ([unified design](design/restructure-2026-unified.md)); the B0/B1/B2 results quoted
+above were produced by the earlier code and are kept under [Legacy (v0)](legacy-v0/index.md).
 
 *Documentation note · September 16, 2026: the “unicorn” terminology comes from the
 project research update; numerical summaries come from the saved B0.1 report. No scores were recomputed for this update. “Across

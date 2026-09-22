@@ -22,6 +22,8 @@ rounded or overflow.
 
 The truth panel is resolved at the end of the build day (`truth_day`, default today,
 recorded in metadata). Sources are read in parallel, one process per source.
+The wastewater indices are a derived raw snapshot, rebuilt from Delphi NWSS by
+`python -m tapestry.dataset.build nwss-indices` (`dataset/nwss.py`) before `build`.
 `python -m tapestry.dataset.build check` verifies the stored panel against direct
 `extract.extract(...)` resolution at sampled issuances and at the truth day.
 
@@ -266,8 +268,18 @@ def main(argv=None):
     checked.add_argument('--data-root', default='data')
     checked.add_argument('--samples', type=int, default=4, help='Random issuances checked (plus the truth day)')
     checked.add_argument('--seed', type=int, default=0)
+    indices = sub.add_parser('nwss-indices', help='Rebuild the derived_nwss_state_indices snapshot from '
+                             'delphi_nwss + delphi_nwss_aux (run before build; see dataset/nwss.py)')
+    indices.add_argument('--data-root', default='data')
     args = parser.parse_args(argv)
-    if args.command == 'build':
+    if args.command == 'nwss-indices':
+        from .nwss import register
+        started = time.perf_counter()
+        result = register(args.data_root)
+        print(json.dumps(dict(dataset_key=result['dataset_key'], snapshot_id=result['snapshot_id'],
+                              rows=result['rows'], report_time_range=result['report_time_range'],
+                              seconds=round(time.perf_counter() - started, 1))))
+    elif args.command == 'build':
         started = time.perf_counter()
         arrays = build(args.data_root, start=args.start, truth_day=args.truth_day, workers=args.workers)
         save(arrays, args.output)
