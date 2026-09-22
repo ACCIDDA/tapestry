@@ -460,7 +460,7 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
          admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT):
     """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot."""
     from tapestry.evaluation.totals import rank as rank_runs
-    from tapestry.evaluation.plots import plot_experiment
+    from tapestry.evaluation.plots import plot_experiment, write_report
     if not 0 <= us_weight <= 1 or min(admissions_weight, ed_weight) < 0 or not admissions_weight + ed_weight:
         raise ValueError('Need 0 <= us_weight <= 1 and nonnegative target weights, not both zero')
     done = completed_runs(folder, allow_incomplete, seeds)
@@ -473,6 +473,7 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
     print(ranking.head(20).to_string(index=False), flush=True)
     for path in plot_experiment(folder, destination):
         print(path, flush=True)
+    print(write_report(folder, destination), flush=True)
     return destination
 
 
