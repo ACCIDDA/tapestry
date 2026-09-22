@@ -1,22 +1,39 @@
 """Read each dataset source once into a revision table, then resolve it as of any cutoff.
 
 The single read path for the dataset builder (`dataset.build`) and ad-hoc analysis
-(docs/design/restructure-2026-unified.md §2). Vintage policy, unchanged from the
-row-by-row `VintageArchive` it replaces (2026-09-22, rewritten for speed only):
+(docs/design/restructure-2026-unified.md §2). Vintage policy (2026-09-22, latest
+release per cell; see the decision log entry "Hub vintages stop shadowing"):
 
 - Archive-backed sources (six targets, four Delphi claims covariates) carry three
   tiers of revisions: `hub` (the Hub's native `as_of` full snapshots), `git` (Hub
   Git-history full snapshots, each registered release is a full snapshot even when
   empty for this target) and `delphi` (per-observation Delphi report-time revisions).
-- As of a cutoff, a location is covered by a Hub tier from the earliest reference
-  week that appears in any eligible release of that tier. Covered cells take the
-  value of the latest eligible full snapshot (absent there = unavailable). Native
-  `hub` coverage precedes `git`, which precedes `delphi`. Outside Hub coverage a
-  cell takes its latest eligible Delphi revision (a missing/invalid latest revision
-  is unavailable; earlier revisions are not used as fallback).
+- Each tier states what it knew at its own latest eligible release, and **the most
+  recent statement wins per cell**:
+  * a Hub tier (`hub`, `git`) covers a location from the earliest reference week in
+    any eligible release of that tier. Within its coverage its statement is the
+    latest eligible full snapshot, at that snapshot's release time: the value if the
+    cell is in it, *missing* if it is not (a deletion is information, at that time).
+    Outside its coverage the tier says nothing.
+  * `delphi` states each cell's latest eligible revision, at that revision's time
+    (a missing/invalid latest revision is a statement of missing; earlier revisions
+    are not used as fallback). A cell with no Delphi row at all says nothing.
+  * the cell takes the statement with the latest release time; ties go `hub`, then
+    `git`, then `delphi`. A stale Hub snapshot therefore no longer hides data that
+    Git or Delphi released later (before 2026-09-22 the latest Hub snapshot won for
+    every later date once a location's Hub history started, which hid released
+    values and made flu truth stop at the last FluSight snapshot).
 - Rows released at the same time for the same cell with different values
   (including one missing and one present) are unavailable, never resolved by
   file order.
+- **A Hub `as_of` that is a week-ending label, not a publication time, is replaced
+  by the Git publication time** (`_publication_times`). FluSight's native `as_of`
+  was the week-ending Saturday of the snapshot itself until 2025-07-05 and the real
+  Wednesday publication day (week end + 4) afterwards; taking the label literally
+  made a snapshot visible up to six days before it existed. Such a release (a bare
+  date equal to the snapshot's own last reference week) is moved to the first Git
+  release whose snapshot reaches that week, i.e. the commit that published it, or
+  to label + 4 days when the source has no Git history.
 - A release is visible at a cutoff day if released by 23:59:59.999999 UTC that day.
 - Values must be finite and nonnegative; NSSP percentages must be at most 100 and
   are divided by 100. Claims archives are daily: only Saturday reference days are
@@ -47,16 +64,20 @@ import pyarrow.parquet as paparquet
 from tapestry.data.geography import STATE_NAMES, observation_geography
 from tapestry.data.selection import SelectedData, describe, selected_row
 
-# Target channels: NHSN admissions (Hub finals + Delphi fallback) and NSSP ED
-# proportions (Delphi only; NSSP has no finality flag, so "finalized" for it
-# means the latest reported unsmoothed snapshot).
+# Target channels: NHSN admissions and NSSP ED proportions, each from its Hub
+# (native `as_of` snapshots + Git history) and from the Delphi archive. The Hubs
+# distribute both target kinds in the same file (FluSight `target-data/time-series.csv`,
+# the COVID and RSV hubs' `target-data/time-series.parquet`), so the three NSSP
+# channels take the same Hub as their admissions channel; the fourth entry is the
+# `selection.describe` origin column that picks the target out of that file.
+# Hub ED values are proportions (0-1), Delphi's are percentages (divided by 100).
 TARGET_SOURCES = {
     'nhsn_flu_admissions': ('hub_flusight_current', 'delphi_nhsn', 'confirmed_admissions_flu_ew', 'totalconfflunewadm'),
     'nhsn_covid_admissions': ('hub_covid_current', 'delphi_nhsn', 'confirmed_admissions_covid_ew', 'totalconfc19newadm'),
     'nhsn_rsv_admissions': ('hub_rsv_current', 'delphi_nhsn', 'confirmed_admissions_rsv_ew', 'totalconfrsvnewadm'),
-    'nssp_flu_proportion': (None, 'delphi_nssp', 'pct_ed_visits_influenza', 'percent_visits_influenza'),
-    'nssp_covid_proportion': (None, 'delphi_nssp', 'pct_ed_visits_covid', 'percent_visits_covid'),
-    'nssp_rsv_proportion': (None, 'delphi_nssp', 'pct_ed_visits_rsv', 'percent_visits_rsv'),
+    'nssp_flu_proportion': ('hub_flusight_current', 'delphi_nssp', 'pct_ed_visits_influenza', 'percent_visits_influenza'),
+    'nssp_covid_proportion': ('hub_covid_current', 'delphi_nssp', 'pct_ed_visits_covid', 'percent_visits_covid'),
+    'nssp_rsv_proportion': ('hub_rsv_current', 'delphi_nssp', 'pct_ed_visits_rsv', 'percent_visits_rsv'),
 }
 CLAIMS_SOURCES = {
     'inpatient_flu': ('delphi_claims_inpatient', 'claims_inpatient_adm_pct_claims_flu'),
@@ -250,7 +271,39 @@ def revisions(name, data_root='data'):
                     day=days.to_numpy(), location=location.astype(str), value=values)))
     rows = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(
         dict(tier=[], release=np.array([], 'datetime64[ns]'), day=[], location=[], value=[]))
-    return Revisions(_without_conflicts(rows), np.sort(_releases(git_releases)))
+    return Revisions(_without_conflicts(_publication_times(rows)), np.sort(_releases(git_releases)))
+
+
+def _publication_times(rows):
+    """Move Hub releases whose `as_of` is a week-ending label to their Git publication time.
+
+    A native Hub release is a label, not a publication time, when it is a bare date
+    (midnight) equal to the last reference week of its own snapshot: FluSight did
+    this until 2025-07-05 (the COVID and RSV hubs always publish week end + 4 days).
+    Its replacement is the first Git release whose snapshot reaches that reference
+    week -- the commit that published the week -- or label + 4 days (the Hubs'
+    regular Wednesday lag) when the source has no Git history. Replacements are made
+    strictly increasing so two snapshots never collapse into one release.
+    """
+    hub = rows.tier.eq('hub')
+    if not hub.any():
+        return rows
+    last = rows[hub].groupby('release').day.max().sort_index()
+    # Git releases sorted by time; the snapshot's last reference week is nondecreasing.
+    git = rows[rows.tier.eq('git')].groupby('release').day.max().sort_index()
+    mapping, previous = {}, None
+    for release, day in last.items():
+        stamp = pd.Timestamp(release)
+        if stamp == stamp.normalize() and stamp.strftime('%Y-%m-%d') == day:
+            reached = git.index[git.to_numpy().astype('U10') >= day]
+            stamp = pd.Timestamp(reached[0]) if len(reached) else stamp + pd.Timedelta(days=4)
+        if previous is not None and stamp <= previous:
+            stamp = previous + pd.Timedelta(1, 'ns')
+        mapping[release], previous = stamp, stamp
+    if all(key == value for key, value in mapping.items()):
+        return rows
+    release = rows.release.where(~hub, rows.release.map(mapping))
+    return rows.assign(release=release.to_numpy('datetime64[ns]'))
 
 
 def _without_conflicts(rows):
@@ -266,47 +319,53 @@ def _without_conflicts(rows):
 def resolve(revisions_, day, dates, locations=LOCATIONS):
     """[len(dates), len(locations)] float values visible at the end of `day` (NaN = unavailable).
 
-    `dates` are Saturday ISO strings. Coverage is computed from every eligible Hub
-    row, not only `dates`, exactly as the full-archive resolution does.
+    `dates` are Saturday ISO strings. Each tier states what it knew at its own latest
+    eligible release (module docstring); per cell the most recent statement wins,
+    ties going `hub`, then `git`, then `delphi`. Hub coverage is computed from every
+    eligible Hub row, not only `dates`, exactly as the full-archive resolution does.
     """
     cutoff = cutoff_time(day)
     dates, locations = [str(d) for d in dates], list(locations)
     t_index, l_index = {d: i for i, d in enumerate(dates)}, {l: i for i, l in enumerate(locations)}
     result = np.full((len(dates), len(locations)), np.nan)
-    chosen = np.zeros(result.shape, dtype=bool)
+    when = np.full(result.shape, np.datetime64('NaT', 'ns'))
     if not dates:
         return result
-    for tier in ('hub', 'git'):
+    for tier in ('delphi', 'git', 'hub'):  # last wins an equal release time
         part = revisions_.tiers[tier]
-        part = part[part.release.to_numpy() <= cutoff]
-        releases = part.release.to_numpy()
-        if tier == 'git':
-            releases = np.concatenate([releases, revisions_.git_releases[revisions_.git_releases <= cutoff]])
-        if not len(releases):
-            continue
-        start = part.groupby('location').day.min().reindex(locations).fillna('9999-12-31')
-        covered = (np.array(dates, dtype='U10')[:, None] >= start.to_numpy().astype('U10')[None, :]) & ~chosen
-        values = np.full(result.shape, np.nan)
-        _fill(values, part[part.release.to_numpy() == releases.max()], t_index, l_index)
-        result[covered] = values[covered]
-        chosen |= covered
-    delphi = revisions_.tiers['delphi']
-    days = delphi.day.to_numpy()
-    delphi = delphi.iloc[np.searchsorted(days, min(dates), 'left'):np.searchsorted(days, max(dates), 'right')]
-    delphi = delphi[delphi.release.to_numpy() <= cutoff]
-    if len(delphi):
-        latest = delphi[~delphi.duplicated(['day', 'location'], keep='last')]  # sorted by release within a cell
-        values = np.full(result.shape, np.nan)
-        _fill(values, latest, t_index, l_index)
-        result[~chosen] = values[~chosen]
+        values, times = np.full(result.shape, np.nan), np.full(result.shape, np.datetime64('NaT', 'ns'))
+        if tier == 'delphi':
+            days = part.day.to_numpy()
+            part = part.iloc[np.searchsorted(days, min(dates), 'left'):np.searchsorted(days, max(dates), 'right')]
+            part = part[part.release.to_numpy() <= cutoff]
+            if not len(part):
+                continue
+            latest = part[~part.duplicated(['day', 'location'], keep='last')]  # sorted by release within a cell
+            _fill(values, latest, t_index, l_index)
+            _fill(times, latest, t_index, l_index, column='release')
+        else:
+            part = part[part.release.to_numpy() <= cutoff]
+            releases = part.release.to_numpy()
+            if tier == 'git':
+                releases = np.concatenate([releases, revisions_.git_releases[revisions_.git_releases <= cutoff]])
+            if not len(releases):
+                continue
+            newest = releases.max()
+            start = part.groupby('location').day.min().reindex(locations).fillna('9999-12-31')
+            covered = np.array(dates, dtype='U10')[:, None] >= start.to_numpy().astype('U10')[None, :]
+            _fill(values, part[part.release.to_numpy() == newest], t_index, l_index)
+            values[~covered] = np.nan  # outside its coverage the tier says nothing
+            times[covered] = newest  # inside it, absence is a deletion as of `newest`
+        take = ~np.isnat(times) & (np.isnat(when) | (times >= when))
+        result[take], when[take] = values[take], times[take]
     return result
 
 
-def _fill(values, rows, t_index, l_index):
+def _fill(values, rows, t_index, l_index, column='value'):
     t = rows.day.map(t_index)
     l = rows.location.map(l_index)
     keep = t.notna() & l.notna()
-    values[t[keep].astype(int).to_numpy(), l[keep].astype(int).to_numpy()] = rows.value[keep].to_numpy()
+    values[t[keep].astype(int).to_numpy(), l[keep].astype(int).to_numpy()] = rows[column][keep].to_numpy()
 
 
 def _latest_snapshot(data_root, dataset):

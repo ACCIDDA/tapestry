@@ -100,7 +100,7 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
     finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'finalized', names)}
     assert min(finalized) == start  # context before the calendar is padding, not a missing origin
     vintaged = episodes(panel, lookback, 'vintaged', names, asof_weeks=R)
-    fallback = 0
+    unpublished = 0
     for e in vintaged:
         issuance = date.fromisoformat(e['issuance'])
         end = (issuance - timedelta(days=4)).isoformat()
@@ -112,11 +112,17 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
                 assert not available
                 continue
             truth = code(day) + 1000
-            if i >= lookback - R and value == truth + .5:
-                assert not final  # the value this issuance saw
+            if i >= lookback - R:  # as-of window: exactly what the issuance saw, or nothing
+                asof = panel['asof_targets'][list(panel['issuance_dates']).index(np.datetime64(e['issuance'])),
+                                             list(map(str, panel['dates'])).index(day), nc, 0]
+                assert not final
+                if np.isnan(asof):
+                    assert not available  # not published at the cutoff: unavailable, never truth-filled
+                    unpublished += 1
+                else:
+                    assert available and value == truth + .5
             else:
-                assert value == truth and final  # older week, or not yet reported: truth, flagged final
-                fallback += i >= lookback - R
+                assert value == truth and final  # older week: truth, flagged final
             cov = e['covariates'][i]
             assert cov[0, 0, nc] == code(day) + 1000 + .5 and cov[0, 1, nc]  # inpatient_flu, as of the issuance
             assert cov[1, 0, us] == code(day) + 50000 + .5 and cov[1, 1, us] and not cov[1, 1, nc]  # kinsa, US only
@@ -126,7 +132,7 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
         truth_episode = finalized.get(end)
         if truth_episode:
             np.testing.assert_array_equal(e['target_values'], truth_episode['target_values'])
-    assert (fallback > 0) == (R > 0) and len(vintaged) > 100
+    assert (unpublished > 0) == (R > 0) and len(vintaged) > 100
 
 
 def test_sparse_as_of_storage_round_trips_exactly():

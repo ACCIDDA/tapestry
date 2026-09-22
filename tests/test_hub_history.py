@@ -11,7 +11,7 @@ from tapestry.explorer.index import ExplorerIndex
 import numpy as np
 import pandas as pd
 
-from tapestry.dataset.extract import Revisions, resolve, revisions
+from tapestry.dataset.extract import Revisions, _publication_times, resolve, revisions
 
 
 def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
@@ -54,12 +54,27 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
     np.testing.assert_array_equal(at(archive, '2023-11-22'), [10, 20])
     np.testing.assert_array_equal(at(archive, '2023-11-23'), [np.nan, 30])
     assert np.isnan(at(archive, '2023-11-24')).all()
-    # Native as_of snapshots remain authoritative where they establish coverage;
-    # Git must not resurrect native omissions or nulls, nor override native values.
+    # The most recent release wins per cell (2026-09-22): a native as_of snapshot is
+    # authoritative only until Git publishes something newer. Here the native snapshot
+    # of 11-22 (11-04 = 11, 11-11 absent) is superseded on 11-23 by the Git snapshot
+    # (11-04 absent, 11-11 = 30). Before that change the native tier won both cells
+    # for every later date, which is how stale Hub snapshots hid released data.
     native = pd.DataFrame(dict(tier=['hub'], release=np.array(['2023-11-22'], 'datetime64[ns]'), day=['2023-11-04'],
                                location=['NC'], value=[11.]))
     rows = pd.concat([archive.rows, native], ignore_index=True).sort_values(['day', 'location', 'release'])
-    np.testing.assert_array_equal(at(Revisions(rows, archive.git_releases), '2023-11-23'), [11, np.nan])
+    combined = Revisions(rows, archive.git_releases)
+    # At 11-22 the native snapshot is the most recent statement: its value for 11-04
+    # and, because a full snapshot's omission is a deletion at its own release time,
+    # nothing for 11-11 (the Git snapshot that still had 20 is older, from 11-21).
+    np.testing.assert_array_equal(at(combined, '2023-11-22'), [11, np.nan])
+    np.testing.assert_array_equal(at(combined, '2023-11-23'), [np.nan, 30])
+    # A native as_of that is the snapshot's own last reference week is a week-ending
+    # label, not a publication time: it moves to the first Git release that reaches
+    # that week, so the label cannot make a snapshot visible before it existed.
+    labelled = pd.DataFrame(dict(tier=['hub'], release=np.array(['2023-11-11'], 'datetime64[ns]'), day=['2023-11-11'],
+                                 location=['NC'], value=[12.]))
+    moved = _publication_times(pd.concat([archive.rows, labelled], ignore_index=True))
+    assert moved[moved.tier.eq('hub')].release.tolist() == [pd.Timestamp('2023-11-21T12:00:00')]
     index = ExplorerIndex(raw.root)
     index.build(progress=lambda _: None)
     with index.connect() as db:

@@ -11,9 +11,10 @@ One builder, one switch (docs/design/restructure-2026-unified.md §3):
   end (the Saturday four days earlier). With `asof_weeks` = the scenario's field
   (default 2, the previous vintaged builder):
   * the last min(asof_weeks, lookback) context weeks take the target value visible
-    at the issuance cutoff (known_final False); where nothing was visible yet they
-    fall back to truth, flagged known-final where available (the previous builder's
-    rule, kept so the default reproduces it);
+    at the issuance cutoff (known_final False) and are **unavailable where nothing
+    was visible** (user decision 2026-09-22: a cell that was not published at the
+    cutoff must be unavailable, not filled with later truth; this replaces the
+    previous truth fallback and changes vintaged results against old B1);
   * older context weeks and all target weeks are truth, known-final where available;
   * covariates (state and national) are as of the issuance for every context week,
     NaN where nothing was visible (no truth fallback), as the previous builder did.
@@ -96,10 +97,9 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         values = targets[context].copy()
         known_final = ~np.isnan(values)
         if vintaged and recent:
-            asof = asof_targets[w, context][-recent:]
-            seen = ~np.isnan(asof)
-            values[-recent:] = np.where(seen, asof, values[-recent:])
-            known_final[-recent:] = ~seen & known_final[-recent:]
+            # Nothing visible at the cutoff stays NaN: unavailable, never truth-filled.
+            values[-recent:] = asof_targets[w, context][-recent:]
+            known_final[-recent:] = False
         available = ~np.isnan(values)
         target_values = targets[future]
         target_available = ~np.isnan(target_values)

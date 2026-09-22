@@ -1,4 +1,4 @@
-"""Describe `panel.npz`: size of the vintaged truth fallback, revisions, covariate availability.
+"""Describe `panel.npz`: how much of a vintaged as-of window was unpublished, revisions, covariates.
 
 Run after every panel rebuild:
 
@@ -8,19 +8,20 @@ Writes one Markdown page with base64-embedded PNG figures (as the experiment rep
 and tables whose numbers are all computed here; no hand-written claims.
 
 Definitions are the episode builder's own (`episodes.episodes`, user decision 2026-09-22
-to keep the truth fallback): vintaged episodes are cut with `lookback = asof_weeks =
+that an unpublished cell is unavailable): vintaged episodes are cut with `lookback = asof_weeks =
 WEEKS`, so every one of the last WEEKS context weeks goes through the as-of rule. For a
 context cell of issuance w, *weeks before issuance* j = 0 is the context end (the
 Saturday four days before the Wednesday), j = 1 the week before, and so on.
 
-- **Fallback** = `known_final` inside the as-of window: nothing was visible at the
-  cutoff and the final truth fills the cell. Share = fallback cells / available cells
-  (`available` = visible as of the cutoff or filled from truth). Cells with neither are
-  excluded (they are unavailable in the episode either way). A missing archive and a
-  week not yet reported both count as fallback; the panel cannot tell them apart.
-- **Revision** = (as-of - final) / final on cells where an as-of value was visible
-  (`available & ~known_final`) and the final truth is > 0.
-- **Covariates** have no truth fallback in episodes; "not visible" = final truth
+- **Unpublished** = nothing was visible at the cutoff, so the episode cell is
+  unavailable (user decision 2026-09-22: no truth fallback). Share = unpublished cells
+  / cells that exist at all (visible at the cutoff or present in the final truth); the
+  denominator is the one the truth fallback used before, so the shares are comparable
+  with the pre-2026-09-22 "fallback" ones. A missing archive and a week not yet
+  reported both count as unpublished; the panel cannot tell them apart.
+- **Revision** = (as-of - final) / final on cells with a visible as-of value and a
+  final truth > 0.
+- **Covariates** are unavailable when not visible, as targets now are; "not visible" = final truth
   available but no as-of value at the cutoff, share of cells with final truth.
   Kinsa's as-of archive starts 2026-04-06, so its share is also given from then on.
 - Season = `cv.season` of the context end (CDC epiweek 31-30).
@@ -62,7 +63,7 @@ def _png(fig):
 
 
 def _cells(panel, eps):
-    """Long table of every as-of-window target cell: issuance, season, j, target, location, fallback, revision."""
+    """Long table of every as-of-window target cell: issuance, season, j, target, location, unpublished, revision."""
     names, locations = list(panel['target_names']), [str(l) for l in panel['locations']]
     index = {str(d): i for i, d in enumerate(panel['dates'])}
     rows = []
@@ -72,13 +73,14 @@ def _cells(panel, eps):
                 continue  # padding before the calendar: never available
             j = WEEKS - 1 - i
             final = panel['targets'][index[day]].T  # [C, L]
-            available, fallback = ep['available'][i], ep['known_final'][i]
-            asof = np.where(available & ~fallback, ep['values'][i], np.nan)
+            visible = ep['available'][i]  # in the as-of window this is exactly "published at the cutoff"
+            known = visible | np.isfinite(final)  # the cell exists at all (as-of or final truth)
+            asof = np.where(visible, ep['values'][i], np.nan)
             with np.errstate(divide='ignore', invalid='ignore'):
                 revision = np.where(final > 0, (asof - final) / final, np.nan)
-            c, l = np.nonzero(available)
+            c, l = np.nonzero(known)
             rows.append(pd.DataFrame(dict(issuance=ep['issuance'], j=j, target=np.array(names)[c],
-                                          location=np.array(locations)[l], fallback=fallback[c, l],
+                                          location=np.array(locations)[l], unpublished=~visible[c, l],
                                           revision=revision[c, l])))
     cells = pd.concat(rows, ignore_index=True)
     cells['season'] = cells.issuance.map(lambda d: season(context_end(d)))
@@ -89,14 +91,14 @@ def _cells(panel, eps):
 
 def _whole_issuance(cells):
     """Issuances in which every available j <= 1 cell of a target fell back (no as-of at all), per season."""
-    recent = cells[cells.j <= 1].groupby(['target', 'season', 'issuance']).fallback.all()
+    recent = cells[cells.j <= 1].groupby(['target', 'season', 'issuance']).unpublished.all()
     return recent.groupby(['target', 'season']).agg(['sum', 'size']).rename(
-        columns={'sum': 'all fallback', 'size': 'issuances'}).astype(int)
+        columns={'sum': 'all unpublished', 'size': 'issuances'}).astype(int)
 
 
 def _share_table(cells, scope):
     frame = cells if scope == 'states+US' else cells[cells.location == 'US']
-    return frame.pivot_table(index=['target', 'season'], columns='j', values='fallback', aggfunc='mean') * 100
+    return frame.pivot_table(index=['target', 'season'], columns='j', values='unpublished', aggfunc='mean') * 100
 
 
 def _heatmaps(table, title):
@@ -104,7 +106,7 @@ def _heatmaps(table, title):
     fig, axes = plt.subplots(2, 3, figsize=(15, 6.5), sharex=True, sharey=True, constrained_layout=True)
     for ax, target in zip(axes.flat, targets):
         sns.heatmap(table.loc[target], ax=ax, vmin=0, vmax=100, cmap='rocket_r', annot=True, fmt='.0f',
-                    annot_kws=dict(size=8), cbar=ax is axes.flat[-1], cbar_kws=dict(label='% fallback'))
+                    annot_kws=dict(size=8), cbar=ax is axes.flat[-1], cbar_kws=dict(label='% unpublished'))
         ax.set_title(target, fontsize=10)
         ax.set_xlabel('weeks before issuance (0 = context end)')
         ax.set_ylabel('')
@@ -115,12 +117,12 @@ def _heatmaps(table, title):
 
 
 def _per_issuance(cells):
-    frame = cells[cells.j <= 3].groupby(['target', 'j', 'issuance']).fallback.mean().mul(100).reset_index()
+    frame = cells[cells.j <= 3].groupby(['target', 'j', 'issuance']).unpublished.mean().mul(100).reset_index()
     frame['issuance'] = pd.to_datetime(frame.issuance)
-    grid = sns.relplot(frame, x='issuance', y='fallback', hue='j', col='target', col_wrap=3, kind='line',
+    grid = sns.relplot(frame, x='issuance', y='unpublished', hue='j', col='target', col_wrap=3, kind='line',
                        height=2.6, aspect=1.8, palette='viridis', facet_kws=dict(sharey=True))
     grid.set_titles('{col_name}')
-    grid.set_axis_labels('Wednesday issuance', '% fallback (states+US)')
+    grid.set_axis_labels('Wednesday issuance', '% unpublished (states+US)')
     grid.legend.set_title('weeks before\nissuance')
     sns.move_legend(grid, 'upper left', bbox_to_anchor=(1.0, 0.95))
     for ax in grid.axes.flat:
@@ -299,9 +301,9 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
     eps = episodes(panel, WEEKS, 'vintaged', covariate_names=names, asof_weeks=WEEKS)
     cells = _cells(panel, eps)
     tables = {scope: _share_table(cells, scope) for scope in ('states+US', 'US')}
-    overall = (cells[cells.j <= 2].pivot_table(index='target', columns='j', values='fallback', aggfunc='mean') * 100)
+    overall = (cells[cells.j <= 2].pivot_table(index='target', columns='j', values='unpublished', aggfunc='mean') * 100)
     overall_us = (cells[(cells.j <= 2) & (cells.location == 'US')]
-                  .pivot_table(index='target', columns='j', values='fallback', aggfunc='mean') * 100)
+                  .pivot_table(index='target', columns='j', values='unpublished', aggfunc='mean') * 100)
     revision_table, revision_figure = _revisions(cells)
     covariate_table, covariate_figure, covariate_line = _covariates(panel, eps)
     ww_figures, ww_coverage, ww_table, (ww_first, ww_last) = _wastewater(panel)
@@ -310,7 +312,7 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
     headline.columns = [f'{scope} j={j}' for scope, j in headline.columns]
 
     lines = [
-        '# Dataset panel: truth fallback, revisions, covariates', '',
+        '# Dataset panel: unpublished cells, revisions, covariates', '',
         f'Generated by `python -m tapestry.dataset.analyze_dataset --dataset {dataset}` '
         '(rerun after every panel rebuild). All numbers and figures are computed from the panel; '
         'definitions are in the module docstring and below. Design: '
@@ -325,28 +327,29 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
         f'- issuances: {len(panel["issuance_dates"])} Wednesdays, {panel["issuance_dates"][0]} to '
         f'{panel["issuance_dates"][-1]}; {len(eps)} vintaged episodes kept (lookback = asof_weeks = {WEEKS})',
         '- raw snapshots: ' + ', '.join(f'`{k}` {v}' for k, v in metadata.get('snapshots', {}).items()), '',
-        '## 1. Truth fallback in vintaged episodes', '',
-        'User decision 2026-09-22: in vintaged mode, a target cell in the as-of window with nothing '
-        'visible at the Wednesday cutoff is filled with the final truth and flagged `known_final=True` '
-        '(reproduces old B1). This section measures how many cells that is. j = weeks before issuance: '
-        'j = 0 is the context end (Saturday four days before the Wednesday). Share = fallback cells / '
-        'available cells; a missing archive and a not-yet-reported week both count as fallback. The '
-        'default `asof_weeks=2` uses j = 0 and 1 only; larger `asof_weeks` use more columns.', '',
-        '### Headline: all seasons pooled, % fallback', '',
+        '## 1. Unpublished cells in vintaged episodes', '',
+        'User decision 2026-09-22 (later): in vintaged mode, a target cell in the as-of window with '
+        'nothing visible at the Wednesday cutoff is **unavailable** (`available=False`), not filled with '
+        'final truth. This section measures how many cells that is. j = weeks before issuance: j = 0 is '
+        'the context end (Saturday four days before the Wednesday). Share = unpublished cells / cells '
+        'that exist at all (visible at the cutoff or present in the final truth), the same denominator '
+        'the earlier truth fallback used, so these numbers are comparable with the previous page. A '
+        'missing archive and a not-yet-reported week both count. The default `asof_weeks=2` uses j = 0 '
+        'and 1 only; larger `asof_weeks` use more columns.', '',
+        '### Headline: all seasons pooled, % unpublished', '',
         'The last season listed is the one in progress at the truth day (few issuances).', '',
         _markdown(headline.reset_index(), 1), '',
-        _heatmaps(tables['states+US'], '% of available target cells filled from final truth (states + DC + US)'), '',
-        _heatmaps(tables['US'], '% of available target cells filled from final truth (US only)'), '',
-        '### Whole-issuance fallback', '',
-        'Issuances (per target, season of the context end) in which no available j <= 1 cell had an '
-        'as-of value, i.e. every cell of the default as-of window came from final truth, over all '
-        'issuances with an available cell.', '',
+        _heatmaps(tables['states+US'], '% of target cells unpublished at the cutoff (states + DC + US)'), '',
+        _heatmaps(tables['US'], '% of target cells unpublished at the cutoff (US only)'), '',
+        '### Whole-issuance gaps', '',
+        'Issuances (per target, season of the context end) in which no j <= 1 cell had an as-of value, '
+        'i.e. the whole default as-of window was unavailable, over all issuances with such a cell.', '',
         _markdown(_whole_issuance(cells).reset_index(), 0), '',
         '### Per issuance (states+US, j = 0..3)', '',
         _per_issuance(cells), '',
-        '### Table, states+US, % fallback by j', '',
+        '### Table, states+US, % unpublished by j', '',
         _markdown(tables['states+US'].reset_index()), '',
-        '### Table, US only, % fallback by j', '',
+        '### Table, US only, % unpublished by j', '',
         _markdown(tables['US'].reset_index()), '',
         '## 2. Revision where an as-of value was visible', '',
         '(as-of - final) / final in %, on cells with a visible as-of value and final > 0, US and states '
@@ -355,7 +358,7 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
         _markdown(pd.concat([revision_table[['count']], revision_table[['p10', 'median', 'p90']] * 100], axis=1)
                   .reset_index(), 1), '',
         '## 3. Covariates: final value present but not visible at the cutoff', '',
-        'Episodes have no truth fallback for covariates: such cells are unavailable. % of cells with a '
+        'Covariate cells not visible at the cutoff are unavailable (as target cells now are). % of cells with a '
         f'final value, all locations and issuances. Kinsa (US only) has as-of data only from '
         f'{KINSA_ASOF_START}; its row restricted to issuances from then on is shown separately.', '',
         covariate_figure, '',
@@ -385,7 +388,7 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
     ]
     Path(output).parent.mkdir(parents=True, exist_ok=True)
     Path(output).write_text('\n'.join(lines))
-    return dict(output=output, sha256=sha, episodes=len(eps), fallback_pooled=headline.round(1).to_dict())
+    return dict(output=output, sha256=sha, episodes=len(eps), unpublished_pooled=headline.round(1).to_dict())
 
 
 def main(argv=None):

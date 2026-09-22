@@ -125,11 +125,34 @@ row-by-row `VintageArchive` it replaced:
 - Three tiers per target: native Hub `as_of` full snapshots, Hub Git-history
   full snapshots (every registered commit is a full snapshot, including empty
   ones, so deletions stay deleted), and Delphi per-observation report-time
-  revisions. A location is covered by a Hub tier from the earliest reference
-  week in any eligible release of that tier; covered cells take the latest
-  eligible snapshot's value (absent = unavailable, no fallback). Native coverage
-  precedes Git, which precedes Delphi; outside Hub coverage the latest eligible
-  Delphi revision is used (a missing latest revision is unavailable).
+  revisions. **Each tier states what it knew at its own latest eligible release,
+  and the most recent statement wins per cell** (2026-09-22; before that the
+  latest Hub snapshot won for every date once a location's Hub history started,
+  which hid data Git and Delphi had already released). A Hub tier covers a
+  location from the earliest reference week in any eligible release of that
+  tier; inside its coverage its statement is the latest eligible snapshot --
+  the value if the cell is in it, *missing* if it is not, both at that
+  snapshot's release time -- and outside it the tier says nothing. Delphi
+  states each cell's latest eligible revision at that revision's time (a
+  missing latest revision is a statement of missing; earlier revisions are not
+  used as fallback). Ties go Hub, then Git, then Delphi.
+- **A Hub `as_of` that is a week-ending label, not a publication time, moves to
+  its Git publication time** (`extract._publication_times`, 2026-09-22).
+  FluSight's native `as_of` was the snapshot's own last reference Saturday until
+  2025-07-05 and the real Wednesday publication day (week end + 4) afterwards;
+  taken literally, the label made a snapshot visible up to six days early --
+  leakage in vintaged mode. Such a release moves to the first Git release whose
+  snapshot reaches that reference week (the commit that published it), or to
+  label + 4 days if the source has no Git history, replacements kept strictly
+  increasing so two snapshots never collapse into one release. The COVID and RSV
+  hubs always publish week end + 4 and are untouched.
+- **The Hubs distribute both target kinds in one file**, so the three NSSP
+  channels take the same Hub as their admissions channel (2026-09-22): FluSight
+  `target-data/time-series.csv` and the COVID/RSV hubs'
+  `target-data/time-series.parquet` carry `wk inc <disease> hosp` *and*
+  `wk inc <disease> prop ed visits`, picked apart by the `selection.describe`
+  origin column. Hub ED values are proportions (0-1); Delphi's percentages are
+  divided by 100, and the two agree to float32 rounding.
 - Same-release, same-cell disagreements (including one missing, one present)
   are unavailable, never resolved by file order.
 - A release is visible at a cutoff day when released by 23:59:59.999999 UTC
@@ -200,11 +223,11 @@ admission counts (tens of thousands at peak) would be rounded, and larger
 counts would overflow. Values stay float32 (integers exact to 2^24), as in the
 truth panel.
 
-**`known_final`** is not stored. In a vintaged episode, a context cell within
-the last `asof_weeks` weeks is known-final only when nothing was visible at the
-cutoff and the truth fallback is available (previous builder's rule, below);
-older context weeks are known-final wherever the truth is available. In a
-finalized episode every available context cell is known-final.
+**`known_final`** is not stored. In a vintaged episode a context cell within the
+last `asof_weeks` weeks is never known-final (it is either what the issuance saw
+or unavailable, 2026-09-22); older context weeks are known-final wherever the
+truth is available. In a finalized episode every available context cell is
+known-final.
 
 Build choices:
 - **Truth** is resolved at the end of the build day (`--truth-day`, default
@@ -231,11 +254,10 @@ Build choices:
   context end (issuance - 4 days), targets the four following Saturdays
   (reference date = issuance + 3 days, horizon 0 in hub terms). The last
   min(`asof_weeks`, lookback) context weeks take the as-of target value where
-  one was visible (known_final False) and fall back to truth where nothing was
-  visible yet (known_final True where available); older context weeks and all
-  target weeks are truth; covariates (state and national) are as of the
-  issuance for every context week, NaN where nothing was visible (no truth
-  fallback).
+  one was visible (known_final False) and are **unavailable where nothing was
+  visible** (user decision 2026-09-22, replacing the truth fallback); older
+  context weeks and all target weeks are truth; covariates (state and national)
+  are as of the issuance for every context week, NaN where nothing was visible.
 - **`Scenario.asof_weeks`** (int, default 2, 2026-09-22): default 2 reproduces
   the previous vintaged builder (B1): checked cell for cell against the
   previous panel and episode code for lookbacks 4, 12 and 52, both input modes,
@@ -248,15 +270,17 @@ Build choices:
   as of the issuance, so a single `asof_weeks` applied to covariates as well
   would have changed default B1/B2 covariates, and two fields would add a knob
   nobody has asked to vary.
-- **The truth fallback is the previous builder's rule, now applied to however
-  many weeks `asof_weeks` names.** Where nothing was visible at the cutoff (a
-  week not yet reported, or a missing archive), a vintaged context week in the
-  as-of window takes the final truth, flagged known-final. With a large
-  `asof_weeks` this puts later truth into cells that were empty at the time, so
-  a "fully as-of" episode is exact wherever something was visible and
-  truth-filled elsewhere. Flagged for the user; not changed because the
-  default must reproduce B1.
-  **Kept by user decision 2026-09-22**, with its size documented by
+- **No truth fallback (user decision 2026-09-22, later).** A target cell in the
+  as-of window that was not published at the cutoff is unavailable
+  (`available=False`, `known_final=False`), never filled with later truth; the
+  model's masking handles it, as it already did for covariates. This replaces
+  the earlier decision to keep the fallback and **changes vintaged results
+  against old B1**, whose runs saw final truth in cells that were empty at the
+  time. Finalized mode is unaffected (it never used the fallback). An episode is
+  still kept only if some context cell and some target cell are available, so a
+  fully as-of vintaged episode whose whole window was unpublished is dropped (7
+  of 160 issuances on the 2026-09-22 panel at `asof_weeks = lookback = 9`; none
+  at the default `asof_weeks = 2`). Sizes:
   `python -m tapestry.dataset.analyze_dataset` ([panel analysis](../data/panel.md)).
 - Kept only if some context cell and some target cell are available.
 
@@ -689,3 +713,78 @@ implements. All relative links were rewritten mechanically (resolve each link at
 page's old location, repoint to the target's new one) and `mkdocs build --strict`
 passes, which it did not before this change (30 warnings, mostly links broken by the
 earlier archive move).
+
+### Hub vintages stop shadowing; Hub ED targets wired; no truth fallback — 2026-09-22 (later)
+
+**User premise.** For every Hub round, the versioned truth modelers had at that
+moment is in the Hub's Git repository; wherever a round ran, a vintage must exist
+from Git, and a truth fallback there is our bug, not missing data. Where no round
+ran (the 2025 federal-shutdown Wednesdays 2025-10-08..11-12) there is genuinely
+nothing, and no ensemble to score either.
+
+**What our acquisition actually holds** (verified against the mirrors
+`data/mirrors/*.git` and the selected snapshots; nothing was missing, so nothing
+was acquired):
+
+- `hub_flusight_current`: `target-data/time-series.csv` (native `as_of`, 96
+  snapshots 2023-09-23..2026-07-08, both targets) and Git history of
+  `target-data/target-hospital-admissions.csv` + `target-ed-visits-prop.csv`
+  (132 releases 2023-10-03..2026-07-09). The dated
+  `auxiliary-data/target-data-archive/*_<Saturday>.csv` copies are the same
+  snapshots under their week-ending label and add nothing.
+- `hub_covid_current`: `target-data/time-series.parquet` (87 `as_of`, 2024-11-20
+  onwards for admissions, 2025-06-18 for ED) + 93 Git releases of
+  `covid-hospital-admissions.csv` (2024-11-18 onwards). Nothing earlier exists:
+  the repository itself starts 2024-11.
+- `hub_rsv_current`: `target-data/time-series.parquet` only (87 `as_of`,
+  2024-11-27 admissions, 2025-06-13 ED). Its **0 Git target releases are correct,
+  not a missing acquisition**: the repository starts 2025-08-14 and has never
+  contained a non-`as_of` target file (`HISTORY_TARGETS['hub_rsv_current'] = {}`).
+  `hub_rsvnet` is RSV-NET rates, a different target, dropped in §2.
+
+So the pre-2024-11 NHSN covid/RSV gap and the pre-2025-06 NSSP Hub gap are
+genuine (no hub, no target file), while three real defects hid data we hold:
+
+1. **A stale Hub snapshot shadowed Git and Delphi.** Once a location's Hub
+   history started, the latest Hub snapshot won for every later date and dates
+   absent from it became unavailable. Fixed by resolving each cell to the most
+   recent release across tiers (§2). Effects: flu truth ran to 2026-07-04 (the
+   last FluSight snapshot) and now runs to 2026-09-05; the flu truth panel gains
+   468 cells; 434 older flu cells and 43 covid / 5 RSV recent cells now take a
+   newer Delphi revision instead of an older Hub snapshot (differences of a few
+   admissions, NHSN revisions, no definition jump). NSSP truth changes only by
+   float32 rounding (max relative 1.2e-07), so Hub proportions and Delphi
+   percentages/100 agree.
+2. **FluSight's 2023-24..2025-06 `as_of` was the week-ending Saturday**, not the
+   publication day (lag 0 until 2025-07-05, then the real Wednesday, lag 4), so a
+   snapshot appeared up to six days before it existed — leakage in vintaged mode.
+   Each such release now moves to the first Git release reaching that week (§2).
+   Verified against Git: week ending 2023-09-30 moves from the label to
+   2023-10-06T22:36Z, the commit that added those 52 rows, so the 2023-10-04
+   issuance now sees only through 2023-09-23; 2023-10-07 moves to 2023-10-11.
+3. **The three NSSP channels ignored the Hub ED target files.** They are in the
+   same Hub files as admissions and are now wired (§2).
+
+**No truth fallback (user decision).** Vintaged cells that were not published at
+the cutoff are unavailable instead of final truth flagged `known_final=True`
+(§3). Downstream nothing assumed the fallback: `cv.fold` masks by reference week,
+`planner.unique_truth`/`objective.loss_scales` read truth from `known_final`
+cells only (now fewer), and the plots and `analyze_dataset` read availability.
+Finalized mode is untouched. `analyze_dataset` now reports the *unpublished*
+share over the same denominator, so it stays comparable.
+
+**Coverage, states+US, pooled over seasons, j = 0/1 (old fallback % -> new
+unpublished %):** NHSN flu 35.3/27.0 -> 25.2/20.6, covid 46.9/43.3 ->
+45.5/42.9, RSV 38.1/33.8 -> 37.3/33.8; NSSP flu 67.0/35.1 -> 66.0/34.3, covid
+67.0/35.1 -> 65.2/33.5, RSV 66.8/34.8 -> 65.2/33.5. The remaining NSSP j = 0
+share is concentrated in 2023-25, where no Hub ED file existed and Delphi had not
+released the context-end week by Wednesday. Whole-issuance gaps in 2025-26 are
+now exactly the six shutdown Wednesdays 2025-10-08..11-12 (five for NHSN flu,
+which came back on 11-12; NSSP flu also lacks 2025-10-01, before FluSight had an
+ED target file). Earlier whole-issuance gaps are all explained: NHSN flu
+2024-05-15..2024-11-13 is the voluntary-reporting pause, NHSN covid/RSV before
+2024-11-20 and NSSP before Delphi's archive have no source at all.
+
+Rebuilt panel: `build check` exact, 69 tests pass, and a two-epoch CPU smoke
+experiment (one finalized, one `input_mode=vintaged`, seed 42) ran through
+plan/run/rank with all figures.
