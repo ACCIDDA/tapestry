@@ -60,8 +60,6 @@ nav:
   - B1:
       - Masked-vintage model: design/b1.md
       - Screen and 300-epoch results: results/b1-overnight/index.md
-      - Overnight experiment: workflows/b1-overnight.md
-      - 300-epoch comparison: workflows/b1-300.md
   - B2:
       - Covariate results and diagnosis: results/B2-screen/index.md
       - Kinsa-only results: results/B2-kinsa/index.md
@@ -86,11 +84,5 @@ nav:
       - Python API: reference/python-api.md
   - Development: development.md
   - Mac and Longleaf: development-longleaf.md
-  - Current workflows:
-      - Training and prediction: workflows/training.md
-      - Experiment manager: workflows/experiment-manager.md
-      - Postprocessing an experiment: workflows/experiment-postprocessing.md
-      - Frozen hub support: workflows/hub-evaluation.md
-      - EpiBench scoring and reports: workflows/configuration-evaluation.md
-      - Emily’s challenge configs: workflows/emily-configs.md
+  - Current workflow: workflows/training.md
   - Features and tests: maintenance.md

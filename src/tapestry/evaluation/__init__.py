@@ -1,1 +1,1 @@
-"""Reusable pinned-hub comparison and R scoringutils evaluation."""
+"""Pinned-hub comparison and pure-Python WIS evaluation."""

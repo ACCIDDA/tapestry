@@ -107,6 +107,5 @@ uv run python -m tapestry.dataset.build show --dataset data/processed/finalized.
 uv run python -m tapestry.experiment.planner plan -e my_experiment -s '' --seeds 42
 ```
 
-See [training/prediction commands](workflows/training.md) and
-[hub evaluation](workflows/hub-evaluation.md). Hub evaluation and scoring are
+See [training/prediction commands](workflows/training.md). Scoring is
 pure Python (`tapestry.evaluation.totals`); no R or EpiBenchmark dependency remains.

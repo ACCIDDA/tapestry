@@ -4,7 +4,8 @@ This is the project with all my wishlist for infectious disease modeling:
 Flusion's idea of learning across surveillance sources, InfluPaint's modeling
 ideas and infrastructure, CRPS fitting like that very smart DeepMind paper,
 and a way to bring it all together. The project builds on InfluPaint's Slurm
-job manager and simulation storage, and EpiBenchmark's scoring.
+job manager and simulation storage, and scores forecasts with its own
+pure-Python WIS implementation.
 
 The idea is simple: give a model the recent history of several pathogens and
 ask it to generate possible futures. Learn across signals, track what is
@@ -72,7 +73,7 @@ flowchart TD
     G --> H["Conditional sample generator"]
     F --> I["Fair CRPS in native units<br/>Training-side scaling and target/location weights"]
     H --> I
-    H --> J["Sampled futures → 23 quantiles<br/>EpiBenchmark WIS vs hub ensembles"]
+    H --> J["Sampled futures → 23 quantiles<br/>Pure-Python WIS vs hub ensembles"]
 ```
 
 Admissions are stored as counts; ED percentages are converted to proportions.

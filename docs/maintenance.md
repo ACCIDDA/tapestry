@@ -22,7 +22,7 @@ are present.
 | Snapshot checksums, staging, atomic publication | Prevent incomplete downloads becoming training inputs and record exact provenance | Keep. These protect reproducibility even with one canonical training dataset. |
 | Delphi retries, resumable partitions and concurrency | Needed for large archive pulls; irrelevant to a two-CDC-source-only workflow | Keep while Delphi archives are supported; avoiding those downloads removes runtime cost without changing the adapter. |
 | Source lineage and native geography filtering | Shared selection uses these to avoid false equivalence between measures, providers and geographic support | Keep. A state label on a county/site/HHS record does not make it a state observation. |
-| PDF reports, EpiBench diagnostics and CSV companions | Evaluation presentation/interoperability rather than model fitting | Optional outputs. PDF is separate; separating EpiBench plotting from `sweep` scoring would be a useful simplification. |
+| CSV companions for Hubverse archives (`export_hubverse_csv.py`) | Interoperability rather than model fitting | Optional output. PDF reports, EpiBench diagnostics, and `sweep` scoring were removed with the R/EpiBench path (2026-09 restructuring). |
 
 These are source-based recommendations, not proof that no external notebook uses
 an API.
@@ -43,7 +43,9 @@ resume mechanics and architecture execution are checked through research runs.
 | `test_totals.py` | Incorrect WIS, location/season/target/seed weighting, undefined relative scores or comparisons on different locations |
 | `test_hub_evaluation.py` | Forecasts assigned to the wrong target channel, location or week |
 
-The retained checks use local fixtures and do not invoke R or EpiBench.
+The retained checks use local fixtures; there is no R or EpiBench dependency
+left to invoke (removed in the 2026-09 restructuring, see
+[docs/design/restructure-2026-unified.md](design/restructure-2026-unified.md)).
 When a relevant scientific calculation changes, a focused check can be run with
 `uv run pytest -q tests/test_objective.py` (substitute the relevant file).
 GitHub Actions runs the remaining suite on pushes and pull requests to `main`.

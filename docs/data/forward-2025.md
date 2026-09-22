@@ -1,7 +1,10 @@
 # Forward benchmark data: two recent weeks
 
-The data preparation step completed without fitting or scoring. The user has
-now authorized the [forward model benchmark](../workflows/forward-2025.md).
+The data preparation step completed without fitting or scoring. The user
+authorized the forward model benchmark; see the
+[archived forward-2025 workflow](../archive/workflows-2026-09/forward-2025.md)
+(the `evaluation.forward`/`model_data.forward` modules it used were removed in
+the 2026-09 restructuring).
 
 ## Prepared information sets
 

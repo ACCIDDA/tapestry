@@ -3,7 +3,8 @@
 Collapses `models/manager.py` + `models/backends.py`: with one `Scenario` and one
 `Model`, there is no per-model branching left, only one leave-one-season-out
 training path (`fit`) shared by every scenario. Keeps the CLI shape (`plan`,
-`run`, `status`, `rank`, `compare`) from the old manager.
+`run`, `status`, `rank`) from the old manager; `compare` (EpiBench/R-only) has
+no replacement -- `rank`'s WIS-vs-frozen-ensemble ratio is the only comparison.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -536,7 +537,7 @@ def main(argv=None):
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
     fit_parser.add_argument('--eval-members', type=int, default=256)
     fit_parser.add_argument('--output', required=True)
-    for name in ('plan', 'run', 'status', 'rank', 'compare'):
+    for name in ('plan', 'run', 'status', 'rank'):
         p = sub.add_parser(name)
         p.add_argument('-e', '--experiment', required=True)
         p.add_argument('--root', default='data/experiments')
@@ -553,7 +554,7 @@ def main(argv=None):
             p.add_argument('--seeds', nargs='+', type=int, default=None)
         if name in ('rank', 'status'):
             p.add_argument('--seeds', nargs='+', type=int, default=None)
-        if name in ('rank', 'compare'):
+        if name == 'rank':
             p.add_argument('--allow-incomplete', action='store_true')
     args = parser.parse_args(argv)
     if args.command == 'fit':
@@ -586,8 +587,6 @@ def main(argv=None):
             print(f"{row['status']}\t{row['task']}\t{row['name']}\ts{row['seed']}\t{row['attempt']}")
     elif args.command == 'rank':
         print(rank(folder, args.allow_incomplete, args.seeds))
-    elif args.command == 'compare':
-        raise SystemExit('compare was EpiBench/R-only and was removed; use rank for the WIS ranking')
 
 
 if __name__ == '__main__':

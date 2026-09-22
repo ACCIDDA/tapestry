@@ -1,9 +1,7 @@
 # Longleaf setup
 
-For the masked-vintage B1 cross, use the [B1 manager and shared-dispatch
-commands](design/b1.md#named-experiments-and-cluster-launch) after the environment
-setup below. B1 uses the same named-experiment workflow, with separate nowcast
-and forecast scores and optional matched frozen-Hub/EpiBench comparisons.
+See [the canonical workflow](workflows/training.md) for the experiment planner
+and shared-dispatch commands, used after the environment setup below.
 
 These commands set up the checkout at
 `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf using uv-managed
@@ -38,13 +36,12 @@ cd /proj/jlessler/projects/tapestry-all/tapestry
 Install or update the default research environment:
 
 ```bash
-uv sync --upgrade-package epibenchmark --python-preference only-managed
+uv sync --python-preference only-managed
 ```
 
 This creates `.venv`, installs Tapestry in editable mode, and includes training,
-evaluation, explorer, and test dependencies. EpiBenchmark follows GitHub `main`;
-the generated `uv.lock` remains local. Managed Python avoids inheriting the
-login shell's Anaconda installation.
+evaluation, explorer, and test dependencies. Managed Python avoids inheriting
+the login shell's Anaconda installation.
 
 ## Download the training sources
 
@@ -57,32 +54,10 @@ These are the two CDC sources required by the current training dataset.
 Broader acquisition is optional. Downloading sources does not build the processed training tensor; see
 [the dataset workflow](data/build-b-finalized.md) for that next step.
 
-## R scoring
-
-Use Longleaf's R module, then run the repository's package setup script:
-
-```bash
-module load r/4.5.0
-Rscript scripts/setup_r.R
-```
-
-The script installs missing `scoringutils` and `purrr` packages and their
-dependencies into the personal R library, reuses available packages, and checks
-that both scoring packages load. R is separate from the uv environment.
-
-Check that R is also accessible through uv:
-
-```bash
-uv run Rscript -e 'library(scoringutils); library(purrr); sessionInfo()'
-```
-
-Repeat `module load r/4.5.0` in new shells and Slurm job scripts that run scoring,
-along with the Python environment exports above. If a noninteractive Bash shell
-does not define `module`, initialize it with
-`source /usr/share/lmod/lmod/init/bash`. Do not source `/etc/profile.d/modules.sh`:
-it selects the legacy Tcl module loader, which cannot load Longleaf's Lua R module.
-Use a Slurm allocation for training and substantial evaluation runs; this setup
-does not request a GPU or submit a training job.
+Scoring is pure Python (`tapestry.evaluation.totals`) -- no R module or
+package setup is needed. Use a Slurm allocation for training and substantial
+evaluation runs; the environment setup above does not request a GPU or submit
+a training job.
 
 ## Build the frozen inputs
 
@@ -181,11 +156,11 @@ Logs are `output/slurm/b0-sweep-ARRAY_ID_INDEX.log`; the jobs.csv task is
 `OFFSET + INDEX`. When the arrays have finished, rank on a CPU allocation:
 
 ```bash
-.venv/bin/python -m tapestry.models.manager rank -e b0-sweep
+.venv/bin/python -m tapestry.experiment.planner rank -e b0-sweep
 ```
 
 The printed folder holds `configuration_ranking.csv`, `run_scores.csv`, and
-`season_scores.csv` ([definitions](workflows/experiment-manager.md#ranking)).
+`season_scores.csv` ([definitions](workflows/training.md#4-plan-run-rank)).
 
 ## CPU versus GPU runtime
 
@@ -309,26 +284,16 @@ marked `running`, so check `squeue` first and never run the same task twice at o
 
 ## Score and review
 
-To score an experiment whose runs are complete:
+To score an experiment whose runs are complete, see
+[the canonical workflow's plan/run/rank step](workflows/training.md#4-plan-run-rank):
 
 ```bash
-sbatch scripts/b0_compare.sbatch b0-explore
-tail -F output/slurm/b0-compare-JOB_ID.log
+uv run python -m tapestry.experiment.planner rank -e b0-explore
 ```
 
-The scoring job requests 36 CPU cores and 256 GiB RAM on `g1803jles01`. It runs
-`manager compare --workers 9`: saved predictions load concurrently and nine
-target/season cases score in parallel, with four numerical-library threads per
-worker. Hubverse exports are rewritten each time. EpiBench reuses completed scores
-when their provenance matches; cases interrupted after writing scores are moved to
-`interrupted-scoring/` and rescored. Rankings and plotting follow scoring.
-
-`comparison.json` records status, output directory, host, Slurm IDs, the scoring
-commit, and the commits of the compared runs. On failure, inspect the job log and
-resubmit the scoring script after the previous job has ended.
-Review `REPORT.md`, `leaderboard.csv`, `run_ranking.csv`,
-`configuration_ranking.csv`, and `scores.parquet`. Report WIS, bias, and 50%/95%
-coverage by pathogen, horizon, season, and states/DC versus native US, including
-means and variability across three seeds. Use the matched controls in
-[the manager workflow](workflows/experiment-manager.md) to assess separate heads,
-decoder uncertainty, and candidates for combination.
+`rank` computes WIS in pure Python (`tapestry.evaluation.totals`) against the
+frozen ensemble denominator and writes `season_scores.csv`,
+`season_composite_scores.csv`, `run_scores.csv`, and `configuration_ranking.csv`
+under `data/experiments/<experiment>/ranking-<hash>/`; pass `--allow-incomplete`
+to rank before every run has finished. `configuration_ranking.csv` averages
+across seeds -- read that for the WIS-vs-ensemble ratio by scenario.
