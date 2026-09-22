@@ -90,11 +90,16 @@ def assemble_covariates(arrays, covariate_names, indices=None):
     return values, available
 
 
+def _channel_first(panel):
+    """`[.., L, C]` (the array-on-disk convention) -> `[.., C, L]` (Model's convention)."""
+    return np.moveaxis(panel, -1, -2)
+
+
 def episodes_from_finalized(arrays, lookback, horizons=(1, 2, 3, 4), covariate_names=()):
     """One episode per Saturday origin in a flat `[T, L, 6]` truth panel."""
     dates = np.array([str(d) for d in arrays['dates']])
-    targets = arrays['targets']
-    known_final = arrays['known_final']
+    targets = _channel_first(arrays['targets'])
+    known_final = _channel_first(arrays['known_final'])
     cov_values, cov_available = (assemble_covariates(arrays, covariate_names) if covariate_names else (None, None))
     for end in range(lookback - 1, len(dates) - max(horizons)):
         context = list(range(end - lookback + 1, end + 1))
@@ -110,6 +115,7 @@ def episodes_from_finalized(arrays, lookback, horizons=(1, 2, 3, 4), covariate_n
                        target_values=np.nan_to_num(targets[future]), target_available=target_available,
                        context_dates=tuple(dates[context]), target_dates=tuple(dates[future]),
                        locations=tuple(arrays['locations']))
+        episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
         if covariate_names:
             episode['covariates'] = np.stack((cov_values[context], cov_available[context]), axis=-2)
         yield episode
@@ -117,8 +123,8 @@ def episodes_from_finalized(arrays, lookback, horizons=(1, 2, 3, 4), covariate_n
 
 def episodes_from_vintaged(arrays, lookback, horizons=(1, 2, 3, 4), covariate_names=()):
     """One episode per historical Wednesday issuance; window already materialized."""
-    targets = arrays['targets']
-    known_final = arrays['known_final']
+    targets = _channel_first(arrays['targets'])
+    known_final = _channel_first(arrays['known_final'])
     cov_values, cov_available = (assemble_covariates(arrays, covariate_names) if covariate_names else (None, None))
     window = lookback + len(horizons)
     for i in range(len(arrays['issuance_dates'])):
@@ -136,6 +142,7 @@ def episodes_from_vintaged(arrays, lookback, horizons=(1, 2, 3, 4), covariate_na
                        context_dates=tuple(str(d) for d in arrays['dates'][i, context]),
                        target_dates=tuple(str(d) for d in arrays['dates'][i, future]),
                        locations=tuple(arrays['locations']))
+        episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
         if covariate_names:
             episode['covariates'] = np.stack((cov_values[i, context], cov_available[i, context]), axis=-2)
         yield episode
@@ -198,7 +205,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
     rng = np.random.default_rng(seed)
     selecting = validation is not None
     budget = scenario.epochs if epochs is None else epochs
-    model = Model(scenario.lookback, (1, 2, 3, 4), scale=loss_scales(unique_truth(train)), **options).to(device)
+    model = Model(horizons=(1, 2, 3, 4), scale=loss_scales(unique_truth(train)), **options).to(device)
     weights_by_channel = LOSS_WEIGHTS[scenario.loss_weights]
     values, available, known_final, y, y_mask, cal, cov = to_tensors(train, device)
     weights = torch.as_tensor(loss_cell_weights(train, weights_by_channel), device=device)[:, :, channels]
@@ -220,7 +227,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
             visible = available[ids] if dropout is None else available[ids] & ~dropout[ids]
             samples = model(values=values[ids], available=visible, calendar=cal[ids], members=scenario.members,
                             known_final=known_final[ids], covariates=None if cov is None else cov[ids],
-                            vintaged=scenario.input_mode == 'vintaged')
+                            locations=list(train[0]['locations']), vintaged=scenario.input_mode == 'vintaged')
             score = fair_crps_cells(samples[:, :, :, channels], y[ids][:, :, channels], y_mask[ids][:, :, channels])
             loss = (weights[ids] * score / model.scale[channels]).sum() * len(train) / len(ids)
             if not torch.isfinite(loss):
@@ -238,7 +245,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
                     samples = model(values=vvalues[ids], available=vavailable[ids], calendar=vcal[ids],
                                     members=scenario.validation_members, known_final=vknown_final[ids],
                                     covariates=None if vcov is None else vcov[ids],
-                                    vintaged=scenario.input_mode == 'vintaged')
+                                    locations=list(train[0]['locations']), vintaged=scenario.input_mode == 'vintaged')
                     score = fair_crps_cells(samples[:, :, :, channels], vy[ids][:, :, channels], vy_mask[ids][:, :, channels])
                     val += float((vweights[ids] * score / model.scale[channels]).sum())
             if val < best:
@@ -268,8 +275,8 @@ def unique_truth(episodes_):
                 by_date[day] = (values, avail)
     panel = np.zeros((len(by_date), 6, 2, len(episodes_[0]['locations'])), np.float32)
     for i, (values, avail) in enumerate(by_date.values()):
-        panel[i, :, 0] = values.T
-        panel[i, :, 1] = avail.T
+        panel[i, :, 0] = values
+        panel[i, :, 1] = avail
     return panel
 
 
@@ -326,7 +333,7 @@ def evaluate(model, eps, eval_members, device, output, name=''):
         with torch.no_grad():
             samples = torch.cat([model(values=values, available=available, calendar=cal,
                                        members=min(32, eval_members - j), known_final=known_final,
-                                       covariates=cov, vintaged=True).cpu()
+                                       covariates=cov, locations=list(e['locations']), vintaged=True).cpu()
                                  for j in range(0, eval_members, 32)], dim=0).numpy()[:, 0]
         q = np.quantile(samples, LEVELS, axis=0)
         q[:, :, :3] = np.floor(q[:, :, :3] + .5)
