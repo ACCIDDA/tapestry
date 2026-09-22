@@ -226,8 +226,8 @@ def ingest_hub_target(archive, data_root, dataset_key, target=None, value_column
 
 
 def _target_archive(data_root, name):
+    """NSSP proportions are reported on a 0-100 scale and divided by 100; NHSN admissions are not."""
     hub_dataset, delphi_dataset, delphi_signal, hub_origin = TARGET_SOURCES[name]
-    upper = name.startswith('nssp_') or name.startswith('nhsn_') and False
     return _archive_for(data_root, hub_dataset, delphi_dataset, delphi_signal, hub_origin,
                          upper=name.startswith('nssp_'))
 
@@ -334,9 +334,8 @@ def extract(name: str, kind: Literal['target', 'covariate'], version: Literal['v
         archive = _claims_archive(data_root, name)
         return _resolve_series(archive, dates, locations, version, as_of)
     if name in NWSS_INDICES:
-        pathogen, metric = name.removeprefix('nwss_').rsplit('_', 1) if name.endswith('rank') else (
-            name.removeprefix('nwss_').removesuffix('_wval_like'), 'wval_like')
         metric = 'pct_rank' if name.endswith('pct_rank') else 'wval_like'
+        pathogen = name.removeprefix('nwss_').removesuffix('_' + metric)
         frame = _nwss_frame(data_root)
         frame = frame[frame.pathogen.eq(pathogen)][['report_time', 'geo_value', 'reference_time', metric]]
         frame = frame.rename(columns={'reference_time': 'date', 'geo_value': 'location', metric: 'value'})
