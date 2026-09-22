@@ -190,7 +190,16 @@ def build_finalized(data_root='data', *, start=CALENDAR_START, end=None, locatio
 
 def build_vintaged(data_root='data', *, start, end, lookback=DEFAULT_LOOKBACK,
                     horizons=DEFAULT_HORIZONS, locations=None):
-    """One entry per historical Wednesday issuance, as-of-issuance visible values."""
+    """One entry per historical Wednesday issuance, as-of-issuance visible values.
+
+    Targets are resolved twice per channel: once at the issuance cutoff (what a
+    Wednesday forecaster could actually see) and once at a pinned `truth_cutoff`
+    (the retrospective truth used to grade forecasts and to fill in context that
+    is old enough to no longer be revised). Horizon/target weeks have not been
+    reported yet as of the issuance cutoff by construction, so they always use
+    the truth resolution; only the two most recent context weeks keep their real
+    Wednesday vintage, falling back to truth if that vintage has no report yet.
+    """
     locations = _locations(locations)
     issuances = _wednesdays(start, end)
     window = lookback + len(horizons)
@@ -201,8 +210,11 @@ def build_vintaged(data_root='data', *, start, end, lookback=DEFAULT_LOOKBACK,
     n_state, n_national = len(STATE_COVARIATE_NAMES), len(NATIONAL_COVARIATE_NAMES)
     all_dates = np.empty((len(issuances), window), dtype='datetime64[D]')
     targets = np.full((len(issuances), window, len(locations), len(CHANNELS)), np.nan, np.float32)
+    known_final = np.zeros((len(issuances), window, len(locations), len(CHANNELS)), dtype=bool)
     covariates = np.full((len(issuances), window, len(locations), n_state), np.nan, np.float32)
     national = np.full((len(issuances), window, n_national), np.nan, np.float32)
+    truth_cutoff = cutoff_time(end)
+    truth_states = {name: target_archives[name].resolve(truth_cutoff) for name in CHANNELS}
     for i, issuance in enumerate(issuances):
         end_of_context = (date.fromisoformat(issuance) - timedelta(days=4)).isoformat()
         window_dates = tuple((date.fromisoformat(end_of_context) - timedelta(weeks=w)).isoformat()
@@ -211,17 +223,19 @@ def build_vintaged(data_root='data', *, start, end, lookback=DEFAULT_LOOKBACK,
         all_dates[i] = np.array(window_dates, dtype='datetime64[D]')
         cutoff = cutoff_time(issuance)
         for c, name in enumerate(CHANNELS):
-            values, available = target_archives[name].panel(window_dates, locations, target_archives[name].resolve(cutoff))
+            archive = target_archives[name]
+            asof_values, asof_available = archive.panel(window_dates, locations, archive.resolve(cutoff))
+            truth_values, truth_available = archive.panel(window_dates, locations, truth_states[name])
+            use_truth = np.ones(window, dtype=bool)
+            use_truth[lookback - 2:lookback] = ~asof_available[lookback - 2:lookback]
+            values = np.where(use_truth[:, None], truth_values, asof_values)
+            available = np.where(use_truth[:, None], truth_available, asof_available)
             targets[i, :, :, c] = np.where(available, values, np.nan)
+            known_final[i, :, :, c] = use_truth[:, None] & available
         claims = _claims_panel(data_root, window_dates, locations, cutoff, claims_archives)
         nwss = _nwss_panel(nwss_frame, window_dates, locations, cutoff)
         covariates[i] = np.concatenate([claims, nwss], axis=2)
         national[i] = _national_panel(kinsa, window_dates, cutoff)
-    # Context weeks older than the two most recent are pinned reference finals by
-    # assumption; the two most recent context weeks carry their real Wednesday
-    # vintage and are not known-final. Horizon (forecast) weeks are never context.
-    known_final = np.zeros_like(targets, dtype=bool)
-    known_final[:, :lookback - 2] = ~np.isnan(targets[:, :lookback - 2])
     return dict(issuance_dates=np.array(issuances, dtype='datetime64[D]'), dates=all_dates,
                 locations=np.array(locations), targets=targets, target_names=np.array(CHANNELS),
                 known_final=known_final,

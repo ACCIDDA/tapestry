@@ -52,7 +52,7 @@ def _encode(name, value):
     if isinstance(value, bool):
         return '1' if value else '0'
     if isinstance(value, float):
-        return f'{value:g}'
+        return repr(value)  # round-trips exactly, unlike `:g` (which loses precision past 6 sig figs)
     return str(value)
 
 
@@ -133,8 +133,17 @@ class Scenario:
         mix = (self.mask_recent, self.mask_gap, self.mask_outage)
         if any(p < 0 for p in mix) or abs(sum(mix) - 1) > 1e-9:
             raise ValueError('mask_recent/mask_gap/mask_outage must be nonnegative and sum to one')
-        from tapestry.dataset.build import covariate_names_for
-        covariate_names_for(self.covariate_set)  # raises on an unknown group name
+        from tapestry.dataset.build import SOURCE_GROUPS
+        # Canonicalize so equivalent spellings ('a+b' vs 'b+a' vs 'a+a+b') collapse
+        # to one string and one `run_id`, instead of silently training the same
+        # configuration twice under different scenario strings.
+        groups = self.covariate_set.split('+') if self.covariate_set else []
+        unknown = set(groups) - set(SOURCE_GROUPS)
+        if unknown:
+            raise ValueError(f'Unknown covariate group(s): {sorted(unknown)}')
+        canonical = '+'.join(group for group in SOURCE_GROUPS if group in groups)
+        if canonical != self.covariate_set:
+            object.__setattr__(self, 'covariate_set', canonical)
 
     @property
     def scenario_string(self):

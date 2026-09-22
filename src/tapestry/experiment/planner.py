@@ -77,8 +77,8 @@ def assemble_covariates(arrays, covariate_names, indices=None):
     for k, name in enumerate(covariate_names):
         if name in state_names:
             j = state_names.index(name)
-            values[..., k, :] = arrays['covariates'][..., j, :]
-            available[..., k, :] = arrays['covariate_mask'][..., j, :]
+            values[..., k, :] = arrays['covariates'][..., j]
+            available[..., k, :] = arrays['covariate_mask'][..., j]
         elif name in national_names and us is not None:
             j = national_names.index(name)
             values[..., k, us] = arrays['covariates_national'][..., j]
@@ -122,14 +122,22 @@ def episodes_from_finalized(arrays, lookback, horizons=(1, 2, 3, 4), covariate_n
 
 
 def episodes_from_vintaged(arrays, lookback, horizons=(1, 2, 3, 4), covariate_names=()):
-    """One episode per historical Wednesday issuance; window already materialized."""
+    """One episode per historical Wednesday issuance; window already materialized.
+
+    The array's context window is fixed at build time (`metadata['lookback']`).
+    A scenario may ask for a shorter lookback than was built; it then reads the
+    most recent `lookback` context weeks of that fixed window, keeping the
+    horizon slice anchored at the built lookback so target weeks never shift.
+    """
+    built_lookback = json.loads(str(arrays['metadata']))['lookback']
+    if lookback > built_lookback:
+        raise ValueError(f'Scenario lookback {lookback} exceeds the built vintaged lookback {built_lookback}')
     targets = _channel_first(arrays['targets'])
     known_final = _channel_first(arrays['known_final'])
     cov_values, cov_available = (assemble_covariates(arrays, covariate_names) if covariate_names else (None, None))
-    window = lookback + len(horizons)
     for i in range(len(arrays['issuance_dates'])):
-        context = slice(0, lookback)
-        future = slice(lookback, window)
+        context = slice(built_lookback - lookback, built_lookback)
+        future = slice(built_lookback, built_lookback + len(horizons))
         available = ~np.isnan(targets[i, context])
         if not available.any():
             continue

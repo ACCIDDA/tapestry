@@ -80,6 +80,19 @@ def test_mask_probabilities_must_sum_to_one():
         Scenario(mask_recent=.5, mask_gap=.5, mask_outage=.5)
 
 
+def test_float_fields_round_trip_past_six_significant_digits():
+    scenario = Scenario(lr=.0001234567)
+    assert Scenario.from_string(scenario.scenario_string) == scenario
+
+
+def test_covariate_set_spelling_is_canonicalized():
+    a = Scenario(covariate_set='inpatient+kinsa')
+    b = Scenario(covariate_set='kinsa+inpatient')
+    c = Scenario(covariate_set='inpatient+inpatient+kinsa')
+    assert a == b == c
+    assert a.run_id == b.run_id == c.run_id
+
+
 def test_covariate_set_and_input_mode_reproduce_b0_b1_b2_shapes():
     plain_b0 = Scenario(covariate_set='', input_mode='finalized')
     b1_direct = Scenario(covariate_set='', input_mode='vintaged', supplied_final=True)
