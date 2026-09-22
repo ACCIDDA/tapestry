@@ -9,8 +9,10 @@ with its weights as rank-time options, and writes the four figures
 (`evaluation.plots`).
 
 `plan` records in `experiment.json` the dataset path, the frozen-support path and
-the sha256 of `panel.npz` and of the frozen manifest; `run` (and the Slurm
-dispatcher) refuse to fit when either hash no longer matches.
+the sha256 of `panel.npz`, of the frozen manifest and of the one population file
+(`LOCATIONS`); `run` (and the Slurm dispatcher) refuse to fit when any hash no
+longer matches. The Slurm launcher runs the code snapshot pinned by `plan`
+(`<experiment>/code`); a local `planner run` runs the working tree.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -31,7 +33,7 @@ import numpy as np
 import torch
 
 from tapestry.dataset import cv
-from tapestry.dataset.build import load as load_dataset, covariate_names_for, PANEL_DATASET
+from tapestry.dataset.build import load as load_dataset, covariate_names_for, CHANNELS, PANEL_DATASET
 from tapestry.dataset.cv import SEASONS
 from tapestry.dataset.episodes import HORIZONS
 from tapestry.evaluation.quantiles import LEVELS
@@ -41,11 +43,12 @@ from tapestry.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scale
 from tapestry.model.scenario import Scenario
 from .provenance import save, now, environment, git_state
 
-GROUPS = {'all': [list(range(6))], 'pathogen': [[0, 3], [1, 4], [2, 5]], 'target': [[i] for i in range(6)]}
+GROUPS = {'all': [list(range(len(CHANNELS)))], 'pathogen': [[0, 3], [1, 4], [2, 5]],
+          'target': [[i] for i in range(len(CHANNELS))]}
 JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
-ARRAY_CHUNK = 1000
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
-LOCATIONS = 'data/metadata/locations.csv'
+LOCATIONS = 'data/metadata/locations.csv'  # the one population file (sha256 pinned at plan time)
+EVAL_CHUNK = 32  # evaluation members drawn per forward pass (bounds memory; same distribution)
 
 
 def calendar(days, dynamics=True):
@@ -118,6 +121,9 @@ def fit_component(train, validation, channels, component, options, scenario, see
     if selecting:
         vvalues, vavailable, vknown_final, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
         vweights = torch.as_tensor(loss_cell_weights(validation, weights_by_channel), device=device)[:, :, channels]
+        if not float(vweights.sum()) > 0:
+            raise ValueError(f'Component {component} (channels {channels}) has no weighted validation labels; '
+                             'early stopping cannot select an epoch')
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     best, best_state, best_epoch = float('inf'), None, 0
     history = []
@@ -154,6 +160,8 @@ def fit_component(train, validation, channels, component, options, scenario, see
                                     locations=list(train[0]['locations']), vintaged=scenario.input_mode == 'vintaged')
                     score = fair_crps_cells(samples[:, :, :, channels], vy[ids][:, :, channels], vy_mask[ids][:, :, channels])
                     val += float((vweights[ids] * score / model.scale[channels]).sum())
+            if not np.isfinite(val):
+                raise ValueError(f'Nonfinite validation loss at epoch {epoch + 1}, component {component}')
             if val < best:
                 best, best_epoch, best_state = val, epoch + 1, {k: v.detach().clone() for k, v in model.state_dict().items()}
         history.append(dict(epoch=epoch + 1, loss=total, validation_loss=val))
@@ -170,19 +178,29 @@ def fit_component(train, validation, channels, component, options, scenario, see
 
 
 def unique_truth(episodes_):
-    """One observation per calendar date, pooled across overlapping episodes."""
+    """[dates, C, value/available, L]: the truth of every calendar date, pooled across episodes.
+
+    Only truth enters (loss scales, 2026-09-22): target cells, and context cells flagged
+    known-final. The as-of context values of vintaged episodes (not known-final) are
+    skipped; before this fix the first value seen per date was used, which in vintaged
+    mode was usually the earliest as-of value. Finalized episodes hold truth only, so
+    their scales are unchanged."""
     by_date = {}
+
+    def add(values, available, day):
+        stored, seen = by_date.setdefault(day, (np.zeros_like(values), np.zeros(values.shape, bool)))
+        new = available & ~seen
+        stored[new], seen[new] = values[new], True
+
     for e in episodes_:
-        for values, avail, day in zip(e['values'], e['available'], e['context_dates']):
-            if day not in by_date:
-                by_date[day] = (values, avail)
-        for values, avail, day in zip(e['target_values'], e['target_available'], e['target_dates']):
-            if day not in by_date:
-                by_date[day] = (values, avail)
-    panel = np.zeros((len(by_date), 6, 2, len(episodes_[0]['locations'])), np.float32)
-    for i, (values, avail) in enumerate(by_date.values()):
+        for values, available, day in zip(e['target_values'], e['target_available'], e['target_dates']):
+            add(values, available, day)
+        for values, available, final, day in zip(e['values'], e['available'], e['known_final'], e['context_dates']):
+            add(values, available & final, day)
+    panel = np.zeros((len(by_date), len(CHANNELS), 2, len(episodes_[0]['locations'])), np.float32)
+    for i, (values, seen) in enumerate(by_date.values()):
         panel[i, :, 0] = values
-        panel[i, :, 1] = avail
+        panel[i, :, 1] = seen
     return panel
 
 
@@ -203,6 +221,8 @@ def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=P
                                       model_options(inner.train, scenario, pop), scenario, seed, device)
             records.append(record)
             selected = record['selected_epoch']
+        if selected < 1:
+            raise ValueError(f'Selected {selected} epochs for component {i}; refusing to refit with no training')
         model, record = fit_component(full.train, None, channels, i, model_options(full.train, scenario, pop),
                                       scenario, seed, device, epochs=selected)
         models.append(model)
@@ -233,20 +253,28 @@ def sha256(path):
 
 
 def pinned_inputs(settings):
-    """Hashes of the dataset and frozen-support manifest an experiment was planned against."""
+    """Hashes of the dataset, frozen-support manifest and population file an experiment was planned against.
+
+    The population file (`LOCATIONS`) and the frozen support are git-ignored, not
+    synced with the code: copy them to the cluster (docs/longleaf-setup.md)."""
     return dict(dataset_sha256=sha256(settings['dataset']),
-                frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'))
+                frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'),
+                population_sha256=sha256(LOCATIONS))
 
 
 def check_pinned_inputs(settings):
     current = pinned_inputs(settings)
     changed = [k for k, v in current.items() if settings.get(k) != v]
     if changed:
-        raise ValueError(f'{changed} differ from plan time ({settings["dataset"]}, {settings["frozen"]}); '
-                         'rebuilding data or frozen support needs a new experiment name')
+        raise ValueError(f'{changed} differ from plan time ({settings["dataset"]}, {settings["frozen"]}, {LOCATIONS}); '
+                         'rebuilding data, frozen support or populations needs a new experiment name')
 
 
-def evaluate(model, eps, eval_members, device, output, name=''):
+def evaluate(model, eps, eval_members, device, output):
+    """Held-out quantiles from `eval_members` draws (in chunks of EVAL_CHUNK) per episode.
+
+    Admission quantiles (channels 0-2) are rounded to integers (counts); ED proportions
+    are not rounded."""
     model.eval()
     quantiles, truths, masks = [], [], []
     for e in eps:
@@ -257,9 +285,9 @@ def evaluate(model, eps, eval_members, device, output, name=''):
         cov = torch.as_tensor(e['covariates'][None], device=device) if 'covariates' in e else None
         with torch.no_grad():
             samples = torch.cat([model(values=values, available=available, calendar=cal,
-                                       members=min(32, eval_members - j), known_final=known_final,
+                                       members=min(EVAL_CHUNK, eval_members - j), known_final=known_final,
                                        covariates=cov, locations=list(e['locations']), vintaged=True).cpu()
-                                 for j in range(0, eval_members, 32)], dim=0).numpy()[:, 0]
+                                 for j in range(0, eval_members, EVAL_CHUNK)], dim=0).numpy()[:, 0]
         q = np.quantile(samples, LEVELS, axis=0)
         q[:, :, :3] = np.floor(q[:, :, :3] + .5)
         quantiles.append(q)
@@ -267,7 +295,7 @@ def evaluate(model, eps, eval_members, device, output, name=''):
         masks.append(e['target_available'])
     q = np.stack(quantiles, axis=1)
     y, mask = np.stack(truths), np.stack(masks)
-    np.savez_compressed(output / f'{name}forecasts.npz', quantiles=q, quantile_levels=LEVELS,
+    np.savez_compressed(output / 'forecasts.npz', quantiles=q, quantile_levels=LEVELS,
                         truth=y, mask=mask, context_end=[e['context_dates'][-1] for e in eps],
                         target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'])
     return [dict(context_end=e['context_dates'][-1]) for e in eps]
@@ -299,16 +327,17 @@ def write_jobs(folder, jobs):
 
 
 def snapshot_code(folder):
-    """Copy src/ and the Slurm launchers into `folder/code` and the notifier into
-    `folder/notifications`, so jobs run the code the experiment was planned with even
-    while the working tree moves on (scripts/jlessler.sbatch puts `code/src` first on
-    PYTHONPATH). Refreshed on every `plan`: re-planning an experiment re-pins its code."""
+    """Copy src/ into `folder/code` and the notifier into `folder/notifications`, so
+    Slurm jobs run the code the experiment was planned with even while the working
+    tree moves on (scripts/jlessler.sbatch puts `code/src` first on PYTHONPATH). The
+    launchers themselves are not copied: Slurm runs scripts/*.sbatch from the working
+    tree. Refreshed on every accepted `plan`: re-planning an experiment re-pins its
+    code. A local `planner run` does not use the snapshot; it runs the working tree."""
     root = Path(__file__).resolve().parents[3]
     destination = folder / 'code'
     if destination.exists():
         shutil.rmtree(destination)
-    files = list((root / 'src').rglob('*.py')) + [root / 'scripts/jlessler.sbatch',
-                                                  root / 'scripts/notify.sbatch', root / 'pyproject.toml']
+    files = list((root / 'src').rglob('*.py')) + [root / 'pyproject.toml']
     for source in files:
         target = destination / source.relative_to(root)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -320,13 +349,13 @@ def snapshot_code(folder):
 
 def plan(folder, scenarios, seeds, settings):
     folder.mkdir(parents=True, exist_ok=True)
-    snapshot_code(folder)
     path = folder / 'experiment.json'
     previous = json.loads(path.read_text()) if path.exists() else {}
     changed = sorted(k for k, v in previous.items() if k in settings and settings[k] != v)
     protocol = set(changed) - {'device'}
     if protocol:
         raise ValueError(f'Experiment settings changed: {sorted(protocol)}; use a new experiment name')
+    snapshot_code(folder)  # only after the check: a rejected re-plan keeps the pinned code
     save(path, {**previous, **settings})
     jobs = read_jobs(folder) if (folder / 'jobs.csv').exists() else []
     by_scenario = {job['scenario']: job for job in jobs}
@@ -447,23 +476,28 @@ def collect(folder):
 
 
 def completed_runs(folder, allow_incomplete=False, seeds=None):
-    rows = collect(folder)
-    if seeds is not None:
-        rows = [row for row in rows if row['seed'] in seeds]
+    """(completed runs to rank, whether they are every planned run of the experiment)."""
+    planned = collect(folder)
+    rows = planned if seeds is None else [row for row in planned if row['seed'] in seeds]
     done = [row for row in rows if row['status'] == 'complete']
     if not done or (len(done) < len(rows) and not allow_incomplete):
         raise ValueError(f'{len(rows) - len(done)} of {len(rows)} runs incomplete; finish them or pass --allow-incomplete')
-    return done
+    return done, len(done) == len(planned)
 
 
 def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
          admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT):
-    """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot."""
+    """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot.
+
+    The report page (`docs/results/<experiment>/index.md`) is written only for the
+    complete ranking: every planned run complete and included, default score weights.
+    A subset (`--seeds`, `--allow-incomplete` with missing runs) or non-default weights
+    still gets its ranking folder and figures, not the report."""
     from tapestry.evaluation.totals import rank as rank_runs
     from tapestry.evaluation.plots import plot_experiment, write_report
     if not 0 <= us_weight <= 1 or min(admissions_weight, ed_weight) < 0 or not admissions_weight + ed_weight:
         raise ValueError('Need 0 <= us_weight <= 1 and nonnegative target weights, not both zero')
-    done = completed_runs(folder, allow_incomplete, seeds)
+    done, every_run = completed_runs(folder, allow_incomplete, seeds)
     key = dict(attempts=sorted(r['attempt'] for r in done), us_weight=us_weight,
                admissions_weight=admissions_weight, ed_weight=ed_weight)
     destination = folder / f"ranking-{hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:12]}"
@@ -473,7 +507,15 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
     print(ranking.head(20).to_string(index=False), flush=True)
     for path in plot_experiment(folder, destination):
         print(path, flush=True)
-    print(write_report(folder, destination), flush=True)
+    default_weights = (us_weight, admissions_weight, ed_weight) == (US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT)
+    if every_run and default_weights:
+        print(write_report(folder, destination), flush=True)
+    else:
+        print('Report not written: ' + ' and '.join(
+            reason for reason, applies in (('not every planned run is ranked (--seeds subset or incomplete runs)',
+                                            not every_run),
+                                           ('score weights differ from the defaults', not default_weights)) if applies),
+              flush=True)
     return destination
 
 
@@ -549,6 +591,12 @@ def main(argv=None):
             rows = [row for row in rows if row['seed'] in args.seeds]
         for row in rows:
             print(f"{row['status']}\t{row['task']}\t{row['name']}\ts{row['seed']}\t{row['attempt']}")
+        unfinished = sum(row['status'] != 'complete' for row in rows)
+        if unfinished:
+            root = '' if args.root == 'data/experiments' else f' --root {args.root}'
+            print(f'{unfinished} of {len(rows)} runs not complete. Resume on Longleaf: sbatch --job-name={args.experiment} '
+                  f'--array=0-3 scripts/jlessler.sbatch {args.experiment} --retry-failed\n'
+                  f'or locally: .venv/bin/python -m tapestry.experiment.planner run -e {args.experiment}{root}')
     elif args.command == 'rank':
         print(rank(folder, args.allow_incomplete, args.seeds, args.us_weight, args.admissions_weight, args.ed_weight))
     elif args.command == 'plots':

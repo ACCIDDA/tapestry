@@ -77,6 +77,14 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
         assert a.validation
         for e in a.validation:
             assert {d for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m} <= hidden_validation
+        # Validation episodes (inputs, labels, availability, covariates) never see held-out or unused weeks.
+        outside = set(dates[(labels == held_out) | ~np.isin(labels, SEASONS)])
+        c = fold(perturbed(panel, outside), scenario, held_out, inner)
+        assert len(a.validation) == len(c.validation)
+        for x, y in zip(a.validation, c.validation):
+            for key in ('values', 'available', 'known_final', 'target_values', 'target_available', 'covariates'):
+                if key in x:
+                    np.testing.assert_array_equal(x[key], y[key])
     else:
         assert a.score[0]['context_dates'][-1] == dates[labels == held_out][0]  # origins from the season start
         for e in a.score:

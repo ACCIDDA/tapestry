@@ -151,7 +151,11 @@ python -m tapestry.experiment.planner plots -e my-experiment --configs 'width=32
 
 `plots` redraws the figures only; the report page is rewritten by `rank`.
 
-Pass `--allow-incomplete` to rank before every run has finished.
+Pass `--allow-incomplete` to rank before every run has finished. The report page
+is written only for the complete ranking (every planned run, default score
+weights); a `--seeds` subset, an incomplete ranking or non-default weights get
+their `ranking-*` folder and figures, and `rank` prints why the page was not
+written. A local `planner run` runs the working tree, not the code snapshot.
 
 There is no `compare` command; `rank`'s location-relative ratio is the only
 comparison. Summed WIS columns in the outputs are raw totals, not a score.
@@ -162,8 +166,9 @@ comparison. Summed WIS columns in the outputs are raw totals, not a score.
 sbatch --job-name=my-experiment --array=0-3 scripts/jlessler.sbatch my-experiment
 ```
 
-One launcher for every scenario: it pulls the model from `experiment.json`
-and dispatches through `tapestry.experiment.dispatch`'s shared job queue (one
+One launcher for every scenario: it reads the scenarios and seeds from the
+experiment's `jobs.csv` (written by `plan`), runs the code snapshot `plan` pinned in
+`data/experiments/<experiment>/code`, and dispatches through `tapestry.experiment.dispatch`'s shared job queue (one
 whole GPU per array element, several fitting processes per GPU, drawing from
 one queue across every node in the array -- no static task slices). See
 [Longleaf setup](../longleaf-setup.md) for cluster environment setup.
@@ -177,9 +182,12 @@ two training seasons becomes unavailable in targets, covariates and the as-of
 arrays, and training episodes are cut from that masked panel, so held-out
 weeks never reach inputs, labels, loss scales or covariate standardization.
 `inner=True` (scenarios with `patience > 0`) additionally hides the scenario's
-validation weeks (default 4-6, 20-22 and 36-38) of each training season for
+validation weeks (default 0-based weeks 4-6, 20-22 and 36-38, counted from the
+season's first epiweek, CDC week 31) of each training season for
 early stopping; its validation episodes score only those weeks. The
 refit uses the full training seasons. Score episodes have origins in the
-held-out season (from its first week, at any lookback: earlier context is
-padding) and score only labels inside it. Details and history:
+held-out season (from its first week, at any lookback) and score only labels
+inside it. Their context before the season is the real data of the preceding
+weeks (the unmasked panel); only weeks before the calendar start (2023-09-02) are
+padding (unavailable). Details and history:
 [the design doc](../design/restructure-2026-unified.md#4-cross-validation).

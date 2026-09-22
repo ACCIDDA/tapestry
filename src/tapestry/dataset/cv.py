@@ -13,7 +13,11 @@ docs/design/restructure-2026-unified.md §3 and its decision log):
   additionally hide `validation_weeks` consecutive weeks of every
   `validation_spacing`, starting at week `validation_offset` of each training
   season (Scenario fields since 2026-09-22; defaults 3/16/4 = weeks 4-6, 20-22,
-  36-38). Validation episodes are cut from the training panel (hidden weeks
+  36-38). Week positions count from the season's first epiweek (CDC week 31,
+  `season_start`), not from the first calendar week, so every season hides the same
+  weeks; 2023-24 starts before the calendar (2023-09-02 is its 5th week), and its
+  positions before the calendar start simply do not exist (fixed 2026-09-22).
+  Validation episodes are cut from the training panel (hidden weeks
   visible), with origins in the four (= horizons) training weeks before each hidden
   week, and only hidden weeks are scored as labels.
 - The refit after epoch selection uses the fold's training panel without the
@@ -30,16 +34,18 @@ from .build import covariate_names_for
 from .episodes import HORIZONS, episodes, restrict_labels
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
-ROLES = ('fit', 'validation', 'score', 'unused')
+
+
+def season_start(year):
+    """The Sunday starting CDC epiweek 31 of `year`: first day of season `year`-`year + 1`."""
+    jan4 = date(year, 1, 4)
+    return jan4 - timedelta(days=(jan4.weekday() + 1) % 7) + timedelta(weeks=30)
 
 
 def season(day):
     """CDC epiweek 31-30, as used throughout the project (not challenge dates)."""
-    def boundary(year):
-        jan4 = date(year, 1, 4)
-        return jan4 - timedelta(days=(jan4.weekday() + 1) % 7) + timedelta(weeks=30)
     day = day if isinstance(day, date) else date.fromisoformat(str(day)[:10])
-    year = day.year if day >= boundary(day.year) else day.year - 1
+    year = day.year if day >= season_start(day.year) else day.year - 1
     return f'{year}-{year + 1}'
 
 
@@ -51,7 +57,6 @@ def masked(panel, keep):
     out = dict(panel)
     for name in ('targets', 'covariates', 'covariates_national'):
         out[name] = np.where(keep.reshape(-1, *(1,) * (panel[name].ndim - 1)), panel[name], np.nan).astype(np.float32)
-    out['covariate_mask'] = panel['covariate_mask'] & keep[:, None, None]
     for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
         shape = (1, -1, *(1,) * (panel[name].ndim - 2))
         out[name] = np.where(keep.reshape(shape), panel[name], np.nan).astype(np.float32)
@@ -63,7 +68,8 @@ def week_roles(dates, scenario, held_out):
 
     'score': the held-out season; 'unused': weeks in no CV season; 'validation': the
     early-stopping weeks hidden from the inner fit (only when `scenario.patience > 0`;
-    the refit trains on them); 'fit': the remaining training-season weeks.
+    the refit trains on them); 'fit': the remaining training-season weeks. Validation
+    positions count weeks from the season's first epiweek (`season_start`).
     """
     labels = np.array([season(d) for d in dates])
     roles = np.where(labels == held_out, 'score', np.where(np.isin(labels, SEASONS), 'fit', 'unused')).astype('U10')
@@ -71,7 +77,9 @@ def week_roles(dates, scenario, held_out):
         for label in SEASONS:
             if label != held_out:
                 weeks = np.flatnonzero(labels == label)
-                position = np.arange(len(weeks)) % scenario.validation_spacing
+                start = season_start(int(label[:4]))
+                position = np.array([(date.fromisoformat(dates[i][:10]) - start).days // 7 for i in weeks])
+                position %= scenario.validation_spacing
                 hidden = (position >= scenario.validation_offset) & \
                     (position < scenario.validation_offset + scenario.validation_weeks)
                 roles[weeks[hidden]] = 'validation'

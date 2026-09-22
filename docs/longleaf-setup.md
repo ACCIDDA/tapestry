@@ -66,7 +66,7 @@ a training job.
 
 ## Sync code and panel from the Mac
 
-`data/processed/panel.npz` (about 5 MB) is tracked in git despite the `/data/`
+`data/processed/panel.npz` (about 10 MB) is tracked in git despite the `/data/`
 ignore rule (added with `git add -f`), so code and panel travel together. From the
 Mac, push to a side branch of the cluster checkout (git refuses to update its
 checked-out branch), then fast-forward on Longleaf:
@@ -80,6 +80,14 @@ ssh chadi@longleaf.unc.edu 'cd /proj/jlessler/projects/tapestry-all/tapestry && 
 Rebuilding the panel on the cluster is not needed: sources are acquired and built
 on the Mac. A planned experiment pins the panel's sha256, so replacing the panel
 under a running experiment makes its remaining runs refuse to fit.
+
+**Not synced by git:** the population file `data/metadata/locations.csv` (the one
+population file; `LOCATIONS` in `planner.py`) and the frozen support
+`data/evaluation/b0_hub_comparison_q23` are git-ignored. Restore the population
+file as below (sha256 checked) and copy the frozen support to the cluster once
+(e.g. `rsync -a data/evaluation/b0_hub_comparison_q23 longleaf:.../data/evaluation/`).
+`plan` pins the sha256 of both (the frozen support through its `manifest.json`)
+next to the panel's, and runs refuse to fit if either changed.
 
 ## Build the training panel
 
@@ -125,9 +133,12 @@ printf '%s  %s\n' \
 )
 ```
 
-Keep these inputs fixed while an experiment runs. Experiments are not locked to a
-code version: each attempt records its git commit and whether the checkout had
-uncommitted changes, and results for the paper are rerun from a clean tree.
+Keep these inputs fixed while an experiment runs. `plan` copies `src/` into
+`data/experiments/<experiment>/code`, and `jlessler.sbatch` runs that snapshot, so a
+Slurm experiment keeps the code it was planned with (re-planning re-pins it). A local
+`planner run` runs the working tree instead. Each attempt's `run.json` also records
+the git commit and whether the checkout had uncommitted changes; results for the
+paper are rerun from a clean tree.
 
 ## The frozen evaluation denominator
 
@@ -149,14 +160,15 @@ mkdir -p output/slurm
 sbatch --job-name=my-experiment --array=0-13 scripts/jlessler.sbatch my-experiment
 ```
 
-`jlessler.sbatch` is model-agnostic: it reads the scenario from
-`experiment.json` and dispatches through `tapestry.experiment.dispatch`'s
+`jlessler.sbatch` is scenario-agnostic: it reads the scenarios and seeds from the
+experiment's `jobs.csv` (written by `plan`) and dispatches through `tapestry.experiment.dispatch`'s
 shared job queue, drawing from one queue across every array element instead
 of a static task-per-index slice (unlike the old `b0_array.sbatch`/
 `b0_sweep.sbatch`; those B0/B1/B2-era launchers and plotting scripts were
-deleted on 2026-09-22 and remain only in git history). It requests one GPU, four CPUs,
-110 GiB, and two days on `g1803jles01`; set `LANES`/`GPUS` to change fitting
-processes per GPU and GPU count. See
+deleted on 2026-09-22 and remain only in git history). Each array element requests
+one GPU, 12 CPUs, 110 GiB and two days on `g1803jles01` and runs `LANES` (default 8)
+fitting processes on its GPU, one CPU thread each; set `LANES`/`GPUS` to change
+fitting processes per GPU and GPU count. See
 [the canonical workflow](workflows/training.md#shared-gpu-cluster-launch-longleaf).
 
 ```bash
@@ -251,23 +263,21 @@ Partition `jlessler` provides:
 | `g1803jles01` | 56 | 500,000 MB | 4 × L40, 48 GB each |
 | `g1803jles02` | 64 | 2,048,000 MB | 2 × H100 NVL, 96 GB each |
 
-Each array task is one scenario and runs its three seeds in sequence. It requests
-one GPU, four CPUs, 64 GiB RAM, and one day. Six concurrent tasks can use all six
-GPUs. Memory and time limits are resource allowances, not measured
-requirements. Mixed GPU hardware may introduce small numerical differences;
-each task records its allocation and logs the device model.
-
-`status` prints the array tasks that still have unfinished seeds; a fresh
-14-scenario experiment reports `0,1,...,13`:
+Array elements are GPUs, not scenarios: each element claims (scenario, seed) runs
+from the shared queue until none are left, `LANES` at a time on its one GPU, with
+the resources in `scripts/jlessler.sbatch` (one GPU, 12 CPUs, 110 GiB, two days).
+Six concurrent elements (four on `g1803jles01`, two with `--nodelist=g1803jles02`)
+can use all six GPUs. Memory and time limits are resource allowances, not measured
+requirements. Mixed GPU hardware may introduce small numerical differences; each
+run records its allocation and logs the device model.
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner status -e b0-explore
-sbatch --job-name=b0-explore --array=0-13 scripts/jlessler.sbatch b0-explore
+sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore
 ```
 
-Array task numbers are rows of `data/experiments/b0-explore/jobs.csv`. Each
-seed attempt writes only its own folder, so there is no prepare or collect
-step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
+Task numbers are rows of `data/experiments/b0-explore/jobs.csv` (one per
+scenario). Each seed attempt writes only its own folder, so there is no prepare
+or collect step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
 (`NTFY=0` to disable); see [`scripts/b01_notify.py`](../scripts/b01_notify.py).
 
 ## Monitor and resume
@@ -279,15 +289,17 @@ sacct -j ARRAY_ID --format=JobID,State,Elapsed,ExitCode,NodeList
 tail -f output/slurm/tapestry-ARRAY_ID_TASK_ID.log
 ```
 
-`status` rebuilds `runs.csv` (task, seed, status, attempt path, git commit) and
-prints the tasks with unfinished seeds. Each attempt folder holds `run.json` and
-`run.log`. After the array has ended, resubmit only the printed tasks, for example:
+`status` rebuilds `runs.csv` (task, name, seed, status, attempt path, scenario),
+prints one line per run and, when some are not complete, the exact commands to
+resume them (the Slurm launcher with `--retry-failed`, or a local `planner run`).
+Each attempt folder holds `run.json` (including the git commit) and `run.log`.
+After the array has ended, resubmit with the printed command, for example:
 
 ```bash
-sbatch --job-name=b0-explore --array=2,9 scripts/jlessler.sbatch b0-explore
+sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore --retry-failed
 ```
 
-Completed seeds are skipped; failed or interrupted seeds restart all three folds in
+The shared queue picks up every run that is not complete; completed seeds are skipped; failed or interrupted seeds restart all three folds in
 a new attempt folder, keeping the previous one. A killed job leaves its attempt
 marked `running`, so check `squeue` first and never run the same task twice at once.
 

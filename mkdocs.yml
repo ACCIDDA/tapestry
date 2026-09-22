@@ -74,6 +74,7 @@ nav:
       - Wastewater (WVAL and Delphi NWSS): data/wastewater.md
       - Clinical covariates (claims, PopHIVE): data/covariates.md
       - Kinsa cough, cold and flu (PopHIVE): data/kinsa.md
+      - Panel analysis (truth fallback, revisions): data/panel.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md

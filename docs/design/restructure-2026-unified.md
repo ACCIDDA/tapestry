@@ -160,7 +160,6 @@ target_names:             str [C=6]              nhsn_{flu,covid,rsv}_admissions
 targets:                  float32 [T, L, C]      truth, NaN = unavailable
 covariate_names:          str [K]                inpatient/outpatient claims, NWSS wval_like/pct_rank
 covariates:               float32 [T, L, K]      truth, NaN = unavailable
-covariate_mask:           bool [T, L, K]         = ~isnan(covariates)
 covariate_national_names: str [Kn]               kinsa_ili
 covariates_national:      float32 [T, Kn]        truth (national only)
 issuance_dates:           datetime64[D] [W]      Wednesdays from 2023-08-30 to the build day
@@ -257,6 +256,8 @@ Build choices:
   a "fully as-of" episode is exact wherever something was visible and
   truth-filled elsewhere. Flagged for the user; not changed because the
   default must reproduce B1.
+  **Kept by user decision 2026-09-22**, with its size documented by
+  `python -m tapestry.dataset.analyze_dataset` ([panel analysis](../data/panel.md)).
 - Kept only if some context cell and some target cell are available.
 
 `COVARIATE_GROUPS` (in `build.py`) stays the single source of truth for
@@ -283,8 +284,12 @@ masking the array rather than selecting episodes:
   covariate cells).
 - **Inner early-stopping fit** (`patience > 0`): additionally hide
   `validation_weeks` consecutive weeks of every `validation_spacing`, starting
-  at week `validation_offset` of each training season (defaults 3/16/4: weeks
-  4-6, 20-22 and 36-38). Validation episodes are cut from the training panel
+  at week `validation_offset` of each training season (defaults 3/16/4:
+  0-based weeks 4-6, 20-22 and 36-38). Week positions count from the season's
+  first epiweek (CDC week 31, `cv.season_start`), so every season hides the same
+  weeks; 2023-24 begins before the calendar (2023-09-02 is its week 4, 0-based) and
+  its missing early positions simply do not exist (fixed 2026-09-22; positions
+  were counted from the calendar start before). Validation episodes are cut from the training panel
   (hidden weeks visible), with origins in the four (= number of horizons)
   training weeks before each hidden week, and score only hidden weeks.
 - **CV settings are scenario fields (user decision 2026-09-22)**: training-data
@@ -302,12 +307,27 @@ masking the array rather than selecting episodes:
 - **Refit** after epoch selection: the fold's training panel without the
   validation mask (full training seasons, as old B0).
 - **Score**: origins in the held-out season from the unmasked panel, from its
-  first week at any lookback (padding); earlier weeks are allowed as context,
-  only labels inside the held-out season count.
+  first week at any lookback; context before the season is the real data of the
+  preceding weeks (only weeks before the calendar start are padding), and only
+  labels inside the held-out season count.
+- **Loss scales** (`planner.unique_truth` -> `objective.loss_scales`) use truth
+  only: target cells and known-final context cells of the training episodes, one
+  value per date and cell. Before 2026-09-22 the first value seen per date was
+  used, which in vintaged mode was usually the earliest as-of value of that week;
+  finalized scales are unchanged by the fix.
+- **Covariate standardization** (`planner.covariate_scales`) pools the visible
+  covariate cells of all training episodes' context windows, so a calendar cell
+  is counted once per window containing it (up to `lookback` times; weeks near
+  the ends of the training seasons count fewer times). Kept as is (documented
+  2026-09-22, not changed).
 
 `tests/test_dataset.py` checks that no held-out or validation week value
-reaches any training input, label, loss scale/weight or covariate scale, and
-that score labels stay inside the held-out season.
+reaches any training input, label, loss scale/weight or covariate scale, that
+validation episodes (inputs, labels, availability, covariates) never see
+held-out or unused weeks, and that score labels stay inside the held-out season.
+The validation check was added 2026-09-22 after a review showed that cutting
+validation episodes from the unmasked panel still passed; it fails under that
+mutation.
 
 ## 5. Scoring: pure Python only, one score
 
@@ -362,8 +382,16 @@ that score labels stay inside the held-out season.
   (rows = disease, columns = admissions/ED): WIS ratio by location x season,
   mean over seeds, plus the mean of seasons with support; one log colour scale
   centred at 1 shared by all panels of all heatmap files of the call, grey = no
-  frozen support. Every other plotting script was deleted (§6).
-- **Report** (`plots.write_report`, called by `rank`):
+  frozen support. Every other plotting script was deleted (§6). Heatmap files
+  are named `heatmap-C<k>.png` (short label only: scenario strings can exceed
+  file-name limits); their titles and report headings carry `C<k>` and the full
+  scenario string, like the appendix.
+- **Report** (`plots.write_report`, called by `rank` only for the complete
+  ranking: every planned run complete and ranked, default score weights; a
+  `--seeds` subset, `--allow-incomplete` with missing runs or non-default
+  weights still gets its ranking folder and figures, and `rank` prints why no
+  page was written. An existing page without both write-up markers raises
+  instead of being overwritten):
   `docs/results/<experiment>/index.md` = summary, figures (base64-embedded; CV
   layout, fans, dot plot, heatmaps), the preserved write-up, the ranking table
   (with labels), then "Appendix: scenarios run" (label, full scenario string,
@@ -380,9 +408,32 @@ that score labels stay inside the held-out season.
   longer computed. Summed `model_wis`/`ensemble_wis` columns remain in
   `totals.csv` and `season_scores.csv` as raw totals only, not a ranking.
 - `fit` scores against `settings['frozen']` (passed as `--frozen`), not a module
-  constant. `plan` records the sha256 of `panel.npz` and of the frozen
-  `manifest.json` in `experiment.json`; `run_seed` (local `run` and the Slurm
-  dispatcher) refuses to fit when either changed.
+  constant. `plan` records the sha256 of `panel.npz`, of the frozen
+  `manifest.json` and of the one population file (`data/metadata/locations.csv`,
+  `planner.LOCATIONS`; user decision 2026-09-22) in `experiment.json`;
+  `run_seed` (local `run` and the Slurm dispatcher) refuses to fit when any
+  changed. The population file and the frozen support are git-ignored, so not
+  synced to the cluster with the code (docs/longleaf-setup.md). The Slurm
+  launcher runs the code snapshot `plan` pinned in `<experiment>/code`; a local
+  `planner run` runs the working tree.
+- **Evaluation** (`planner.evaluate`): 256 members by default
+  (`--eval-members`), drawn in forward passes of 32 (`EVAL_CHUNK`, bounds memory);
+  the 23 quantiles are taken over the draws, and admission quantiles are rounded
+  to integers (counts), ED proportions are not. `plan` defaults to seeds 42 43 44.
+- **Loss and score weights share numbers, not meaning.** The score defaults
+  (`totals.US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT` = .2, 1, .5) are defined
+  once; `model.objective` builds its default loss weights (`TARGET_WEIGHTS`,
+  `US_WEIGHT`) from them. The loss's channel weights stay a scenario choice
+  (`loss_weights`), the score's weights rank-time options.
+- **Which targets each season scores** (frozen support, not a choice made here):
+  2023-24 only flu admissions; 2024-25 flu and COVID admissions; 2025-26 all six
+  targets. The (2 x admissions + ED) / 9 weighting therefore fully applies only
+  to 2025-26; the other seasons' composites are the weighted mean of the targets
+  they have (renormalized), and seasons still count equally.
+- `build check` compares the stored panel with `extract.extract`, which runs the
+  same `resolve`/`resolve_reports` functions as the build: it verifies the panel's
+  assembly and storage (calendar, as-of layout, encoding), not the vintage policy
+  itself (that was checked once against the row-by-row code, decision log).
 
 ## 6. New module layout
 
@@ -450,8 +501,8 @@ unchanged.
   leave-one-out policy itself (3 seasons, refit-after-early-stopping) —
   only where that logic lives.
 - No change to the score's target and season weighting (admissions 1.0/ED 0.5,
-  seasons averaged equally); the US share stays 20% by default but is now an
-  experiment setting (§5).
+  seasons averaged equally); the US share stays 20% by default and, like the
+  target weights, is a `rank`-time option (§5).
 - `analysis/`, `docs/`, `references/` content is not rewritten, only
   pointers updated where they reference deleted module paths.
 
@@ -546,3 +597,52 @@ scenarios run" and regenerates `docs/reference/scenario.md` from `Scenario`
 (`scenario.MEANING` added). Checked on the smoke experiment
 (`ranking-c08a5acf2c27`, 4 configurations, seeds 42/43), default and all four
 configurations. Choices in §5 and the `plots.py` docstring.
+
+**2026-09-22 — truth fallback kept, size documented (user decision).** In
+vintaged mode, target cells in the as-of window with nothing visible at the
+Wednesday cutoff keep the final-truth fallback flagged `known_final=True`
+(reproduces old B1). `src/tapestry/dataset/analyze_dataset.py` (rerun after
+every panel rebuild) writes `docs/data/panel.md`: fallback share by target,
+season and weeks before issuance (states+US and US), per issuance, revision size
+where an as-of value exists, covariate as-of availability, and US/NC covariate
+series. It cuts episodes with the episode builder itself (`lookback = asof_weeks
+= 9`), so fallback is exactly `known_final` inside the as-of window. On the
+2026-09-22 panel the fallback is mostly all-or-nothing per issuance (missing
+archives: no NHSN covid/RSV as-of in 2023-24, NSSP context-end week not
+visible at most 2023-25 cutoffs); pooled over seasons, states+US, j = 0/1:
+NHSN covid 47/43%, flu 35/27%, RSV 38/34%, NSSP 67/35%.
+
+**2026-09-22 — review clean-up (user approved all fixes).**
+(1) Leakage test extended to validation episodes; it now fails if validation
+episodes are cut from the unmasked panel. (2) `plan` snapshots code only after
+the settings check, so a rejected re-plan keeps the pinned code. (3)
+`write_report` raises when an existing page lacks a write-up marker. (4) `fit`
+raises on a nonfinite validation loss, on a component with no weighted
+validation labels, and never refits with 0 epochs. (5) Validation week positions
+count from the season's first epiweek; with the defaults, 2023-24's hidden weeks
+moved from 2023-09-30/10-07/10-14, 2024-01-20..02-03 and 2024-05-11..05-25 to
+2023-09-02..09-16, 2023-12-23..2024-01-06 and 2024-04-13..04-27, the same season
+weeks as 2024-25's (2024-08-31..09-14, 2024-12-21..2025-01-04, 2025-04-12..04-26);
+fits with `patience > 0` change for folds training on 2023-24.
+(6) `rank` writes the report only for the complete default ranking. (7) Heatmap
+files `heatmap-C<k>.png`, headings `C<k>` + scenario string. Loss scales now use
+truth only (vintaged scales change; finalized unchanged). One population file:
+`data/metadata/b1_locations.csv` (byte-identical, sha256 80aaa247...) moved out,
+`locations.csv` kept, its sha256 pinned at plan time (experiments planned before
+lack the hash and must be re-planned to run). `status` prints the resume
+commands. Deleted dead code: `totals.case_totals`, `cv.ROLES`,
+`planner.ARRAY_CHUNK`, `evaluate(name=)`, `Scenario.flags`,
+`extract.COVARIATE_SOURCES`, `extract.saturday`, `quantiles.select_quantiles`
+(the saved levels are exactly `LEVELS`; `export` now checks that instead),
+`covariate_mask` (removed from the panel format; panel rebuilt with the same
+truth day, every other array identical; `build check` below), the snapshot
+copies of `scripts/*.sbatch` (Slurm runs the working-tree launchers), and the
+empty `src/tapestry/models` and `model_data` directories. The six-channel count
+comes from `build.CHANNELS` in `objective.py` and `planner.py`.
+Checks: `build check --samples 4` on the rebuilt panel (issuances 2024-06-26,
+2025-03-19, 2025-07-30, 2026-03-18 and truth day 2026-09-22): exact, 0 mismatched
+cells; the rebuilt panel equals the previous one array for array. pytest: 68 passed
+(the known `test_hub_history.py` explorer failure remains). Smoke (`epochs=2`,
+`epochs=4,patience=2`, seeds 42/43, 32 evaluation members): `rank --seeds 42` and
+`rank --us-weight 0.5` wrote rankings and figures but no page, the complete default
+`rank` wrote it; a page missing a marker raised.

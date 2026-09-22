@@ -40,15 +40,20 @@ each configuration's lowest seed (seeds are not pooled); heatmaps average over s
    decomposition over itself, identical for every run since tasks are identical).
    Red dotted = nominal coverage. Figure height grows with the number of rows and the
    wrapped label lines, width with the number of metric columns.
-4. `heatmap-<run id>.png`: per selected configuration, one panel per target (rows =
+4. `heatmap-C<k>.png`: per selected configuration (file named by its short label;
+   the full scenario string is in the figure title and the report heading, since
+   scenario strings can exceed file-name limits), one panel per target (rows =
    disease, columns = admissions / ED): WIS ratio (model / ensemble total WIS over
    horizons 0-3) by location x held-out season, mean over seeds, plus the mean of the
    seasons with support. One log colour scale centred at 1, shared by every panel of
    every heatmap file of the call; grey = no frozen support.
 
 `write_report` writes `docs/results/<experiment>/index.md`: summary line, figures (CV
-layout, fans, dot plot, heatmaps; base64-embedded), the preserved write-up, the
-ranking table (with short labels), and "Appendix: scenarios run". It also regenerates
+layout, fans, dot plot, heatmaps; base64-embedded; configurations named `C<k>` +
+scenario string, as in the appendix), the preserved write-up, the ranking table (with
+short labels), and "Appendix: scenarios run". An existing page lacking either
+write-up marker raises rather than overwrite hand-written text. `planner rank` calls
+it only for the complete ranking (every planned run, default score weights). It also regenerates
 the scenario field key `docs/reference/scenario.md` (`write_scenario_key`, from
 `Scenario` and `scenario.CODES`/`MEANING`) at `<root>/../reference/scenario.md`, which
 the appendix links as `../../reference/scenario.md`.
@@ -296,7 +301,7 @@ def heatmaps(runs, configs, labels, output):
         bar.set_ticks(np.log2(ticks), labels=[f'{r:.2g}' for r in ticks])
         bar.set_label('WIS ratio to hub ensemble (log scale; grey = no frozen support)', fontsize=8)
         fig.suptitle(f'{title(config, labels)}\nWIS ratio by location and held-out season, mean over seeds', fontsize=9)
-        paths.append(_save(fig, output / f'heatmap-{Scenario.from_string(config).run_id}.png'))
+        paths.append(_save(fig, output / f'heatmap-{labels[config]}.png'))
     return paths
 
 
@@ -370,11 +375,14 @@ def write_report(folder, ranking, root='docs/results'):
     writeup = '_Not written yet._'
     if page.exists():
         text = page.read_text()
-        if WRITEUP_START in text and WRITEUP_END in text:
-            writeup = text.split(WRITEUP_START, 1)[1].split(WRITEUP_END, 1)[0].strip()
+        if WRITEUP_START not in text or WRITEUP_END not in text:
+            raise ValueError(f'{page} exists without both write-up markers ({WRITEUP_START!r}, {WRITEUP_END!r}); '
+                             'add them around the hand-written text (or move the page away) so it is not overwritten')
+        writeup = text.split(WRITEUP_START, 1)[1].split(WRITEUP_END, 1)[0].strip()
     manifest = json.loads((ranking / 'manifest.json').read_text())
     ranked = pd.read_csv(ranking / 'configuration_ranking.csv', keep_default_na=False).sort_values('combined_mean')
     labels = short_labels(ranking)
+    configs = {short: config for config, short in labels.items()}
     seeds = sorted({r['seed'] for r in manifest['runs']})
     lines = [f'# {folder.name}', '',
              f'{len(manifest["runs"])} runs, {len(ranked)} configurations, seeds {", ".join(map(str, seeds))}. '
@@ -385,7 +393,9 @@ def write_report(folder, ranking, root='docs/results'):
     for pattern, heading in FIGURE_ORDER:
         for path in sorted((ranking / 'plots').glob(pattern)):
             data = base64.b64encode(path.read_bytes()).decode()
-            lines += [f'## {heading}' + (f' ({path.stem})' if '*' in pattern else ''), '',
+            suffix = path.stem.removeprefix('heatmap-')
+            named = f'{suffix}: `{label(configs[suffix])}`' if pattern.startswith('heatmap') else path.stem
+            lines += [f'## {heading}' + (f' ({named})' if '*' in pattern else ''), '',
                       f'![{path.stem}](data:image/png;base64,{data})', '']
     lines += ['## Write-up', '', WRITEUP_START, writeup, WRITEUP_END, '', '## Ranking', '']
     targets = [c.removesuffix('_mean') for c in ranked.columns

@@ -92,7 +92,8 @@ MEANING = {
                   'older weeks take final truth (design §3).',
     'validation_weeks': 'patience > 0 only: consecutive early-stopping weeks hidden per block (design §4).',
     'validation_spacing': 'patience > 0 only: one validation block every this many weeks of a training season.',
-    'validation_offset': 'patience > 0 only: week of each training season where the first block starts.',
+    'validation_offset': 'patience > 0 only: week of each training season where the first block starts '
+                         "(0-based, counted from the season's first epiweek, CDC week 31).",
 }
 
 
@@ -173,7 +174,8 @@ class Scenario:
     # Cross-validation early stopping (user decision 2026-09-22: CV settings belong to
     # the scenario). Only used when patience > 0: hide `validation_weeks` consecutive
     # weeks of every `validation_spacing`, from week `validation_offset` of each
-    # training season (defaults: weeks 4-6, 20-22, 36-38). See dataset/cv.py.
+    # training season (defaults: 0-based weeks 4-6, 20-22, 36-38 counted from the
+    # season's first epiweek, CDC week 31). See dataset/cv.py.
     validation_weeks: int = 3
     validation_spacing: int = 16
     validation_offset: int = 4
@@ -261,6 +263,3 @@ class Scenario:
                     ed_transform=self.ed_transform, geography=self.geography, dynamics=self.dynamics,
                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,
                     us_error=self.us_error, supplied_final=self.supplied_final)
-
-    def flags(self):
-        return ['--scenario', self.scenario_string]

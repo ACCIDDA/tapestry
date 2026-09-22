@@ -15,7 +15,7 @@ import pandas as pd
 
 from tapestry.data.geography import STATE_FIPS
 from tapestry.dataset.cv import SEASONS, season
-from .quantiles import LEVELS, select_quantiles
+from .quantiles import LEVELS
 
 KEY = ['reference_date', 'target_end_date', 'location', 'horizon']
 QCOLS = [f'q{q:g}' for q in LEVELS]
@@ -29,7 +29,9 @@ def export(run):
     frames = {}
     for held in SEASONS:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
-            selected = select_quantiles(data['quantiles'], data['quantile_levels'])
+            if not np.array_equal(data['quantile_levels'], LEVELS):  # planner.evaluate saves exactly LEVELS
+                raise ValueError(f'{run}/eval_{held}/forecasts.npz holds other quantile levels than LEVELS')
+            selected = data['quantiles']
             for target, c in CHANNEL.items():
                 q = selected[:, :, :, c, :]
                 n, h, l = q.shape[1:]

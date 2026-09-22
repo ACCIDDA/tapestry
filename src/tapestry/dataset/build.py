@@ -153,7 +153,6 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(LOCATIONS),
                 target_names=np.array(CHANNELS), targets=targets,
                 covariate_names=np.array(STATE_COVARIATE_NAMES), covariates=covariates,
-                covariate_mask=~np.isnan(covariates),
                 covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
                 issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
                 asof_covariates=asof_covariates, asof_covariates_national=asof_national,

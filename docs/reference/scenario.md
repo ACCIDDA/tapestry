@@ -39,4 +39,4 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `asof_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Vintaged only: most recent context weeks whose targets are as visible at the issuance; older weeks take final truth (design §3). |
 | `validation_weeks` | int | `3` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: consecutive early-stopping weeks hidden per block (design §4). |
 | `validation_spacing` | int | `16` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: one validation block every this many weeks of a training season. |
-| `validation_offset` | int | `4` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: week of each training season where the first block starts. |
+| `validation_offset` | int | `4` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: week of each training season where the first block starts (0-based, counted from the season's first epiweek, CDC week 31). |

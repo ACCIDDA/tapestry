@@ -88,9 +88,10 @@ CSV or CSV.gz while retaining its path and checksum in the immutable manifest.
 ```bash
 .venv/bin/python -m tapestry.data --data-root data pull delphi_nwss --mode archive --fill-method source --geo-type sewershed --signal flu_avg_conc_lin --signal covid_avg_conc_lin --signal rsv_avg_conc_lin --workers 3
 .venv/bin/python -m tapestry.data --data-root data pull delphi_nwss_aux
-.venv/bin/python -m tapestry.model_data build-b2-nwss --data-root data
 .venv/bin/python -m tapestry.explorer.cli --data-root data index
 ```
+
+The `tapestry.model_data build-b2-nwss` step that built `derived_nwss_state_indices` was removed in the 2026-09 restructuring (commit 4a0b172; recover it from git history). `tapestry.dataset.build` reads the existing derived snapshot; there is currently no command to rebuild it.
 
 `--batch-rows` bounds the revision buffer; `--cache-mb` sets the SQLite page-cache
 budget. These are not a total process-memory limit. Every format uses the same

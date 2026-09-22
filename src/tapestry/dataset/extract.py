@@ -69,7 +69,6 @@ NWSS_INDICES = ('nwss_flu_wval_like', 'nwss_covid_wval_like', 'nwss_rsv_wval_lik
 NWSS_DERIVED_DATASET = 'derived_nwss_state_indices'
 KINSA_DATASET = 'pophive_kinsa_ili'
 KINSA_SIGNAL = 'kinsa_cough_cold_flu'
-COVARIATE_SOURCES = tuple(CLAIMS_SOURCES) + NWSS_INDICES + ('kinsa_ili',)
 NATIONAL_ONLY = ('kinsa_ili',)
 ARCHIVE_SOURCES = tuple(TARGET_SOURCES) + tuple(CLAIMS_SOURCES)
 TIERS = ('hub', 'git', 'delphi')
@@ -82,13 +81,6 @@ GEOGRAPHY_COLUMNS = ('county', 'county_fips', 'county_name', 'hsa', 'hsa_nci_id'
                      'geography', 'geo_value', 'location', 'location_code', 'location_name', 'fips', 'area', 'region')
 ORIGIN_COLUMNS = ('target', 'target_variable', 'signal', 'pathogen', 'pathogen_target')
 NATIVE_FILL = ('source', 'none', '', 'null')
-
-
-def saturday(value):
-    day = date.fromisoformat(str(value)[:10])
-    if day.weekday() != 5:
-        raise ValueError(f'Expected a Saturday week end: {value}')
-    return day
 
 
 def cutoff_time(day):

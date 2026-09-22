@@ -11,13 +11,15 @@
 #SBATCH --time=2-00:00:00
 #SBATCH --output=output/slurm/%x-%A_%a.log
 
-# One launcher for every experiment, B0 or B1: the dispatcher is model-agnostic
-# and reads the model from experiment.json. One whole GPU per array element,
-# configurable fitting processes per GPU. All six GPUs draw from one shared
-# queue; there are no static task slices.
+# One launcher for every experiment: the dispatcher is scenario-agnostic and reads
+# the scenario strings and seeds from the experiment's jobs.csv (written by
+# `planner plan`), running the code snapshot in data/experiments/NAME/code. One
+# whole GPU per array element, LANES fitting processes per GPU (default 8, one
+# CPU thread each). All GPUs draw from one shared queue; no static task slices.
+# Extra arguments go to the dispatcher (e.g. --retry-failed, --seeds 42).
 #
-#   sbatch --job-name=B1-onlynowcast --array=0-3 scripts/jlessler.sbatch B1-onlynowcast
-#   LANES=4 GPUS=6 sbatch --array=0-1 --nodelist=g1803jles02 scripts/jlessler.sbatch B1-onlymask
+#   sbatch --job-name=NAME --array=0-3 scripts/jlessler.sbatch NAME
+#   LANES=4 GPUS=6 sbatch --array=0-1 --nodelist=g1803jles02 scripts/jlessler.sbatch NAME
 set -euo pipefail
 experiment=${1:?usage: sbatch --array=0-3 scripts/jlessler.sbatch EXPERIMENT}
 shift

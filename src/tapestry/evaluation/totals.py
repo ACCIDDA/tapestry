@@ -22,6 +22,8 @@ from .quantiles import LEVELS
 from .hubs import CHANNEL, KEY, QCOLS, export
 
 TARGETS = tuple(CHANNEL)  # hub target names in panel channel order
+# Default score weights; the training loss's defaults use the same numbers
+# (model/objective.py imports them) but are a separate choice (`Scenario.loss_weights`).
 US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT = .2, 1., .5
 
 
@@ -88,21 +90,8 @@ def quantile_scores(q, y, levels=LEVELS):
     return pd.DataFrame(result)
 
 
-def case_totals(model, ensemble, case):
-    """Sum model and ensemble scores over identical tasks by location and horizon."""
-    model = model.sort_values(KEY).reset_index(drop=True)
-    ensemble = ensemble.sort_values(KEY).reset_index(drop=True)
-    if not model[KEY].equals(ensemble[KEY]) or not np.allclose(model.observed, ensemble.observed):
-        raise ValueError(f"Model and ensemble tasks differ: {case['directory']}")
-    table = case_cells(model, ensemble, case)
-    grouped = table.groupby(['geography', 'location', 'horizon'])
-    totals = grouped[[f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]].sum()
-    totals.insert(0, 'n', grouped.size())
-    return totals.reset_index().assign(target=case['target'], season=case['season'])
-
-
 def case_cells(model, ensemble, case):
-    """The same scores as case_totals, retaining forecast origins for paired blocks."""
+    """Per-task model and ensemble scores on identical tasks (summed by `cells_totals`)."""
     model = model.sort_values(KEY).reset_index(drop=True)
     ensemble = ensemble.sort_values(KEY).reset_index(drop=True)
     if not model[KEY].equals(ensemble[KEY]) or not np.allclose(model.observed, ensemble.observed):

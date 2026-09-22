@@ -5,10 +5,15 @@ Unchanged fair-CRPS loss weighting (docs/design/restructure-2026-unified.md §6:
 """
 import numpy as np
 
+from tapestry.dataset.build import CHANNELS
 from tapestry.dataset.cv import season
+from tapestry.evaluation.totals import ADMISSIONS_WEIGHT, ED_WEIGHT, US_SCORE_WEIGHT
 
-TARGET_WEIGHTS = (1., 1., 1., .5, .5, .5)
-US_WEIGHT = .20
+# Loss defaults = the score's default weights (defined once in evaluation/totals.py).
+# They are separate choices: the loss's channel weights are a scenario option
+# (`loss_weights`), the score's weights rank-time options.
+TARGET_WEIGHTS = (ADMISSIONS_WEIGHT,) * 3 + (ED_WEIGHT,) * 3  # CHANNELS order: 3 admissions, 3 ED
+US_WEIGHT = US_SCORE_WEIGHT
 SCALE_MIN_WEEKS = 26
 SCALE_FLOORS = (1., 1., 1., .001, .001, .001)
 LOSS_DEFINITION = ('Native-unit fair CRPS / training channel-location Q95; equal seasons by target date; '
@@ -31,7 +36,7 @@ def loss_scales(panel):
     Below 26 observed weeks use alpha*local + (1-alpha)*pooled, alpha=n/26.
     A floor protects constant-zero series. Input transforms are irrelevant here.
     """
-    scales = np.empty((6, panel.shape[-1]), dtype=float)
+    scales = np.empty((len(CHANNELS), panel.shape[-1]), dtype=float)
     for c, floor in enumerate(SCALE_FLOORS):
         values, valid = panel[:, c, 0], panel[:, c, 1].astype(bool)
         pooled = float(np.quantile(values[valid], .95)) if valid.any() else floor
@@ -53,8 +58,8 @@ def loss_cell_weights(episodes, channel_weights=TARGET_WEIGHTS):
     dates = np.array([[season(day) for day in e['target_dates']] for e in episodes])
     locations = np.asarray(episodes[0]['locations'])
     channel_weights = np.asarray(channel_weights, dtype=float)
-    if channel_weights.shape != (6,) or np.any(channel_weights < 0) or not np.isfinite(channel_weights).all():
-        raise ValueError('Need six finite nonnegative channel weights')
+    if channel_weights.shape != (len(CHANNELS),) or np.any(channel_weights < 0) or not np.isfinite(channel_weights).all():
+        raise ValueError(f'Need {len(CHANNELS)} finite nonnegative channel weights')
     result = np.zeros(mask.shape, dtype=np.float32)
     seasons_used = 0
     for label in np.unique(dates):
