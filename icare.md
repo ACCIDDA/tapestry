@@ -121,3 +121,39 @@ Implementation choice flagged, not a user decision: as-of covariates are kept
 for 52 context weeks (not only the latest two) because the previous vintaged
 builder resolved every covariate week as of the issuance. Details and the
 decision log: [the unified design](docs/design/restructure-2026-unified.md).
+
+## Exact as-of data, CV and score settings, figures — 2026-09-22 (later)
+
+**User decisions, September 22, 2026:**
+
+- **Exact as-of store.** For every Wednesday issuance, keep the value visible at
+  its cutoff for *every* week from the calendar start, targets and covariates
+  (state and national) alike, so any issuance's forecast can be reconstructed
+  exactly as it was. Keep the file small. The user suggested float16.
+- **How many recent context weeks are as-of is a scenario field**
+  (`asof_weeks`); default 2 reproduces old B1; >= lookback is fully as-of.
+- **CV settings belong in the scenario** (they change fits and run ids).
+- **Score weights are rank-time options** (`rank --us-weight`), recorded in the
+  ranking folder, not scenario and not `experiment.json`. This supersedes the
+  earlier entry's "US share is an experiment setting". Scoring uses only each
+  fold's held-out score episodes.
+- **Four figures and nothing else:** CV layout, US/NC fans (1-2 configurations
+  + hub ensemble), per-seed pairplot relative to the ensemble, location x
+  season heatmap. Code simplification is the priority: one path build -> plan
+  -> run/dispatch -> rank (which draws the figures); delete other plotting and
+  dead code.
+- **Dropped:** a `national_covariates=broadcast` option. National covariates
+  stay US-only: Kinsa reaches only the US row, and with `spatial='none'`
+  states cannot see it (current behaviour, not a planned option).
+
+**Implementation choices (not user decisions), documented in
+[the unified design](docs/design/restructure-2026-unified.md) §3-§6:**
+float32 kept (float16 is exact only to 2048 and steps by 32 near 50,000, so US
+admission counts would be rounded); on-disk storage as a revised-cell mask plus
+values where the as-of differs from the truth (10 MB); `asof_weeks` applies to
+targets only, vintaged covariates stay fully as-of (reproduces old behaviour
+with one field); the old truth fallback for cells not yet visible is kept and
+now extends to all `asof_weeks` weeks (flagged: fully as-of episodes are
+truth-filled where nothing was visible); seasons stay a module constant; the
+figure defaults (two best configurations at their lowest seed, quartile
+reference dates per season, all six targets in the CV layout).

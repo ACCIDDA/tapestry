@@ -77,13 +77,13 @@ Python (`tapestry.evaluation.totals`).
 | Directory | Purpose |
 |---|---|
 | `src/tapestry/data/` | Acquisition, snapshots, source readers, geography, selection |
-| `src/tapestry/dataset/` | `extract`/`build`/`splits`: the two training arrays |
+| `src/tapestry/dataset/` | `extract`/`build`/`episodes`/`cv`: the one panel (`panel.npz`) and season CV |
 | `src/tapestry/model/` | The unified `Model` network, `Scenario` codec, objective |
-| `src/tapestry/experiment/` | `planner.py` plan/run/status/rank, `dispatch.py`, `provenance.py` |
-| `src/tapestry/evaluation/` | Shared scoring, hub comparison, exports |
+| `src/tapestry/experiment/` | `planner.py` plan/run/status/rank/plots, `dispatch.py`, `provenance.py` |
+| `src/tapestry/evaluation/` | `totals.py` the one score, `hubs.py` export, `plots.py` the four figures |
 | `src/tapestry/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
 | `analysis/wval/` | Standalone wastewater analysis and evidence |
-| `scripts/` | Small checkout launchers and CSV conversion utility |
+| `scripts/` | Slurm launchers, notifier, data/explorer checkout launchers, CSV conversion |
 | `docs/workflows/` | Current commands and behavior |
 | `docs/results/` | Completed experiment findings |
 | `docs/design/` | Research proposals |

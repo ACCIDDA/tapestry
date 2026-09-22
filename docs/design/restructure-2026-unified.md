@@ -164,15 +164,48 @@ covariate_mask:           bool [T, L, K]         = ~isnan(covariates)
 covariate_national_names: str [Kn]               kinsa_ili
 covariates_national:      float32 [T, Kn]        truth (national only)
 issuance_dates:           datetime64[D] [W]      Wednesdays from 2023-08-30 to the build day
-asof_targets:             float32 [W, R, L, C]   visible at the issuance cutoff, R = 2
-asof_covariates:          float32 [W, D, L, K]   visible at the issuance cutoff, D = 52
-asof_covariates_national: float32 [W, D, Kn]     visible at the issuance cutoff
+asof_targets:             float32 [W, T, L, C]   week t as visible at issuance w's cutoff
+asof_covariates:          float32 [W, T, L, K]   week t as visible at issuance w's cutoff
+asof_covariates_national: float32 [W, T, Kn]     week t as visible at issuance w's cutoff
 metadata:                 JSON                   build constants, truth day, raw snapshot ids, per-source seconds
 ```
 
-Overlay cell `[w, j]` refers to reference week `context_end(w) - (depth-1-j)`
-weeks, where `context_end(w)` is the Saturday four days before issuance `w`.
-Overlay cells before `CALENDAR_START` are unavailable.
+**Exact as-of store (user decision 2026-09-22).** For every Wednesday issuance
+w, the panel holds the value visible at its cutoff (end of the issuance day,
+UTC) for *every* calendar week from `CALENDAR_START`, for targets and state and
+national covariates alike, so a forecast at any issuance can be reconstructed
+exactly as it was. Cells after `context_end(w)` (the Saturday four days before
+issuance w) are NaN by definition; NaN elsewhere means nothing was visible at
+the cutoff. This is the in-memory layout (`build.load`). On disk
+(`build.save`), each as-of array is stored only where it differs from the truth
+panel: a bool mask `<name>_revised [W, T, ...]` and the differing values
+`<name>_values [N]` (NaN = present in truth, not visible at the cutoff), with
+`np.savez_compressed`; `load` rebuilds the dense arrays exactly
+(`tests/test_dataset.py` round trip). The 2026-09-22 build is 10.0 MB (4.6 MB
+for the previous 2/52-week overlay): 0.74 M revised target cells and 4.8 M
+revised covariate cells, of which the claims covariates' 2.2 M non-missing
+revised values are 8.5 MB. Encoding along the issuance axis (store a cell only
+when it changes from the previous issuance) was measured at about 6 MB but
+needs a forward fill to decode; the simpler difference-from-truth encoding was
+kept.
+
+`python -m tapestry.dataset.build check [--samples 4]` compares the stored panel
+(decoded) with a direct `extract.extract(name, day, dates=...)` for every
+source at randomly sampled issuances and at the truth day, cell for cell.
+Result for the 2026-09-22 build: see the decision log.
+
+**float32, not float16.** The user suggested float16 to save space. float16 has
+an 11-bit significand and a maximum of 65504: integers are exact only up to
+2048, the spacing is 32 between 32768 and 65504, so US weekly influenza
+admission counts (tens of thousands at peak) would be rounded, and larger
+counts would overflow. Values stay float32 (integers exact to 2^24), as in the
+truth panel.
+
+**`known_final`** is not stored. In a vintaged episode, a context cell within
+the last `asof_weeks` weeks is known-final only when nothing was visible at the
+cutoff and the truth fallback is available (previous builder's rule, below);
+older context weeks are known-final wherever the truth is available. In a
+finalized episode every available context cell is known-final.
 
 Build choices:
 - **Truth** is resolved at the end of the build day (`--truth-day`, default
@@ -185,18 +218,10 @@ Build choices:
   those weeks belong to seasons outside cross-validation (masked in training
   anyway) except August 2023, which now only affects the context of the first
   2023-24 score origins.
-- **R = `ASOF_TARGET_WEEKS` = 2**: the two most recent context weeks of a
-  vintaged episode take their as-of target values, as the previous vintaged
-  builder did (the application needs revision pairs only for the past two
-  observation weeks, icare.md 2026-09-18).
-- **D = `ASOF_COVARIATE_WEEKS` = 52** (a choice made in implementation, flagged
-  for the user): the previous vintaged builder resolved *every* covariate week
-  of a vintaged window as of the issuance, not only the last R. To preserve
-  exactly what a vintaged episode saw, without fixing the lookback, the overlay
-  keeps as-of covariates for 52 context weeks, and a vintaged scenario with
-  covariates and lookback > 52 raises. Setting D = R would instead fill older
-  covariate weeks with later-revised truth.
-- `known_final` is not stored; it follows from overlay availability (below).
+- **How much of a vintaged window is as-of is a scenario choice, not a build
+  choice**: `Scenario.asof_weeks` (below). The earlier build constants
+  `ASOF_TARGET_WEEKS = 2` and `ASOF_COVARIATE_WEEKS = 52` (and the lookback <= 52
+  limit for vintaged covariates) are gone.
 
 **Episodes** (`src/tapestry/dataset/episodes.py`, one builder, one switch):
 - `input_mode='finalized'`: one episode per calendar Saturday origin t, context
@@ -205,17 +230,41 @@ Build choices:
   Every visible context cell is known-final.
 - `input_mode='vintaged'`: one episode per Wednesday issuance, origin its
   context end (issuance - 4 days), targets the four following Saturdays
-  (reference date = issuance + 3 days, horizon 0 in hub terms). Exactly what the
-  previous vintaged builder materialized: the last min(R, lookback) context
-  weeks take the as-of value where one was visible (known_final False) and fall
-  back to truth where nothing was visible yet (known_final True where
-  available); older context weeks and all target weeks are truth; covariates
-  are as of the issuance for every context week.
+  (reference date = issuance + 3 days, horizon 0 in hub terms). The last
+  min(`asof_weeks`, lookback) context weeks take the as-of target value where
+  one was visible (known_final False) and fall back to truth where nothing was
+  visible yet (known_final True where available); older context weeks and all
+  target weeks are truth; covariates (state and national) are as of the
+  issuance for every context week, NaN where nothing was visible (no truth
+  fallback).
+- **`Scenario.asof_weeks`** (int, default 2, 2026-09-22): default 2 reproduces
+  the previous vintaged builder (B1): checked cell for cell against the
+  previous panel and episode code for lookbacks 4, 12 and 52, both input modes,
+  with covariates (decision log). A value >= lookback makes every context week
+  as-of. Only meaningful with `input_mode='vintaged'` (a non-default value with
+  `finalized` raises, so two identical fits cannot carry two scenario strings).
+  **One field, targets only; covariates always fully as-of** (implementation
+  choice, the option with the fewest fields that reproduces old behaviour by
+  default): the previous builder took every covariate week of a vintaged window
+  as of the issuance, so a single `asof_weeks` applied to covariates as well
+  would have changed default B1/B2 covariates, and two fields would add a knob
+  nobody has asked to vary.
+- **The truth fallback is the previous builder's rule, now applied to however
+  many weeks `asof_weeks` names.** Where nothing was visible at the cutoff (a
+  week not yet reported, or a missing archive), a vintaged context week in the
+  as-of window takes the final truth, flagged known-final. With a large
+  `asof_weeks` this puts later truth into cells that were empty at the time, so
+  a "fully as-of" episode is exact wherever something was visible and
+  truth-filled elsewhere. Flagged for the user; not changed because the
+  default must reproduce B1.
 - Kept only if some context cell and some target cell are available.
 
 `COVARIATE_GROUPS` (in `build.py`) stays the single source of truth for
 covariate order; a scenario's `covariate_set` expands through
-`covariate_names_for`. A national-only name is broadcast to the `US` column.
+`covariate_names_for`. **Current behaviour:** a national-only covariate (Kinsa)
+is placed in the `US` column only and is unavailable for every state, so with
+`spatial='none'` (no cross-location attention) state rows never see Kinsa;
+only the US row does.
 
 ## 4. Cross-validation
 
@@ -227,16 +276,29 @@ masking the array rather than selecting episodes:
 
 - **Fold**: copy the panel; every week outside the two training seasons (the
   held-out season, and weeks in no CV season) becomes unavailable in targets,
-  covariates and the overlay (overlay cells by reference week). Training
+  covariates and the as-of arrays (by reference week). Training
   episodes are cut from the masked panel with origins in training weeks only,
   so held-out weeks vanish from inputs, labels, loss scales, loss weights and
   covariate standardization (computed from the training episodes' visible
   covariate cells).
-- **Inner early-stopping fit** (`patience > 0`): additionally hide weeks 4-6,
-  20-22 and 36-38 of each training season (3 of every 16, offset 4).
-  Validation episodes are cut from the training panel (hidden weeks visible),
-  with origins in the four training weeks before each hidden week, and score
-  only hidden weeks.
+- **Inner early-stopping fit** (`patience > 0`): additionally hide
+  `validation_weeks` consecutive weeks of every `validation_spacing`, starting
+  at week `validation_offset` of each training season (defaults 3/16/4: weeks
+  4-6, 20-22 and 36-38). Validation episodes are cut from the training panel
+  (hidden weeks visible), with origins in the four (= number of horizons)
+  training weeks before each hidden week, and score only hidden weeks.
+- **CV settings are scenario fields (user decision 2026-09-22)**: training-data
+  organisation changes the fit, so it belongs in the scenario and its run id.
+  `validation_weeks`, `validation_spacing`, `validation_offset` replaced the
+  `cv.py` constants; at their defaults they are absent from the scenario string,
+  so existing strings and run ids are unchanged (`tests/test_scenario.py` pins
+  three run ids recorded before the change). Non-default values with
+  `patience=0` raise (they would not change the fit). The set of seasons
+  (`cv.SEASONS`) stays a module constant: it is tied to the frozen ensemble
+  support, the export and the run-completeness check, so moving it is not
+  simple (not done). `cv.week_roles(dates, scenario, held_out)` is the one
+  place a week's role (fit / validation / score / unused) is decided; `fold`
+  and the CV-layout figure both use it.
 - **Refit** after epoch selection: the fold's training panel without the
   validation mask (full training seasons, as old B0).
 - **Score**: origins in the held-out season from the unmasked panel, from its
@@ -260,10 +322,36 @@ that score labels stay inside the held-out season.
   targets combine as (2 x admissions + ED) / 9 (weights 1 and .5); seasons
   count equally; configurations are the mean and SD over seeds.
   `SCORE_VERSION = location-relative-season-first-v2`.
-- w is an experiment setting: `plan --us-score-weight` (default 0.2), recorded
-  in `experiment.json` and in each ranking manifest (`totals rank --us-weight`
-  for the standalone scorer). It is independent of the loss's US weight
-  (`model.objective.US_WEIGHT`).
+- **Score weights are rank-time options (user decision 2026-09-22)**, not
+  scenario or experiment settings: `planner rank --us-weight 0.2
+  --admissions-weight 1 --ed-weight 0.5`. They are recorded in the ranking
+  folder's `manifest.json` and hashed into its name
+  (`ranking-<sha256(attempts, weights)[:12]>`), so rankings with different
+  weights sit side by side. The plan-time `--us-score-weight` /
+  `experiment.json` setting was removed; an old `experiment.json` that still
+  carries `us_score_weight` is ignored by `rank`. The weights are independent
+  of the loss's US weight (`model.objective.US_WEIGHT`). Scoring only ever
+  uses each fold's held-out score episodes (`forecasts.npz`).
+- `season_scores.csv` also carries `model_/ensemble_{dispersion,underprediction,
+  overprediction}_ratio`: each WIS component divided by the ensemble's total
+  WIS at the same location, location-weighted like `wis_ratio`, so the model's
+  three sum to `wis_ratio`.
+- **Figures** (`evaluation/plots.py`, user request 2026-09-22) are written by
+  `rank` into `ranking-*/plots/` and by `planner plots -e NAME [--ranking DIR]
+  [--configs A B] [--dates ...]`. Exactly four, every choice in the module
+  docstring: (1) CV layout per fold from `cv.week_roles` on the finalized US
+  series, one panel per target (all six, not a representative one), one file
+  per distinct CV setting; (2) fans for US and NC, rows = targets, columns =
+  held-out seasons, up to two configurations (default: the two best ranked,
+  each at its lowest seed, seeds not pooled) plus the hub ensemble where frozen
+  support exists, default reference dates = the 25th/50th/75th percentile
+  positions of each season's score reference dates; (3) a seaborn pairplot, one
+  point per seed coloured by configuration: WIS ratio, 50/80/90/95% coverage
+  and the three component ratios, ensemble values dashed and nominal coverage
+  dotted; (4) per selected configuration, a location x season heatmap of the
+  WIS ratio (targets combined with the ranking's target weights over the
+  targets available there, mean over seeds, plus the mean of seasons). Every
+  other plotting script was deleted (§6).
 - The pooled total-WIS ratio (sum of model WIS / sum of ensemble WIS) is no
   longer computed. Summed `model_wis`/`ensemble_wis` columns remain in
   `totals.csv` and `season_scores.csv` as raw totals only, not a ranking.
@@ -288,13 +376,31 @@ src/tapestry/
     scenario.py    # Scenario dataclass + string codec
     objective.py   # unchanged (fair-CRPS loss weighting)
   experiment/       # NEW, replaces models/manager.py + backends.py
-    planner.py     # plan/run/status/rank/compare, no model branching
+    planner.py     # plan/run/status/rank/plots (+ internal fit), no model branching
     dispatch.py    # unchanged Slurm queue, moved
     provenance.py  # unchanged, moved
   evaluation/
     totals.py      # WIS and the one location-relative score (§5)
     hubs.py        # export forecasts to hub task tables
+    quantiles.py   # the 23-level quantile grid (the one copy; planner imports it)
+    plots.py       # the four figures (§5)
 ```
+
+One path (2026-09-22): `dataset.build build` -> `planner plan` -> `planner run`
+or `scripts/jlessler.sbatch` (dispatch) -> `planner rank` (scores and writes the
+four figures). Deleted 2026-09-22 as part of that simplification (git history
+keeps them): `evaluation/summary.py` (frozen-support competitor selection),
+`evaluation/scoring.py` (its `match_forecasts` check moved into `totals.py`, the
+rest was unused), `evaluation/configurations.py` and the standalone
+`totals score|rank` CLI (the planner is the only entry point), the offline
+Hub-mirror extraction in `hubs.py` (`extract_hub`, `GitHubSnapshot`,
+`frozen_truth`, `wide_quantiles`; no caller), the duplicated quantile grid in
+`planner.py`, the `cv.HORIZON_WEEKS` constant (= `len(episodes.HORIZONS)`), the
+`SEASONS` re-export and unused `CALENDAR_START` in `provenance.py`, and all of
+`scripts/archive/` (B0/B1/B2-era plotting, audit and launcher scripts that
+imported deleted modules). The explorer (`explorer/`, `scripts/explore_covariates.py`,
+`scripts/update_published_explorer.sh`) is the raw-data browser, not a results
+figure, and stays (§2).
 
 Delete: `models/b0.py` classes folded into `model/network.py`
 (`models/architecture.py` merges in too), `models/b1.py`, `models/b2.py`,
@@ -310,7 +416,7 @@ just confirm `bundles.py`'s `IndependentBundle` still applies to the unified
 
 CLIs: collapse `tapestry-model-data` + the model-training half of
 `tapestry-experiments`/`manager.py` into one `tapestry-dataset` (build/
-extract/show) and one `tapestry-experiment` (plan/run/status/rank/compare)
+show/check) and one `tapestry-experiment` (plan/run/status/rank/plots)
 entry point; `tapestry-data` (raw acquisition) and `tapestry-explore` are
 unchanged.
 
@@ -363,3 +469,38 @@ never completed. Now: columnar pyarrow reads, per-row policy functions
 evaluated once per unique column combination, vectorized conflict detection
 and resolution, one process per source. The full panel (truth and overlay) builds
 in about 65 s wall time on 12 cores.
+
+**2026-09-22 — exact as-of store (user decision).** The 2/52-week overlay was
+replaced by the value visible at each Wednesday cutoff for every calendar week,
+targets and covariates alike (§3), stored as difference-from-truth
+(`<name>_revised` + `<name>_values`, `np.savez_compressed`): 10.0 MB (was
+4.6 MB), build 74 s wall on 12 cores. float32 kept; float16 cannot represent US
+admission counts (§3). Checks: (1) `build check --samples 4` against direct
+`extract()` at issuances 2024-06-26, 2025-03-19, 2025-07-30, 2026-03-18 and the
+truth day 2026-09-22, all 17 sources: 0 mismatched cells (6 min on 12 cores);
+(2) episodes from the new panel with the default `asof_weeks=2` equal the
+episodes of the previous panel and code (commit dc93483), field for field
+(values, availability, known_final, labels, covariates incl. Kinsa/NWSS/claims),
+for lookbacks 4, 12 and 52 in both input modes. `Scenario.asof_weeks` added
+(targets only; vintaged covariates always fully as-of); the lookback <= 52 limit
+for vintaged covariates is gone.
+
+**2026-09-22 — CV settings in the scenario (user decision).** `validation_weeks`,
+`validation_spacing`, `validation_offset` replaced `cv.py` constants (§4); run ids
+of existing strings unchanged (pinned in `tests/test_scenario.py`). Seasons stay
+a module constant (tied to the frozen support and the export).
+
+**2026-09-22 — score weights at rank time (user decision).** `planner rank
+--us-weight --admissions-weight --ed-weight`, recorded in the ranking manifest
+and hashed into the folder name; `plan --us-score-weight` removed (§5).
+
+**2026-09-22 — no national-covariate broadcast (user decision).** A
+`national_covariates=broadcast` option was proposed and dropped by the user.
+Current behaviour stays: Kinsa reaches only the US row (§3).
+
+**2026-09-22 — four figures, one path (user request and priority).**
+`evaluation/plots.py` draws the four figures from `rank` (§5); every other
+plotting, report and dead evaluation code and `scripts/archive/` were deleted
+(§6). matplotlib and seaborn, already installed in the checkout's `.venv` but
+undeclared, were added to the `evaluation` extra so `uv sync` on the cluster
+keeps them.

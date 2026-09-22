@@ -1,23 +1,29 @@
-"""Build the one dataset array, `data/processed/panel.npz` (user decision 2026-09-22).
+"""Build the one dataset array, `data/processed/panel.npz` (user decisions 2026-09-22).
 
-Replaces `finalized.npz` + `vintaged.npz`. One weekly Saturday calendar carries the
-retrospective truth panel; an as-of overlay records, for every historical Wednesday
-issuance, what was visible at its cutoff. Episodes (any lookback) are cut from it by
-`dataset.episodes`; see docs/design/restructure-2026-unified.md §3 for the layout
-and every choice below.
+One weekly Saturday calendar carries the retrospective truth panel and, for every
+historical Wednesday issuance, the exact value visible at its cutoff for every
+calendar week (targets, state covariates and national covariates alike), so any
+issuance's inputs can be reconstructed exactly as they were. Episodes (any
+lookback, any `Scenario.asof_weeks`) are cut from it by `dataset.episodes`; see
+docs/design/restructure-2026-unified.md §3 for the layout and every choice below.
 
-Build constants (documented in the design doc):
-- `CALENDAR_START`: first Saturday of the calendar. Nothing earlier exists in the
-  panel; episodes pad earlier context weeks as unavailable.
-- `ASOF_TARGET_WEEKS` (R=2): the overlay keeps each issuance's as-of target values
-  for the R most recent context weeks, as the previous vintaged builder did.
-- `ASOF_COVARIATE_WEEKS` (D=52): the overlay keeps as-of covariate values for the D
-  most recent context weeks, so a vintaged episode's covariates are as-of for any
-  lookback up to D (the previous builder resolved every covariate week as of the
-  issuance). A vintaged lookback above D raises.
+In memory (`build`, `load`) the as-of arrays are dense and indexed by calendar week:
+`asof_targets[w, t]` is week t as visible at the end of issuance day w, NaN when
+nothing was visible, and NaN by definition for weeks after the issuance's context
+end (the Saturday four days earlier). On disk (`save`) each as-of array is stored
+only where it differs from the truth panel: a bool mask `<name>_revised [W, T, ...]`
+plus the differing values `<name>_values [N]` (NaN = visible in truth but not at
+the cutoff), in `np.savez_compressed`. `load` rebuilds the dense arrays exactly.
+
+Values are float32, like the truth panel. float16 was considered (user suggestion)
+and rejected: it represents integers exactly only up to 2048 and has a maximum of
+65504 (step 32 near 50,000), so US weekly influenza admission counts would be
+rounded or overflow.
 
 The truth panel is resolved at the end of the build day (`truth_day`, default today,
 recorded in metadata). Sources are read in parallel, one process per source.
+`python -m tapestry.dataset.build check` verifies the stored panel against direct
+`extract.extract(...)` resolution at sampled issuances and at the truth day.
 
 `COVARIATE_GROUPS` is the single source of truth for covariate column order; a
 `Scenario.covariate_set` string expands through `covariate_names_for`.
@@ -34,11 +40,11 @@ import time
 import numpy as np
 
 from .extract import (TARGET_SOURCES, CLAIMS_SOURCES, NWSS_INDICES, NATIONAL_ONLY, LOCATIONS,
-                      revisions, resolve, resolve_reports, nwss_frame, kinsa_frame, _latest_snapshot)
+                      revisions, resolve, resolve_reports, nwss_frame, kinsa_frame, extract, _latest_snapshot)
 
 CALENDAR_START = '2023-09-02'  # First modelled Saturday.
-ASOF_TARGET_WEEKS = 2
-ASOF_COVARIATE_WEEKS = 52
+ASOF_ARRAYS = {'asof_targets': 'targets', 'asof_covariates': 'covariates',
+               'asof_covariates_national': 'covariates_national'}  # as-of array -> its truth array
 CHANNELS = tuple(TARGET_SOURCES)  # nhsn_*_admissions, nssp_*_proportion, in that order.
 COVARIATE_GROUPS = {
     'inpatient': ('inpatient_flu', 'inpatient_covid'),
@@ -91,15 +97,15 @@ def context_end(issuance):
     return (date.fromisoformat(str(issuance)[:10]) - timedelta(days=4)).isoformat()
 
 
-def overlay_dates(issuance, depth):
-    """The `depth` reference weeks an issuance's overlay covers, oldest first."""
-    end = date.fromisoformat(context_end(issuance))
-    return tuple((end - timedelta(weeks=depth - 1 - j)).isoformat() for j in range(depth))
+def visible_weeks(dates, issuances):
+    """[W, T] bool: calendar week t is at or before issuance w's context end."""
+    ends = np.array([context_end(str(i)) for i in issuances], dtype='datetime64[D]')
+    return np.asarray(dates, dtype='datetime64[D]')[None, :] <= ends[:, None]
 
 
 def _source(task):
-    """One process per source: its truth panel and its per-issuance as-of overlay."""
-    name, data_root, dates, issuances, truth_day, depth = task
+    """One process per source: its truth panel and its dense as-of array [W, T, L, K]."""
+    name, data_root, dates, issuances, truth_day = task
     started = time.perf_counter()
     if name == 'nwss':
         frame, names = nwss_frame(data_root), list(NWSS_INDICES)
@@ -111,24 +117,23 @@ def _source(task):
         archive = revisions(name, data_root)
         at = lambda day, days: resolve(archive, day, days, LOCATIONS)[:, :, None]
     truth = at(truth_day, dates)
-    overlay = np.full((len(issuances), depth, *truth.shape[1:]), np.nan)
-    for w, issuance in enumerate(issuances):
-        window = overlay_dates(issuance, depth)
-        overlay[w] = at(issuance, window)
-        overlay[w, np.array(window) < dates[0]] = np.nan  # nothing exists before the calendar
-    return name, truth.astype(np.float32), overlay.astype(np.float32), time.perf_counter() - started
+    asof = np.full((len(issuances), *truth.shape), np.nan)
+    for w, seen in enumerate(visible_weeks(dates, issuances)):
+        weeks = int(seen.sum())  # visible weeks are a calendar prefix
+        if weeks:
+            asof[w, :weeks] = at(issuances[w], dates[:weeks])
+    return name, truth.astype(np.float32), asof.astype(np.float32), time.perf_counter() - started
 
 
 def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=None):
-    """The panel as a dict of arrays; see the module docstring and the design doc."""
+    """The panel as a dict of dense arrays; see the module docstring and the design doc."""
     truth_day = truth_day or date.today().isoformat()
     dates = weekly_calendar(start, truth_day)
     issuances = wednesdays(start, truth_day)
-    depth = {name: ASOF_TARGET_WEEKS for name in CHANNELS}
-    depth.update({name: ASOF_COVARIATE_WEEKS for name in (*CLAIMS_SOURCES, 'nwss', 'kinsa_ili')})
-    tasks = [(name, data_root, dates, issuances, truth_day, d) for name, d in depth.items()]
+    names = (*CHANNELS, *CLAIMS_SOURCES, 'nwss', 'kinsa_ili')
+    tasks = [(name, data_root, dates, issuances, truth_day) for name in names]
     with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:
-        results = {name: (truth, overlay, seconds) for name, truth, overlay, seconds in pool.map(_source, tasks)}
+        results = {name: (truth, asof, seconds) for name, truth, asof, seconds in pool.map(_source, tasks)}
     timings = {name: round(seconds, 1) for name, (_, _, seconds) in results.items()}
     targets = np.concatenate([results[n][0] for n in CHANNELS], axis=2)
     asof_targets = np.concatenate([results[n][1] for n in CHANNELS], axis=3)
@@ -138,10 +143,10 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     asof_national = results['kinsa_ili'][1][:, :, LOCATIONS.index('US'), :]
     assert list(CLAIMS_SOURCES) + list(NWSS_INDICES) == list(STATE_COVARIATE_NAMES)
     snapshots = {key: _latest_snapshot(data_root, key).name for key in SNAPSHOT_DATASETS}
-    metadata = dict(version=2, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
-                    asof_target_weeks=ASOF_TARGET_WEEKS, asof_covariate_weeks=ASOF_COVARIATE_WEEKS,
-                    overlay_reference='overlay[w, j] is reference week context_end(issuance_w) - (depth-1-j) weeks; '
-                                      'context_end = issuance - 4 days; values visible by 23:59:59.999999 UTC on the issuance day',
+    metadata = dict(version=3, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
+                    asof='asof_*[w, t]: calendar week t as visible by 23:59:59.999999 UTC on issuance day w; '
+                         'NaN after context_end(w) = issuance - 4 days. Stored as <name>_revised mask + '
+                         '<name>_values where it differs from the truth panel.',
                     channels=list(CHANNELS), locations=list(LOCATIONS),
                     covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
                     snapshots=snapshots, source_seconds=timings)
@@ -155,18 +160,94 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
                 metadata=json.dumps(metadata))
 
 
+def _visible_like(arrays, name):
+    visible = visible_weeks(arrays['dates'], arrays['issuance_dates'])
+    return visible.reshape(visible.shape + (1,) * (arrays[name].ndim - 2))
+
+
+def encode(arrays):
+    """Dense panel -> on-disk arrays: each as-of array only where it differs from the truth."""
+    out = {k: v for k, v in arrays.items() if k not in ASOF_ARRAYS}
+    for name, truth_name in ASOF_ARRAYS.items():
+        asof, truth, visible = arrays[name], arrays[truth_name][None], _visible_like(arrays, name)
+        if not np.isnan(asof[~np.broadcast_to(visible, asof.shape)]).all():
+            raise ValueError(f'{name} holds values after an issuance context end')
+        same = (asof == truth) | (np.isnan(asof) & np.isnan(truth))
+        revised = visible & ~same
+        out[f'{name}_revised'], out[f'{name}_values'] = revised, asof[revised].astype(np.float32)
+    return out
+
+
+def decode(stored):
+    """On-disk arrays -> dense panel (inverse of `encode`)."""
+    arrays = {k: v for k, v in stored.items() if not k.endswith(('_revised', '_values'))}
+    for name, truth_name in ASOF_ARRAYS.items():
+        revised = stored[f'{name}_revised']
+        visible = np.broadcast_to(_visible_like(arrays | {name: revised}, name), revised.shape)
+        dense = np.where(visible, arrays[truth_name][None], np.nan).astype(np.float32)
+        dense[revised] = stored[f'{name}_values']
+        arrays[name] = dense
+    return arrays
+
+
 def save(arrays, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp.npz')
     with temporary.open('wb') as stream:
-        np.savez_compressed(stream, **arrays)
+        np.savez_compressed(stream, **encode(arrays))
     temporary.replace(path)
 
 
 def load(path):
     with np.load(path, allow_pickle=False) as data:
-        return {k: data[k] for k in data.files}
+        return decode({k: data[k] for k in data.files})
+
+
+def _check_source(task):
+    """Direct `extract` resolution of one source at each sampled day -> max mismatch count."""
+    name, data_root, days, dates = task
+    mismatches = {}
+    for day, weeks, expected in days:
+        frame = extract(name, day, data_root=data_root, dates=dates[:weeks])
+        direct = np.full((weeks, len(LOCATIONS)), np.nan, np.float32)
+        direct[frame.date.map({d: i for i, d in enumerate(dates)}).to_numpy(int),
+               frame.location.map({l: i for i, l in enumerate(LOCATIONS)}).to_numpy(int)] = frame.value
+        stored = expected[:weeks]
+        equal = (direct == stored) | (np.isnan(direct) & np.isnan(stored))
+        mismatches[day] = int((~equal).sum())
+    return name, mismatches
+
+
+def check(path=PANEL_DATASET, data_root='data', samples=4, seed=0, workers=None):
+    """Stored panel == direct `extract(...)` at `samples` random issuances plus the truth day, per source."""
+    arrays = load(path)
+    metadata = json.loads(str(arrays['metadata']))
+    dates = [str(d) for d in arrays['dates']]
+    issuances = [str(d) for d in arrays['issuance_dates']]
+    picked = sorted(np.random.default_rng(seed).choice(len(issuances), size=min(samples, len(issuances)), replace=False))
+    visible = visible_weeks(dates, issuances)
+    locations = list(arrays['locations'])
+    tasks = []
+    for name in (*CHANNELS, *CLAIMS_SOURCES, *NWSS_INDICES, 'kinsa_ili'):
+        if name in CHANNELS:
+            k, truth, asof = list(CHANNELS).index(name), arrays['targets'], arrays['asof_targets']
+        elif name in STATE_COVARIATE_NAMES:
+            k, truth, asof = list(STATE_COVARIATE_NAMES).index(name), arrays['covariates'], arrays['asof_covariates']
+        else:  # national: compare on the US column, NaN elsewhere
+            k = list(NATIONAL_COVARIATE_NAMES).index(name)
+            truth = np.full((len(dates), len(locations), 1), np.nan, np.float32)
+            truth[:, locations.index('US'), 0] = arrays['covariates_national'][:, k]
+            asof = np.full((len(issuances), len(dates), len(locations), 1), np.nan, np.float32)
+            asof[:, :, locations.index('US'), 0] = arrays['asof_covariates_national'][:, :, k]
+            k = 0
+        days = [(issuances[w], int(visible[w].sum()), asof[w, :, :, k]) for w in picked]
+        days.append((metadata['truth_day'], len(dates), truth[:, :, k]))
+        tasks.append((name, data_root, days, dates))
+    with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:
+        results = dict(pool.map(_check_source, tasks))
+    return dict(issuances=[issuances[w] for w in picked], truth_day=metadata['truth_day'],
+                mismatched_cells=results, exact=not any(v for r in results.values() for v in r.values()))
 
 
 def main(argv=None):
@@ -181,6 +262,11 @@ def main(argv=None):
     build_parser.add_argument('--output', default=PANEL_DATASET)
     show = sub.add_parser('show', help='Summarize a built panel')
     show.add_argument('--dataset', default=PANEL_DATASET)
+    checked = sub.add_parser('check', help='Compare the stored panel with direct extract() at sampled issuances')
+    checked.add_argument('--dataset', default=PANEL_DATASET)
+    checked.add_argument('--data-root', default='data')
+    checked.add_argument('--samples', type=int, default=4, help='Random issuances checked (plus the truth day)')
+    checked.add_argument('--seed', type=int, default=0)
     args = parser.parse_args(argv)
     if args.command == 'build':
         started = time.perf_counter()
@@ -188,7 +274,13 @@ def main(argv=None):
         save(arrays, args.output)
         print(json.dumps(dict(output=args.output, targets=list(arrays['targets'].shape),
                               issuances=len(arrays['issuance_dates']), seconds=round(time.perf_counter() - started, 1),
+                              megabytes=round(Path(args.output).stat().st_size / 1e6, 2),
                               source_seconds=json.loads(str(arrays['metadata']))['source_seconds'])))
+    elif args.command == 'check':
+        result = check(args.dataset, args.data_root, args.samples, args.seed)
+        print(json.dumps(result, indent=2))
+        if not result['exact']:
+            raise SystemExit(1)
     else:
         arrays = load(args.dataset)
         print(json.dumps({k: (list(v.shape) if k != 'metadata' else json.loads(str(v))) for k, v in arrays.items()},

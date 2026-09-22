@@ -6,15 +6,16 @@ and kept validation weeks in inputs and labels; see
 docs/design/restructure-2026-unified.md §3 and its decision log):
 
 - A fold copies the panel and makes every week outside the two training seasons
-  unavailable -- in targets, covariates and the as-of overlay (overlay cells by their
-  reference week). Training episodes are cut from that masked panel, with origins
+  unavailable -- in targets, covariates and the as-of arrays (by reference week). Training episodes are cut from that masked panel, with origins
   in training weeks only, so held-out weeks are absent from inputs, labels, loss
   scales and covariate standardization.
-- Inner early-stopping fit (`inner=True`): additionally hide 3 consecutive weeks of
-  every 16, starting at week 4 of each training season (weeks 4-6, 20-22, 36-38).
-  Validation episodes are cut from the training panel (hidden weeks visible), with
-  origins in the four training weeks before each hidden week, and only hidden
-  weeks are scored as labels.
+- Inner early-stopping fit (`inner=True`, scenarios with `patience > 0`):
+  additionally hide `validation_weeks` consecutive weeks of every
+  `validation_spacing`, starting at week `validation_offset` of each training
+  season (Scenario fields since 2026-09-22; defaults 3/16/4 = weeks 4-6, 20-22,
+  36-38). Validation episodes are cut from the training panel (hidden weeks
+  visible), with origins in the four (= horizons) training weeks before each hidden
+  week, and only hidden weeks are scored as labels.
 - The refit after epoch selection uses the fold's training panel without the
   validation mask (`inner=False`).
 - Score episodes come from the unmasked panel with origins in the held-out season;
@@ -25,13 +26,11 @@ from datetime import date, timedelta
 
 import numpy as np
 
-from .build import covariate_names_for, overlay_dates
-from .episodes import episodes, restrict_labels
+from .build import covariate_names_for
+from .episodes import HORIZONS, episodes, restrict_labels
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
-# Early stopping hides weeks 4-6, 20-22 and 36-38 of each training season.
-VALIDATION_WEEKS, VALIDATION_SPACING, VALIDATION_OFFSET = 3, 16, 4
-HORIZON_WEEKS = 4
+ROLES = ('fit', 'validation', 'score', 'unused')
 
 
 def season(day):
@@ -47,34 +46,36 @@ def season(day):
 def masked(panel, keep):
     """Copy of `panel` in which every calendar week not in `keep` (bool [T]) is unavailable.
 
-    Overlay cells are masked by their reference week; reference weeks outside the
-    calendar are already unavailable.
+    As-of arrays are masked by reference week (their calendar-week axis 1).
     """
-    dates = [str(d) for d in panel['dates']]
-    kept = {d for d, k in zip(dates, keep) if k}
     out = dict(panel)
-    out['targets'] = np.where(keep[:, None, None], panel['targets'], np.nan).astype(np.float32)
-    out['covariates'] = np.where(keep[:, None, None], panel['covariates'], np.nan).astype(np.float32)
+    for name in ('targets', 'covariates', 'covariates_national'):
+        out[name] = np.where(keep.reshape(-1, *(1,) * (panel[name].ndim - 1)), panel[name], np.nan).astype(np.float32)
     out['covariate_mask'] = panel['covariate_mask'] & keep[:, None, None]
-    out['covariates_national'] = np.where(keep[:, None], panel['covariates_national'], np.nan).astype(np.float32)
     for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
-        depth = panel[name].shape[1]
-        visible = np.array([[d in kept for d in overlay_dates(str(i), depth)] for i in panel['issuance_dates']])
-        shape = visible.shape + (1,) * (panel[name].ndim - 2)
-        out[name] = np.where(visible.reshape(shape), panel[name], np.nan).astype(np.float32)
+        shape = (1, -1, *(1,) * (panel[name].ndim - 2))
+        out[name] = np.where(keep.reshape(shape), panel[name], np.nan).astype(np.float32)
     return out
 
 
-def validation_weeks(dates, held_out):
-    """[T] bool: the hidden early-stopping weeks of each training season."""
+def week_roles(dates, scenario, held_out):
+    """[T] role of each calendar week in one fold, exactly as `fold` uses them.
+
+    'score': the held-out season; 'unused': weeks in no CV season; 'validation': the
+    early-stopping weeks hidden from the inner fit (only when `scenario.patience > 0`;
+    the refit trains on them); 'fit': the remaining training-season weeks.
+    """
     labels = np.array([season(d) for d in dates])
-    hidden = np.zeros(len(dates), dtype=bool)
-    for label in SEASONS:
-        if label != held_out:
-            weeks = np.flatnonzero(labels == label)
-            position = np.arange(len(weeks)) % VALIDATION_SPACING
-            hidden[weeks[(position >= VALIDATION_OFFSET) & (position < VALIDATION_OFFSET + VALIDATION_WEEKS)]] = True
-    return hidden
+    roles = np.where(labels == held_out, 'score', np.where(np.isin(labels, SEASONS), 'fit', 'unused')).astype('U10')
+    if scenario.patience:
+        for label in SEASONS:
+            if label != held_out:
+                weeks = np.flatnonzero(labels == label)
+                position = np.arange(len(weeks)) % scenario.validation_spacing
+                hidden = (position >= scenario.validation_offset) & \
+                    (position < scenario.validation_offset + scenario.validation_weeks)
+                roles[weeks[hidden]] = 'validation'
+    return roles
 
 
 @dataclass
@@ -89,12 +90,15 @@ def fold(panel, scenario, held_out, inner=False):
     """Episodes for one leave-one-season-out fold; `inner=True` gives the early-stopping split."""
     if held_out not in SEASONS:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
+    if inner and not scenario.patience:
+        raise ValueError('The inner early-stopping fold needs patience > 0')
     dates = np.array([str(d) for d in panel['dates']])
-    labels = np.array([season(d) for d in dates])
-    training = np.isin(labels, [s for s in SEASONS if s != held_out])
-    hidden = validation_weeks(dates, held_out) if inner else np.zeros(len(dates), dtype=bool)
+    roles = week_roles(dates, scenario, held_out)
+    training = np.isin(roles, ['fit', 'validation'])
+    hidden = (roles == 'validation') if inner else np.zeros(len(dates), dtype=bool)
     keep = training & ~hidden
-    cut = lambda p: episodes(p, scenario.lookback, scenario.input_mode, covariate_names_for(scenario.covariate_set))
+    cut = lambda p: episodes(p, scenario.lookback, scenario.input_mode, covariate_names_for(scenario.covariate_set),
+                             scenario.asof_weeks)
     kept = set(dates[keep])
     train = [e for e in cut(masked(panel, keep)) if e['context_dates'][-1] in kept]
     validation = score = None
@@ -102,7 +106,7 @@ def fold(panel, scenario, held_out, inner=False):
     if inner:
         origins = np.zeros(len(dates), dtype=bool)
         for i in np.flatnonzero(hidden):
-            origins[max(i - HORIZON_WEEKS, 0):i] = True
+            origins[max(i - len(HORIZONS), 0):i] = True
         origins = set(dates[origins & training])
         hidden_dates = set(dates[hidden])
         validation = [e for e in cut(masked(panel, training)) if e['context_dates'][-1] in origins]
@@ -111,7 +115,7 @@ def fold(panel, scenario, held_out, inner=False):
         if not validation:
             raise ValueError(f'No validation episodes for held-out {held_out}')
     else:
-        season_dates = set(dates[labels == held_out])
+        season_dates = set(dates[roles == 'score'])
         score = [e for e in cut(panel) if e['context_dates'][-1] in season_dates]
         score = [e for e in (restrict_labels(e, season_dates) for e in score) if e is not None]
         info.update(score_episodes=len(score), first_score_origin=score[0]['context_dates'][-1] if score else None)

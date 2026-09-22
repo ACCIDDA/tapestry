@@ -5,11 +5,10 @@ import json
 import numpy as np
 import pytest
 
-from tapestry.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, overlay_dates,
+from tapestry.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
                                     wednesdays)
 
 LOCATIONS = ('NC', 'US')
-R, D = 2, 16
 
 
 def code(day):
@@ -28,26 +27,24 @@ def synthetic_panel(n_weeks=3 * 52 + 10):
                   + 100000 * np.arange(len(LOCATIONS))[None, :, None]).astype(np.float32)
     national = (weeks[:, None] + 50000.).astype(np.float32)
     issuances = wednesdays(dates[0], dates[-1])
-    lookup = {d: i for i, d in enumerate(dates)}
+    visible = visible_weeks(dates, issuances)
 
-    def overlay(truth, depth):
-        out = np.full((len(issuances), depth, *truth.shape[1:]), np.nan, np.float32)
-        for w, issuance in enumerate(issuances):
-            for j, day in enumerate(overlay_dates(issuance, depth)):
-                if day in lookup:
-                    out[w, j] = truth[lookup[day]] + .5
-        return out
+    def asof(truth):
+        shape = visible.shape + (1,) * (truth.ndim - 1)
+        return np.where(visible.reshape(shape), truth[None] + .5, np.nan).astype(np.float32)
 
-    asof_targets = overlay(targets, R)
-    asof_targets[::3, -1] = np.nan  # some latest weeks not yet reported: fall back to truth, known-final
+    asof_targets = asof(targets)
+    for w in range(0, len(issuances), 3):  # some latest weeks not yet reported: fall back to truth, known-final
+        if visible[w].any():
+            asof_targets[w, visible[w].sum() - 1] = np.nan
     return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(LOCATIONS),
                 target_names=np.array(CHANNELS), targets=targets,
                 covariate_names=np.array(STATE_COVARIATE_NAMES), covariates=covariates,
                 covariate_mask=np.ones_like(covariates, dtype=bool),
                 covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
                 issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
-                asof_covariates=overlay(covariates, D), asof_covariates_national=overlay(national, D),
-                metadata=json.dumps(dict(asof_target_weeks=R, asof_covariate_weeks=D)))
+                asof_covariates=asof(covariates), asof_covariates_national=asof(national),
+                metadata=json.dumps(dict(truth_day=dates[-1])))
 
 
 @pytest.fixture

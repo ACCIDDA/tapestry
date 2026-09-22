@@ -3,13 +3,14 @@
 Collapses `models/manager.py` + `models/backends.py`: with one `Scenario` and one
 `Model`, there is no per-model branching left, only one leave-one-season-out
 training path (`fit`) shared by every scenario. Keeps the CLI shape (`plan`,
-`run`, `status`, `rank`) from the old manager. `rank` reports one score: the
-location-relative WIS ratio to the hub ensemble (`evaluation.totals`).
+`run`, `status`, `rank`) from the old manager, plus `plots`. `rank` reports one
+score: the location-relative WIS ratio to the hub ensemble (`evaluation.totals`),
+with its weights as rank-time options, and writes the four figures
+(`evaluation.plots`).
 
-`plan` records in `experiment.json` the dataset path, the frozen-support path, the
-score's US weight (`--us-score-weight`, default 0.2) and the sha256 of `panel.npz`
-and of the frozen manifest; `run` (and the Slurm dispatcher) refuse to fit when
-either hash no longer matches.
+`plan` records in `experiment.json` the dataset path, the frozen-support path and
+the sha256 of `panel.npz` and of the frozen manifest; `run` (and the Slurm
+dispatcher) refuse to fit when either hash no longer matches.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -31,15 +32,16 @@ import torch
 
 from tapestry.dataset import cv
 from tapestry.dataset.build import load as load_dataset, covariate_names_for, PANEL_DATASET
+from tapestry.dataset.cv import SEASONS
+from tapestry.dataset.episodes import HORIZONS
+from tapestry.evaluation.quantiles import LEVELS
+from tapestry.evaluation.totals import US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT
 from tapestry.model.network import Model, fair_crps_cells, draw_dropout, IndependentBundle, checkpoint, load_model
 from tapestry.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scales, LOSS_DEFINITION, US_WEIGHT
-from tapestry.evaluation.totals import US_SCORE_WEIGHT
 from tapestry.model.scenario import Scenario
-from .provenance import SEASONS, save, now, environment, git_state
+from .provenance import save, now, environment, git_state
 
 GROUPS = {'all': [list(range(6))], 'pathogen': [[0, 3], [1, 4], [2, 5]], 'target': [[i] for i in range(6)]}
-LEVELS = np.array([.01, .025, .05, .10, .15, .20, .25, .30, .35, .40, .45, .50,
-                   .55, .60, .65, .70, .75, .80, .85, .90, .95, .975, .99])
 JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
 ARRAY_CHUNK = 1000
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
@@ -109,7 +111,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
     rng = np.random.default_rng(seed)
     selecting = validation is not None
     budget = scenario.epochs if epochs is None else epochs
-    model = Model(horizons=(1, 2, 3, 4), scale=loss_scales(unique_truth(train)), **options).to(device)
+    model = Model(horizons=HORIZONS, scale=loss_scales(unique_truth(train)), **options).to(device)
     weights_by_channel = LOSS_WEIGHTS[scenario.loss_weights]
     values, available, known_final, y, y_mask, cal, cov = to_tensors(train, device)
     weights = torch.as_tensor(loss_cell_weights(train, weights_by_channel), device=device)[:, :, channels]
@@ -454,15 +456,23 @@ def completed_runs(folder, allow_incomplete=False, seeds=None):
     return done
 
 
-def rank(folder, allow_incomplete=False, seeds=None):
+def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
+         admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT):
+    """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot."""
     from tapestry.evaluation.totals import rank as rank_runs
-    settings = json.loads((folder / 'experiment.json').read_text())
+    from tapestry.evaluation.plots import plot_experiment
+    if not 0 <= us_weight <= 1 or min(admissions_weight, ed_weight) < 0 or not admissions_weight + ed_weight:
+        raise ValueError('Need 0 <= us_weight <= 1 and nonnegative target weights, not both zero')
     done = completed_runs(folder, allow_incomplete, seeds)
-    destination = folder / f"ranking-{hashlib.sha256(json.dumps(sorted(r['attempt'] for r in done)).encode()).hexdigest()[:12]}"
+    key = dict(attempts=sorted(r['attempt'] for r in done), us_weight=us_weight,
+               admissions_weight=admissions_weight, ed_weight=ed_weight)
+    destination = folder / f"ranking-{hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:12]}"
     runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'])
             for row in sorted(done, key=lambda r: r['attempt'])]
-    ranking = rank_runs(runs, destination, us_weight=settings['us_score_weight'])
+    ranking = rank_runs(runs, destination, us_weight, admissions_weight, ed_weight)
     print(ranking.head(20).to_string(index=False), flush=True)
+    for path in plot_experiment(folder, destination):
+        print(path, flush=True)
     return destination
 
 
@@ -477,7 +487,7 @@ def main(argv=None):
     fit_parser.add_argument('--dataset', default=PANEL_DATASET)
     fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
-    for name in ('plan', 'run', 'status', 'rank'):
+    for name in ('plan', 'run', 'status', 'rank', 'plots'):
         p = sub.add_parser(name)
         p.add_argument('-e', '--experiment', required=True)
         p.add_argument('--root', default='data/experiments')
@@ -488,8 +498,6 @@ def main(argv=None):
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
             p.add_argument('--dataset', default=PANEL_DATASET)
             p.add_argument('--frozen', default=FROZEN)
-            p.add_argument('--us-score-weight', type=float, default=US_SCORE_WEIGHT,
-                           help='US share of the location-relative score (states/DC share the rest equally)')
         if name == 'run':
             p.add_argument('-t', '--task', nargs='+', type=int, default=None)
             p.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default=None)
@@ -500,6 +508,15 @@ def main(argv=None):
             p.add_argument('--seeds', nargs='+', type=int, default=None)
         if name == 'rank':
             p.add_argument('--allow-incomplete', action='store_true')
+            p.add_argument('--us-weight', type=float, default=US_SCORE_WEIGHT,
+                           help='US share of the score (states/DC share the rest equally)')
+            p.add_argument('--admissions-weight', type=float, default=ADMISSIONS_WEIGHT)
+            p.add_argument('--ed-weight', type=float, default=ED_WEIGHT)
+        if name == 'plots':
+            p.add_argument('--ranking', help='Ranking folder (default: the most recent ranking-*)')
+            p.add_argument('--configs', nargs='+', help="Scenario strings for fans/heatmaps ('' or default = "
+                                                        'the default scenario); default: the two best ranked')
+            p.add_argument('--dates', nargs='+', help='Fan reference dates (default: quartiles of each season)')
     args = parser.parse_args(argv)
     if args.command == 'fit':
         scenario = Scenario.from_string(args.scenario)
@@ -516,10 +533,8 @@ def main(argv=None):
     folder = Path(args.root) / args.experiment
     if args.command == 'plan':
         scenarios = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}
-        if not 0 <= args.us_score_weight <= 1:
-            parser.error('--us-score-weight must be between 0 and 1')
         settings = dict(device=args.device, eval_members=args.eval_members, dataset=args.dataset,
-                        frozen=args.frozen, us_score_weight=args.us_score_weight)
+                        frozen=args.frozen)
         settings.update(pinned_inputs(settings))
         jobs = plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(args.seeds),
@@ -534,7 +549,15 @@ def main(argv=None):
         for row in rows:
             print(f"{row['status']}\t{row['task']}\t{row['name']}\ts{row['seed']}\t{row['attempt']}")
     elif args.command == 'rank':
-        print(rank(folder, args.allow_incomplete, args.seeds))
+        print(rank(folder, args.allow_incomplete, args.seeds, args.us_weight, args.admissions_weight, args.ed_weight))
+    elif args.command == 'plots':
+        from tapestry.evaluation.plots import plot_experiment
+        rankings = sorted(folder.glob('ranking-*'), key=lambda p: p.stat().st_mtime)
+        ranking = Path(args.ranking) if args.ranking else rankings[-1] if rankings else None
+        if ranking is None:
+            parser.error(f'No ranking-* folder in {folder}; run rank first')
+        for path in plot_experiment(folder, ranking, args.configs, args.dates):
+            print(path)
 
 
 if __name__ == '__main__':

@@ -6,15 +6,18 @@ import pytest
 
 torch = pytest.importorskip('torch')
 
-from conftest import LOCATIONS, R, code
-from tapestry.dataset.build import COVARIATE_GROUPS, SOURCE_GROUPS, covariate_names_for, overlay_dates
-from tapestry.dataset.cv import SEASONS, fold, season, validation_weeks
+from conftest import LOCATIONS, code, synthetic_panel
+from tapestry.dataset.build import COVARIATE_GROUPS, SOURCE_GROUPS, covariate_names_for, decode, encode
+from tapestry.dataset.cv import SEASONS, fold, season, week_roles
 from tapestry.dataset.episodes import episodes
 from tapestry.experiment.planner import model_options, unique_truth
 from tapestry.model.objective import loss_cell_weights, loss_scales
 from tapestry.model.scenario import Scenario
 
-SCENARIOS = [Scenario(lookback=6), Scenario(lookback=6, input_mode='vintaged', covariate_set='inpatient+kinsa')]
+SCENARIOS = [Scenario(lookback=6, epochs=3, patience=1),
+             Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', covariate_set='inpatient+kinsa'),
+             Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', asof_weeks=6, covariate_set='inpatient',
+                      validation_weeks=2, validation_spacing=10, validation_offset=1)]
 POPULATIONS = {'NC': 1e7, 'US': 3.3e8}
 
 
@@ -36,11 +39,7 @@ def perturbed(panel, weeks):
     for name in ('targets', 'covariates', 'covariates_national'):
         other[name][rows] += 777
     for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
-        depth = panel[name].shape[1]
-        for w, issuance in enumerate(panel['issuance_dates']):
-            for j, day in enumerate(overlay_dates(str(issuance), depth)):
-                if day in weeks:
-                    other[name][w, j] += 777
+        other[name][:, rows] += 777  # by reference week
     return other
 
 
@@ -52,7 +51,7 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
     labels = np.array([season(d) for d in dates])
     hidden = (labels == held_out) | ~np.isin(labels, SEASONS)
     if inner:
-        hidden |= validation_weeks(dates, held_out)
+        hidden |= week_roles(dates, scenario, held_out) == 'validation'
     hidden_weeks = set(dates[hidden])
     hidden_codes = {int(code(d)) for d in hidden_weeks}
     a = fold(panel, scenario, held_out, inner)
@@ -74,7 +73,7 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
     assert loss_scales(unique_truth(a.train)) == loss_scales(unique_truth(b.train))
     np.testing.assert_array_equal(loss_cell_weights(a.train), loss_cell_weights(b.train))
     if inner:
-        hidden_validation = set(dates[validation_weeks(dates, held_out)])
+        hidden_validation = set(dates[week_roles(dates, scenario, held_out) == 'validation'])
         assert a.validation
         for e in a.validation:
             assert {d for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m} <= hidden_validation
@@ -85,13 +84,14 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
             assert all(season(d) == held_out for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m)
 
 
-def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(panel):
+@pytest.mark.parametrize('R', [0, 2, 6])
+def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(panel, R):
     lookback, names = 6, ('inpatient_flu', 'kinsa_ili')
     start = str(panel['dates'][0])
     nc, us = LOCATIONS.index('NC'), LOCATIONS.index('US')
     finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'finalized', names)}
     assert min(finalized) == start  # context before the calendar is padding, not a missing origin
-    vintaged = episodes(panel, lookback, 'vintaged', names)
+    vintaged = episodes(panel, lookback, 'vintaged', names, asof_weeks=R)
     fallback = 0
     for e in vintaged:
         issuance = date.fromisoformat(e['issuance'])
@@ -118,7 +118,17 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
         truth_episode = finalized.get(end)
         if truth_episode:
             np.testing.assert_array_equal(e['target_values'], truth_episode['target_values'])
-    assert fallback and len(vintaged) > 100
+    assert (fallback > 0) == (R > 0) and len(vintaged) > 100
+
+
+def test_sparse_as_of_storage_round_trips_exactly():
+    panel = synthetic_panel()
+    panel['asof_covariates'][5, 3, 0, 0] = np.nan  # visible in truth, not at this cutoff
+    stored = encode(panel)
+    assert stored['asof_targets_revised'].sum() < panel['asof_targets'].size
+    restored = decode(stored)
+    for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
+        np.testing.assert_array_equal(restored[name], panel[name])
 
 
 def test_covariate_names_for_expands_groups_in_fixed_order():

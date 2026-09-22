@@ -111,6 +111,20 @@ class Scenario:
     # Covariates and dataset selection (formerly B2Scenario).
     covariate_set: str = ''
     input_mode: str = 'finalized'
+    # Vintaged episodes only (2026-09-22): the number of most recent context weeks
+    # whose targets are taken as visible at the issuance cutoff; older context weeks
+    # take final truth. 2 reproduces the previous vintaged builder (B1); a value >=
+    # lookback makes every context week as-of. Covariates are always as-of for
+    # every context week of a vintaged episode (the previous builder's behaviour),
+    # so one field serves both. See dataset/episodes.py.
+    asof_weeks: int = 2
+    # Cross-validation early stopping (user decision 2026-09-22: CV settings belong to
+    # the scenario). Only used when patience > 0: hide `validation_weeks` consecutive
+    # weeks of every `validation_spacing`, from week `validation_offset` of each
+    # training season (defaults: weeks 4-6, 20-22, 36-38). See dataset/cv.py.
+    validation_weeks: int = 3
+    validation_spacing: int = 16
+    validation_offset: int = 4
 
     def __post_init__(self):
         for key in CODES:
@@ -133,6 +147,16 @@ class Scenario:
         mix = (self.mask_recent, self.mask_gap, self.mask_outage)
         if any(p < 0 for p in mix) or abs(sum(mix) - 1) > 1e-9:
             raise ValueError('mask_recent/mask_gap/mask_outage must be nonnegative and sum to one')
+        if self.asof_weeks < 0:
+            raise ValueError('asof_weeks must be nonnegative')
+        if self.input_mode == 'finalized' and self.asof_weeks != 2:
+            raise ValueError('asof_weeks only applies to input_mode=vintaged')
+        if not (1 <= self.validation_weeks and 0 <= self.validation_offset
+                and self.validation_offset + self.validation_weeks <= self.validation_spacing):
+            raise ValueError('Need 1 <= validation_weeks and 0 <= validation_offset, '
+                             'validation_offset + validation_weeks <= validation_spacing')
+        if not self.patience and (self.validation_weeks, self.validation_spacing, self.validation_offset) != (3, 16, 4):
+            raise ValueError('validation_* settings only apply with patience > 0')
         from tapestry.dataset.build import SOURCE_GROUPS
         # Canonicalize so equivalent spellings ('a+b' vs 'b+a' vs 'a+a+b') collapse
         # to one string and one `run_id`, instead of silently training the same

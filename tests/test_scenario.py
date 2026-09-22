@@ -100,3 +100,11 @@ def test_covariate_set_and_input_mode_reproduce_b0_b1_b2_shapes():
     assert plain_b0.model_options()['supplied_final'] is False
     assert b1_direct.model_options()['supplied_final'] is True
     assert b2.covariate_set == 'inpatient'
+
+
+def test_default_fields_keep_run_ids_stable():
+    # Values recorded before asof_weeks and validation_* were added (2026-09-22).
+    assert Scenario.from_string('').run_id == 'mlp-all-finalized-e3b0c44298fc'
+    assert Scenario.from_string('input_mode=vintaged').run_id == 'mlp-all-vintaged-3537cc89733a'
+    assert Scenario.from_string('epochs=4,patience=2').run_id == 'mlp-all-finalized-130a0e5e9250'
+    assert Scenario(input_mode='vintaged', asof_weeks=2) == Scenario(input_mode='vintaged')

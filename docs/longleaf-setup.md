@@ -92,7 +92,7 @@ above once every source is already downloaded, then build the one array,
 .venv/bin/python -m tapestry.dataset.build show
 ```
 
-It holds the truth panel and the Wednesday as-of overlay that both input modes
+It holds the truth panel and the exact Wednesday as-of store that both input modes
 cut episodes from; see [the canonical workflow](workflows/training.md#2-build-the-dataset-panel).
 `plan` records its sha256, so rebuild it before planning, not while an
 experiment is running.
@@ -153,8 +153,8 @@ sbatch --job-name=my-experiment --array=0-13 scripts/jlessler.sbatch my-experime
 `experiment.json` and dispatches through `tapestry.experiment.dispatch`'s
 shared job queue, drawing from one queue across every array element instead
 of a static task-per-index slice (unlike the old `b0_array.sbatch`/
-`b0_sweep.sbatch`, archived in `scripts/archive/2026-09-b0-b1-b2/` along with
-the rest of the B0/B1/B2-era launchers). It requests one GPU, four CPUs,
+`b0_sweep.sbatch`; those B0/B1/B2-era launchers and plotting scripts were
+deleted on 2026-09-22 and remain only in git history). It requests one GPU, four CPUs,
 110 GiB, and two days on `g1803jles01`; set `LANES`/`GPUS` to change fitting
 processes per GPU and GPU count. See
 [the canonical workflow](workflows/training.md#shared-gpu-cluster-launch-longleaf).

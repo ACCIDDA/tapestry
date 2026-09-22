@@ -8,21 +8,23 @@ One builder, one switch (docs/design/restructure-2026-unified.md §3):
   lie inside the calendar. Context weeks before the calendar are unavailable (padding).
   Every visible context cell is known-final.
 - `input_mode='vintaged'`: one episode per Wednesday issuance, origin = its context
-  end (the Saturday four days earlier). The window is the truth panel with the
-  as-of overlay applied, exactly what the previous vintaged builder materialized:
-  * the last min(R, lookback) context weeks take the value visible at the issuance
-    cutoff; where nothing was visible yet they fall back to truth, flagged known-final;
+  end (the Saturday four days earlier). With `asof_weeks` = the scenario's field
+  (default 2, the previous vintaged builder):
+  * the last min(asof_weeks, lookback) context weeks take the target value visible
+    at the issuance cutoff (known_final False); where nothing was visible yet they
+    fall back to truth, flagged known-final where available (the previous builder's
+    rule, kept so the default reproduces it);
   * older context weeks and all target weeks are truth, known-final where available;
-  * covariates are as of the issuance for every context week (requires lookback <= D).
-  `known_final` is not stored in the panel: it is a function of overlay availability.
+  * covariates (state and national) are as of the issuance for every context week,
+    NaN where nothing was visible (no truth fallback), as the previous builder did.
+  `known_final` is not stored in the panel: it follows from position and visibility.
 
 An episode is kept only if some context cell and some target cell are available.
 Covariates (`covariate_names`) are per-location `[lookback, K, 2, L]` (value, available);
-a national-only name is broadcast to the `US` column only.
+a national-only name (Kinsa) is placed in the `US` column only, so with
+`spatial='none'` state rows never see it (current behaviour, documented in §3).
 """
 from datetime import date, timedelta
-import json
-
 import numpy as np
 
 from .build import context_end
@@ -48,9 +50,10 @@ def select_covariates(state, national, state_names, national_names, locations, n
     return np.nan_to_num(values), available
 
 
-def _pad(array, before, after):
-    return np.concatenate([np.full((before, *array.shape[1:]), np.nan, array.dtype), array,
-                           np.full((after, *array.shape[1:]), np.nan, array.dtype)])
+def _pad(array, before, after, axis=0):
+    shape = lambda n: (*array.shape[:axis], n, *array.shape[axis + 1:])
+    return np.concatenate([np.full(shape(before), np.nan, array.dtype), array,
+                           np.full(shape(after), np.nan, array.dtype)], axis=axis)
 
 
 def _channel_first(panel):
@@ -58,30 +61,32 @@ def _channel_first(panel):
     return np.moveaxis(panel, -1, -2)
 
 
-def episodes(panel, lookback, input_mode, covariate_names=(), horizons=HORIZONS):
+def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, horizons=HORIZONS):
     """All usable episodes of a (possibly masked) panel; see the module docstring."""
     if input_mode not in ('finalized', 'vintaged'):
         raise ValueError(f'Unknown input_mode: {input_mode}')
-    metadata = json.loads(str(panel['metadata']))
-    depth_targets, depth_covariates = metadata['asof_target_weeks'], metadata['asof_covariate_weeks']
-    if input_mode == 'vintaged' and covariate_names and lookback > depth_covariates:
-        raise ValueError(f'Vintaged lookback {lookback} exceeds the as-of covariate depth {depth_covariates}')
+    vintaged = input_mode == 'vintaged'
     dates = [str(d) for d in panel['dates']]
     first, locations = date.fromisoformat(dates[0]), tuple(str(l) for l in panel['locations'])
     pad, tail = lookback - 1, max(horizons)
     targets = _channel_first(_pad(panel['targets'], pad, tail))  # padded index = calendar index + pad
+    if vintaged:
+        asof_targets = _channel_first(_pad(panel['asof_targets'], pad, tail, axis=1))
     if covariate_names:
         names = (panel['covariate_names'], panel['covariate_national_names'], locations, covariate_names)
-        truth_cov = select_covariates(_pad(panel['covariates'], pad, tail),
-                                      _pad(panel['covariates_national'], pad, tail), *names)
-        if input_mode == 'vintaged':
-            asof_cov = select_covariates(panel['asof_covariates'], panel['asof_covariates_national'], *names)
+        if vintaged:
+            covariates = select_covariates(_pad(panel['asof_covariates'], pad, tail, axis=1),
+                                           _pad(panel['asof_covariates_national'], pad, tail, axis=1), *names)
+        else:
+            covariates = select_covariates(_pad(panel['covariates'], pad, tail),
+                                           _pad(panel['covariates_national'], pad, tail), *names)
     week = lambda t: (first + timedelta(weeks=t)).isoformat()
-    if input_mode == 'finalized':
-        origins = [(t, None) for t in range(len(dates) - tail)]
-    else:
+    if vintaged:
         origins = [((date.fromisoformat(context_end(d)) - first).days // 7, w)
                    for w, d in enumerate(panel['issuance_dates'])]
+    else:
+        origins = [(t, None) for t in range(len(dates) - tail)]
+    recent = min(asof_weeks, lookback)
     result = []
     for t, w in origins:
         if t < 0:
@@ -90,12 +95,11 @@ def episodes(panel, lookback, input_mode, covariate_names=(), horizons=HORIZONS)
         future = [t + pad + h for h in horizons]
         values = targets[context].copy()
         known_final = ~np.isnan(values)
-        if w is not None:
-            recent = min(depth_targets, lookback)
-            asof = _channel_first(panel['asof_targets'][w, depth_targets - recent:])
+        if vintaged and recent:
+            asof = asof_targets[w, context][-recent:]
             seen = ~np.isnan(asof)
             values[-recent:] = np.where(seen, asof, values[-recent:])
-            known_final[-recent:] = ~seen & ~np.isnan(targets[context][-recent:])
+            known_final[-recent:] = ~seen & known_final[-recent:]
         available = ~np.isnan(values)
         target_values = targets[future]
         target_available = ~np.isnan(target_values)
@@ -108,11 +112,8 @@ def episodes(panel, lookback, input_mode, covariate_names=(), horizons=HORIZONS)
                        issuance=None if w is None else str(panel['issuance_dates'][w]))
         episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
         if covariate_names:
-            if w is None:
-                cov_values, cov_available = truth_cov[0][context], truth_cov[1][context]
-            else:
-                cov_values = asof_cov[0][w, depth_covariates - lookback:]
-                cov_available = asof_cov[1][w, depth_covariates - lookback:]
+            cov_values, cov_available = (covariates[0][context], covariates[1][context]) if w is None else \
+                (covariates[0][w, context], covariates[1][w, context])
             episode['covariates'] = np.stack((cov_values, cov_available), axis=-2)
         result.append(episode)
     return result
