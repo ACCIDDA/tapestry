@@ -64,6 +64,23 @@ package setup is needed. Use a Slurm allocation for training and substantial
 evaluation runs; the environment setup above does not request a GPU or submit
 a training job.
 
+## Sync code and panel from the Mac
+
+`data/processed/panel.npz` (about 5 MB) is tracked in git despite the `/data/`
+ignore rule (added with `git add -f`), so code and panel travel together. From the
+Mac, push to a side branch of the cluster checkout (git refuses to update its
+checked-out branch), then fast-forward on Longleaf:
+
+```bash
+git remote add longleaf chadi@longleaf.unc.edu:/proj/jlessler/projects/tapestry-all/tapestry
+git push longleaf restructure/unified-model:refs/heads/incoming
+ssh chadi@longleaf.unc.edu 'cd /proj/jlessler/projects/tapestry-all/tapestry && git merge --ff-only incoming'
+```
+
+Rebuilding the panel on the cluster is not needed: sources are acquired and built
+on the Mac. A planned experiment pins the panel's sha256, so replacing the panel
+under a running experiment makes its remaining runs refuse to fit.
+
 ## Build the training panel
 
 Run from `/proj/jlessler/projects/tapestry-all/tapestry`. Skip acquisition
