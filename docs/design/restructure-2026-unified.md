@@ -336,24 +336,46 @@ that score labels stay inside the held-out season.
   overprediction}_ratio`: each WIS component divided by the ensemble's total
   WIS at the same location, location-weighted like `wis_ratio`, so the model's
   three sum to `wis_ratio`.
-- **Figures** (`evaluation/plots.py`, user request 2026-09-22) are written by
+- **Figures** (`evaluation/plots.py`, user requests 2026-09-22) are written by
   `rank` into `ranking-*/plots/` and by `planner plots -e NAME [--ranking DIR]
-  [--configs A B] [--dates ...]`. Exactly four, every choice in the module
-  docstring: (1) CV layout per fold from `cv.week_roles` on the finalized US
-  series, one panel per target (all six, not a representative one), one file
-  per distinct CV setting; (2) fans for US and NC, rows = targets, columns =
-  held-out seasons, up to two configurations (default: the two best ranked,
-  each at its lowest seed, seeds not pooled) plus the hub ensemble where frozen
-  support exists, default reference dates = the 25th/50th/75th percentile
-  positions of each season's score reference dates; (3) a seaborn PairGrid dot plot
-  (replaced the pairplot, user request 2026-09-22): one row per configuration
-  ranked by mean combined WIS ratio, one column per metric (WIS ratio for all,
-  states/DC and US; 50/80/90/95% coverage; the three component ratios), one dot
-  per seed and a bar at the mean, ensemble values dashed and nominal coverage
-  dotted; (4) per selected configuration, a location x season heatmap of the
-  WIS ratio (targets combined with the ranking's target weights over the
-  targets available there, mean over seeds, plus the mean of seasons). Every
-  other plotting script was deleted (§6).
+  [--configs A B ...] [--dates ...]`; every choice is in the module docstring.
+  Labels: each configuration is `C<k>`, k = its ranking position (1 = best);
+  figures show the label plus the scenario string wrapped at commas (~40
+  characters a line), and the report appendix is the key. Selected
+  configurations (fans, heatmaps): the best ranked only by default; `--configs`
+  replaces the selection, any number; fans use each one's lowest seed. (1) CV
+  layout per fold from `cv.week_roles` on the finalized US series, one panel per
+  target, one file per distinct CV setting; (2) fans, one file per location (US,
+  NC) x target kind (`fans-US-hosp.png`, `fans-US-ed.png`, ... -- admissions and
+  ED proportions have different units): rows = disease, columns = hub ensemble
+  then one per selected configuration, x = time across the three held-out
+  seasons, finalized truth in every panel, 50%/90% bands and median per
+  reference date, y limits shared within a row; default reference dates every
+  4th score reference date of each held-out season (`--dates` overrides); the
+  ensemble only where frozen support exists; (3) seaborn PairGrid dot plot: one
+  row per configuration plus a hub-ensemble row (WIS ratio 1, its coverage and
+  its decomposition over itself), ordered by the main score, opaque dot = median
+  over seeds, light dots = seeds, columns = WIS ratio all/states-DC/US,
+  50/80/90/95% coverage, the three component ratios; red dotted = nominal
+  coverage; height scales with rows x label lines, width with metric columns;
+  (4) per selected configuration, one heatmap file with one panel per target
+  (rows = disease, columns = admissions/ED): WIS ratio by location x season,
+  mean over seeds, plus the mean of seasons with support; one log colour scale
+  centred at 1 shared by all panels of all heatmap files of the call, grey = no
+  frozen support. Every other plotting script was deleted (§6).
+- **Report** (`plots.write_report`, called by `rank`):
+  `docs/results/<experiment>/index.md` = summary, figures (base64-embedded; CV
+  layout, fans, dot plot, heatmaps), the preserved write-up, the ranking table
+  (with labels), then "Appendix: scenarios run" (label, full scenario string,
+  run id, seeds, non-default fields with their defaults). The appendix links
+  `../../reference/scenario.md`, the field key that `write_report` regenerates
+  each time via `write_scenario_key` at `<root>/../reference/scenario.md`
+  (`docs/reference/scenario.md` for the default root; in the mkdocs nav under
+  Reference). The key is built from `Scenario` fields, `scenario.CODES` and the
+  one-line `scenario.MEANING` taken from existing docs (pointers to the defining
+  document where one line is not enough). Chosen over a separate `planner
+  scenario-key` command: no new command, and the key can never be stale relative
+  to a report.
 - The pooled total-WIS ratio (sum of model WIS / sum of ensemble WIS) is no
   longer computed. Summed `model_wis`/`ensemble_wis` columns remain in
   `totals.csv` and `season_scores.csv` as raw totals only, not a ranking.
@@ -511,3 +533,16 @@ keeps them.
   layout -- figures, then a hand-written write-up kept across regenerations, then
   the ranking table. Figures are embedded as base64 PNG so they show in the page in
   any viewer (user: "not one click away"); cost: pages of a few MB.
+
+**2026-09-22 — report figures and appendix (user requests).** Fans: reference
+dates every 4 weeks, one file per location x target kind, rows = disease, the
+ensemble and each configuration in separate columns with row-shared y limits,
+default the best configuration only (`--configs` adds more, lowest seed each).
+Heatmaps: one panel per target, shared log colour scale centred at 1. Dot plot:
+a hub-ensemble row, median over seeds opaque and seeds light, size adapting to
+rows and columns; long scenario strings shown as `C<k>` + string wrapped at
+commas, the report appendix being the key. `write_report` appends "Appendix:
+scenarios run" and regenerates `docs/reference/scenario.md` from `Scenario`
+(`scenario.MEANING` added). Checked on the smoke experiment
+(`ranking-c08a5acf2c27`, 4 configurations, seeds 42/43), default and all four
+configurations. Choices in §5 and the `plots.py` docstring.

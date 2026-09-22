@@ -44,6 +44,58 @@ CODES = {
 }
 
 
+# One line per field for the generated key `docs/reference/scenario.md` (2026-09-22),
+# taken from the existing design docs and code; where the meaning is longer than a
+# line the entry points to the document that defines it.
+MEANING = {
+    'lookback': 'Context weeks per episode (the history the network sees).',
+    'count_transform': 'Admissions in model space: raw counts, rate per 100,000, or its sqrt / fourth root / log1p '
+                       '(`model/network.py` `transform_counts`).',
+    'ed_transform': 'ED proportions in model space (`model/network.py`); scores stay in native units.',
+    'geography': 'Adds log population and a native-US flag per location as features.',
+    'dynamics': 'Recent-dynamics feature block (30 slope/acceleration/age/validity features); see design/b0.1.md.',
+    'loss_weights': 'Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the '
+                    "score's target weights.",
+    'encoder': 'Temporal context encoder; see design/b0.1.md.',
+    'spatial': 'Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); '
+               'see design/b0.1.md.',
+    'heads': 'State and US output heads shared or separate (`state_us`).',
+    'decoder': 'Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see design/b0.1.md.',
+    'noise': 'Global latent noise, or global plus a per-location latent (`local`).',
+    'us_error': 'Extra common noise factor (`shared_factor`); see design/b0.1.md and design/b1.md.',
+    'latent': 'Global latent (noise) dimension.',
+    'width': 'Hidden width of the network.',
+    'epochs': 'Epoch cap (the fixed number of epochs when patience = 0).',
+    'patience': 'Early-stopping patience in epochs; 0 = fixed epochs, no validation weeks; > 0 selects the epoch '
+                'on the validation weeks, then refits on the full training seasons (design §4).',
+    'batch_size': 'Episodes per optimizer step.',
+    'members': 'Sampled members per training episode (fair CRPS loss).',
+    'lr': 'Adam learning rate.',
+    'head_sharing': 'Output sharing: shared, three pathogen heads, or six target heads; see design/b0.1.md.',
+    'annual_calendar': 'Annual sine/cosine and Christmas-timing features.',
+    'location_embedding': 'Dimension of a learned location-ID embedding (0 = none).',
+    'fit_partition': 'One model for all six targets, or separately fitted models per pathogen / target group '
+                     '(each sees all six inputs); see design/b0.1.md.',
+    'validation_members': 'Members drawn for the early-stopping validation loss.',
+    'weight_decay': 'Adam weight decay.',
+    'supplied_final': 'The network receives a known-final flag channel per cell; see design/b1.md.',
+    'mask_rate': 'Probability an episode receives an artificial missingness pattern in training (not a fraction '
+                 'of cells); see design/b1.md.',
+    'mask_recent': 'Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1).',
+    'mask_gap': 'Share of masked episodes whose pattern is a local gap in one location history.',
+    'mask_outage': 'Share of masked episodes whose pattern is a whole-channel outage.',
+    'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
+                     'workflows/training.md and design/b2.md.',
+    'input_mode': 'How episodes are cut from the panel: finalized truth, or Wednesday-vintage as-of context '
+                  '(design §3).',
+    'asof_weeks': 'Vintaged only: most recent context weeks whose targets are as visible at the issuance; '
+                  'older weeks take final truth (design §3).',
+    'validation_weeks': 'patience > 0 only: consecutive early-stopping weeks hidden per block (design §4).',
+    'validation_spacing': 'patience > 0 only: one validation block every this many weeks of a training season.',
+    'validation_offset': 'patience > 0 only: week of each training season where the first block starts.',
+}
+
+
 def _encode(name, value):
     if name in CODES:
         if value not in CODES[name]:

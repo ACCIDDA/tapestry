@@ -81,6 +81,7 @@ nav:
       - Local API: explorer/api.md
   - Reference:
       - Command line: reference/cli.md
+      - Scenario fields: reference/scenario.md
       - Python API: reference/python-api.md
   - Development: development.md
   - Mac and Longleaf: development-longleaf.md

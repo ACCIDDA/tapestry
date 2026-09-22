@@ -516,8 +516,8 @@ def main(argv=None):
         if name == 'plots':
             p.add_argument('--ranking', help='Ranking folder (default: the most recent ranking-*)')
             p.add_argument('--configs', nargs='+', help="Scenario strings for fans/heatmaps ('' or default = "
-                                                        'the default scenario); default: the two best ranked')
-            p.add_argument('--dates', nargs='+', help='Fan reference dates (default: quartiles of each season)')
+                                                        'the default scenario), any number; default: the best ranked')
+            p.add_argument('--dates', nargs='+', help='Fan reference dates (default: every 4 weeks of each held-out season)')
     args = parser.parse_args(argv)
     if args.command == 'fit':
         scenario = Scenario.from_string(args.scenario)

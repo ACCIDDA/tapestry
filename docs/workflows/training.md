@@ -117,18 +117,30 @@ ensemble (states/DC share 80%, US 20% by default), targets combined as
 (`rank --us-weight 0.2 --admissions-weight 1 --ed-weight 0.5`), recorded in the
 ranking's `manifest.json` and part of its folder hash. It writes
 `season_scores.csv`, `season_composite_scores.csv`, `run_scores.csv`, and
-`configuration_ranking.csv` under `ranking-<hash>/`, plus the four figures in
-`ranking-<hash>/plots/`: `cv-layout-*.png` (each week's role per fold),
-`fans-US.png`/`fans-NC.png` (two best configurations + hub ensemble),
-`dotplot.png` (seaborn PairGrid dot plot: configurations ranked by the score, one
-column per metric -- WIS ratio all/states/US, coverage, WIS decomposition -- one dot
-per seed) and
-`heatmap-*.png` (WIS ratio by location x season). Finally it writes the report page
-`docs/results/<experiment>/index.md` (figures embedded in the page as base64 PNG, so
-they display in any viewer; a page is about 2-3 MB): the
-figures in that fixed order, then a **Write-up** section for hand-written text, then
-the ranking table. Text between the write-up markers is kept when `rank` regenerates
-the page; everything else is overwritten. When ranking on Longleaf, bring the page
+`configuration_ranking.csv` under `ranking-<hash>/`, plus the figures in
+`ranking-<hash>/plots/`. Each configuration is labelled `C<k>` by its ranking
+position; figures show the label and the scenario string wrapped at commas.
+
+- `cv-layout-*.png`: each week's role per fold, one file per CV setting.
+- `fans-US-hosp.png`, `fans-US-ed.png`, `fans-NC-hosp.png`, `fans-NC-ed.png`:
+  rows = disease, columns = hub ensemble then each selected configuration (default:
+  the best ranked; `--configs` selects others, any number, each at its lowest
+  seed), x = the three held-out seasons, finalized truth and 50%/90% bands +
+  median every 4 weeks (`--dates` overrides), y limits shared within a row.
+- `dotplot.png`: seaborn PairGrid dot plot, every configuration plus a hub-ensemble
+  row ranked by the score; columns WIS ratio all/states/US, coverage, WIS
+  decomposition; opaque dot = median over seeds, light dots = seeds.
+- `heatmap-<run id>.png` per selected configuration: one panel per target, WIS
+  ratio by location x season (mean over seeds), one log colour scale centred at 1.
+
+Finally it writes the report page `docs/results/<experiment>/index.md` (figures
+embedded as base64 PNG, so they display in any viewer; a page is a few MB): the
+figures in that order, a **Write-up** section for hand-written text, the ranking
+table, and **Appendix: scenarios run** (label, full scenario string, run id, seeds,
+non-default fields) linking to [the scenario field key](../reference/scenario.md),
+which the same call regenerates from `Scenario` (`docs/reference/scenario.md`).
+Text between the write-up markers is kept when `rank` regenerates the page;
+everything else is overwritten. When ranking on Longleaf, bring the page
 back with `rsync -a chadi@longleaf.unc.edu:/proj/jlessler/projects/tapestry-all/tapestry/docs/results/<experiment> docs/results/`
 and add it to the `mkdocs.yml` navigation by hand. Re-draw with other choices:
 
@@ -136,6 +148,8 @@ and add it to the `mkdocs.yml` navigation by hand. Re-draw with other choices:
 python -m tapestry.experiment.planner plots -e my-experiment --configs 'width=32' '' \
     --dates 2024-01-06 2025-01-04
 ```
+
+`plots` redraws the figures only; the report page is rewritten by `rank`.
 
 Pass `--allow-incomplete` to rank before every run has finished.
 
