@@ -9,7 +9,7 @@ import subprocess
 import time
 from urllib.request import Request, urlopen
 
-from tapestry.models.manager import read_jobs, seed_state
+from tapestry.experiment.planner import read_jobs, seed_state
 
 
 def summary(folder, job_ids):

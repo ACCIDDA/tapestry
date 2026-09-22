@@ -51,13 +51,13 @@ rsync -av /Users/chadi/Research/Tapestry/src \
   /Users/chadi/Research/Tapestry/pyproject.toml \
   /Users/chadi/Research/Tapestry/README.md \
   chadi@longleaf.unc.edu:~/Tapestry/
-rsync -av /Users/chadi/Research/Tapestry/data/processed/build_b_finalized.npz \
-  /Users/chadi/Research/Tapestry/data/processed/build_b_finalized.json \
+rsync -av /Users/chadi/Research/Tapestry/data/processed/finalized.npz \
+  /Users/chadi/Research/Tapestry/data/processed/vintaged.npz \
   chadi@longleaf.unc.edu:~/Tapestry/data/processed/
 ```
 
 This file list omits the local virtual environment, credentials, raw archives,
-and results. Raw data are unnecessary for fitting the already built tensor.
+and results. Raw data are unnecessary for fitting the already built arrays.
 
 Use a CUDA-enabled PyTorch environment on Longleaf, for example
 `/nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python`; confirm that
@@ -67,7 +67,7 @@ environment exists before using it. On the allocated node:
 /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python -c \
   'import numpy, torch; print(torch.__version__, torch.cuda.is_available())'
 PYTHONPATH=src /nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python \
-  -m tapestry.models.season_cv --device cuda \
+  -m tapestry.experiment.planner fit --scenario '' --seed 42 --device cuda \
   --output data/experiments/b0_season_cv_longleaf
 ```
 
@@ -88,8 +88,8 @@ rsync -av chadi@longleaf.unc.edu:~/Tapestry/data/experiments/b0_season_cv_longle
 From `/Users/chadi/Research/Tapestry`:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m tapestry.models.season_cv \
-  --device cpu --epochs 50 --eval-members 256 \
+PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner fit \
+  --scenario '' --seed 42 --device cpu --eval-members 256 \
   --output data/experiments/b0_season_cv_repeat
 ```
 

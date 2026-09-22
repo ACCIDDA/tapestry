@@ -5,9 +5,8 @@ and shared-dispatch commands, used after the environment setup below.
 
 These commands set up the checkout at
 `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf using uv-managed
-Python 3.11 and the cluster's R module. Adjust the workspace paths if installing
-elsewhere. Python tools and caches live in the workspace; R packages use the
-personal library selected by the R module.
+Python 3.11. Adjust the workspace paths if installing elsewhere. Python tools
+and caches live in the workspace; there is no R dependency to set up.
 
 ## Clone and install uv
 
@@ -47,37 +46,37 @@ the login shell's Anaconda installation.
 
 ```bash
 uv run python scripts/pull_covariates.py --data-root data init
-uv run python scripts/pull_covariates.py --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
+uv run python scripts/pull_covariates.py --data-root data pull \
+    delphi_nhsn delphi_nssp delphi_claims_inpatient delphi_claims_outpatient \
+    delphi_nwss delphi_nwss_aux hub_flusight_current hub_covid_current \
+    hub_rsv_current pophive_kinsa_ili
 ```
 
-These are the two CDC sources required by the current training dataset.
-Broader acquisition is optional. Downloading sources does not build the processed training tensor; see
-[the dataset workflow](data/build-b-finalized.md) for that next step.
+These are the sources `tapestry.dataset.build` reads (targets, claims,
+wastewater, Kinsa; see [the source catalog](data/sources.md)). The
+`cdc_nhsn_*`/`cdc_nssp_*` Socrata specs and the legacy/RSVNet Hub mirrors
+remain in the catalog for comparison and are not required for the training
+arrays. Downloading sources does not build them; see
+[the canonical workflow](workflows/training.md) for that next step.
 
 Scoring is pure Python (`tapestry.evaluation.totals`) -- no R module or
 package setup is needed. Use a Slurm allocation for training and substantial
 evaluation runs; the environment setup above does not request a GPU or submit
 a training job.
 
-## Build the frozen inputs
+## Build the training arrays
 
-Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The architecture sweep
-has 4,097 configurations × three seeds = 12,291 CV runs and 36,873 season fits;
-the essential suite has 14 configurations × three seeds = 42 CV runs. These are
-exploratory finalized-data comparisons, not prospective validation.
-
-Skip acquisition above when
-both CDC sources are already downloaded, then build the tensor:
+Run from `/proj/jlessler/projects/tapestry-all/tapestry`. Skip acquisition
+above once every source is already downloaded, then build both arrays:
 
 ```bash
-.venv/bin/python -m tapestry.model_data build \
-  --data-root data --start 2023-09-01 --end 2026-08-29 \
-  --output data/processed/build_b_finalized.npz
+.venv/bin/python -m tapestry.dataset.build build --data-root data
+.venv/bin/python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
+.venv/bin/python -m tapestry.dataset.build show --dataset data/processed/vintaged.npz
 ```
 
-The adjacent JSON records input provenance, including the NHSN and NSSP snapshot
-IDs. The tensor has shape `[157, 6, 2, 52]` with weekly dates September 2,
-2023–August 29, 2026.
+`finalized.npz` and `vintaged.npz` share one covariate name -> column index;
+see [the canonical workflow](workflows/training.md#2-build-the-two-training-arrays).
 
 Restore the pinned hub commits and population table before registering the
 experiment:
@@ -111,49 +110,41 @@ Keep these inputs fixed while an experiment runs. Experiments are not locked to 
 code version: each attempt records its git commit and whether the checkout had
 uncommitted changes, and results for the paper are rerun from a clean tree.
 
-## Prepare evaluation support
+## The frozen evaluation denominator
+
+`tapestry.experiment.planner`'s `fit`/`plan`/`rank` score every run against a
+pinned hub-ensemble denominator on the 23-quantile grid,
+`data/evaluation/b0_hub_comparison_q23` (`FROZEN` in `planner.py`). Preserve
+that directory across checkouts -- **there is currently no supported command
+to rebuild it from scratch.** It used to be built by bootstrap-fitting
+`tapestry.models.season_cv` and comparing against the hub with
+`tapestry.evaluation.compare`, both removed in the 2026-09 restructuring (see
+[docs/design/restructure-2026-unified.md](design/restructure-2026-unified.md)).
+Rebuilding it against the unified `Model`/array datasets is unimplemented; if
+you need a fresh one, that's new work, not a documented workflow step.
+
+## Run an experiment on the shared GPU partitions
 
 ```bash
 mkdir -p output/slurm
-sbatch scripts/b0_prepare.sbatch b0-sweep grid
+sbatch --job-name=my-experiment --array=0-13 scripts/jlessler.sbatch my-experiment
 ```
 
-This one-GPU job loads R, runs three one-epoch bootstrap fits with eight evaluation
-members, builds `data/evaluation/b0_hub_comparison_q23` on the hub's 23-quantile
-grid, and plans the named experiment (default `b0`) and suite (default `essential`)
-with `--device cuda`. The bootstrap fits supply evaluation dates and locations; they
-are separate from the experiment's fits. Completed support is reused. If support
-construction fails, inspect and archive its incomplete output directory before
-resubmitting. Support built earlier for five quantiles cannot score new runs, and
-`manager run` refuses to start with it.
-
-Wait for preparation to complete before distributing training.
-
-## Run the architecture sweep on the shared GPU partitions
-
-The sweep has 4,097 array tasks, one per configuration; each runs three seeds of
-three season folds and writes `totals.csv` for every seed. `scripts/b0_sweep.sbatch`
-requests one GPU, four CPUs, 16 GiB, and six hours on `a100-gpu,l40-gpu,jlessler`
-with QOS `gpu_access`, like InfluPaint's inpainting arrays. These limits are
-allowances; runtime has not been measured.
+`jlessler.sbatch` is model-agnostic: it reads the scenario from
+`experiment.json` and dispatches through `tapestry.experiment.dispatch`'s
+shared job queue, drawing from one queue across every array element instead
+of a static task-per-index slice (unlike the old `b0_array.sbatch`/
+`b0_sweep.sbatch`, archived in `scripts/archive/2026-09-b0-b1-b2/` along with
+the rest of the B0/B1/B2-era launchers). It requests one GPU, four CPUs,
+110 GiB, and two days on `g1803jles01`; set `LANES`/`GPUS` to change fitting
+processes per GPU and GPU count. See
+[the canonical workflow](workflows/training.md#shared-gpu-cluster-launch-longleaf).
 
 ```bash
-.venv/bin/python -m tapestry.models.manager status -e b0-sweep | tail -8
+.venv/bin/python -m tapestry.experiment.planner status -e b0-sweep | tail -8
 ```
 
-`status` prints one submission per chunk of 1,000 tasks, adding `OFFSET` so array
-indices stay small. For a fresh sweep:
-
-```bash
-sbatch --array=0-999 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=1000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=2000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=3000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-96 --export=ALL,OFFSET=4000 scripts/b0_sweep.sbatch b0-sweep
-```
-
-Logs are `output/slurm/b0-sweep-ARRAY_ID_INDEX.log`; the jobs.csv task is
-`OFFSET + INDEX`. When the arrays have finished, rank on a CPU allocation:
+When the array has finished, rank on a CPU allocation:
 
 ```bash
 .venv/bin/python -m tapestry.experiment.planner rank -e b0-sweep
@@ -251,23 +242,22 @@ each task records its allocation and logs the device model.
 14-scenario experiment reports `0,1,...,13`:
 
 ```bash
-.venv/bin/python -m tapestry.models.manager status -e b0-explore
-sbatch --array=0-13%6 scripts/b0_array.sbatch b0-explore
-# Replace ARRAY_ID with the returned job ID.
-sbatch --dependency=afterok:ARRAY_ID scripts/b0_compare.sbatch b0-explore
+.venv/bin/python -m tapestry.experiment.planner status -e b0-explore
+sbatch --job-name=b0-explore --array=0-13 scripts/jlessler.sbatch b0-explore
 ```
 
-Array task numbers are rows of `data/experiments/b0-explore/jobs.csv`. Each seed
-attempt writes only its own folder, so there is no prepare or collect step.
-`compare` refuses to score while any planned run is incomplete.
+Array task numbers are rows of `data/experiments/b0-explore/jobs.csv`. Each
+seed attempt writes only its own folder, so there is no prepare or collect
+step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
+(`NTFY=0` to disable); see [`scripts/b01_notify.py`](../scripts/b01_notify.py).
 
 ## Monitor and resume
 
 ```bash
 squeue -u "$USER"
-.venv/bin/python -m tapestry.models.manager status -e b0-explore
+.venv/bin/python -m tapestry.experiment.planner status -e b0-explore
 sacct -j ARRAY_ID --format=JobID,State,Elapsed,ExitCode,NodeList
-tail -f output/slurm/b0-array-ARRAY_ID_TASK_ID.log
+tail -f output/slurm/tapestry-ARRAY_ID_TASK_ID.log
 ```
 
 `status` rebuilds `runs.csv` (task, seed, status, attempt path, git commit) and
@@ -275,7 +265,7 @@ prints the tasks with unfinished seeds. Each attempt folder holds `run.json` and
 `run.log`. After the array has ended, resubmit only the printed tasks, for example:
 
 ```bash
-sbatch --array=2,9%6 scripts/b0_array.sbatch b0-explore
+sbatch --job-name=b0-explore --array=2,9 scripts/jlessler.sbatch b0-explore
 ```
 
 Completed seeds are skipped; failed or interrupted seeds restart all three folds in
