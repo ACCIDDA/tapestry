@@ -1,6 +1,8 @@
 """Shared seed queue for heterogeneous Slurm GPUs.
 
-NFS advisory locking serializes short queue updates. Independent seeds may run concurrently; each seed has exactly one owner. No static node slices.
+Moved unchanged from `models/dispatch.py`: model-agnostic already. NFS advisory
+locking serializes short queue updates. Independent seeds may run concurrently;
+each seed has exactly one owner. No static node slices.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -14,8 +16,7 @@ import subprocess
 import threading
 import time
 
-from .manager import check_inputs, parse_scenario, read_jobs, run_seed, save, seed_state
-
+from .planner import scenario_directory, read_jobs, run_seed, save, seed_state
 
 
 @contextmanager
@@ -36,7 +37,7 @@ def initialize(folder, retry_failed=False):
         for job in jobs:
             entry = state['tasks'].setdefault(str(job['task']), dict(active={}, seconds=[], seeds={}))
             active = entry.get('active') or {}
-            if 'seed' in active:  # Read older queues without losing ownership.
+            if 'seed' in active:
                 active = {str(active['seed']): active}
             entry['active'] = active
             for seed in job['seeds']:
@@ -59,9 +60,9 @@ class Queue:
         self.jobs = {str(job['task']): job for job in read_jobs(folder)}
         self.cost = {}
         for task, job in self.jobs.items():
-            s = parse_scenario(job['scenario'])
+            from tapestry.model.scenario import Scenario
+            s = Scenario.from_string(job['scenario'])
             components = {'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
-            # Scheduling estimate only: caps are not actual selected epoch counts.
             encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2.}[s.encoder]
             decoder = {'legacy': 1., 'residual2': 2.}[s.decoder]
             exchange = 1.4 if s.spatial == 'joint_location_target' else 1.
@@ -94,18 +95,13 @@ class Queue:
                 pending |= bool(todo) or bool(active)
                 if not todo:
                     continue
-                # Give an idle peer a polling interval to take the next seed.
                 if (idle_peer and entry.get('last_owner') == self.owner
                         and time.time() - entry.get('finished', 0) < 10):
                     continue
                 cost = self.cost[task]
-                # Long remaining chains start first; ties start longer individual fits.
                 eligible.append((cost * len(todo), cost, -int(task), task, todo[0]))
             if not eligible:
                 return None, pending
-            # A GPU already carrying above-average work takes a light job;
-            # an underloaded GPU takes the longest chain. Missing startup GPUs
-            # count as zero load, spreading heavy jobs as allocations come up.
             average = sum(loads.values()) / self.gpu_count
             chosen = min(eligible) if loads.get(self.owner, 0) > average else max(eligible)
             _, _, _, task, seed = chosen
@@ -127,7 +123,6 @@ class Queue:
             save(self.folder / 'dispatch.json', state)
 
     def reclaim(self):
-        """Release seeds whose Slurm allocation disappeared; never guess from age."""
         result = subprocess.run(['squeue', '-a', '-r', '-h', '-u', os.environ['USER'], '-o', '%i'],
                                 text=True, capture_output=True)
         if result.returncode:
@@ -136,7 +131,6 @@ class Queue:
         with queue_lock(self.folder):
             state = json.loads((self.folder / 'dispatch.json').read_text())
             changed = False
-            # Departed allocations must not count as idle peers forever.
             for owner in list(state.get('owners', {})):
                 if owner not in live:
                     del state['owners'][owner]
@@ -154,11 +148,11 @@ class Queue:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-e', '--experiment', default='B0.1')
+    parser.add_argument('-e', '--experiment', required=True)
     parser.add_argument('--lanes', type=int, required=True)
     parser.add_argument('--gpu-count', type=int, default=6)
-    parser.add_argument('--seeds', nargs='+', type=int, help='Run only these planned seeds; leave the full plan intact')
-    parser.add_argument('--retry-failed', action='store_true', help='Requeue failed seeds when restarting the dispatcher')
+    parser.add_argument('--seeds', nargs='+', type=int)
+    parser.add_argument('--retry-failed', action='store_true')
     args = parser.parse_args()
     if args.lanes < 1 or args.gpu_count < 1:
         parser.error('Positive lanes and gpu-count required')
@@ -167,7 +161,6 @@ def main():
     folder = Path('data/experiments') / args.experiment
     settings = json.loads((folder / 'experiment.json').read_text())
     settings['device'] = 'cuda'
-    check_inputs(settings)
     owner = (os.environ['SLURM_ARRAY_JOB_ID'] + '_' + os.environ['SLURM_ARRAY_TASK_ID']
              if 'SLURM_ARRAY_JOB_ID' in os.environ else os.environ['SLURM_JOB_ID'])
     queue = Queue(folder, owner, args.lanes, args.gpu_count, args.retry_failed, args.seeds)

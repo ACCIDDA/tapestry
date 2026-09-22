@@ -11,8 +11,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from tapestry.models.quantiles import LEVELS
-from tapestry.models.objective import US_WEIGHT
+from .quantiles import LEVELS
+from tapestry.model.objective import US_WEIGHT
 from .hubs import KEY, QCOLS, export
 from .scoring import match_forecasts
 
@@ -87,10 +87,10 @@ def case_cells(model, ensemble, case):
     return table.assign(target=case['target'], season=case['season'])
 
 
-def forecast_cells(run, frozen, stress='natural'):
-    """Shared frozen support, reference truth and ensemble for every stress condition."""
+def forecast_cells(run, frozen):
+    """Shared frozen support, reference truth and ensemble."""
     frozen = Path(frozen)
-    frames = export(run, stress)
+    frames = export(run)
     parts = []
     for case in frozen_cases(frozen):
         units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
@@ -119,26 +119,12 @@ def frozen_cases(frozen):
 
 
 def score_run(run, frozen):
-    """Write `totals.csv` for one saved season-CV run, B0 or B1.
-
-    A B1 run additionally writes `nowcast-totals.csv` for its two recent weeks,
-    which have no Hub ensemble and are scored against preliminary persistence.
-    """
+    """Write `totals.csv` for one saved season-CV run."""
     run, frozen = Path(run), Path(frozen)
     totals = cells_totals(forecast_cells(run, frozen))
-    if json.loads((run / 'manifest.json').read_text()).get('model') in ('B1', 'B2'):
-        stress_parts = []
-        for stress in ('natural', 'recent', 'gap', 'outage'):
-            cells = forecast_cells(run, frozen, stress)
-            cells.to_parquet(run / f'forecast-cells-{stress}.parquet', index=False)
-            stress_parts.append(cells_totals(cells).assign(stress=stress))
-        pd.concat(stress_parts, ignore_index=True).to_csv(run / 'stress-totals.csv', index=False)
     temporary = run / 'totals.tmp'
     totals.to_csv(temporary, index=False)
     temporary.replace(run / 'totals.csv')
-    if json.loads((run / 'manifest.json').read_text()).get('model') == 'B1':
-        from .nowcast import score_nowcasts
-        score_nowcasts(run)
     return totals
 
 

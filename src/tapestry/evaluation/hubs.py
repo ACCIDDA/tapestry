@@ -1,4 +1,10 @@
-"""Normalize saved model quantiles and pinned local hub Git blobs into task tables."""
+"""Normalize saved model quantiles and pinned local hub Git blobs into task tables.
+
+Trimmed to one export path: with a single `Model`/`Scenario` there is no more
+B0-vs-B1 branching (`export_b1`'s nowcast/recent-offset handling served the
+two-stage pipeline, which is deleted; the surviving direct pipeline only ever
+produces the four forecast horizons `evaluate` already writes).
+"""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -12,11 +18,10 @@ import numpy as np
 import pandas as pd
 
 from tapestry.data.geography import STATE_FIPS
-from tapestry.model_data.finalized import season
-from tapestry.models.season_cv import SEASONS
-from tapestry.models.quantiles import LEVELS, select_quantiles
+from tapestry.dataset.splits import SEASONS, season
+from .quantiles import LEVELS, select_quantiles
 
-B0_NAME = 'Tapestry-B0-finalized-CV'
+B0_NAME = 'Tapestry-unified-model'
 KEY = ['reference_date', 'target_end_date', 'location', 'horizon']
 QCOLS = [f'q{q:g}' for q in LEVELS]
 HUBS = {
@@ -37,20 +42,8 @@ def location_codes(values):
     return values.astype(str).str.replace(r'\.0$', '', regex=True).str.zfill(2)
 
 
-def export(run, stress="natural"):
-    """Hub task tables for one saved run, whichever model produced it.
-
-    Both models write the same `{(season, target): frame}` shape, so every
-    downstream scorer (`totals`, `sweep`) is model-agnostic; only the mapping
-    from saved forecasts to reference Saturdays differs.
-    """
-    run = Path(run)
-    manifest = json.loads((run / 'manifest.json').read_text())
-    return export_b1(run, manifest, stress) if manifest.get('model') in ('B1', 'B2') else export_b0(run)
-
-
-def export_b0(run):
-    """Exact hub mapping: reference=context_end+7d; hub horizon=internal lead-1."""
+def export(run):
+    """Hub task tables for one saved run: exact mapping context_end+7d -> reference."""
     postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
     frames = {}
     for held in SEASONS:
@@ -66,49 +59,11 @@ def export_b0(run):
                         'target_end_date': np.repeat(data['target_dates'].reshape(-1), l),
                         'location': np.tile([postal_to_fips[v] for v in data['locations']], n * h),
                         'horizon': np.tile(np.repeat(np.arange(h), l), n),
-                        'b0_original_truth': data['truth'][:, :, c, :].reshape(-1),
-                        'b0_original_mask': data['mask'][:, :, c, :].reshape(-1),
+                        'model_original_truth': data['truth'][:, :, c, :].reshape(-1),
+                        'model_original_mask': data['mask'][:, :, c, :].reshape(-1),
                     })
                     frame[QCOLS] = q.reshape(len(LEVELS), -1).T
-                    # Retain only held-out target dates, regardless of a revised truth's missingness.
-                    keep = frame.target_end_date.map(lambda d: season(date.fromisoformat(d))) == held
-                    frames[(held, target)] = frame[keep].copy()
-    return frames
-
-
-def export_b1(run, manifest, stress="natural"):
-    """Wednesday issuance maps to the following Saturday reference; horizons 0–3.
-
-    A fold's six-week output window straddles season boundaries, so its forecasts
-    include target dates in seasons it trained on. Only the held-out season is
-    genuinely out-of-sample, so each fold contributes that season alone. Recent
-    offsets (-2/-1) are nowcasts and are never relabelled as Hub forecasts; they
-    are scored separately by `tapestry.evaluation.nowcast`.
-    """
-    postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
-    prefix = f'{manifest["run_id"]}-s{manifest["seed"]}'
-    frames = {}
-    for held in SEASONS:
-        path = Path(run) / f'eval_{held}' / f'forecasts-{prefix}-{stress}.npz'
-        with np.load(path, allow_pickle=False) as data:
-            quantiles = select_quantiles(data['quantiles'], data['quantile_levels'])
-            future = data['horizons'] >= 0
-            dates = data['target_dates'][:, future]
-            n, h = dates.shape
-            locations = [postal_to_fips[str(loc)] for loc in data['locations']]
-            for spec in HUBS.values():
-                for target, c in spec['targets'].items():
-                    frame = pd.DataFrame({
-                        'reference_date': np.repeat(dates[:, 0], h * len(locations)),
-                        'target_end_date': np.repeat(dates.reshape(-1), len(locations)),
-                        'location': np.tile(locations, n * h),
-                        'horizon': np.tile(np.repeat(np.arange(h), len(locations)), n),
-                    })
-                    frame[QCOLS] = quantiles[:, :, future, c, :].reshape(len(LEVELS), -1).T
-                    # Retain only the fold's held-out season; folds never overlap.
-                    keep = frame.target_end_date.map(lambda d: season(date.fromisoformat(d))) == held
-                    if (held, target) in frames:
-                        raise ValueError(f'Duplicate B1 hub export for {held}/{target}; folds must not overlap')
+                    keep = frame.target_end_date.map(lambda d: season(d)) == held
                     frames[(held, target)] = frame[keep].copy()
     return frames
 
@@ -125,7 +80,6 @@ class GitHubSnapshot:
         return self.git('show', f'{self.commit}:{path}')
 
     def blobs(self, files):
-        # One process for all local blobs avoids thousands of Git invocations.
         with subprocess.Popen(['git', f'--git-dir={self.path}', 'cat-file', '--batch'],
                               stdin=subprocess.PIPE, stdout=subprocess.PIPE) as process:
             for sha, path in files:
@@ -161,7 +115,6 @@ def frozen_truth(snapshot, spec):
     for target in spec['targets']:
         part = df[df.target == target]
         vintage = part.as_of.max()
-        # Full publisher release: no per-row fallback to an earlier release after omissions.
         selected = part[part.as_of == vintage][['target', 'target_end_date', 'location', 'observation']].drop_duplicates()
         if selected.duplicated(['target', 'target_end_date', 'location']).any():
             raise ValueError(f'Conflicting truth in {target} release {vintage}')
@@ -196,6 +149,7 @@ def wide_quantiles(df, target):
 
 
 def extract_hub(hub, mirrors, cache, allowed_refs):
+    """Offline preparation of the frozen ensemble-supported task cache."""
     spec = HUBS[hub]
     snapshot = GitHubSnapshot(Path(mirrors) / f'hub_{hub}_current.git')
     folder = Path(cache) / hub
@@ -212,7 +166,6 @@ def extract_hub(hub, mirrors, cache, allowed_refs):
     audits, files_read = [], 0
     for i, (model, files) in enumerate(sorted(groups.items())):
         parts = []
-        # Hub file names begin with the reference Saturday.
         files = [(sha, path) for sha, path in files if Path(path).name[:10] in allowed_refs]
         for path, content in snapshot.blobs(files):
             if content.startswith(b'version https://git-lfs'):

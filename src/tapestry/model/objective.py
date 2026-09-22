@@ -1,9 +1,11 @@
-"""B0 native-unit loss normalization and explicit season/target/location weights."""
-from datetime import date
+"""Native-unit loss normalization and explicit season/target/location weights.
 
+Unchanged fair-CRPS loss weighting (docs/design/restructure-2026-unified.md §6:
+"No change to the fair-CRPS loss ... only where that logic lives").
+"""
 import numpy as np
 
-from tapestry.model_data.finalized import season
+from tapestry.dataset.splits import season
 
 TARGET_WEIGHTS = (1., 1., 1., .5, .5, .5)
 US_WEIGHT = .20
@@ -14,6 +16,13 @@ LOSS_DEFINITION = ('Native-unit fair CRPS / training channel-location Q95; equal
                    'Q95 pools toward channel Q95 below 26 observed weeks; floors 1 admission/.001 ED. '
                    'Absent geography groups are renormalized over available groups. '
                    'Training normalization is a surrogate, not ensemble-relative WIS.')
+
+LOSS_WEIGHTS = {
+    'influenza_first': [1, .1, .1, .1, .1, .1],
+    'balanced_admissions': [1, 1, 1, .1, .1, .1],
+    'flu_only': [1, 0, 0, 0, 0, 0],
+    'objective': list(TARGET_WEIGHTS),
+}
 
 
 def loss_scales(panel):
@@ -38,11 +47,10 @@ def loss_cell_weights(episodes, channel_weights=TARGET_WEIGHTS):
     """Fixed [N,H,C,L] coefficients summing to one over the whole partition.
 
     Group by target-date season, then eligible channels, then geography and
-    location. Average valid dates/horizons within each location. Computing this
-    once avoids random minibatch missingness changing the objective.
+    location. Average valid dates/horizons within each location.
     """
     mask = np.stack([e['Y'][:, :, 1, :].astype(bool) for e in episodes])
-    dates = np.array([[season(date.fromisoformat(day)) for day in e['target_dates']] for e in episodes])
+    dates = np.array([[season(day) for day in e['target_dates']] for e in episodes])
     locations = np.asarray(episodes[0]['locations'])
     channel_weights = np.asarray(channel_weights, dtype=float)
     if channel_weights.shape != (6,) or np.any(channel_weights < 0) or not np.isfinite(channel_weights).all():

@@ -1,9 +1,6 @@
-"""Run provenance and atomic JSON writes, shared by every model and tool.
+"""Run provenance and atomic JSON writes, shared by every experiment tool.
 
-Experiments are not locked to a code or data version, so what a run recorded
-about itself is the only reliable account of how it was produced. These helpers
-have no project dependencies, so any module can record provenance without
-importing the experiment manager.
+Moved unchanged from `models/provenance.py`: model-agnostic already.
 """
 from datetime import datetime, timezone
 import json
@@ -12,8 +9,9 @@ from pathlib import Path
 import socket
 import subprocess
 
-SEASONS = ('2023-2024', '2024-2025', '2025-2026')
-CALENDAR_START = '2023-09-02'  # First modelled Saturday, shared by B0 and B1.
+from tapestry.dataset.splits import SEASONS
+
+CALENDAR_START = '2023-09-02'  # First modelled Saturday.
 SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')
 
 
@@ -43,7 +41,6 @@ def git_state():
 
 
 def torch_state():
-    """The wheel that produced the numbers; CUDA builds differ in supported architectures."""
     try:
         import torch
         return dict(torch_version=torch.__version__)
