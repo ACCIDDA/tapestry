@@ -345,9 +345,11 @@ that score labels stay inside the held-out season.
   held-out seasons, up to two configurations (default: the two best ranked,
   each at its lowest seed, seeds not pooled) plus the hub ensemble where frozen
   support exists, default reference dates = the 25th/50th/75th percentile
-  positions of each season's score reference dates; (3) a seaborn pairplot, one
-  point per seed coloured by configuration: WIS ratio, 50/80/90/95% coverage
-  and the three component ratios, ensemble values dashed and nominal coverage
+  positions of each season's score reference dates; (3) a seaborn PairGrid dot plot
+  (replaced the pairplot, user request 2026-09-22): one row per configuration
+  ranked by mean combined WIS ratio, one column per metric (WIS ratio for all,
+  states/DC and US; 50/80/90/95% coverage; the three component ratios), one dot
+  per seed and a bar at the mean, ensemble values dashed and nominal coverage
   dotted; (4) per selected configuration, a location x season heatmap of the
   WIS ratio (targets combined with the ranking's target weights over the
   targets available there, mean over seeds, plus the mean of seasons). Every
@@ -504,3 +506,8 @@ plotting, report and dead evaluation code and `scripts/archive/` were deleted
 (§6). matplotlib and seaborn, already installed in the checkout's `.venv` but
 undeclared, were added to the `evaluation` extra so `uv sync` on the cluster
 keeps them.
+
+- 2026-09-22: `rank` writes `docs/results/<experiment>/index.md` with a fixed
+  layout -- figures, then a hand-written write-up kept across regenerations, then
+  the ranking table. Figures are embedded as base64 PNG so they show in the page in
+  any viewer (user: "not one click away"); cost: pages of a few MB.

@@ -15,11 +15,12 @@ Written by `planner rank` into `<ranking>/plots/` and by `planner plots -e NAME
    are not pooled) and the hub ensemble (frozen support, where it exists). Default
    reference dates: the 25th, 50th and 75th percentile positions of each season's
    score reference dates; `--dates` overrides.
-3. `pairplot.png`: one point per run (seed), coloured by configuration: combined WIS
-   ratio, 50/80/90/95% coverage and the WIS ratio's decomposition into dispersion,
-   under- and over-prediction (each component / ensemble WIS per location, weighted
-   exactly like the score, so the three sum to the WIS ratio). Grey dashed lines: the
-   ensemble's value; red: nominal coverage.
+3. `dotplot.png` (seaborn PairGrid dot plot, user request 2026-09-22): one row per
+   configuration ranked by mean combined WIS ratio, one column per metric (combined WIS
+   ratio for all / states-DC / US, 50/80/90/95% coverage, dispersion, under- and
+   over-prediction over ensemble WIS, weighted exactly like the score so the three sum
+   to the WIS ratio), one dot per seed and a bar at the seed mean. Grey dashed lines:
+   the ensemble's value; red: nominal coverage.
 4. `heatmap-*.png`: per selected configuration, WIS ratio (model / ensemble total WIS,
    all horizons) by location x season, targets combined with the ranking's target
    weights over the targets available there, mean over seeds; last column = mean of
@@ -160,38 +161,43 @@ def fans(panel, runs, configs, frozen, dates, output):
     return paths
 
 
-def pairplot(seasons, weights, output):
-    """Figure 3: per-run metrics, weighted like the score (geography 'all')."""
-    columns = {'WIS ratio': 'wis_ratio', **{f'{c}% coverage': f'model_coverage_{c}' for c in COVERAGE},
-               **{f'{c} / ens. WIS': f'model_{c}_ratio' for c in COMPONENTS}}
-    reference = {'WIS ratio': 1., **{f'{c}% coverage': f'ensemble_coverage_{c}' for c in COVERAGE},
-                 **{f'{c} / ens. WIS': f'ensemble_{c}_ratio' for c in COMPONENTS}}
-    combined = lambda value: run_scores(seasons, weights, value).query("geography == 'all'").set_index(['config_id', 'seed']).combined
-    table = pd.DataFrame({name: combined(value) for name, value in columns.items()}).reset_index()
-    table['configuration'] = table.config_id.fillna('').map(label)
-    for name, value in reference.items():
-        if isinstance(value, str):
-            reference[name] = float(combined(value).iloc[0])  # identical for every run (same frozen tasks)
+def dotplot(seasons, weights, output):
+    """Figure 3 (seaborn PairGrid dot plot): one row per configuration, ranked by the
+    main score (mean combined WIS ratio over seeds, best on top); one column per metric;
+    one dot per seed, black bar = seed mean. Metrics are weighted like the score:
+    combined WIS ratio (all locations, states/DC, US), 50/80/90/95% coverage, and the
+    WIS decomposition (dispersion, under-, over-prediction over ensemble WIS; they sum
+    to the WIS ratio). Grey dashed = ensemble's value, red dotted = nominal coverage."""
+    scored = lambda value, geography='all': run_scores(seasons, weights, value).query(
+        'geography == @geography').set_index(['config_id', 'seed']).combined
+    columns = {'WIS ratio': ('wis_ratio', 'all'), 'WIS ratio, states/DC': ('wis_ratio', 'states_dc'),
+               'WIS ratio, US': ('wis_ratio', 'US'),
+               **{f'{c}% coverage': (f'model_coverage_{c}', 'all') for c in COVERAGE},
+               **{f'{c} / ens. WIS': (f'model_{c}_ratio', 'all') for c in COMPONENTS}}
+    reference = {'WIS ratio': 1., 'WIS ratio, states/DC': 1., 'WIS ratio, US': 1.,
+                 **{f'{c}% coverage': float(scored(f'ensemble_coverage_{c}').iloc[0]) for c in COVERAGE},
+                 **{f'{c} / ens. WIS': float(scored(f'ensemble_{c}_ratio').iloc[0]) for c in COMPONENTS}}
     nominal = {f'{c}% coverage': c / 100 for c in COVERAGE}
-    grid = sns.pairplot(table, vars=list(columns), hue='configuration', diag_kind='hist', corner=True,
-                        plot_kws=dict(s=30, alpha=.8), height=1.7)
-    for i, y in enumerate(columns):
-        for j, x in enumerate(columns):
-            ax = grid.axes[i][j]
-            if ax is None:
-                continue
-            ax.axvline(reference[x], color=ENSEMBLE_COLOR, ls='--', lw=.8)
-            if x in nominal:
-                ax.axvline(nominal[x], color='red', ls=':', lw=.8)
-            if i != j:
-                ax.axhline(reference[y], color=ENSEMBLE_COLOR, ls='--', lw=.8)
-                if y in nominal:
-                    ax.axhline(nominal[y], color='red', ls=':', lw=.8)
-    grid.figure.suptitle('Per-run performance relative to the hub ensemble (one point per seed); '
-                         'grey dashed = ensemble, red dotted = nominal coverage', y=1.01)
-    grid.figure.savefig(output / 'pairplot.png', dpi=110, bbox_inches='tight')
-    plt.close(grid.figure)
-    return [output / 'pairplot.png']
+    table = pd.DataFrame({name: scored(*value) for name, value in columns.items()}).reset_index()
+    table['configuration'] = table.config_id.fillna('').map(label)
+    order = list(table.groupby('configuration')['WIS ratio'].mean().sort_values().index)
+    grid = sns.PairGrid(table, x_vars=list(columns), y_vars=['configuration'],
+                        height=max(1.8, .45 * len(order) + 1), aspect=.55)
+    grid.map(sns.stripplot, order=order, size=6, orient='h', jitter=False, linewidth=.5,
+             edgecolor='w', color=MODEL_COLORS[0], alpha=.8)
+    for ax, name in zip(grid.axes.flat, columns):
+        means = table.groupby('configuration')[name].mean().reindex(order)
+        ax.scatter(means.values, range(len(order)), marker='|', s=250, color='k', zorder=3)
+        ax.axvline(reference[name], color=ENSEMBLE_COLOR, ls='--', lw=.8)
+        if name in nominal:
+            ax.axvline(nominal[name], color='red', ls=':', lw=.8)
+        ax.set(xlabel='', ylabel='', title=name)
+        ax.xaxis.grid(False)
+        ax.yaxis.grid(True)
+    sns.despine(left=True, bottom=True)
+    grid.figure.suptitle('Configurations ranked by combined WIS ratio (best on top); dot = seed, bar = mean; '
+                         'grey dashed = ensemble, red dotted = nominal coverage', y=1.02)
+    return [_save(grid.figure, output / 'dotplot.png')]
 
 
 def heatmaps(runs, configs, weights, output):
@@ -253,26 +259,24 @@ def plot_experiment(folder, ranking, configs=None, dates=None):
     seasons = pd.read_csv(ranking / 'season_scores.csv', keep_default_na=False, na_values=[''])
     seasons['config_id'] = seasons.config_id.fillna('')
     return [*cv_layout(panel, scenarios, output), *fans(panel, runs, configs, settings['frozen'], dates, output),
-            *pairplot(seasons, weights, output), *heatmaps(runs, configs, weights, output)]
+            *dotplot(seasons, weights, output), *heatmaps(runs, configs, weights, output)]
 
 
 WRITEUP_START, WRITEUP_END = '<!-- write-up: kept across regenerations -->', '<!-- end write-up -->'
 FIGURE_ORDER = (('cv-layout-*.png', 'Cross-validation layout'), ('fans-US.png', 'Forecast fans, US'),
-                ('fans-NC.png', 'Forecast fans, NC'), ('pairplot.png', 'Per-seed performance against the ensemble'),
+                ('fans-NC.png', 'Forecast fans, NC'), ('dotplot.png', 'Configurations ranked, per-seed metrics against the ensemble'),
                 ('heatmap-*.png', 'WIS ratio by location and season'))
 
 
 def write_report(folder, ranking, root='docs/results'):
     """`docs/results/<experiment>/index.md`: the fixed figures, then the hand-written
     write-up (the text between the write-up markers survives every regeneration), then
-    the ranking table. Figures are copied next to the page so it stands alone."""
-    import shutil
+    the ranking table. Figures are embedded in the page as base64 PNG data (user request
+    2026-09-22: visible in the page itself, in any viewer, not one click away)."""
+    import base64
     folder, ranking = Path(folder), Path(ranking)
     page_dir = Path(root) / folder.name
-    figures = page_dir / 'figures'
-    if figures.exists():
-        shutil.rmtree(figures)
-    figures.mkdir(parents=True)
+    page_dir.mkdir(parents=True, exist_ok=True)
     page = page_dir / 'index.md'
     writeup = '_Not written yet._'
     if page.exists():
@@ -289,9 +293,9 @@ def write_report(folder, ranking, root='docs/results'):
              'Lower WIS ratio is better; 1 = hub ensemble. Figures and table are regenerated by `planner rank`.', '']
     for pattern, title in FIGURE_ORDER:
         for path in sorted((ranking / 'plots').glob(pattern)):
-            shutil.copy2(path, figures / path.name)
+            data = base64.b64encode(path.read_bytes()).decode()
             lines += [f'## {title}' + (f' ({path.stem})' if '*' in pattern else ''), '',
-                      f'![{path.stem}](figures/{path.name})', '']
+                      f'![{path.stem}](data:image/png;base64,{data})', '']
     lines += ['## Write-up', '', WRITEUP_START, writeup, WRITEUP_END, '', '## Ranking', '']
     targets = [c.removesuffix('_mean') for c in ranked.columns
                if c.endswith('_mean') and c.startswith('wk inc')]

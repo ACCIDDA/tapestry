@@ -120,9 +120,12 @@ ranking's `manifest.json` and part of its folder hash. It writes
 `configuration_ranking.csv` under `ranking-<hash>/`, plus the four figures in
 `ranking-<hash>/plots/`: `cv-layout-*.png` (each week's role per fold),
 `fans-US.png`/`fans-NC.png` (two best configurations + hub ensemble),
-`pairplot.png` (per-seed WIS ratio, coverage, WIS decomposition) and
+`dotplot.png` (seaborn PairGrid dot plot: configurations ranked by the score, one
+column per metric -- WIS ratio all/states/US, coverage, WIS decomposition -- one dot
+per seed) and
 `heatmap-*.png` (WIS ratio by location x season). Finally it writes the report page
-`docs/results/<experiment>/index.md` (figures copied to `figures/` beside it): the
+`docs/results/<experiment>/index.md` (figures embedded in the page as base64 PNG, so
+they display in any viewer; a page is about 2-3 MB): the
 figures in that fixed order, then a **Write-up** section for hand-written text, then
 the ranking table. Text between the write-up markers is kept when `rank` regenerates
 the page; everything else is overwritten. When ranking on Longleaf, bring the page
