@@ -34,8 +34,8 @@ uses it). Fields: everything in today's `TrainingScenario` **minus**
 `loss_weights` string alias (keep it — cheap), **plus** from B1:
 `mask_rate`, `mask_recent`, `mask_gap`, `mask_outage`, **plus** from B2:
 `covariate_set` (a `+`-joined subset of `SOURCE_GROUPS`, `''` = no
-covariates), `input_mode` (`finalized` | `vintaged` — which prebuilt array,
-§2, the scenario trains against).
+covariates), `input_mode` (`finalized` | `vintaged` — how episodes are cut from the one
+panel, §3).
 
 **String codec — the actual fix for "add to the string and it resolves"**:
 replace the positional `prefix + fixed-order fields` scheme with
@@ -106,122 +106,183 @@ Saturday target, only state + national geography, plus wastewater):
 - Keep `explorer/` (download/version/browse) as the generic layer over
   `RawDataRepository` — it already does "display" (server + static export)
   and doesn't need model-specific changes. Trim `catalog.py`'s `_SPECS` to
-  the sources actually used by the two training arrays (§3) plus what the
+  the sources actually used by the training panel (§3) plus what the
   explorer needs to show provenance: NHSN final/preliminary, NSSP,
   Delphi claims inpatient/outpatient, derived NWSS state indices, PopHive
   Kinsa, Hub current + git-mirror target data. Delete specs for anything else
   (comprehensive/legacy Hub variants no longer scored, county sources).
 
-**Extraction is one function with two axes** (target vs. covariate,
-vintaged vs. finalized), in `src/tapestry/dataset/extract.py`:
+**Extraction** lives in `src/tapestry/dataset/extract.py` (rewritten
+2026-09-22 for speed, same policy). Each archive-backed source (six targets,
+four Delphi claims covariates) is read once into a revision table
+(`revisions(name)`: tier, release, reference Saturday, location, value) and
+resolved as of any cutoff day by `resolve(revisions, day, dates)`; NWSS indices
+and Kinsa, which are report-dated files rather than archives, resolve through
+`resolve_reports`. `extract(name, as_of)` wraps both for ad-hoc use. The
+vintage policy, stated in the module docstring and unchanged from the
+row-by-row `VintageArchive` it replaced:
 
-```python
-def extract(name: str, kind: Literal['target', 'covariate'],
-            version: Literal['vintaged', 'finalized'],
-            as_of: date | None = None) -> pd.DataFrame:
-    ...
+- Three tiers per target: native Hub `as_of` full snapshots, Hub Git-history
+  full snapshots (every registered commit is a full snapshot, including empty
+  ones, so deletions stay deleted), and Delphi per-observation report-time
+  revisions. A location is covered by a Hub tier from the earliest reference
+  week in any eligible release of that tier; covered cells take the latest
+  eligible snapshot's value (absent = unavailable, no fallback). Native coverage
+  precedes Git, which precedes Delphi; outside Hub coverage the latest eligible
+  Delphi revision is used (a missing latest revision is unavailable).
+- Same-release, same-cell disagreements (including one missing, one present)
+  are unavailable, never resolved by file order.
+- A release is visible at a cutoff day when released by 23:59:59.999999 UTC
+  that day (so a Wednesday issuance sees data released on that Wednesday). The
+  cutoff is always given as a calendar day: `cutoff_time` rejects an
+  already-converted timestamp, which is how the previous `build_vintaged`
+  crashed (`cutoff_time` applied twice).
+- Values must be finite and nonnegative; NSSP percentages at most 100 and
+  divided by 100. Claims archives are daily; only Saturday reference days are
+  kept (as `model_data/b2.py:_claims_frame` did), no weekly averaging; rows with
+  a non-native Delphi `fill_method` are dropped.
+- NWSS and Kinsa: latest non-missing value reported on or before the cutoff
+  day. Kinsa's weekly value is the Saturday-ending mean of seven daily values,
+  reported once all seven are visible; its as-of archive begins 2026-04-06, so
+  vintaged episodes before then have no Kinsa.
+
+## 3. One dataset panel
+
+**User decision 2026-09-22**: one dataset array, `data/processed/panel.npz`,
+replaces `finalized.npz` + `vintaged.npz`, and the lookback is no longer fixed
+at build time. Built by `python -m tapestry.dataset.build build` (one process per
+source, about a minute; see the decision log for timings).
+
+```
+dates:                    datetime64[D] [T]      Saturdays from CALENDAR_START (2023-09-02) to the build day
+locations:                str [L]                50 states + DC + 'US'
+target_names:             str [C=6]              nhsn_{flu,covid,rsv}_admissions, nssp_{flu,covid,rsv}_proportion
+targets:                  float32 [T, L, C]      truth, NaN = unavailable
+covariate_names:          str [K]                inpatient/outpatient claims, NWSS wval_like/pct_rank
+covariates:               float32 [T, L, K]      truth, NaN = unavailable
+covariate_mask:           bool [T, L, K]         = ~isnan(covariates)
+covariate_national_names: str [Kn]               kinsa_ili
+covariates_national:      float32 [T, Kn]        truth (national only)
+issuance_dates:           datetime64[D] [W]      Wednesdays from 2023-08-30 to the build day
+asof_targets:             float32 [W, R, L, C]   visible at the issuance cutoff, R = 2
+asof_covariates:          float32 [W, D, L, K]   visible at the issuance cutoff, D = 52
+asof_covariates_national: float32 [W, D, Kn]     visible at the issuance cutoff
+metadata:                 JSON                   build constants, truth day, raw snapshot ids, per-source seconds
 ```
 
-`finalized` always reads the latest snapshot truth (today's
-`finalized.py`/`b2.py` "final" path). `vintaged` reads the archive as-of a
-cutoff (today's `VintageArchive.resolve`); `as_of=None` means "every
-Wednesday issuance," matching what the array builders need. This function is
-the single place both array builders (§3) and any ad-hoc notebook/analysis
-code call — no more separate bespoke read paths per dataset.
+Overlay cell `[w, j]` refers to reference week `context_end(w) - (depth-1-j)`
+weeks, where `context_end(w)` is the Saturday four days before issuance `w`.
+Overlay cells before `CALENDAR_START` are unavailable.
 
-## 3. Two training arrays, one covariate index
+Build choices:
+- **Truth** is resolved at the end of the build day (`--truth-day`, default
+  today, recorded in metadata). The previous `vintaged.npz` used the last
+  Wednesday instead; one truth day for both modes is simpler and differs only
+  by revisions released since that Wednesday.
+- **One calendar for both modes, starting 2023-09-02.** Nothing earlier exists
+  in the panel; episodes pad earlier context weeks as unavailable. The previous
+  vintaged builder resolved context weeks before 2023-09-02 from the archives;
+  those weeks belong to seasons outside cross-validation (masked in training
+  anyway) except August 2023, which now only affects the context of the first
+  2023-24 score origins.
+- **R = `ASOF_TARGET_WEEKS` = 2**: the two most recent context weeks of a
+  vintaged episode take their as-of target values, as the previous vintaged
+  builder did (the application needs revision pairs only for the past two
+  observation weeks, icare.md 2026-09-18).
+- **D = `ASOF_COVARIATE_WEEKS` = 52** (a choice made in implementation, flagged
+  for the user): the previous vintaged builder resolved *every* covariate week
+  of a vintaged window as of the issuance, not only the last R. To preserve
+  exactly what a vintaged episode saw, without fixing the lookback, the overlay
+  keeps as-of covariates for 52 context weeks, and a vintaged scenario with
+  covariates and lookback > 52 raises. Setting D = R would instead fill older
+  covariate weeks with later-revised truth.
+- `known_final` is not stored; it follows from overlay availability (below).
 
-Replace `model_data/finalized.py` + `model_data/wednesday.py` +
-`model_data/b2.py` (three separate `.npz` builders with three separate
-covariate/column conventions) with **one builder module**,
-`src/tapestry/dataset/build.py`, producing exactly two artifacts under
-`data/processed/`:
+**Episodes** (`src/tapestry/dataset/episodes.py`, one builder, one switch):
+- `input_mode='finalized'`: one episode per calendar Saturday origin t, context
+  weeks t-lookback+1..t, targets t+1..t+4, all truth; origins from the first
+  calendar week through the last whose four targets fall in the calendar.
+  Every visible context cell is known-final.
+- `input_mode='vintaged'`: one episode per Wednesday issuance, origin its
+  context end (issuance - 4 days), targets the four following Saturdays
+  (reference date = issuance + 3 days, horizon 0 in hub terms). Exactly what the
+  previous vintaged builder materialized: the last min(R, lookback) context
+  weeks take the as-of value where one was visible (known_final False) and fall
+  back to truth where nothing was visible yet (known_final True where
+  available); older context weeks and all target weeks are truth; covariates
+  are as of the issuance for every context week.
+- Kept only if some context cell and some target cell are available.
 
-- `finalized.npz` — truth-only array, no revision structure.
-- `vintaged.npz` — one entry per historical Wednesday issuance, i.e. what
-  today's `WednesdayDataset.episodes()` yields, but carrying the same
-  covariate panel and index as `finalized.npz` (today `b2.py` only attaches
-  to the Wednesday path — keep it that way; `finalized.npz` covariates are
-  included too for symmetry/backtesting even though production scenarios
-  with `input_mode='finalized'` won't use them).
+`COVARIATE_GROUPS` (in `build.py`) stays the single source of truth for
+covariate order; a scenario's `covariate_set` expands through
+`covariate_names_for`. A national-only name is broadcast to the `US` column.
 
-**Array layout (npz keys), shared by both files**:
+## 4. Cross-validation
 
-```
-dates:            datetime64[D], shape [T]      # Saturday target weeks
-locations:        str,           shape [L]      # 2-letter state codes + 'US'
-targets:          float32,       shape [T, L, 6]
-target_names:     str,           shape [6]      # index via {n: i for i, n in enumerate(target_names)}
-covariates:       float32,       shape [T, L, K]      # state-resolved covariates, NaN = unavailable
-covariate_mask:   bool,          shape [T, L, K]
-covariate_names:  str,           shape [K]            # index via {n: i for i, n in enumerate(covariate_names)}
-covariates_national: float32,    shape [T, Kn]         # national-only sources (currently just kinsa_ili)
-covariate_national_names: str,   shape [Kn]
-```
+`src/tapestry/dataset/cv.py` (replaces `splits.py`, 2026-09-22). One function,
+`cv.fold(panel, scenario, held_out, inner=False)`, called by the planner.
+Policy = the pre-refactor `models/season_cv.py` one (`fold_data`,
+`masked_episodes`, `validation_split`, `channel_scales`), implemented by
+masking the array rather than selecting episodes:
 
-`vintaged.npz` additionally carries an `issuance` axis in front of `T`
-(shape `[I, T_i, ...]` is ragged per issuance in general; store instead as a
-flat table of episodes exactly like today's `WednesdayDataset.episodes()`,
-i.e. add `issuance_dates: datetime64[D], shape [I]` and index `targets`/
-`covariates` as `[I, lookback+horizon, L, ...]` — one episode per issuance,
-which is what the model actually consumes). Both files use the *same*
-`covariate_names`/`covariate_national_names` ordering so a `covariate_set`
-string resolves identically regardless of which array a scenario points at.
+- **Fold**: copy the panel; every week outside the two training seasons (the
+  held-out season, and weeks in no CV season) becomes unavailable in targets,
+  covariates and the overlay (overlay cells by reference week). Training
+  episodes are cut from the masked panel with origins in training weeks only,
+  so held-out weeks vanish from inputs, labels, loss scales, loss weights and
+  covariate standardization (computed from the training episodes' visible
+  covariate cells).
+- **Inner early-stopping fit** (`patience > 0`): additionally hide weeks 4-6,
+  20-22 and 36-38 of each training season (3 of every 16, offset 4).
+  Validation episodes are cut from the training panel (hidden weeks visible),
+  with origins in the four training weeks before each hidden week, and score
+  only hidden weeks.
+- **Refit** after epoch selection: the fold's training panel without the
+  validation mask (full training seasons, as old B0).
+- **Score**: origins in the held-out season from the unmasked panel, from its
+  first week at any lookback (padding); earlier weeks are allowed as context,
+  only labels inside the held-out season count.
 
-`COVARIATE_GROUPS` (today's `b2.py`) becomes the single source of truth for
-`covariate_names` order and is reused, unchanged, to expand a scenario's
-`covariate_set` string into column indices.
+`tests/test_dataset.py` checks that no held-out or validation week value
+reaches any training input, label, loss scale/weight or covariate scale, and
+that score labels stay inside the held-out season.
 
-**Split definition** — `src/tapestry/dataset/splits.py`:
+## 5. Scoring: pure Python only, one score
 
-```python
-@dataclass(frozen=True)
-class Split:
-    train: np.ndarray   # boolean mask over the array's leading time axis
-    val: np.ndarray
-    score: np.ndarray
+- No R, no EpiBench, no `scoringutils`: `src/tapestry/evaluation/totals.py`
+  (`quantile_scores`) is the only scorer, against the frozen hub-ensemble task
+  support in `data/evaluation/b0_hub_comparison_q23` (truth and ensemble
+  quantiles frozen there; model forecasts from each run's `forecasts.npz`).
+- **User decision 2026-09-22: exactly one score.** Per target and season, the
+  mean of per-location WIS ratios (total model WIS / total ensemble WIS on
+  identical tasks, all eligible dates and horizons 0-3): states/DC ratios
+  average equally and share 1 - w, the US ratio gets w. Within a season,
+  targets combine as (2 x admissions + ED) / 9 (weights 1 and .5); seasons
+  count equally; configurations are the mean and SD over seeds.
+  `SCORE_VERSION = location-relative-season-first-v2`.
+- w is an experiment setting: `plan --us-score-weight` (default 0.2), recorded
+  in `experiment.json` and in each ranking manifest (`totals rank --us-weight`
+  for the standalone scorer). It is independent of the loss's US weight
+  (`model.objective.US_WEIGHT`).
+- The pooled total-WIS ratio (sum of model WIS / sum of ensemble WIS) is no
+  longer computed. Summed `model_wis`/`ensemble_wis` columns remain in
+  `totals.csv` and `season_scores.csv` as raw totals only, not a ranking.
+- `fit` scores against `settings['frozen']` (passed as `--frozen`), not a module
+  constant. `plan` records the sha256 of `panel.npz` and of the frozen
+  `manifest.json` in `experiment.json`; `run_seed` (local `run` and the Slurm
+  dispatcher) refuses to fit when either changed.
 
-def season_split(array, held_out_season: str, val_weeks=3, val_spacing=16, val_offset=4) -> Split:
-    ...
-```
-
-One function, one place, reused by both arrays and by `rank`/`compare` in
-the experiment planner. This directly replaces `season_cv.py`'s
-`fold_data`/`masked_episodes`/`validation_split`, generalized to operate on
-the array schema above instead of bespoke per-model tensors.
-
-## 4. Scoring: pure Python only
-
-- Delete `src/tapestry/evaluation/epibench.py`,
-  `scripts/validate_epibench_evaluation.py`, `scripts/setup_r.R`,
-  `tests/test_hub_evaluation.py`'s EpiBench cross-check cases, and the
-  `epibenchmark` pip dependency. No R, no subprocess to `Rscript`, no
-  `scoringutils`.
-- Keep `src/tapestry/evaluation/totals.py`'s WIS math
-  (`quantile_scores`, `SCORE_DEFINITION`/`SCORE_VERSION` aggregation) as the
-  only scorer, but repoint its inputs at the two arrays from §3 instead of
-  Hub-format CSVs/frozen-ensemble parquet: truth comes from
-  `finalized.npz`/`vintaged.npz`'s `targets`, forecast samples come from a
-  scenario run's `forecasts.npz`, and `Split.score` (§3) selects which weeks
-  count. Keep the frozen ensemble-vs-model ratio (`SCORE_VERSION
-  location-relative-season-first-us20-v1`) unchanged — it's the actual
-  scoring policy, not something in scope to simplify.
-- `evaluation/sweep.py`, `compare.py`, `hubs.py`, `nowcast.py`,
-  `decisive.py`, `pdf_report.py` are audited by the implementer and trimmed
-  to whatever still calls into `totals.py`'s new array-based entry point;
-  anything that exists solely to feed EpiBench or the deleted pipelines is
-  deleted outright rather than kept dark.
-
-## 5. New module layout
+## 6. New module layout
 
 ```
 src/tapestry/
   data/            # unchanged: raw acquisition/versioning (repository.py, catalog.py trimmed, sources/)
   explorer/        # unchanged: browse/display over data/
   dataset/         # NEW, replaces model_data/
-    extract.py     # §2 extract()
-    build.py       # §3 builds finalized.npz + vintaged.npz
-    splits.py      # §3 Split/season_split
+    extract.py     # §2 revision tables, resolve() as of a cutoff, extract()
+    build.py       # §3 builds panel.npz
+    episodes.py    # §3 one episode builder, input_mode switch
+    cv.py          # §4 season folds by masking the panel
   model/           # NEW, replaces models/ B0/B1/B2 classes + scenarios.py stack
     network.py     # the Model nn.Module (today's B0 + B1-direct wrapping)
     scenario.py    # Scenario dataclass + string codec
@@ -231,15 +292,15 @@ src/tapestry/
     dispatch.py    # unchanged Slurm queue, moved
     provenance.py  # unchanged, moved
   evaluation/
-    totals.py      # WIS, repointed at dataset/ arrays (§4)
-    (sweep.py, compare.py, hubs.py, nowcast.py, decisive.py, pdf_report.py — trimmed per §4)
+    totals.py      # WIS and the one location-relative score (§5)
+    hubs.py        # export forecasts to hub task tables
 ```
 
 Delete: `models/b0.py` classes folded into `model/network.py`
 (`models/architecture.py` merges in too), `models/b1.py`, `models/b2.py`,
 `models/scenarios.py`, `models/b1_scenarios.py`, `models/b2_scenarios.py`,
 `models/manager.py`, `models/backends.py`, `models/season_cv.py` (replaced
-by `dataset/splits.py` + `experiment/planner.py`), `models/bundles.py` if it
+by `dataset/cv.py` + `experiment/planner.py`), `models/bundles.py` if it
 only served the removed per-pathogen/per-target independent-fit machinery
 for non-`all` `fit_partition` values (keep `fit_partition` support itself —
 just confirm `bundles.py`'s `IndependentBundle` still applies to the unified
@@ -253,12 +314,52 @@ extract/show) and one `tapestry-experiment` (plan/run/status/rank/compare)
 entry point; `tapestry-data` (raw acquisition) and `tapestry-explore` are
 unchanged.
 
-## 6. What's explicitly out of scope
+## 7. What's explicitly out of scope
 
 - No change to the fair-CRPS loss, the FiLM decoder, or the season-CV
   leave-one-out policy itself (3 seasons, refit-after-early-stopping) —
   only where that logic lives.
-- No change to `SCORE_DEFINITION`'s weighting (states 80/US 20, admissions
-  1.0/ED 0.5, seasons averaged equally).
+- No change to the score's target and season weighting (admissions 1.0/ED 0.5,
+  seasons averaged equally); the US share stays 20% by default but is now an
+  experiment setting (§5).
 - `analysis/`, `docs/`, `references/` content is not rewritten, only
   pointers updated where they reference deleted module paths.
+
+## 8. Decision log
+
+**2026-09-22 — one dataset panel (user decision).** `finalized.npz` +
+`vintaged.npz` replaced by `panel.npz` (§3). Why: two arrays duplicated the
+truth, fixed the lookback at build time, and the vintaged build never ran
+(`cutoff_time` applied twice crashed it). Regression check against the
+row-by-row code: the truth panel equals the reference `finalized.npz` built the
+same day cell for cell (targets, covariates, national); the as-of resolution
+equals the old `VintageArchive` at all 160 Wednesday cutoffs over the full
+calendar for the six targets and both inpatient claims signals, and the NWSS and
+Kinsa overlays equal the old `_nwss_panel`/`_national_panel` at every issuance.
+Choices flagged: covariate overlay depth D = 52 (not R) to preserve what
+vintaged covariates were; one truth day and one calendar for both modes.
+
+**2026-09-22 — cross-validation restored by masking the panel.** The
+refactor's `splits.season_split` assigned whole episodes to train/val/score by
+origin, so training episodes near season boundaries carried held-out-season
+labels (25-33% of the loss through season-equal loss weights) and validation
+weeks stayed in training inputs and labels. `dataset/cv.py` restores the
+pre-refactor policy (§4) and pads the calendar start so score origins exist from
+the first 2023-24 week at any lookback (lookback 12 previously failed scoring
+with "Missing frozen tasks": first origin 2023-11-18, frozen tasks from
+2023-10-14).
+
+**2026-09-22 — one score (user decision).** Mean of per-location ratios with a
+configurable US share (§5); the pooled total-WIS ratio is no longer computed or
+ranked. This supersedes the earlier preference for the pooled total-WIS ratio
+in B0 selection.
+
+**2026-09-22 — dataset build speed.** cProfile of the old build: reading one
+target (`nhsn_flu_admissions`) took 991 s under the profiler, 63% in
+`describe()` called per row (dataclass `asdict` per call), 21% in
+`observation_geography` per row, plus SQLite per-row Hub validation and per-row
+CSV parsing. The finalized build alone took about 31 minutes; the vintaged build
+never completed. Now: columnar pyarrow reads, per-row policy functions
+evaluated once per unique column combination, vectorized conflict detection
+and resolution, one process per source. The full panel (truth and overlay) builds
+in about 65 s wall time on 12 cores.

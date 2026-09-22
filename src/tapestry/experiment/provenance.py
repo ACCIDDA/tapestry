@@ -9,7 +9,7 @@ from pathlib import Path
 import socket
 import subprocess
 
-from tapestry.dataset.splits import SEASONS
+from tapestry.dataset.cv import SEASONS
 
 CALENDAR_START = '2023-09-02'  # First modelled Saturday.
 SLURM = ('SLURM_JOB_ID', 'SLURM_ARRAY_JOB_ID', 'SLURM_ARRAY_TASK_ID', 'SLURMD_NODENAME', 'CUDA_VISIBLE_DEVICES')

@@ -2,10 +2,11 @@
 
 ## Which data features are optional?
 
-`model_data/finalized.py` builds the six-channel panel from only `cdc_nhsn_final`
-and `cdc_nssp_trajectories`. `models/run.py` and `models/season_cv.py` load the
-saved NPZ. Neither requires the explorer, Delphi, or historical raw snapshots
-while fitting.
+`tapestry.dataset.build` builds the one training array, `data/processed/panel.npz`,
+from the Hub target data, Delphi NHSN/NSSP/claims archives, the derived NWSS
+indices and PopHIVE Kinsa (see [training](workflows/training.md)).
+`tapestry.experiment.planner` loads only that saved NPZ while fitting; the explorer
+and raw snapshots are not read during training.
 
 A canonical training artifact and raw snapshots serve different purposes.
 The artifact gives every experiment the same tensor/masks; raw snapshots and
@@ -36,10 +37,11 @@ resume mechanics and architecture execution are checked through research runs.
 
 | File | Consequence it guards against |
 |---|---|
-| `test_b0.py` | Wrong CRPS or masked-label gradients; count/proportion transforms changing native values |
+| `test_network.py` | Wrong CRPS or masked-label gradients; count/proportion transforms changing native values |
 | `test_objective.py` | Missingness or batching changing scientific loss weights; incorrect native loss scales |
-| `test_season_cv.py` | Held-out or validation values leaking into training/scales; incorrect WIS |
-| `test_model_data.py` | Misaligned targets, observed zeros treated as missing, wrong season assignment or percentage units |
+| `test_dataset.py` | Held-out-season or validation-week values reaching training inputs, labels, loss scales/weights or covariate standardization (panel masking, `dataset.cv`); score labels outside the held-out season; vintaged episodes using as-of values at the wrong weeks or misaligned with the issuance; wrong season assignment |
+| `test_planner.py` | Channel/location or covariate/location axes swapped between the panel and `Model` |
+| `test_hub_history.py` | Git full-snapshot deletions resurrected, or Git overriding native Hub `as_of` coverage, in vintage resolution |
 | `test_totals.py` | Incorrect WIS, location/season/target/seed weighting, undefined relative scores or comparisons on different locations |
 | `test_hub_evaluation.py` | Forecasts assigned to the wrong target channel, location or week |
 

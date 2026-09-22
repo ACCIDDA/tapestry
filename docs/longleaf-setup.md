@@ -56,7 +56,7 @@ These are the sources `tapestry.dataset.build` reads (targets, claims,
 wastewater, Kinsa; see [the source catalog](data/sources.md)). The
 `cdc_nhsn_*`/`cdc_nssp_*` Socrata specs and the legacy/RSVNet Hub mirrors
 remain in the catalog for comparison and are not required for the training
-arrays. Downloading sources does not build them; see
+panel. Downloading sources does not build them; see
 [the canonical workflow](workflows/training.md) for that next step.
 
 Scoring is pure Python (`tapestry.evaluation.totals`) -- no R module or
@@ -64,19 +64,21 @@ package setup is needed. Use a Slurm allocation for training and substantial
 evaluation runs; the environment setup above does not request a GPU or submit
 a training job.
 
-## Build the training arrays
+## Build the training panel
 
 Run from `/proj/jlessler/projects/tapestry-all/tapestry`. Skip acquisition
-above once every source is already downloaded, then build both arrays:
+above once every source is already downloaded, then build the one array,
+`data/processed/panel.npz` (about a minute; one process per source):
 
 ```bash
 .venv/bin/python -m tapestry.dataset.build build --data-root data
-.venv/bin/python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
-.venv/bin/python -m tapestry.dataset.build show --dataset data/processed/vintaged.npz
+.venv/bin/python -m tapestry.dataset.build show
 ```
 
-`finalized.npz` and `vintaged.npz` share one covariate name -> column index;
-see [the canonical workflow](workflows/training.md#2-build-the-two-training-arrays).
+It holds the truth panel and the Wednesday as-of overlay that both input modes
+cut episodes from; see [the canonical workflow](workflows/training.md#2-build-the-dataset-panel).
+`plan` records its sha256, so rebuild it before planning, not while an
+experiment is running.
 
 Restore the pinned hub commits and population table before registering the
 experiment:

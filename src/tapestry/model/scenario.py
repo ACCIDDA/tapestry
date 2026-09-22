@@ -102,7 +102,7 @@ class Scenario:
     # Vintage-aware direct pipeline (formerly B1Scenario). `supplied_final` gates
     # whether the network receives a known-final flag channel at all; it stays
     # meaningful independent of `input_mode` (an ablation can still turn it off
-    # even when training against `vintaged.npz`).
+    # even when training in `input_mode=vintaged`).
     supplied_final: bool = False
     mask_rate: float = 0.
     mask_recent: float = .5

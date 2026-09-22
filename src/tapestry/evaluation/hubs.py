@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from tapestry.data.geography import STATE_FIPS
-from tapestry.dataset.splits import SEASONS, season
+from tapestry.dataset.cv import SEASONS, season
 from .quantiles import LEVELS, select_quantiles
 
 B0_NAME = 'Tapestry-unified-model'

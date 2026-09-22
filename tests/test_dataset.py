@@ -1,10 +1,21 @@
+"""Leakage and alignment of episodes cut from the panel (`dataset.episodes`, `dataset.cv`)."""
 from datetime import date, timedelta
 
 import numpy as np
 import pytest
 
-from tapestry.dataset.splits import SEASONS, season, season_split
-from tapestry.dataset.build import covariate_names_for, COVARIATE_GROUPS, SOURCE_GROUPS
+torch = pytest.importorskip('torch')
+
+from conftest import LOCATIONS, R, code
+from tapestry.dataset.build import COVARIATE_GROUPS, SOURCE_GROUPS, covariate_names_for, overlay_dates
+from tapestry.dataset.cv import SEASONS, fold, season, validation_weeks
+from tapestry.dataset.episodes import episodes
+from tapestry.experiment.planner import model_options, unique_truth
+from tapestry.model.objective import loss_cell_weights, loss_scales
+from tapestry.model.scenario import Scenario
+
+SCENARIOS = [Scenario(lookback=6), Scenario(lookback=6, input_mode='vintaged', covariate_set='inpatient+kinsa')]
+POPULATIONS = {'NC': 1e7, 'US': 3.3e8}
 
 
 def test_season_boundary_and_53_week_year():
@@ -13,37 +24,101 @@ def test_season_boundary_and_53_week_year():
     assert season(date(2021, 1, 2)) == '2020-2021'
 
 
-DAYS = tuple((date(2023, 9, 2) + timedelta(weeks=i)).isoformat() for i in range(157))
+def weeks_of(values, available):
+    """Reference-week codes of every available value (values encode their week below 1000)."""
+    return set((np.floor(values[available]) % 1000).astype(int).tolist())
 
 
-def test_season_split_excludes_held_out_and_hides_a_fixed_share_of_each_training_season():
-    for held_out in SEASONS:
-        split = season_split(DAYS, held_out)
-        assert not (split.train & split.score).any()
-        assert not (split.val & split.score).any()
-        assert not (split.train & split.val).any()
-        labels = np.array([season(d) for d in DAYS])
-        assert (labels[split.score] == held_out).all()
-        assert held_out not in set(labels[split.train]) | set(labels[split.val])
-        for label in SEASONS:
-            if label == held_out:
+def perturbed(panel, weeks):
+    """The same panel with every value of `weeks` changed, wherever it is stored."""
+    other = {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in panel.items()}
+    rows = np.array([str(d) in weeks for d in panel['dates']])
+    for name in ('targets', 'covariates', 'covariates_national'):
+        other[name][rows] += 777
+    for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
+        depth = panel[name].shape[1]
+        for w, issuance in enumerate(panel['issuance_dates']):
+            for j, day in enumerate(overlay_dates(str(issuance), depth)):
+                if day in weeks:
+                    other[name][w, j] += 777
+    return other
+
+
+@pytest.mark.parametrize('scenario', SCENARIOS)
+@pytest.mark.parametrize('held_out', SEASONS)
+@pytest.mark.parametrize('inner', [False, True])
+def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_out, inner):
+    dates = np.array([str(d) for d in panel['dates']])
+    labels = np.array([season(d) for d in dates])
+    hidden = (labels == held_out) | ~np.isin(labels, SEASONS)
+    if inner:
+        hidden |= validation_weeks(dates, held_out)
+    hidden_weeks = set(dates[hidden])
+    hidden_codes = {int(code(d)) for d in hidden_weeks}
+    a = fold(panel, scenario, held_out, inner)
+    b = fold(perturbed(panel, hidden_weeks), scenario, held_out, inner)
+    # No hidden week reaches a training input or label, directly...
+    for e in a.train:
+        assert not weeks_of(e['values'], e['available']) & hidden_codes
+        assert not weeks_of(e['target_values'], e['target_available']) & hidden_codes
+        if 'covariates' in e:
+            c = e['covariates']
+            assert not weeks_of(c[..., 0, :], c[..., 1, :].astype(bool)) & hidden_codes
+    # ...nor, through any path, the loss scales, loss weights or covariate standardization.
+    assert len(a.train) == len(b.train)
+    for x, y in zip(a.train, b.train):
+        for key in ('values', 'available', 'known_final', 'target_values', 'target_available', 'covariates'):
+            if key in x:
+                np.testing.assert_array_equal(x[key], y[key])
+    assert model_options(a.train, scenario, POPULATIONS) == model_options(b.train, scenario, POPULATIONS)
+    assert loss_scales(unique_truth(a.train)) == loss_scales(unique_truth(b.train))
+    np.testing.assert_array_equal(loss_cell_weights(a.train), loss_cell_weights(b.train))
+    if inner:
+        hidden_validation = set(dates[validation_weeks(dates, held_out)])
+        assert a.validation
+        for e in a.validation:
+            assert {d for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m} <= hidden_validation
+    else:
+        assert a.score[0]['context_dates'][-1] == dates[labels == held_out][0]  # origins from the season start
+        for e in a.score:
+            assert season(e['context_dates'][-1]) == held_out
+            assert all(season(d) == held_out for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m)
+
+
+def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(panel):
+    lookback, names = 6, ('inpatient_flu', 'kinsa_ili')
+    start = str(panel['dates'][0])
+    nc, us = LOCATIONS.index('NC'), LOCATIONS.index('US')
+    finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'finalized', names)}
+    assert min(finalized) == start  # context before the calendar is padding, not a missing origin
+    vintaged = episodes(panel, lookback, 'vintaged', names)
+    fallback = 0
+    for e in vintaged:
+        issuance = date.fromisoformat(e['issuance'])
+        end = (issuance - timedelta(days=4)).isoformat()
+        assert e['context_dates'][-1] == end
+        assert e['target_dates'] == tuple((issuance + timedelta(days=3 + 7 * h)).isoformat() for h in range(4))
+        for i, day in enumerate(e['context_dates']):
+            value, available, final = e['values'][i, 0, nc], e['available'][i, 0, nc], e['known_final'][i, 0, nc]
+            if day < start:
+                assert not available
                 continue
-            share = split.val[labels == label].mean()
-            assert .15 < share < .2
-
-
-def test_season_split_hidden_weeks_come_in_runs_of_at_most_three():
-    split = season_split(DAYS, SEASONS[1])
-    hidden_days = sorted(date.fromisoformat(d) for d, keep in zip(DAYS, split.val) if keep)
-    runs = [1]
-    for a, b in zip(hidden_days, hidden_days[1:]):
-        runs[-1:] = [runs[-1] + 1] if (b - a).days == 7 else [runs[-1], 1]
-    assert max(runs) == 3
-
-
-def test_season_split_rejects_unknown_season():
-    with pytest.raises(ValueError):
-        season_split(DAYS, 'not-a-season')
+            truth = code(day) + 1000
+            if i >= lookback - R and value == truth + .5:
+                assert not final  # the value this issuance saw
+            else:
+                assert value == truth and final  # older week, or not yet reported: truth, flagged final
+                fallback += i >= lookback - R
+            cov = e['covariates'][i]
+            assert cov[0, 0, nc] == code(day) + 1000 + .5 and cov[0, 1, nc]  # inpatient_flu, as of the issuance
+            assert cov[1, 0, us] == code(day) + 50000 + .5 and cov[1, 1, us] and not cov[1, 1, nc]  # kinsa, US only
+        labelled = e['target_available'][:, 0, nc]
+        np.testing.assert_array_equal(e['target_values'][labelled, 0, nc],
+                                      [code(d) + 1000 for d, m in zip(e['target_dates'], labelled) if m])
+        truth_episode = finalized.get(end)
+        if truth_episode:
+            np.testing.assert_array_equal(e['target_values'], truth_episode['target_values'])
+    assert fallback and len(vintaged) > 100
 
 
 def test_covariate_names_for_expands_groups_in_fixed_order():
@@ -51,13 +126,7 @@ def test_covariate_names_for_expands_groups_in_fixed_order():
     assert covariate_names_for('inpatient') == COVARIATE_GROUPS['inpatient']
     # Order follows COVARIATE_GROUPS, not the order named in the string.
     assert covariate_names_for('kinsa+inpatient') == COVARIATE_GROUPS['inpatient'] + COVARIATE_GROUPS['kinsa']
-
-
-def test_covariate_names_for_rejects_unknown_group():
     with pytest.raises(ValueError):
         covariate_names_for('not_a_group')
-
-
-def test_source_groups_cover_every_covariate_name_once():
     names = [name for group in SOURCE_GROUPS for name in COVARIATE_GROUPS[group]]
     assert len(names) == len(set(names))

@@ -20,7 +20,10 @@ explains the model and the masks. Exact experiment settings live in
 - **[DeepMind's Functional Generative Networks](https://arxiv.org/abs/2506.10772v1):**
   inject random noise into a network and fit its generated samples with fair
   CRPS. Tapestry adapts that idea to small epidemic forecasting models.
-- **EpiBenchmark:** score the exported forecasts against the hub ensembles.
+- **Hub ensembles as the yardstick:** forecasts are scored in pure Python
+  (`tapestry.evaluation.totals`) as location-relative WIS ratios to the hub
+  ensembles on frozen tasks. The EpiBenchmark/R scorer used earlier was removed
+  in the 2026-09 restructuring.
 
 ## The model
 

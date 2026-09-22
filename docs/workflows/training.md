@@ -1,6 +1,6 @@
 # Training and prediction
 
-The single current workflow: build the two array datasets, define a scenario,
+The single current workflow: build the dataset panel, define a scenario,
 plan and run it, then rank. There is one model (`tapestry.model.network.Model`)
 and one scenario space (`tapestry.model.scenario.Scenario`) -- no separate
 B0/B1/B2 commands. See
@@ -22,21 +22,26 @@ two wastewater indices, `wval_like` and `pct_rank`) is built from
 `delphi_nwss`/`delphi_nwss_aux` separately -- see
 [wastewater](../data/wastewater.md).
 
-## 2. Build the two training arrays
+## 2. Build the dataset panel
 
 ```bash
-python -m tapestry.dataset.build build --data-root data
-python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
-python -m tapestry.dataset.build show --dataset data/processed/vintaged.npz
+python -m tapestry.dataset.build build --data-root data   # about a minute, one process per source
+python -m tapestry.dataset.build show
 ```
 
-Produces `data/processed/finalized.npz` (truth-only, no revision structure)
-and `data/processed/vintaged.npz` (one entry per historical Wednesday
-issuance, Saturday-target, state+national geography). Both share one
-covariate name -> column index (`tapestry.dataset.build.STATE_COVARIATE_NAMES`
-/ `NATIONAL_COVARIATE_NAMES`), grouped by `COVARIATE_GROUPS` into the source
-groups a scenario's `covariate_set` string selects from (`inpatient`,
-`outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`).
+Produces one array, `data/processed/panel.npz`: a weekly Saturday calendar
+from 2023-09-02 with the retrospective truth panel (targets, state covariates,
+national Kinsa) resolved at the end of the build day, plus an as-of overlay
+recording, for every Wednesday issuance, the target values visible at its
+cutoff for its two latest context weeks and the covariate values visible for
+its 52 latest context weeks. Episodes of any lookback are cut from it at
+training time (`tapestry.dataset.episodes`); nothing about the lookback is
+fixed at build time. `--truth-day` pins the truth resolution day. The layout
+and every choice are in
+[the design doc](../design/restructure-2026-unified.md#3-one-dataset-panel).
+Covariate columns are grouped by `COVARIATE_GROUPS` into the source groups a
+scenario's `covariate_set` string selects from (`inpatient`, `outpatient`,
+`ww_wval_like`, `ww_pct_rank`, `kinsa`).
 
 ## 3. Define a scenario
 
@@ -69,7 +74,7 @@ full contract (round-trip, order-independence, typo rejection).
 
 ```bash
 python -m tapestry.experiment.planner plan -e my-experiment \
-    -s 'width=32' -s 'width=32,covariate_set=inpatient' --seeds 42 43 44
+    -s 'width=32' 'width=32,covariate_set=inpatient' --seeds 42 43 44
 
 python -m tapestry.experiment.planner run -e my-experiment
 python -m tapestry.experiment.planner status -e my-experiment
@@ -77,20 +82,30 @@ python -m tapestry.experiment.planner rank -e my-experiment
 ```
 
 `plan` appends new scenario/seed combinations to a persistent `jobs.csv` under
-`data/experiments/<name>/`, never renumbering existing tasks; run it again
-with more `-s`/`--seeds` to extend the same giant experiment later. `run`
+`data/experiments/<name>/`, never renumbering existing tasks, and copies `src/`
+plus the Slurm launchers into `data/experiments/<name>/code/` (with the git commit
+in `code/git.json`); `scripts/jlessler.sbatch` runs that pinned copy, so edits made
+after planning do not reach a queued job, and re-running `plan` re-pins the code; run it again
+with more scenarios/`--seeds` to extend the same giant experiment later. `-s`
+takes several scenario strings after one flag (`-s A B`); repeating the flag
+(`-s A -s B`) keeps only the last one. `plan` also records in `experiment.json`
+the dataset path, the frozen ensemble support, the score's US weight
+(`--us-score-weight`, default 0.2) and the sha256 of `panel.npz` and of the
+frozen manifest; `run` and the Slurm dispatcher refuse to fit if either file
+changed since planning (rebuild -> new experiment name). `run`
 fits and evaluates one leave-one-season-out fold at a time (three seasons,
 refit after early-stopping selection); pass `-t`/`--task` to run a subset, or
 use the Slurm array dispatcher below for a shared GPU cluster. `rank` scores
-every completed run in pure Python (`tapestry.evaluation.totals`, weighted
-interval score against the frozen ensemble denominator) and writes
+every completed run in pure Python (`tapestry.evaluation.totals`) with the one
+score: per target and season, the mean of per-location WIS ratios to the hub
+ensemble (states/DC share 80%, US 20% by default), targets combined as
+(2 x admissions + ED) / 9, seasons equal. It writes
 `season_scores.csv`, `season_composite_scores.csv`, `run_scores.csv`, and
 `configuration_ranking.csv` under `ranking-<hash>/`; pass `--allow-incomplete`
 to rank before every run has finished.
 
-There is no `compare` command -- the EpiBench/R comparison path it used to
-wrap was removed with R itself; `rank`'s WIS-vs-ensemble ratio is the only
-comparison.
+There is no `compare` command; `rank`'s location-relative ratio is the only
+comparison. Summed WIS columns in the outputs are raw totals, not a score.
 
 ## Shared-GPU cluster launch (Longleaf)
 
@@ -104,13 +119,17 @@ whole GPU per array element, several fitting processes per GPU, drawing from
 one queue across every node in the array -- no static task slices). See
 [Longleaf setup](../longleaf-setup.md) for cluster environment setup.
 
-## Defining train/validation/score splits
+## Cross-validation folds
 
-`tapestry.dataset.splits.season_split(dates, held_out_season)` takes one
-calendar label per row of an array's leading time axis and returns a
-`Split(train, val, score)` of boolean masks: `val` holds out 3-week windows
-every 16 weeks (offset 4) from the two training seasons for early stopping,
-`score` is every week inside the held-out season, and `train` is everything
-else. This is the one place a train/val/score boundary is defined; change the
-split by editing (or replacing, for a one-off experiment) that one function --
-`experiment.planner.fit()` is the only caller.
+`tapestry.dataset.cv.fold(panel, scenario, held_out_season, inner)` is the one
+place a train/validation/score boundary is defined; `experiment.planner.fit()`
+is its only caller. It masks the panel, not episodes: every week outside the
+two training seasons becomes unavailable in targets, covariates and the as-of
+overlay, and training episodes are cut from that masked panel, so held-out
+weeks never reach inputs, labels, loss scales or covariate standardization.
+`inner=True` additionally hides weeks 4-6, 20-22 and 36-38 of each training
+season for early stopping; its validation episodes score only those weeks. The
+refit uses the full training seasons. Score episodes have origins in the
+held-out season (from its first week, at any lookback: earlier context is
+padding) and score only labels inside it. Details and history:
+[the design doc](../design/restructure-2026-unified.md#4-cross-validation).

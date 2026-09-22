@@ -97,3 +97,27 @@ forward experiment with a clear place in the menu. The supplementary page,
 its standalone season-comparison export and helper script were removed. The
 benchmark retains its measured coverage results and has a dedicated
 **Forward 2025–26** navigation section.
+
+## One dataset array and one score — 2026-09-22
+
+**User decisions, September 22, 2026:**
+
+- **One dataset array.** `data/processed/panel.npz` (one weekly Saturday
+  calendar, truth panel, and a Wednesday as-of overlay) replaces
+  `finalized.npz` + `vintaged.npz`; lookback is chosen per scenario, not at
+  build time. Vintaged episodes must see exactly what the previous vintaged
+  builder gave them (as-of targets for the two latest context weeks).
+- **Exactly one score.** Per target and season, the mean of per-location WIS
+  ratios to the hub ensemble, states sharing 80% and the US 20% (the US share
+  is an experiment setting, default 0.2), targets combined (2 x admissions +
+  ED) / 9, seasons equal. The pooled total-WIS ratio is no longer a competing
+  score; this supersedes the earlier total-WIS-ratio selection preference.
+- **Cross-validation must not leak.** The refactor's episode-level split let
+  training episodes carry held-out-season labels and kept validation weeks in
+  inputs; the user asked to restore the pre-refactor policy by masking the
+  array.
+
+Implementation choice flagged, not a user decision: as-of covariates are kept
+for 52 context weeks (not only the latest two) because the previous vintaged
+builder resolved every covariate week as of the issuance. Details and the
+decision log: [the unified design](docs/design/restructure-2026-unified.md).

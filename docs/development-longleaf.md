@@ -51,13 +51,12 @@ rsync -av /Users/chadi/Research/Tapestry/src \
   /Users/chadi/Research/Tapestry/pyproject.toml \
   /Users/chadi/Research/Tapestry/README.md \
   chadi@longleaf.unc.edu:~/Tapestry/
-rsync -av /Users/chadi/Research/Tapestry/data/processed/finalized.npz \
-  /Users/chadi/Research/Tapestry/data/processed/vintaged.npz \
+rsync -av /Users/chadi/Research/Tapestry/data/processed/panel.npz \
   chadi@longleaf.unc.edu:~/Tapestry/data/processed/
 ```
 
 This file list omits the local virtual environment, credentials, raw archives,
-and results. Raw data are unnecessary for fitting the already built arrays.
+and results. Raw data are unnecessary for fitting the already built panel.
 
 Use a CUDA-enabled PyTorch environment on Longleaf, for example
 `/nas/longleaf/home/chadi/.conda/envs/diffusion_torch6/bin/python`; confirm that

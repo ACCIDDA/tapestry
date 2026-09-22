@@ -103,7 +103,7 @@ resume behavior, historical Hub commits, and verification commands.
 
 ```bash
 uv run python -m tapestry.dataset.build build --data-root data
-uv run python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
+uv run python -m tapestry.dataset.build show   # data/processed/panel.npz
 uv run python -m tapestry.experiment.planner plan -e my_experiment -s '' --seeds 42
 ```
 

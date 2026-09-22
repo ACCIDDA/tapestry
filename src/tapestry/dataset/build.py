@@ -1,30 +1,44 @@
-"""Build `data/processed/finalized.npz` and `data/processed/vintaged.npz`.
+"""Build the one dataset array, `data/processed/panel.npz` (user decision 2026-09-22).
 
-Replaces `model_data/finalized.py` + `model_data/wednesday.py` + `model_data/b2.py`
-(three separate builders, three covariate conventions) with one module producing
-exactly two arrays, restricted to Wednesday-issuance/Saturday-target episodes,
-state+national geography, and the two wastewater indices already promoted into
-production (`wval_like`, `pct_rank`); see docs/design/restructure-2026-unified.md §3.
+Replaces `finalized.npz` + `vintaged.npz`. One weekly Saturday calendar carries the
+retrospective truth panel; an as-of overlay records, for every historical Wednesday
+issuance, what was visible at its cutoff. Episodes (any lookback) are cut from it by
+`dataset.episodes`; see docs/design/restructure-2026-unified.md §3 for the layout
+and every choice below.
+
+Build constants (documented in the design doc):
+- `CALENDAR_START`: first Saturday of the calendar. Nothing earlier exists in the
+  panel; episodes pad earlier context weeks as unavailable.
+- `ASOF_TARGET_WEEKS` (R=2): the overlay keeps each issuance's as-of target values
+  for the R most recent context weeks, as the previous vintaged builder did.
+- `ASOF_COVARIATE_WEEKS` (D=52): the overlay keeps as-of covariate values for the D
+  most recent context weeks, so a vintaged episode's covariates are as-of for any
+  lookback up to D (the previous builder resolved every covariate week as of the
+  issuance). A vintaged lookback above D raises.
+
+The truth panel is resolved at the end of the build day (`truth_day`, default today,
+recorded in metadata). Sources are read in parallel, one process per source.
 
 `COVARIATE_GROUPS` is the single source of truth for covariate column order; a
-`Scenario.covariate_set` string (`model.scenario`) expands through
-`covariate_names_for` into the exact columns of `covariates`/`covariates_national`.
+`Scenario.covariate_set` string expands through `covariate_names_for`.
 """
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor
 import json
 from datetime import date, timedelta
+import os
 from pathlib import Path
+import time
 
 import numpy as np
-import pandas as pd
 
-from tapestry.data.geography import STATE_NAMES
-from .extract import (TARGET_SOURCES, CLAIMS_SOURCES, NWSS_INDICES, NATIONAL_ONLY,
-                       VintageArchive, _target_archive, _claims_archive, _nwss_frame,
-                       _latest_snapshot, cutoff_time, saturday)
+from .extract import (TARGET_SOURCES, CLAIMS_SOURCES, NWSS_INDICES, NATIONAL_ONLY, LOCATIONS,
+                      revisions, resolve, resolve_reports, nwss_frame, kinsa_frame, _latest_snapshot)
 
 CALENDAR_START = '2023-09-02'  # First modelled Saturday.
+ASOF_TARGET_WEEKS = 2
+ASOF_COVARIATE_WEEKS = 52
 CHANNELS = tuple(TARGET_SOURCES)  # nhsn_*_admissions, nssp_*_proportion, in that order.
 COVARIATE_GROUPS = {
     'inpatient': ('inpatient_flu', 'inpatient_covid'),
@@ -37,10 +51,10 @@ SOURCE_GROUPS = tuple(COVARIATE_GROUPS)
 COVARIATE_NAMES = tuple(name for group in COVARIATE_GROUPS.values() for name in group)
 STATE_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n not in NATIONAL_ONLY)
 NATIONAL_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n in NATIONAL_ONLY)
-DEFAULT_LOOKBACK = 12
-DEFAULT_HORIZONS = (1, 2, 3, 4)
-FINALIZED_DATASET = 'data/processed/finalized.npz'
-VINTAGED_DATASET = 'data/processed/vintaged.npz'
+PANEL_DATASET = 'data/processed/panel.npz'
+SNAPSHOT_DATASETS = sorted({d for spec in TARGET_SOURCES.values() for d in spec[:2] if d} |
+                           {spec[0] for spec in CLAIMS_SOURCES.values()} |
+                           {'derived_nwss_state_indices', 'pophive_kinsa_ili'})
 
 
 def covariate_names_for(covariate_set):
@@ -59,200 +73,95 @@ def covariate_names_for(covariate_set):
     return tuple(name for group, names in COVARIATE_GROUPS.items() if group in selected for name in names)
 
 
-def _weekly_calendar(start, end):
+def weekly_calendar(start, end):
+    """Saturdays from `start` through the last one on or before `end`."""
     first, last = date.fromisoformat(start), date.fromisoformat(end)
     return tuple((first + timedelta(weeks=i)).isoformat() for i in range((last - first).days // 7 + 1))
 
 
-def _wednesdays(start, end):
+def wednesdays(start, end):
+    """Wednesday issuances from the one on or before `start` through the last on or before `end`."""
     first, last = date.fromisoformat(start), date.fromisoformat(end)
     first -= timedelta(days=(first.weekday() - 2) % 7)
     return tuple((first + timedelta(weeks=i)).isoformat() for i in range((last - first).days // 7 + 1))
 
 
-def _locations(explicit=None):
-    return tuple(explicit) if explicit else (*sorted(STATE_NAMES), 'US')
+def context_end(issuance):
+    """The Saturday four days before a Wednesday issuance: its last context week."""
+    return (date.fromisoformat(str(issuance)[:10]) - timedelta(days=4)).isoformat()
 
 
-def _covariate_archives(data_root):
-    """Every archive-backed covariate source, built once and reused across issuances."""
-    return {name: _claims_archive(data_root, name) for name in CLAIMS_SOURCES}
+def overlay_dates(issuance, depth):
+    """The `depth` reference weeks an issuance's overlay covers, oldest first."""
+    end = date.fromisoformat(context_end(issuance))
+    return tuple((end - timedelta(weeks=depth - 1 - j)).isoformat() for j in range(depth))
 
 
-def _target_panel(data_root, dates, locations, cutoff):
-    """[T, L, 6] resolved as of `cutoff` (a date or Wednesday-cutoff string)."""
-    panel = np.full((len(dates), len(locations), len(CHANNELS)), np.nan, np.float32)
-    for c, name in enumerate(CHANNELS):
-        archive = _target_archive(data_root, name)
-        values, available = archive.panel(dates, locations, archive.resolve(cutoff))
-        panel[:, :, c] = np.where(available, values, np.nan)
-    return panel
+def _source(task):
+    """One process per source: its truth panel and its per-issuance as-of overlay."""
+    name, data_root, dates, issuances, truth_day, depth = task
+    started = time.perf_counter()
+    if name == 'nwss':
+        frame, names = nwss_frame(data_root), list(NWSS_INDICES)
+        at = lambda day, days: resolve_reports(frame, day, days, LOCATIONS, names)
+    elif name == 'kinsa_ili':
+        frame, names = kinsa_frame(data_root), ['kinsa_ili']
+        at = lambda day, days: resolve_reports(frame, day, days, LOCATIONS, names)
+    else:
+        archive = revisions(name, data_root)
+        at = lambda day, days: resolve(archive, day, days, LOCATIONS)[:, :, None]
+    truth = at(truth_day, dates)
+    overlay = np.full((len(issuances), depth, *truth.shape[1:]), np.nan)
+    for w, issuance in enumerate(issuances):
+        window = overlay_dates(issuance, depth)
+        overlay[w] = at(issuance, window)
+        overlay[w, np.array(window) < dates[0]] = np.nan  # nothing exists before the calendar
+    return name, truth.astype(np.float32), overlay.astype(np.float32), time.perf_counter() - started
 
 
-def _claims_panel(data_root, dates, locations, cutoff, archives=None):
-    archives = archives or _covariate_archives(data_root)
-    panel = np.full((len(dates), len(locations), len(CLAIMS_SOURCES)), np.nan, np.float32)
-    for c, name in enumerate(CLAIMS_SOURCES):
-        values, available = archives[name].panel(dates, locations, archives[name].resolve(cutoff))
-        panel[:, :, c] = np.where(available, values, np.nan)
-    return panel
-
-
-def _nwss_panel(frame, dates, locations, cutoff):
-    panel = np.full((len(dates), len(locations), len(NWSS_INDICES)), np.nan, np.float32)
-    visible = frame[frame.report_time <= cutoff]
-    for c, name in enumerate(NWSS_INDICES):
-        metric = 'pct_rank' if name.endswith('pct_rank') else 'wval_like'
-        pathogen = name.removeprefix('nwss_').removesuffix('_' + metric)
-        part = visible[visible.pathogen.eq(pathogen)].sort_values('report_time')
-        part = part.dropna(subset=[metric]).drop_duplicates(['geo_value', 'reference_time'], keep='last')
-        lookup = {(row.reference_time, row.geo_value): row[metric] for row in part.itertuples()}
-        for t, day in enumerate(dates):
-            for l, loc in enumerate(locations):
-                if (day, loc) in lookup:
-                    panel[t, l, c] = lookup[(day, loc)]
-    return panel
-
-
-def _kinsa_weekly(data_root, truth_cutoff):
-    """Saturday-ending weekly means of daily Kinsa values at every real report date."""
-    snapshot = _latest_snapshot(data_root, 'pophive_kinsa_ili')
-    path = snapshot / 'archive.csv.gz'
-    frame = pd.read_csv(path, dtype={'geo_type': str, 'geo_value': str})
-    frame = frame[frame['geo_value'].eq('US')].copy()
-    frame['report_time'] = frame['report_time'].astype(str).str[:10]
-    frame['reference_time'] = frame['reference_time'].astype(str).str[:10]
-    frame = frame[frame['report_time'] <= truth_cutoff]
-    frame['value'] = pd.to_numeric(frame['kinsa_cough_cold_flu'], errors='coerce')
-    frame.loc[~np.isfinite(frame['value']) | (frame['value'] < 0), 'value'] = np.nan
-    if frame.empty:
-        return pd.DataFrame(columns=['report_time', 'geo_value', 'reference_time', 'value']), snapshot.name
-    frame = frame.sort_values(['reference_time', 'report_time']).drop_duplicates(
-        ['reference_time', 'report_time'], keep='last')
-    days = {day: (g['report_time'].to_numpy(str), g['value'].to_numpy(float))
-            for day, g in frame.groupby('reference_time')}
-    saturdays = sorted({(pd.Timestamp(day) + pd.Timedelta(days=(5 - pd.Timestamp(day).weekday()) % 7)).strftime('%Y-%m-%d')
-                        for day in days})
-    rows = []
-    for saturday_ in saturdays:
-        week = [(pd.Timestamp(saturday_) - pd.Timedelta(days=k)).strftime('%Y-%m-%d') for k in range(6, -1, -1)]
-        if not all(day in days for day in week):
-            continue
-        previous = np.nan
-        for release in sorted({r for day in week for r in days[day][0]}):
-            values = []
-            for day in week:
-                reports, daily = days[day]
-                index = np.searchsorted(reports, release, side='right') - 1
-                values.append(daily[index] if index >= 0 else np.nan)
-            value = float(np.mean(values)) if np.isfinite(values).all() else np.nan
-            if not (value == previous or (np.isnan(value) and np.isnan(previous))):
-                rows.append((release, 'US', saturday_, value))
-            previous = value
-    return pd.DataFrame(rows, columns=['report_time', 'geo_value', 'reference_time', 'value']), snapshot.name
-
-
-def _national_panel(kinsa, dates, cutoff):
-    panel = np.full((len(dates), 1), np.nan, np.float32)
-    visible = kinsa[kinsa.report_time <= cutoff].sort_values('report_time')
-    visible = visible.dropna(subset=['value']).drop_duplicates('reference_time', keep='last')
-    lookup = dict(zip(visible.reference_time, visible.value))
-    for t, day in enumerate(dates):
-        if day in lookup:
-            panel[t, 0] = lookup[day]
-    return panel
-
-
-def build_finalized(data_root='data', *, start=CALENDAR_START, end=None, locations=None):
-    """Truth-only array: no revision structure, latest resolved value per cell."""
-    locations = _locations(locations)
-    end = end or date.today().isoformat()
-    dates = _weekly_calendar(start, end)
-    cutoff = date.today().isoformat()
-    targets = _target_panel(data_root, dates, locations, cutoff)
-    claims_archives = _covariate_archives(data_root)
-    claims = _claims_panel(data_root, dates, locations, cutoff, claims_archives)
-    nwss = _nwss_panel(_nwss_frame(data_root), dates, locations, cutoff)
-    kinsa, kinsa_snapshot = _kinsa_weekly(data_root, cutoff)
-    national = _national_panel(kinsa, dates, cutoff)
-    covariates = np.concatenate([claims, nwss], axis=2)
-    # Finalized values are known-final by definition wherever they are available.
-    known_final = ~np.isnan(targets)
-    return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(locations),
-                targets=targets, target_names=np.array(CHANNELS), known_final=known_final,
-                covariates=covariates, covariate_mask=~np.isnan(covariates),
-                covariate_names=np.array(STATE_COVARIATE_NAMES),
-                covariates_national=national, covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES),
-                metadata=json.dumps(dict(version=1, kind='finalized', start=start, end=end,
-                                          channels=list(CHANNELS), covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
-                                          kinsa_snapshot=kinsa_snapshot)))
-
-
-def build_vintaged(data_root='data', *, start, end, lookback=DEFAULT_LOOKBACK,
-                    horizons=DEFAULT_HORIZONS, locations=None):
-    """One entry per historical Wednesday issuance, as-of-issuance visible values.
-
-    Targets are resolved twice per channel: once at the issuance cutoff (what a
-    Wednesday forecaster could actually see) and once at a pinned `truth_cutoff`
-    (the retrospective truth used to grade forecasts and to fill in context that
-    is old enough to no longer be revised). Horizon/target weeks have not been
-    reported yet as of the issuance cutoff by construction, so they always use
-    the truth resolution; only the two most recent context weeks keep their real
-    Wednesday vintage, falling back to truth if that vintage has no report yet.
-    """
-    locations = _locations(locations)
-    issuances = _wednesdays(start, end)
-    window = lookback + len(horizons)
-    target_archives = {name: _target_archive(data_root, name) for name in CHANNELS}
-    claims_archives = _covariate_archives(data_root)
-    nwss_frame = _nwss_frame(data_root)
-    kinsa, kinsa_snapshot = _kinsa_weekly(data_root, cutoff_time(end))
-    n_state, n_national = len(STATE_COVARIATE_NAMES), len(NATIONAL_COVARIATE_NAMES)
-    all_dates = np.empty((len(issuances), window), dtype='datetime64[D]')
-    targets = np.full((len(issuances), window, len(locations), len(CHANNELS)), np.nan, np.float32)
-    known_final = np.zeros((len(issuances), window, len(locations), len(CHANNELS)), dtype=bool)
-    covariates = np.full((len(issuances), window, len(locations), n_state), np.nan, np.float32)
-    national = np.full((len(issuances), window, n_national), np.nan, np.float32)
-    truth_cutoff = cutoff_time(end)
-    truth_states = {name: target_archives[name].resolve(truth_cutoff) for name in CHANNELS}
-    for i, issuance in enumerate(issuances):
-        end_of_context = (date.fromisoformat(issuance) - timedelta(days=4)).isoformat()
-        window_dates = tuple((date.fromisoformat(end_of_context) - timedelta(weeks=w)).isoformat()
-                              for w in reversed(range(lookback))) + \
-            tuple((date.fromisoformat(end_of_context) + timedelta(weeks=h)).isoformat() for h in horizons)
-        all_dates[i] = np.array(window_dates, dtype='datetime64[D]')
-        cutoff = cutoff_time(issuance)
-        for c, name in enumerate(CHANNELS):
-            archive = target_archives[name]
-            asof_values, asof_available = archive.panel(window_dates, locations, archive.resolve(cutoff))
-            truth_values, truth_available = archive.panel(window_dates, locations, truth_states[name])
-            use_truth = np.ones(window, dtype=bool)
-            use_truth[lookback - 2:lookback] = ~asof_available[lookback - 2:lookback]
-            values = np.where(use_truth[:, None], truth_values, asof_values)
-            available = np.where(use_truth[:, None], truth_available, asof_available)
-            targets[i, :, :, c] = np.where(available, values, np.nan)
-            known_final[i, :, :, c] = use_truth[:, None] & available
-        claims = _claims_panel(data_root, window_dates, locations, cutoff, claims_archives)
-        nwss = _nwss_panel(nwss_frame, window_dates, locations, cutoff)
-        covariates[i] = np.concatenate([claims, nwss], axis=2)
-        national[i] = _national_panel(kinsa, window_dates, cutoff)
-    return dict(issuance_dates=np.array(issuances, dtype='datetime64[D]'), dates=all_dates,
-                locations=np.array(locations), targets=targets, target_names=np.array(CHANNELS),
-                known_final=known_final,
-                covariates=covariates, covariate_mask=~np.isnan(covariates),
-                covariate_names=np.array(STATE_COVARIATE_NAMES),
-                covariates_national=national, covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES),
-                metadata=json.dumps(dict(version=1, kind='vintaged', start=start, end=end, lookback=lookback,
-                                          horizons=list(horizons), channels=list(CHANNELS),
-                                          covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
-                                          kinsa_snapshot=kinsa_snapshot)))
+def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=None):
+    """The panel as a dict of arrays; see the module docstring and the design doc."""
+    truth_day = truth_day or date.today().isoformat()
+    dates = weekly_calendar(start, truth_day)
+    issuances = wednesdays(start, truth_day)
+    depth = {name: ASOF_TARGET_WEEKS for name in CHANNELS}
+    depth.update({name: ASOF_COVARIATE_WEEKS for name in (*CLAIMS_SOURCES, 'nwss', 'kinsa_ili')})
+    tasks = [(name, data_root, dates, issuances, truth_day, d) for name, d in depth.items()]
+    with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:
+        results = {name: (truth, overlay, seconds) for name, truth, overlay, seconds in pool.map(_source, tasks)}
+    timings = {name: round(seconds, 1) for name, (_, _, seconds) in results.items()}
+    targets = np.concatenate([results[n][0] for n in CHANNELS], axis=2)
+    asof_targets = np.concatenate([results[n][1] for n in CHANNELS], axis=3)
+    covariates = np.concatenate([results[n][0] for n in CLAIMS_SOURCES] + [results['nwss'][0]], axis=2)
+    asof_covariates = np.concatenate([results[n][1] for n in CLAIMS_SOURCES] + [results['nwss'][1]], axis=3)
+    national = results['kinsa_ili'][0][:, LOCATIONS.index('US'), :]
+    asof_national = results['kinsa_ili'][1][:, :, LOCATIONS.index('US'), :]
+    assert list(CLAIMS_SOURCES) + list(NWSS_INDICES) == list(STATE_COVARIATE_NAMES)
+    snapshots = {key: _latest_snapshot(data_root, key).name for key in SNAPSHOT_DATASETS}
+    metadata = dict(version=2, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
+                    asof_target_weeks=ASOF_TARGET_WEEKS, asof_covariate_weeks=ASOF_COVARIATE_WEEKS,
+                    overlay_reference='overlay[w, j] is reference week context_end(issuance_w) - (depth-1-j) weeks; '
+                                      'context_end = issuance - 4 days; values visible by 23:59:59.999999 UTC on the issuance day',
+                    channels=list(CHANNELS), locations=list(LOCATIONS),
+                    covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
+                    snapshots=snapshots, source_seconds=timings)
+    return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(LOCATIONS),
+                target_names=np.array(CHANNELS), targets=targets,
+                covariate_names=np.array(STATE_COVARIATE_NAMES), covariates=covariates,
+                covariate_mask=~np.isnan(covariates),
+                covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
+                issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
+                asof_covariates=asof_covariates, asof_covariates_national=asof_national,
+                metadata=json.dumps(metadata))
 
 
 def save(arrays, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open('wb') as stream:
+    temporary = path.with_suffix('.tmp.npz')
+    with temporary.open('wb') as stream:
         np.savez_compressed(stream, **arrays)
+    temporary.replace(path)
 
 
 def load(path):
@@ -262,30 +171,28 @@ def load(path):
 
 def main(argv=None):
     import argparse
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='command', required=True)
-    build = sub.add_parser('build', help='Build both finalized.npz and vintaged.npz')
-    build.add_argument('--data-root', default='data')
-    build.add_argument('--start', default=CALENDAR_START)
-    build.add_argument('--vintaged-end', help='Last Wednesday issuance; defaults to the most recent Wednesday')
-    build.add_argument('--lookback', type=int, default=DEFAULT_LOOKBACK)
-    build.add_argument('--finalized-output', default=FINALIZED_DATASET)
-    build.add_argument('--vintaged-output', default=VINTAGED_DATASET)
-    show = sub.add_parser('show', help='Summarize a built array')
-    show.add_argument('--dataset', required=True)
+    build_parser = sub.add_parser('build', help='Build panel.npz')
+    build_parser.add_argument('--data-root', default='data')
+    build_parser.add_argument('--start', default=CALENDAR_START)
+    build_parser.add_argument('--truth-day', help='Resolve truth at the end of this UTC day (default: today)')
+    build_parser.add_argument('--workers', type=int, help='Parallel source processes (default: one per source)')
+    build_parser.add_argument('--output', default=PANEL_DATASET)
+    show = sub.add_parser('show', help='Summarize a built panel')
+    show.add_argument('--dataset', default=PANEL_DATASET)
     args = parser.parse_args(argv)
     if args.command == 'build':
-        vintaged_end = args.vintaged_end or _wednesdays(args.start, date.today().isoformat())[-1]
-        finalized = build_finalized(args.data_root, start=args.start, locations=None)
-        save(finalized, args.finalized_output)
-        vintaged = build_vintaged(args.data_root, start=args.start, end=vintaged_end, lookback=args.lookback)
-        save(vintaged, args.vintaged_output)
-        print(json.dumps(dict(finalized=dict(output=args.finalized_output, shape=list(finalized['targets'].shape)),
-                               vintaged=dict(output=args.vintaged_output, shape=list(vintaged['targets'].shape)))))
+        started = time.perf_counter()
+        arrays = build(args.data_root, start=args.start, truth_day=args.truth_day, workers=args.workers)
+        save(arrays, args.output)
+        print(json.dumps(dict(output=args.output, targets=list(arrays['targets'].shape),
+                              issuances=len(arrays['issuance_dates']), seconds=round(time.perf_counter() - started, 1),
+                              source_seconds=json.loads(str(arrays['metadata']))['source_seconds'])))
     else:
         arrays = load(args.dataset)
-        print(json.dumps({k: (list(v.shape) if hasattr(v, 'shape') and v.dtype != object else str(v))
-                           for k, v in arrays.items() if k != 'metadata'}, indent=2, default=str))
+        print(json.dumps({k: (list(v.shape) if k != 'metadata' else json.loads(str(v))) for k, v in arrays.items()},
+                         indent=2, default=str))
 
 
 if __name__ == '__main__':

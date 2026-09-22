@@ -5,9 +5,10 @@
 ```text
 src/tapestry/
   data/          Acquisition, snapshots, readers and selection
-  model_data/    Canonical weekly dataset and windows
-  models/        B0, training and season CV
-  evaluation/    Shared scoring, hub comparisons, exports and reports
+  dataset/       extract (revision tables), build (panel.npz), episodes, cv (season folds)
+  model/         The one Model network, Scenario and loss weighting
+  experiment/    Planner (plan/run/status/rank), Slurm dispatch, provenance
+  evaluation/    WIS scoring against frozen hub-ensemble support
   explorer/      Index, HTTP server, CLI and browser assets
 analysis/wval/   Standalone wastewater audit and evidence
 scripts/        Small launchers and CSV utility

@@ -5,7 +5,7 @@ Unchanged fair-CRPS loss weighting (docs/design/restructure-2026-unified.md §6:
 """
 import numpy as np
 
-from tapestry.dataset.splits import season
+from tapestry.dataset.cv import season
 
 TARGET_WEIGHTS = (1., 1., 1., .5, .5, .5)
 US_WEIGHT = .20

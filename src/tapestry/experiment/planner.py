@@ -3,8 +3,13 @@
 Collapses `models/manager.py` + `models/backends.py`: with one `Scenario` and one
 `Model`, there is no per-model branching left, only one leave-one-season-out
 training path (`fit`) shared by every scenario. Keeps the CLI shape (`plan`,
-`run`, `status`, `rank`) from the old manager; `compare` (EpiBench/R-only) has
-no replacement -- `rank`'s WIS-vs-frozen-ensemble ratio is the only comparison.
+`run`, `status`, `rank`) from the old manager. `rank` reports one score: the
+location-relative WIS ratio to the hub ensemble (`evaluation.totals`).
+
+`plan` records in `experiment.json` the dataset path, the frozen-support path, the
+score's US weight (`--us-score-weight`, default 0.2) and the sha256 of `panel.npz`
+and of the frozen manifest; `run` (and the Slurm dispatcher) refuse to fit when
+either hash no longer matches.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -14,6 +19,7 @@ from datetime import date
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -23,12 +29,11 @@ import time
 import numpy as np
 import torch
 
-from tapestry.dataset import splits
-from tapestry.dataset.build import (load as load_dataset, covariate_names_for, COVARIATE_GROUPS,
-                                     STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, FINALIZED_DATASET,
-                                     VINTAGED_DATASET)
+from tapestry.dataset import cv
+from tapestry.dataset.build import load as load_dataset, covariate_names_for, PANEL_DATASET
 from tapestry.model.network import Model, fair_crps_cells, draw_dropout, IndependentBundle, checkpoint, load_model
 from tapestry.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scales, LOSS_DEFINITION, US_WEIGHT
+from tapestry.evaluation.totals import US_SCORE_WEIGHT
 from tapestry.model.scenario import Scenario
 from .provenance import SEASONS, save, now, environment, git_state
 
@@ -59,116 +64,6 @@ def populations(path, locations):
                 raise ValueError(f'Invalid or duplicate population for {loc}')
             values[loc] = value
     return {loc: values[loc] for loc in locations}
-
-
-def assemble_covariates(arrays, covariate_names, indices=None):
-    """Per-location [.., K, L] value/available panel for the requested covariate names.
-
-    `covariates`/`covariate_mask` are already per-location; a national-only name
-    (currently `kinsa_ili`) is broadcast from `covariates_national`, available
-    only at the `US` column, exactly as the pre-restructuring B2 arrays did.
-    """
-    state_names = list(arrays['covariate_names'])
-    national_names = list(arrays['covariate_national_names'])
-    locations = list(arrays['locations'])
-    us = locations.index('US') if 'US' in locations else None
-    leading = arrays['covariates'].shape[:-2]
-    values = np.zeros((*leading, len(covariate_names), len(locations)), np.float32)
-    available = np.zeros_like(values, dtype=bool)
-    for k, name in enumerate(covariate_names):
-        if name in state_names:
-            j = state_names.index(name)
-            values[..., k, :] = arrays['covariates'][..., j]
-            available[..., k, :] = arrays['covariate_mask'][..., j]
-        elif name in national_names and us is not None:
-            j = national_names.index(name)
-            values[..., k, us] = arrays['covariates_national'][..., j]
-            available[..., k, us] = ~np.isnan(arrays['covariates_national'][..., j])
-        elif name in national_names:
-            pass  # No US column in this location set: stays unavailable everywhere.
-        else:
-            raise ValueError(f'Unknown covariate: {name}')
-    return values, available
-
-
-def _channel_first(panel):
-    """`[.., L, C]` (the array-on-disk convention) -> `[.., C, L]` (Model's convention)."""
-    return np.moveaxis(panel, -1, -2)
-
-
-def episodes_from_finalized(arrays, lookback, horizons=(1, 2, 3, 4), covariate_names=()):
-    """One episode per Saturday origin in a flat `[T, L, 6]` truth panel."""
-    dates = np.array([str(d) for d in arrays['dates']])
-    targets = _channel_first(arrays['targets'])
-    known_final = _channel_first(arrays['known_final'])
-    cov_values, cov_available = (assemble_covariates(arrays, covariate_names) if covariate_names else (None, None))
-    for end in range(lookback - 1, len(dates) - max(horizons)):
-        context = list(range(end - lookback + 1, end + 1))
-        future = [end + h for h in horizons]
-        available = ~np.isnan(targets[context])
-        if not available.any():
-            continue
-        target_available = ~np.isnan(targets[future])
-        if not target_available.any():
-            continue
-        episode = dict(values=np.nan_to_num(targets[context]), available=available,
-                       known_final=known_final[context],
-                       target_values=np.nan_to_num(targets[future]), target_available=target_available,
-                       context_dates=tuple(dates[context]), target_dates=tuple(dates[future]),
-                       locations=tuple(arrays['locations']))
-        episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
-        if covariate_names:
-            episode['covariates'] = np.stack((cov_values[context], cov_available[context]), axis=-2)
-        yield episode
-
-
-def episodes_from_vintaged(arrays, lookback, horizons=(1, 2, 3, 4), covariate_names=()):
-    """One episode per historical Wednesday issuance; window already materialized.
-
-    The array's context window is fixed at build time (`metadata['lookback']`).
-    A scenario may ask for a shorter lookback than was built; it then reads the
-    most recent `lookback` context weeks of that fixed window, keeping the
-    horizon slice anchored at the built lookback so target weeks never shift.
-    """
-    built_lookback = json.loads(str(arrays['metadata']))['lookback']
-    if lookback > built_lookback:
-        raise ValueError(f'Scenario lookback {lookback} exceeds the built vintaged lookback {built_lookback}')
-    targets = _channel_first(arrays['targets'])
-    known_final = _channel_first(arrays['known_final'])
-    cov_values, cov_available = (assemble_covariates(arrays, covariate_names) if covariate_names else (None, None))
-    for i in range(len(arrays['issuance_dates'])):
-        context = slice(built_lookback - lookback, built_lookback)
-        future = slice(built_lookback, built_lookback + len(horizons))
-        available = ~np.isnan(targets[i, context])
-        if not available.any():
-            continue
-        target_available = ~np.isnan(targets[i, future])
-        if not target_available.any():
-            continue
-        episode = dict(values=np.nan_to_num(targets[i, context]), available=available,
-                       known_final=known_final[i, context],
-                       target_values=np.nan_to_num(targets[i, future]), target_available=target_available,
-                       context_dates=tuple(str(d) for d in arrays['dates'][i, context]),
-                       target_dates=tuple(str(d) for d in arrays['dates'][i, future]),
-                       locations=tuple(arrays['locations']))
-        episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
-        if covariate_names:
-            episode['covariates'] = np.stack((cov_values[i, context], cov_available[i, context]), axis=-2)
-        yield episode
-
-
-def episodes(scenario, dataset_root='data/processed'):
-    """All usable episodes for a scenario's `input_mode`, plus their calendar labels."""
-    covariate_names = covariate_names_for(scenario.covariate_set)
-    if scenario.input_mode == 'finalized':
-        arrays = load_dataset(Path(dataset_root) / 'finalized.npz')
-        eps = list(episodes_from_finalized(arrays, scenario.lookback, covariate_names=covariate_names))
-    else:
-        arrays = load_dataset(Path(dataset_root) / 'vintaged.npz')
-        eps = list(episodes_from_vintaged(arrays, scenario.lookback, covariate_names=covariate_names))
-    if not eps:
-        raise ValueError(f'No usable episodes for input_mode={scenario.input_mode!r}')
-    return eps
 
 
 def to_tensors(batch, device):
@@ -289,45 +184,64 @@ def unique_truth(episodes_):
     return panel
 
 
-def fit(scenario, seed, held_out_season, eval_members, device, output, dataset_root='data/processed'):
-    """One leave-one-season-out fold: fit, evaluate the held-out season, save."""
-    eps = episodes(scenario, dataset_root)
-    dates = [e['context_dates'][-1] for e in eps]
-    split = splits.season_split(dates, held_out_season)
-    train_eps = [e for e, keep in zip(eps, split.train) if keep]
-    val_eps = [e for e, keep in zip(eps, split.val) if keep] or None
-    score_eps = [e for e, keep in zip(eps, split.score) if keep]
-    if not train_eps or not score_eps:
-        raise ValueError(f'No usable training/scoring episodes for held-out {held_out_season}')
-    pop = populations(LOCATIONS, train_eps[0]['locations'])
+def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=PANEL_DATASET):
+    """One leave-one-season-out fold (`dataset.cv`): select epochs, refit, evaluate the held-out season."""
+    panel = load_dataset(dataset)
+    full = cv.fold(panel, scenario, held_out_season)
+    inner = cv.fold(panel, scenario, held_out_season, inner=True) if scenario.patience else None
+    pop = populations(LOCATIONS, full.train[0]['locations'])
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     groups = GROUPS[scenario.fit_partition]
     models, records = [], []
     for i, channels in enumerate(groups):
-        options = model_options(train_eps, scenario, pop)
         selected = scenario.epochs
-        if scenario.patience and val_eps:
-            _, record = fit_component(train_eps, val_eps, channels, i, options, scenario, seed, device)
+        if inner:
+            _, record = fit_component(inner.train, inner.validation, channels, i,
+                                      model_options(inner.train, scenario, pop), scenario, seed, device)
             records.append(record)
             selected = record['selected_epoch']
-        model, record = fit_component(train_eps, None, channels, i, options, scenario, seed, device, epochs=selected)
+        model, record = fit_component(full.train, None, channels, i, model_options(full.train, scenario, pop),
+                                      scenario, seed, device, epochs=selected)
         models.append(model)
         records.append(record)
     model = models[0] if scenario.fit_partition == 'all' else IndependentBundle(models, groups)
     metadata = dict(scenario=scenario.scenario_string, run_id=scenario.run_id, config=asdict(scenario),
                     seed=seed, held_out_season=held_out_season, groups=groups,
-                    protocol='season_split_refit_v1', records=records,
-                    loss=LOSS_DEFINITION, us_weight=US_WEIGHT, channels=list(load_dataset(
-                        Path(dataset_root) / ('vintaged.npz' if scenario.input_mode == 'vintaged' else 'finalized.npz'))['target_names']),
-                    locations=list(train_eps[0]['locations']), eval_members=eval_members, **environment())
+                    protocol='masked_panel_season_cv_refit_v2', fold=full.info,
+                    inner_fold=inner.info if inner else None, records=records,
+                    loss=LOSS_DEFINITION, us_weight=US_WEIGHT, channels=[str(c) for c in panel['target_names']],
+                    dataset=str(dataset), dataset_sha256=sha256(dataset),
+                    locations=list(full.train[0]['locations']), eval_members=eval_members, **environment())
     torch.save(checkpoint(model, metadata), output / 'model.pt')
     save(output / 'manifest.json', metadata)
     model.to(device)
-    scores = evaluate(model, score_eps, eval_members, device, output)
+    scores = evaluate(model, full.score, eval_members, device, output)
     metadata['evaluation_scores'] = len(scores)
     save(output / 'manifest.json', metadata)
     return output / 'model.pt'
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with open(path, 'rb') as stream:
+        for block in iter(lambda: stream.read(1 << 20), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def pinned_inputs(settings):
+    """Hashes of the dataset and frozen-support manifest an experiment was planned against."""
+    return dict(dataset_sha256=sha256(settings['dataset']),
+                frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'))
+
+
+def check_pinned_inputs(settings):
+    current = pinned_inputs(settings)
+    changed = [k for k, v in current.items() if settings.get(k) != v]
+    if changed:
+        raise ValueError(f'{changed} differ from plan time ({settings["dataset"]}, {settings["frozen"]}); '
+                         'rebuilding data or frozen support needs a new experiment name')
 
 
 def evaluate(model, eps, eval_members, device, output, name=''):
@@ -382,8 +296,29 @@ def write_jobs(folder, jobs):
     write_csv(folder / 'jobs.csv', [dict(job, seeds=' '.join(map(str, job['seeds']))) for job in jobs], JOB_FIELDS)
 
 
+def snapshot_code(folder):
+    """Copy src/ and the Slurm launchers into `folder/code` and the notifier into
+    `folder/notifications`, so jobs run the code the experiment was planned with even
+    while the working tree moves on (scripts/jlessler.sbatch puts `code/src` first on
+    PYTHONPATH). Refreshed on every `plan`: re-planning an experiment re-pins its code."""
+    root = Path(__file__).resolve().parents[3]
+    destination = folder / 'code'
+    if destination.exists():
+        shutil.rmtree(destination)
+    files = list((root / 'src').rglob('*.py')) + [root / 'scripts/jlessler.sbatch',
+                                                  root / 'scripts/notify.sbatch', root / 'pyproject.toml']
+    for source in files:
+        target = destination / source.relative_to(root)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    (folder / 'notifications').mkdir(exist_ok=True)
+    shutil.copy2(root / 'scripts/b01_notify.py', folder / 'notifications' / 'b01_notify.py')
+    save(destination / 'git.json', git_state())
+
+
 def plan(folder, scenarios, seeds, settings):
     folder.mkdir(parents=True, exist_ok=True)
+    snapshot_code(folder)
     path = folder / 'experiment.json'
     previous = json.loads(path.read_text()) if path.exists() else {}
     changed = sorted(k for k, v in previous.items() if k in settings and settings[k] != v)
@@ -435,12 +370,14 @@ def run_seed(folder, job, seed, settings):
     if seed_state(folder, job['scenario'], seed)[2]:
         print(f'Reusing {job["name"]}, seed {seed}', flush=True)
         return True
+    check_pinned_inputs(settings)
     number = len(attempts(folder, job['scenario'], seed)) + 1
     attempt = folder / scenario_directory(job['scenario']) / f's{seed}' / f'attempt-{number:03d}'
     attempt.mkdir(parents=True, exist_ok=False)
     command = [sys.executable, '-m', 'tapestry.experiment.planner', 'fit', '--scenario', job['scenario'],
                '--seed', str(seed), '--device', settings['device'],
-               '--eval-members', str(settings['eval_members']), '--output', str(attempt)]
+               '--eval-members', str(settings['eval_members']), '--dataset', settings['dataset'],
+               '--frozen', settings['frozen'], '--output', str(attempt)]
     record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
                  settings=settings, command=command, started=now(), **environment())
     save(attempt / 'run.json', record)
@@ -519,11 +456,12 @@ def completed_runs(folder, allow_incomplete=False, seeds=None):
 
 def rank(folder, allow_incomplete=False, seeds=None):
     from tapestry.evaluation.totals import rank as rank_runs
+    settings = json.loads((folder / 'experiment.json').read_text())
     done = completed_runs(folder, allow_incomplete, seeds)
     destination = folder / f"ranking-{hashlib.sha256(json.dumps(sorted(r['attempt'] for r in done)).encode()).hexdigest()[:12]}"
     runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'])
             for row in sorted(done, key=lambda r: r['attempt'])]
-    ranking = rank_runs(runs, destination)
+    ranking = rank_runs(runs, destination, us_weight=settings['us_score_weight'])
     print(ranking.head(20).to_string(index=False), flush=True)
     return destination
 
@@ -536,6 +474,8 @@ def main(argv=None):
     fit_parser.add_argument('--seed', type=int, default=42)
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
     fit_parser.add_argument('--eval-members', type=int, default=256)
+    fit_parser.add_argument('--dataset', default=PANEL_DATASET)
+    fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
     for name in ('plan', 'run', 'status', 'rank'):
         p = sub.add_parser(name)
@@ -546,6 +486,10 @@ def main(argv=None):
             p.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
             p.add_argument('--eval-members', type=int, default=256)
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
+            p.add_argument('--dataset', default=PANEL_DATASET)
+            p.add_argument('--frozen', default=FROZEN)
+            p.add_argument('--us-score-weight', type=float, default=US_SCORE_WEIGHT,
+                           help='US share of the location-relative score (states/DC share the rest equally)')
         if name == 'run':
             p.add_argument('-t', '--task', nargs='+', type=int, default=None)
             p.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default=None)
@@ -561,18 +505,22 @@ def main(argv=None):
         scenario = Scenario.from_string(args.scenario)
         output = Path(args.output)
         for held_out in SEASONS:
-            fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}')
+            fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}', args.dataset)
         folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in SEASONS}
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
                                             seed=args.seed, folds=list(SEASONS), fold_manifests=folds,
-                                            eval_members=args.eval_members))
+                                            eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
         from tapestry.evaluation.totals import score_run
-        score_run(output, FROZEN)
+        score_run(output, args.frozen)
         return
     folder = Path(args.root) / args.experiment
     if args.command == 'plan':
         scenarios = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}
-        settings = dict(device=args.device, eval_members=args.eval_members, frozen=FROZEN)
+        if not 0 <= args.us_score_weight <= 1:
+            parser.error('--us-score-weight must be between 0 and 1')
+        settings = dict(device=args.device, eval_members=args.eval_members, dataset=args.dataset,
+                        frozen=args.frozen, us_score_weight=args.us_score_weight)
+        settings.update(pinned_inputs(settings))
         jobs = plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(args.seeds),
                               runs=len(jobs) and len(scenarios) * len(args.seeds))))

@@ -8,7 +8,10 @@ from tapestry.data.selection import SelectedData
 from tapestry.data.sources.hub_history import write_history, HISTORY_FILE
 from tapestry.data.sources.hubverse import HubMirror
 from tapestry.explorer.index import ExplorerIndex
-from tapestry.dataset.extract import VintageArchive, ingest_hub_target
+import numpy as np
+import pandas as pd
+
+from tapestry.dataset.extract import Revisions, resolve, revisions
 
 
 def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
@@ -45,18 +48,18 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
     assert len(records) == 2
     assert all(r.available_at.startswith('2023-11-21') for r in records)
     assert list(SelectedData(raw.root).iter_records(available_by='2023-11-20')) == []
-    archive = ingest_hub_target(VintageArchive(), raw.root, spec.key)
+    archive = revisions('nhsn_flu_admissions', raw.root)
     dates = ('2023-11-04', '2023-11-11')
-    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-22'))
-    assert x[:, 0].tolist() == [10, 20] and a[:, 0].all()
-    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0].tolist() == [0, 30] and not a[0, 0]
-    assert not archive.panel(dates, ('NC',), archive.resolve('2023-11-24'))[1].any()
+    at = lambda archive, day: resolve(archive, day, dates, ('NC',))[:, 0]
+    np.testing.assert_array_equal(at(archive, '2023-11-22'), [10, 20])
+    np.testing.assert_array_equal(at(archive, '2023-11-23'), [np.nan, 30])
+    assert np.isnan(at(archive, '2023-11-24')).all()
     # Native as_of snapshots remain authoritative where they establish coverage;
     # Git must not resurrect native omissions or nulls, nor override native values.
-    archive.add(spec.key, '2023-11-22', '2023-11-04', 'NC', 11)
-    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0].tolist() == [11, 0] and not a[1, 0]
+    native = pd.DataFrame(dict(tier=['hub'], release=np.array(['2023-11-22'], 'datetime64[ns]'), day=['2023-11-04'],
+                               location=['NC'], value=[11.]))
+    rows = pd.concat([archive.rows, native], ignore_index=True).sort_values(['day', 'location', 'release'])
+    np.testing.assert_array_equal(at(Revisions(rows, archive.git_releases), '2023-11-23'), [11, np.nan])
     index = ExplorerIndex(raw.root)
     index.build(progress=lambda _: None)
     with index.connect() as db:
