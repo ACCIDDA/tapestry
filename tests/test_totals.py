@@ -7,7 +7,7 @@ pytest.importorskip('torch')
 
 from tapestry.evaluation.totals import (METRICS, configuration_ranking, quantile_scores, rank, run_scores,
                                         season_scores)
-from tapestry.models.quantiles import LEVELS
+from tapestry.evaluation.quantiles import LEVELS
 
 
 def test_wis_components_match_interval_and_pinball_definitions():

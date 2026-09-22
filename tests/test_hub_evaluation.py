@@ -1,10 +1,10 @@
 import numpy as np
 
-from tapestry.models.season_cv import LEVELS
+from tapestry.evaluation.quantiles import LEVELS
 
 
 def test_export_maps_leads_and_channel_order(tmp_path):
-    from tapestry.evaluation.hubs import export_b0, SEASONS
+    from tapestry.evaluation.hubs import export, SEASONS
     from datetime import date, timedelta
     for i, label in enumerate(SEASONS):
         folder = tmp_path / f'eval_{label}'
@@ -15,7 +15,7 @@ def test_export_maps_leads_and_channel_order(tmp_path):
         np.savez(folder / 'forecasts.npz', quantile_levels=LEVELS, quantiles=q,
                  context_end=[context.isoformat()], target_dates=[targets], locations=['NC'],
                  truth=np.zeros((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), dtype=bool))
-    frame = export_b0(tmp_path)[('2023-2024', 'wk inc flu prop ed visits')]
+    frame = export(tmp_path)[('2023-2024', 'wk inc flu prop ed visits')]
     assert frame.reference_date.unique().tolist() == ['2023-10-14']
     assert frame.horizon.tolist() == [0, 1, 2, 3]
     assert frame.location.tolist() == ['37'] * 4

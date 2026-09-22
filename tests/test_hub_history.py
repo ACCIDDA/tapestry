@@ -8,7 +8,7 @@ from tapestry.data.selection import SelectedData
 from tapestry.data.sources.hub_history import write_history, HISTORY_FILE
 from tapestry.data.sources.hubverse import HubMirror
 from tapestry.explorer.index import ExplorerIndex
-from tapestry.model_data.wednesday import read_archive
+from tapestry.dataset.extract import VintageArchive, ingest_hub_target
 
 
 def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
@@ -45,18 +45,18 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
     assert len(records) == 2
     assert all(r.available_at.startswith('2023-11-21') for r in records)
     assert list(SelectedData(raw.root).iter_records(available_by='2023-11-20')) == []
-    archive = read_archive(raw.root)
+    archive = ingest_hub_target(VintageArchive(), raw.root, spec.key)
     dates = ('2023-11-04', '2023-11-11')
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-22'))
-    assert x[:, 0, 0].tolist() == [10, 20] and a[:, 0, 0].all()
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0, 0].tolist() == [0, 30] and not a[0, 0, 0]
+    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-22'))
+    assert x[:, 0].tolist() == [10, 20] and a[:, 0].all()
+    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
+    assert x[:, 0].tolist() == [0, 30] and not a[0, 0]
     assert not archive.panel(dates, ('NC',), archive.resolve('2023-11-24'))[1].any()
     # Native as_of snapshots remain authoritative where they establish coverage;
     # Git must not resurrect native omissions or nulls, nor override native values.
-    archive.add(spec.key, '2023-11-22', '2023-11-04', 0, 'NC', 11)
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0, 0].tolist() == [11, 0] and not a[1, 0, 0]
+    archive.add(spec.key, '2023-11-22', '2023-11-04', 'NC', 11)
+    x, a = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
+    assert x[:, 0].tolist() == [11, 0] and not a[1, 0]
     index = ExplorerIndex(raw.root)
     index.build(progress=lambda _: None)
     with index.connect() as db:

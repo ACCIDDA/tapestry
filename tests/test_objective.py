@@ -4,8 +4,8 @@ import pytest
 
 torch = pytest.importorskip('torch')
 
-from tapestry.models.b0 import fair_crps_cells
-from tapestry.models.objective import loss_cell_weights, loss_scales
+from tapestry.model.network import fair_crps_cells
+from tapestry.model.objective import loss_cell_weights, loss_scales
 
 
 def test_seasons_channels_and_locations_have_explicit_weight_despite_missingness():

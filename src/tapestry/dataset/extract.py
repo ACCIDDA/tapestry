@@ -192,6 +192,39 @@ def _archive_for(data_root, hub_dataset, delphi_dataset, delphi_signal, hub_orig
     return archive
 
 
+def ingest_hub_target(archive, data_root, dataset_key, target=None, value_column='observation'):
+    """Generic Hub full-snapshot/native-vintage ingestion for one target label.
+
+    Shared by `_archive_for`'s hub branch and any direct Hub-history consumer
+    (e.g. explorer provenance checks) that needs the same native-as_of/Git
+    full-snapshot resolution without a target/pathogen-specific archive.
+    """
+    for table in SelectedData(data_root).selected_tables(dataset_key=dataset_key):
+        is_git = getattr(table, 'source_path', '') == 'git-history.ndjson.gz'
+        source_key = dataset_key + ':git' if is_git else dataset_key
+        if is_git:
+            for release in table.release_times:
+                archive.hub.setdefault(source_key, {}).setdefault(_release_time(release), {})
+        for row in table.iter_rows():
+            if target is not None and str(row.get('target', target)) != target:
+                continue
+            loc = observation_geography(row, table.geographic_resolutions)
+            if loc not in STATE_NAMES and loc != 'US':
+                continue
+            release = row.get(table.vintage_column)
+            if not release:
+                continue
+            day = saturday(row.get(table.event_date_column) or row.get('target_end_date') or row.get('date')).isoformat()
+            try:
+                value = float(row.get(value_column))
+                if not np.isfinite(value) or value < 0:
+                    value = None
+            except (TypeError, ValueError):
+                value = None
+            archive.add(source_key, release, day, loc, value, table.snapshot_id, table.source_path)
+    return archive
+
+
 def _target_archive(data_root, name):
     hub_dataset, delphi_dataset, delphi_signal, hub_origin = TARGET_SOURCES[name]
     upper = name.startswith('nssp_') or name.startswith('nhsn_') and False
