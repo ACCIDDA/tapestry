@@ -8,7 +8,10 @@ from tapestry.data.selection import SelectedData
 from tapestry.data.sources.hub_history import write_history, HISTORY_FILE
 from tapestry.data.sources.hubverse import HubMirror
 from tapestry.explorer.index import ExplorerIndex
-from tapestry.model_data.wednesday import read_archive
+import numpy as np
+import pandas as pd
+
+from tapestry.dataset.extract import Revisions, _publication_times, resolve, revisions
 
 
 def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
@@ -45,25 +48,43 @@ def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):
     assert len(records) == 2
     assert all(r.available_at.startswith('2023-11-21') for r in records)
     assert list(SelectedData(raw.root).iter_records(available_by='2023-11-20')) == []
-    archive = read_archive(raw.root)
+    archive = revisions('nhsn_flu_admissions', raw.root)
     dates = ('2023-11-04', '2023-11-11')
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-22'))
-    assert x[:, 0, 0].tolist() == [10, 20] and a[:, 0, 0].all()
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0, 0].tolist() == [0, 30] and not a[0, 0, 0]
-    assert not archive.panel(dates, ('NC',), archive.resolve('2023-11-24'))[1].any()
-    # Native as_of snapshots remain authoritative where they establish coverage;
-    # Git must not resurrect native omissions or nulls, nor override native values.
-    archive.add(spec.key, '2023-11-22', '2023-11-04', 0, 'NC', 11)
-    x, a, _, _ = archive.panel(dates, ('NC',), archive.resolve('2023-11-23'))
-    assert x[:, 0, 0].tolist() == [11, 0] and not a[1, 0, 0]
+    at = lambda archive, day: resolve(archive, day, dates, ('NC',))[:, 0]
+    np.testing.assert_array_equal(at(archive, '2023-11-22'), [10, 20])
+    np.testing.assert_array_equal(at(archive, '2023-11-23'), [np.nan, 30])
+    assert np.isnan(at(archive, '2023-11-24')).all()
+    # The most recent release wins per cell (2026-09-22): a native as_of snapshot is
+    # authoritative only until Git publishes something newer. Here the native snapshot
+    # of 11-22 (11-04 = 11, 11-11 absent) is superseded on 11-23 by the Git snapshot
+    # (11-04 absent, 11-11 = 30). Before that change the native tier won both cells
+    # for every later date, which is how stale Hub snapshots hid released data.
+    native = pd.DataFrame(dict(tier=['hub'], release=np.array(['2023-11-22'], 'datetime64[ns]'), day=['2023-11-04'],
+                               location=['NC'], value=[11.]))
+    rows = pd.concat([archive.rows, native], ignore_index=True).sort_values(['day', 'location', 'release'])
+    combined = Revisions(rows, archive.git_releases)
+    # At 11-22 the native snapshot is the most recent statement: its value for 11-04
+    # and, because a full snapshot's omission is a deletion at its own release time,
+    # nothing for 11-11 (the Git snapshot that still had 20 is older, from 11-21).
+    np.testing.assert_array_equal(at(combined, '2023-11-22'), [11, np.nan])
+    np.testing.assert_array_equal(at(combined, '2023-11-23'), [np.nan, 30])
+    # A native as_of that is the snapshot's own last reference week is a week-ending
+    # label, not a publication time: it moves to the first Git release that reaches
+    # that week, so the label cannot make a snapshot visible before it existed.
+    labelled = pd.DataFrame(dict(tier=['hub'], release=np.array(['2023-11-11'], 'datetime64[ns]'), day=['2023-11-11'],
+                                 location=['NC'], value=[12.]))
+    moved = _publication_times(pd.concat([archive.rows, labelled], ignore_index=True))
+    assert moved[moved.tier.eq('hub')].release.tolist() == [pd.Timestamp('2023-11-21T12:00:00')]
     index = ExplorerIndex(raw.root)
     index.build(progress=lambda _: None)
     with index.connect() as db:
         sid = db.execute('SELECT id FROM series WHERE source_path=?', (HISTORY_FILE,)).fetchone()[0]
     def points(day):
         return index.data('NC', [sid], as_of=day)['series'][0]['points']
+    # The explorer API rounds an as-of date back to the preceding Wednesday or
+    # Saturday end of day (docs/explorer/overview.md), never forward: Thursday's
+    # revision is not visible on Thursday; Saturday sees Friday's whole-file deletion.
     assert points('2023-11-20') == []
     assert [p[1] for p in points('2023-11-22')] == [10, 20]
-    assert [p[1] for p in points('2023-11-23')] == [30]
-    assert points('2023-11-24') == []
+    assert [p[1] for p in points('2023-11-23')] == [10, 20]
+    assert points('2023-11-25') == []

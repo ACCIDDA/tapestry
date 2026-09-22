@@ -60,12 +60,6 @@ NSSP_COLUMNS = {
     "percent_visits_smoothed_covid": "covid",
     "percent_visits_smoothed_rsv": "rsv",
 }
-NWSS_COLUMNS = {
-    "pcr_target_avg_conc": "concentration",
-    "pcr_target_avg_conc_lin": "concentration_linear",
-    "pcr_target_flowpop_lin": "flow_population_normalized",
-    "pcr_target_mic_lin": "microbial_normalized",
-}
 NWSS_LABELS = {
     "concentration": "Measured concentration",
     "concentration_linear": "Concentration with below-detection substitution",
@@ -175,8 +169,6 @@ def measure_columns(key: str, columns: Sequence[str], path: str = "") -> tuple[s
         allowed = {"percent_visits"}
     elif key == "delphi_nssp":
         allowed = {"value"}
-    elif key.startswith("cdc_nwss_"):
-        allowed = {"site_wval"} if key == "cdc_nwss_wval" else NWSS_COLUMNS
     elif key == "delphi_nwss":
         allowed = {"value"}
     elif key == "derived_nwss_state_indices":
@@ -228,9 +220,7 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
         name = mapped_column if mapped_column in NSSP_COLUMNS else f"percent_visits_{pathogen}"
         title = f"{pathogen.upper() if pathogen in {'rsv','ari'} else pathogen.title()} · ED visit percentage"
     elif group == "nwss":
-        pathogen = {"cdc_nwss_covid_raw": "covid", "cdc_nwss_influenza_raw": "flu",
-                    "cdc_nwss_rsv_raw": "rsv"}.get(key, pathogen)
-        name = "activity_level" if key == "cdc_nwss_wval" else NWSS_COLUMNS.get(column, column)
+        name = column
         if signal:
             pathogen, _, suffix = signal.partition("_")
             name = {"avg_conc": "concentration", "avg_conc_lin": "concentration_linear",

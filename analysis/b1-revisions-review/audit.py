@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 sys.path.insert(0,'scripts')
 from plot_b1_revisions import parse, nowcast_locations, nowcast_scores, nowcast_runs
-OUT=Path('docs/results/b1-overnight/revisions')
+OUT=Path('docs/legacy-v0/results/b1-overnight/revisions')
 root=Path('data/experiments/B1-revisions-20260917')
 ranking=next(root.glob('ranking-*'))
 runs=json.loads((ranking/'manifest.json').read_text())['runs']

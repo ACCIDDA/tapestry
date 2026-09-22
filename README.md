@@ -9,38 +9,34 @@ influpaint v2, or maybe not too much like influpaint.  Tapestry is a research pr
 From the repository root:
 
 ```bash
-uv sync --upgrade-package epibenchmark
-uv run python -m tapestry.models --help
+uv sync
+uv run python -m tapestry.experiment.planner --help
 uv run pytest -q
 ```
 
-`uv` manages the Python 3.11 `.venv` and Python dependencies, including
-EpiBenchmark from GitHub `main`, training, evaluation, explorer and tests.
-The sync command above checks for EpiBenchmark updates; `uv.lock` stays local.
-R is separate: scoring requires `Rscript` on `PATH`. After installing R, run
-`Rscript scripts/setup_r.R` to install missing `scoringutils` and `purrr` packages.
-See [environment setup](docs/getting-started.md) for fresh-machine R installation
-and lighter Python installs.
+`uv` manages the Python 3.11 `.venv` and Python dependencies for training,
+evaluation, explorer and tests. Scoring is pure Python (`tapestry.evaluation.totals`);
+no R or EpiBenchmark dependency remains. See [environment setup](docs/getting-started.md)
+for lighter Python installs.
 
 ## Start with the canonical training dataset
 
 Run from the repository root:
 
 ```bash
-uv sync --upgrade-package epibenchmark
-# Needed only when acquiring or refreshing the two training sources:
+uv sync
+# Needed only when acquiring or refreshing the training sources:
 uv run python -m tapestry.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
-uv run python -m tapestry.model_data build --data-root data \
-  --output data/processed/build_b_finalized.npz
-uv run python -m tapestry.model_data inspect
-uv run python -m tapestry.models.season_cv --output data/experiments/my_b0_cv
+uv run python -m tapestry.dataset.build build --data-root data
+uv run python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
+uv run python -m tapestry.experiment.planner plan -e my_experiment -s '' --seeds 42
 ```
 
 The dataset contains weekly NHSN admissions and NSSP ED proportions for
 flu/COVID/RSV, with values and availability masks for 50 states, DC, and native US.
 Training reads the saved dataset; it does not need to download data or run the explorer.
 Use a new output directory for a new experiment. See the
-[dataset contract](docs/data/build-b-finalized.md) and
+[dataset contract](docs/legacy-v0/data/build-b-finalized.md) and
 [training/prediction guide](docs/workflows/training.md).
 
 This is finalized retrospective research: NSSP's latest saved values are assumed
@@ -58,7 +54,7 @@ weeks are forecast from the resulting recent values. This is retrospective
 conditional forecasting; later finals are not claimed available on Wednesday.
 MLP, convolution, multiscale and spatial formulations have canonical scenario
 strings, with independently configurable masking rates.
-See the [B1 implementation and commands](docs/design/b1.md).
+See the [B1 implementation and commands](docs/legacy-v0/design/b1.md).
 
 ## Explore and compare
 
@@ -73,44 +69,40 @@ and [storage/provenance](docs/data/storage.md). Broad `--group all` downloads ar
 optional; they are not required to train the current six-channel model.
 Delphi requires an API key; Git is needed for Hubverse sources.
 
-Saved CV forecasts can be evaluated without refitting. Hub scoring uses R
-`scoringutils`; configuration plots use the installed EpiBenchmark package.
-Follow [hub comparison](docs/workflows/hub-evaluation.md), then
-[configuration comparison](docs/workflows/configuration-evaluation.md).
+Saved CV forecasts can be evaluated without refitting; hub scoring is pure
+Python (`tapestry.evaluation.totals`).
 
 ## Where things live
 
 | Directory | Purpose |
 |---|---|
 | `src/tapestry/data/` | Acquisition, snapshots, source readers, geography, selection |
-| `src/tapestry/model_data/` | Canonical dataset, windows, masks |
-| `src/tapestry/models/` | Model and reusable training/CV code |
-| `src/tapestry/evaluation/` | Shared scoring, hub comparison, exports and reports |
+| `src/tapestry/dataset/` | `extract`/`build`/`episodes`/`cv`: the one panel (`panel.npz`) and season CV |
+| `src/tapestry/model/` | The unified `Model` network, `Scenario` codec, objective |
+| `src/tapestry/experiment/` | `planner.py` plan/run/status/rank/plots, `dispatch.py`, `provenance.py` |
+| `src/tapestry/evaluation/` | `totals.py` the one score, `hubs.py` export, `plots.py` the four figures |
 | `src/tapestry/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
 | `analysis/wval/` | Standalone wastewater analysis and evidence |
-| `scripts/` | Small checkout launchers and CSV conversion utility |
+| `scripts/` | Slurm launchers, notifier, data/explorer checkout launchers, CSV conversion |
 | `docs/workflows/` | Current commands and behavior |
-| `docs/results/` | Completed experiment findings |
-| `docs/design/` | Research proposals |
+| `docs/results/` | Experiment reports written by `planner rank` |
+| `docs/design/` | The unified-model design |
+| `docs/legacy-v0/` | Pre-2026-09-22 B0/B1/B2 designs, results and workflows |
 | `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
 
 Downloaded data, checkpoints, and generated results live in `data/`, `output/`,
-and `tmp/`. The [experiment manager](docs/workflows/experiment-manager.md)
-plans, runs, and scores named B0 experiments. See [development](docs/development.md) and
-[features and tests](docs/maintenance.md).
+and `tmp/`. `tapestry.experiment.planner` plans, runs, and scores experiments.
+See [development](docs/development.md) and [features and tests](docs/maintenance.md).
 
 ## Tests
 
 ```bash
-uv sync --upgrade-package epibenchmark
+uv sync
 uv run pytest -q
 ```
 
 The suite only keeps tests that protect reported results. GitHub Actions runs it
-on pushes and pull requests to `main`, with R `scoringutils` installed. Tests use
-fixtures and local temporary files; integration tests exercise R scoring and/or
-EpiBench and skip when `Rscript` is absent (run `Rscript scripts/setup_r.R` if
-`Rscript` exists but `scoringutils` does not).
+on pushes and pull requests to `main`. Tests use fixtures and local temporary files.
 See [what the tests do](docs/maintenance.md#what-the-tests-do).
 
 ## Files kept locally
@@ -119,4 +111,4 @@ Git excludes surveillance data, processed panels, checkpoints, generated output
 folders, downloaded analysis evidence, reference PDFs/extracted text, and credentials.
 The source catalog is `src/tapestry/data/catalog.py`. Download/build the data
 separately using the commands above.
-The supported dataset command is `python -m tapestry.model_data build`.
+The supported dataset command is `python -m tapestry.dataset.build build`.

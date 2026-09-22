@@ -22,7 +22,7 @@ tapestry.data
 
 ## Explore reporting availability
 
-[What is available when we forecast?](reporting-availability.md) explains the
+[What is available when we forecast?](../legacy-v0/data/reporting-availability.md) explains the
 Wednesday/Saturday timeline, NHSN and NSSP availability and revisions, reporting
 regimes, and what these data imply for validating forecasts and nowcasts.
 

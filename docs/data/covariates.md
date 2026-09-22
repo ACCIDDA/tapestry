@@ -5,7 +5,7 @@ Status: analysis note, 2026-09-20. Companion to
 applies it to Delphi's inpatient claims, outpatient claims, and PopHIVE ED
 signals, and puts all four candidates on one axis.
 
-The [completed B2 screen](../results/B2-screen/index.md) now provides held-out
+The [completed B2 screen](../legacy-v0/results/B2-screen/index.md) now provides held-out
 WIS results and a fold-support diagnosis. The regressions below are earlier
 in-sample exploratory evidence; their source rankings and recommendations
 are not conclusions from that forecasting experiment.

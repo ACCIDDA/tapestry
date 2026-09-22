@@ -47,26 +47,13 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Architecture: design/architecture.md
   - Getting started: getting-started.md
+  - Current workflow: workflows/training.md
+  - Unified model design: design/restructure-2026-unified.md
+  - Architecture: design/architecture.md
   - Longleaf setup: longleaf-setup.md
-  - B0:
-      - Definition and implementation: data/build-b-finalized.md
-      - B0.0 results: results/b0-crosses/index.md
-      - B0.0 follow-up and adopted objective: results/b0-crosses/next-steps.md
-      - B0.1 experiment specification: design/b0.1.md
-      - B0.1 results: results/b0-1-crosses/index.md
-      - Crosses calibration (legacy, pre-scaling-fix): results/b0-crosses-legacy/index.md
-  - B1:
-      - Masked-vintage model: design/b1.md
-      - Screen and 300-epoch results: results/b1-overnight/index.md
-      - Overnight experiment: workflows/b1-overnight.md
-      - 300-epoch comparison: workflows/b1-300.md
-  - B2:
-      - Covariate results and diagnosis: results/B2-screen/index.md
-      - Kinsa-only results: results/B2-kinsa/index.md
-      - Covariate experiment: design/b2.md
-      - Dataset and vintage support: data/b2.md
+  - Results:
+      - kinsa-finalized-5seeds: results/kinsa-finalized-5seeds/index.md
   - Data repository:
       - Overview: data/index.md
       - Source catalog: data/sources.md
@@ -76,6 +63,7 @@ nav:
       - Wastewater (WVAL and Delphi NWSS): data/wastewater.md
       - Clinical covariates (claims, PopHIVE): data/covariates.md
       - Kinsa cough, cold and flu (PopHIVE): data/kinsa.md
+      - Panel analysis (truth fallback, revisions, wastewater): data/panel.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/
       - Overview: explorer/overview.md
@@ -83,14 +71,58 @@ nav:
       - Local API: explorer/api.md
   - Reference:
       - Command line: reference/cli.md
+      - Scenario fields: reference/scenario.md
       - Python API: reference/python-api.md
+      - FluSight 2025-26 model review: reference/flusight-2025-2026-model-review.md
   - Development: development.md
   - Mac and Longleaf: development-longleaf.md
-  - Current workflows:
-      - Training and prediction: workflows/training.md
-      - Experiment manager: workflows/experiment-manager.md
-      - Postprocessing an experiment: workflows/experiment-postprocessing.md
-      - Frozen hub support: workflows/hub-evaluation.md
-      - EpiBench scoring and reports: workflows/configuration-evaluation.md
-      - Emily’s challenge configs: workflows/emily-configs.md
   - Features and tests: maintenance.md
+  - Legacy (v0):
+      - legacy-v0/index.md
+      - B0:
+          - Definition and implementation: legacy-v0/data/build-b-finalized.md
+          - B0.0 results: legacy-v0/results/b0-crosses/index.md
+          - B0.0 follow-up and adopted objective: legacy-v0/results/b0-crosses/next-steps.md
+          - B0.1 experiment specification: legacy-v0/design/b0.1.md
+          - B0.1 results: legacy-v0/results/b0-1-crosses/index.md
+          - Crosses calibration (pre-scaling-fix): legacy-v0/results/b0-crosses-legacy/index.md
+      - B1:
+          - Masked-vintage model: legacy-v0/design/b1.md
+          - Overview of what was tried: legacy-v0/results/b1-conclusions.md
+          - First good results: legacy-v0/results/first-good-b1.md
+          - Screen and 300-epoch results: legacy-v0/results/b1-overnight/index.md
+          - Reporting regimes and revisions: legacy-v0/results/b1-reporting-regimes/index.md
+          - Historical curve transfer: legacy-v0/design/historical-curve-transfer.md
+          - Reporting availability: legacy-v0/data/reporting-availability.md
+      - B2:
+          - Covariate experiment: legacy-v0/design/b2.md
+          - Dataset and vintage support: legacy-v0/data/b2.md
+          - Covariate results and diagnosis: legacy-v0/results/B2-screen/index.md
+          - Benchmark report: legacy-v0/results/B2-screen/benchmark/REPORT.md
+          - Kinsa-only results: legacy-v0/results/B2-kinsa/index.md
+          - Interpretation and next season: legacy-v0/design/b2-next-season.md
+      - Forward 2025-26:
+          - Data: legacy-v0/data/forward-2025.md
+          - Benchmark: legacy-v0/results/Forward-2025/index.md
+          - Analysis: legacy-v0/results/Forward-2025/analysis.md
+          - Analysis tables: legacy-v0/results/Forward-2025/analysis-tables.md
+          - Check: legacy-v0/results/Forward-2025-check/index.md
+      - Workflows (pre-restructure):
+          - Index: legacy-v0/workflows/README.md
+          - B0 pilot training: legacy-v0/workflows/training.md
+          - Named experiments (manager): legacy-v0/workflows/experiment-manager.md
+          - Experiment postprocessing: legacy-v0/workflows/experiment-postprocessing.md
+          - Configuration evaluation: legacy-v0/workflows/configuration-evaluation.md
+          - Hub evaluation: legacy-v0/workflows/hub-evaluation.md
+          - Emily's EpiBench configs: legacy-v0/workflows/emily-configs.md
+          - B1 overnight: legacy-v0/workflows/b1-overnight.md
+          - B1 300 epochs: legacy-v0/workflows/b1-300.md
+          - B1 one seed: legacy-v0/workflows/b1-one-seed.md
+          - B1 seed42 results: legacy-v0/workflows/b1-seed42-results.md
+          - B1 revisions: legacy-v0/workflows/b1-revisions.md
+          - B1 decisive experiment: legacy-v0/workflows/b1-decisive-experiment.md
+          - B1 decisive execution: legacy-v0/workflows/b1-decisive-execution.md
+          - Forward 2025: legacy-v0/workflows/forward-2025.md
+      - Other:
+          - Local measure inventory: legacy-v0/data/local-inventory-2026-09-13.md
+          - Archived architecture candidates: legacy-v0/design/old LLM things/architecture-candidates.md

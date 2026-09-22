@@ -1,15 +1,12 @@
 # Longleaf setup
 
-For the masked-vintage B1 cross, use the [B1 manager and shared-dispatch
-commands](design/b1.md#named-experiments-and-cluster-launch) after the environment
-setup below. B1 uses the same named-experiment workflow, with separate nowcast
-and forecast scores and optional matched frozen-Hub/EpiBench comparisons.
+See [the canonical workflow](workflows/training.md) for the experiment planner
+and shared-dispatch commands, used after the environment setup below.
 
 These commands set up the checkout at
 `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf using uv-managed
-Python 3.11 and the cluster's R module. Adjust the workspace paths if installing
-elsewhere. Python tools and caches live in the workspace; R packages use the
-personal library selected by the R module.
+Python 3.11. Adjust the workspace paths if installing elsewhere. Python tools
+and caches live in the workspace; there is no R dependency to set up.
 
 ## Clone and install uv
 
@@ -38,71 +35,75 @@ cd /proj/jlessler/projects/tapestry-all/tapestry
 Install or update the default research environment:
 
 ```bash
-uv sync --upgrade-package epibenchmark --python-preference only-managed
+uv sync --python-preference only-managed
 ```
 
 This creates `.venv`, installs Tapestry in editable mode, and includes training,
-evaluation, explorer, and test dependencies. EpiBenchmark follows GitHub `main`;
-the generated `uv.lock` remains local. Managed Python avoids inheriting the
-login shell's Anaconda installation.
+evaluation, explorer, and test dependencies. Managed Python avoids inheriting
+the login shell's Anaconda installation.
 
 ## Download the training sources
 
 ```bash
 uv run python scripts/pull_covariates.py --data-root data init
-uv run python scripts/pull_covariates.py --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
+uv run python scripts/pull_covariates.py --data-root data pull \
+    delphi_nhsn delphi_nssp delphi_claims_inpatient delphi_claims_outpatient \
+    delphi_nwss delphi_nwss_aux hub_flusight_current hub_covid_current \
+    hub_rsv_current pophive_kinsa_ili
 ```
 
-These are the two CDC sources required by the current training dataset.
-Broader acquisition is optional. Downloading sources does not build the processed training tensor; see
-[the dataset workflow](data/build-b-finalized.md) for that next step.
+These are the sources `tapestry.dataset.build` reads (targets, claims,
+wastewater, Kinsa; see [the source catalog](data/sources.md)). The
+`cdc_nhsn_*`/`cdc_nssp_*` Socrata specs and the legacy/RSVNet Hub mirrors
+remain in the catalog for comparison and are not required for the training
+panel. Downloading sources does not build them; see
+[the canonical workflow](workflows/training.md) for that next step.
 
-## R scoring
+Scoring is pure Python (`tapestry.evaluation.totals`) -- no R module or
+package setup is needed. Use a Slurm allocation for training and substantial
+evaluation runs; the environment setup above does not request a GPU or submit
+a training job.
 
-Use Longleaf's R module, then run the repository's package setup script:
+## Sync code and panel from the Mac
+
+`data/processed/panel.npz` (about 10 MB) is tracked in git despite the `/data/`
+ignore rule (added with `git add -f`), so code and panel travel together. From the
+Mac, push to a side branch of the cluster checkout (git refuses to update its
+checked-out branch), then fast-forward on Longleaf:
 
 ```bash
-module load r/4.5.0
-Rscript scripts/setup_r.R
+git remote add longleaf chadi@longleaf.unc.edu:/proj/jlessler/projects/tapestry-all/tapestry
+git push longleaf restructure/unified-model:refs/heads/incoming
+ssh chadi@longleaf.unc.edu 'cd /proj/jlessler/projects/tapestry-all/tapestry && git merge --ff-only incoming'
 ```
 
-The script installs missing `scoringutils` and `purrr` packages and their
-dependencies into the personal R library, reuses available packages, and checks
-that both scoring packages load. R is separate from the uv environment.
+Rebuilding the panel on the cluster is not needed: sources are acquired and built
+on the Mac. A planned experiment pins the panel's sha256, so replacing the panel
+under a running experiment makes its remaining runs refuse to fit.
 
-Check that R is also accessible through uv:
+**Not synced by git:** the population file `data/metadata/locations.csv` (the one
+population file; `LOCATIONS` in `planner.py`) and the frozen support
+`data/evaluation/b0_hub_comparison_q23` are git-ignored. Restore the population
+file as below (sha256 checked) and copy the frozen support to the cluster once
+(e.g. `rsync -a data/evaluation/b0_hub_comparison_q23 longleaf:.../data/evaluation/`).
+`plan` pins the sha256 of both (the frozen support through its `manifest.json`)
+next to the panel's, and runs refuse to fit if either changed.
+
+## Build the training panel
+
+Run from `/proj/jlessler/projects/tapestry-all/tapestry`. Skip acquisition
+above once every source is already downloaded, then build the one array,
+`data/processed/panel.npz` (about a minute; one process per source):
 
 ```bash
-uv run Rscript -e 'library(scoringutils); library(purrr); sessionInfo()'
+.venv/bin/python -m tapestry.dataset.build build --data-root data
+.venv/bin/python -m tapestry.dataset.build show
 ```
 
-Repeat `module load r/4.5.0` in new shells and Slurm job scripts that run scoring,
-along with the Python environment exports above. If a noninteractive Bash shell
-does not define `module`, initialize it with
-`source /usr/share/lmod/lmod/init/bash`. Do not source `/etc/profile.d/modules.sh`:
-it selects the legacy Tcl module loader, which cannot load Longleaf's Lua R module.
-Use a Slurm allocation for training and substantial evaluation runs; this setup
-does not request a GPU or submit a training job.
-
-## Build the frozen inputs
-
-Run from `/proj/jlessler/projects/tapestry-all/tapestry`. The architecture sweep
-has 4,097 configurations × three seeds = 12,291 CV runs and 36,873 season fits;
-the essential suite has 14 configurations × three seeds = 42 CV runs. These are
-exploratory finalized-data comparisons, not prospective validation.
-
-Skip acquisition above when
-both CDC sources are already downloaded, then build the tensor:
-
-```bash
-.venv/bin/python -m tapestry.model_data build \
-  --data-root data --start 2023-09-01 --end 2026-08-29 \
-  --output data/processed/build_b_finalized.npz
-```
-
-The adjacent JSON records input provenance, including the NHSN and NSSP snapshot
-IDs. The tensor has shape `[157, 6, 2, 52]` with weekly dates September 2,
-2023–August 29, 2026.
+It holds the truth panel and the exact Wednesday as-of store that both input modes
+cut episodes from; see [the canonical workflow](workflows/training.md#2-build-the-dataset-panel).
+`plan` records its sha256, so rebuild it before planning, not while an
+experiment is running.
 
 Restore the pinned hub commits and population table before registering the
 experiment:
@@ -132,60 +133,56 @@ printf '%s  %s\n' \
 )
 ```
 
-Keep these inputs fixed while an experiment runs. Experiments are not locked to a
-code version: each attempt records its git commit and whether the checkout had
-uncommitted changes, and results for the paper are rerun from a clean tree.
+Keep these inputs fixed while an experiment runs. `plan` copies `src/` into
+`data/experiments/<experiment>/code`, and `jlessler.sbatch` runs that snapshot, so a
+Slurm experiment keeps the code it was planned with (re-planning re-pins it). A local
+`planner run` runs the working tree instead. Each attempt's `run.json` also records
+the git commit and whether the checkout had uncommitted changes; results for the
+paper are rerun from a clean tree.
 
-## Prepare evaluation support
+## The frozen evaluation denominator
+
+`tapestry.experiment.planner`'s `fit`/`plan`/`rank` score every run against a
+pinned hub-ensemble denominator on the 23-quantile grid,
+`data/evaluation/b0_hub_comparison_q23` (`FROZEN` in `planner.py`). Preserve
+that directory across checkouts -- **there is currently no supported command
+to rebuild it from scratch.** It used to be built by bootstrap-fitting
+`tapestry.models.season_cv` and comparing against the hub with
+`tapestry.evaluation.compare`, both removed in the 2026-09 restructuring (see
+[docs/design/restructure-2026-unified.md](design/restructure-2026-unified.md)).
+Rebuilding it against the unified `Model`/array datasets is unimplemented; if
+you need a fresh one, that's new work, not a documented workflow step.
+
+## Run an experiment on the shared GPU partitions
 
 ```bash
 mkdir -p output/slurm
-sbatch scripts/b0_prepare.sbatch b0-sweep grid
+sbatch --job-name=my-experiment --array=0-13 scripts/jlessler.sbatch my-experiment
 ```
 
-This one-GPU job loads R, runs three one-epoch bootstrap fits with eight evaluation
-members, builds `data/evaluation/b0_hub_comparison_q23` on the hub's 23-quantile
-grid, and plans the named experiment (default `b0`) and suite (default `essential`)
-with `--device cuda`. The bootstrap fits supply evaluation dates and locations; they
-are separate from the experiment's fits. Completed support is reused. If support
-construction fails, inspect and archive its incomplete output directory before
-resubmitting. Support built earlier for five quantiles cannot score new runs, and
-`manager run` refuses to start with it.
-
-Wait for preparation to complete before distributing training.
-
-## Run the architecture sweep on the shared GPU partitions
-
-The sweep has 4,097 array tasks, one per configuration; each runs three seeds of
-three season folds and writes `totals.csv` for every seed. `scripts/b0_sweep.sbatch`
-requests one GPU, four CPUs, 16 GiB, and six hours on `a100-gpu,l40-gpu,jlessler`
-with QOS `gpu_access`, like InfluPaint's inpainting arrays. These limits are
-allowances; runtime has not been measured.
+`jlessler.sbatch` is scenario-agnostic: it reads the scenarios and seeds from the
+experiment's `jobs.csv` (written by `plan`) and dispatches through `tapestry.experiment.dispatch`'s
+shared job queue, drawing from one queue across every array element instead
+of a static task-per-index slice (unlike the old `b0_array.sbatch`/
+`b0_sweep.sbatch`; those B0/B1/B2-era launchers and plotting scripts were
+deleted on 2026-09-22 and remain only in git history). Each array element requests
+one GPU, 12 CPUs, 110 GiB and two days on `g1803jles01` and runs `LANES` (default 8)
+fitting processes on its GPU, one CPU thread each; set `LANES`/`GPUS` to change
+fitting processes per GPU and GPU count. See
+[the canonical workflow](workflows/training.md#shared-gpu-cluster-launch-longleaf).
 
 ```bash
-.venv/bin/python -m tapestry.models.manager status -e b0-sweep | tail -8
+.venv/bin/python -m tapestry.experiment.planner status -e b0-sweep | tail -8
 ```
 
-`status` prints one submission per chunk of 1,000 tasks, adding `OFFSET` so array
-indices stay small. For a fresh sweep:
+When the array has finished, rank on a CPU allocation:
 
 ```bash
-sbatch --array=0-999 --export=ALL,OFFSET=0 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=1000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=2000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-999 --export=ALL,OFFSET=3000 scripts/b0_sweep.sbatch b0-sweep
-sbatch --array=0-96 --export=ALL,OFFSET=4000 scripts/b0_sweep.sbatch b0-sweep
-```
-
-Logs are `output/slurm/b0-sweep-ARRAY_ID_INDEX.log`; the jobs.csv task is
-`OFFSET + INDEX`. When the arrays have finished, rank on a CPU allocation:
-
-```bash
-.venv/bin/python -m tapestry.models.manager rank -e b0-sweep
+.venv/bin/python -m tapestry.experiment.planner rank -e b0-sweep
 ```
 
 The printed folder holds `configuration_ranking.csv`, `run_scores.csv`, and
-`season_scores.csv` ([definitions](workflows/experiment-manager.md#ranking)).
+`season_scores.csv` ([definitions](workflows/training.md#4-plan-run-rank)).
 
 ## CPU versus GPU runtime
 
@@ -266,69 +263,58 @@ Partition `jlessler` provides:
 | `g1803jles01` | 56 | 500,000 MB | 4 × L40, 48 GB each |
 | `g1803jles02` | 64 | 2,048,000 MB | 2 × H100 NVL, 96 GB each |
 
-Each array task is one scenario and runs its three seeds in sequence. It requests
-one GPU, four CPUs, 64 GiB RAM, and one day. Six concurrent tasks can use all six
-GPUs. Memory and time limits are resource allowances, not measured
-requirements. Mixed GPU hardware may introduce small numerical differences;
-each task records its allocation and logs the device model.
-
-`status` prints the array tasks that still have unfinished seeds; a fresh
-14-scenario experiment reports `0,1,...,13`:
+Array elements are GPUs, not scenarios: each element claims (scenario, seed) runs
+from the shared queue until none are left, `LANES` at a time on its one GPU, with
+the resources in `scripts/jlessler.sbatch` (one GPU, 12 CPUs, 110 GiB, two days).
+Six concurrent elements (four on `g1803jles01`, two with `--nodelist=g1803jles02`)
+can use all six GPUs. Memory and time limits are resource allowances, not measured
+requirements. Mixed GPU hardware may introduce small numerical differences; each
+run records its allocation and logs the device model.
 
 ```bash
-.venv/bin/python -m tapestry.models.manager status -e b0-explore
-sbatch --array=0-13%6 scripts/b0_array.sbatch b0-explore
-# Replace ARRAY_ID with the returned job ID.
-sbatch --dependency=afterok:ARRAY_ID scripts/b0_compare.sbatch b0-explore
+sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore
 ```
 
-Array task numbers are rows of `data/experiments/b0-explore/jobs.csv`. Each seed
-attempt writes only its own folder, so there is no prepare or collect step.
-`compare` refuses to score while any planned run is incomplete.
+Task numbers are rows of `data/experiments/b0-explore/jobs.csv` (one per
+scenario). Each seed attempt writes only its own folder, so there is no prepare
+or collect step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
+(`NTFY=0` to disable); see `scripts/b01_notify.py`.
 
 ## Monitor and resume
 
 ```bash
 squeue -u "$USER"
-.venv/bin/python -m tapestry.models.manager status -e b0-explore
+.venv/bin/python -m tapestry.experiment.planner status -e b0-explore
 sacct -j ARRAY_ID --format=JobID,State,Elapsed,ExitCode,NodeList
-tail -f output/slurm/b0-array-ARRAY_ID_TASK_ID.log
+tail -f output/slurm/tapestry-ARRAY_ID_TASK_ID.log
 ```
 
-`status` rebuilds `runs.csv` (task, seed, status, attempt path, git commit) and
-prints the tasks with unfinished seeds. Each attempt folder holds `run.json` and
-`run.log`. After the array has ended, resubmit only the printed tasks, for example:
+`status` rebuilds `runs.csv` (task, name, seed, status, attempt path, scenario),
+prints one line per run and, when some are not complete, the exact commands to
+resume them (the Slurm launcher with `--retry-failed`, or a local `planner run`).
+Each attempt folder holds `run.json` (including the git commit) and `run.log`.
+After the array has ended, resubmit with the printed command, for example:
 
 ```bash
-sbatch --array=2,9%6 scripts/b0_array.sbatch b0-explore
+sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore --retry-failed
 ```
 
-Completed seeds are skipped; failed or interrupted seeds restart all three folds in
+The shared queue picks up every run that is not complete; completed seeds are skipped; failed or interrupted seeds restart all three folds in
 a new attempt folder, keeping the previous one. A killed job leaves its attempt
 marked `running`, so check `squeue` first and never run the same task twice at once.
 
 ## Score and review
 
-To score an experiment whose runs are complete:
+To score an experiment whose runs are complete, see
+[the canonical workflow's plan/run/rank step](workflows/training.md#4-plan-run-rank):
 
 ```bash
-sbatch scripts/b0_compare.sbatch b0-explore
-tail -F output/slurm/b0-compare-JOB_ID.log
+uv run python -m tapestry.experiment.planner rank -e b0-explore
 ```
 
-The scoring job requests 36 CPU cores and 256 GiB RAM on `g1803jles01`. It runs
-`manager compare --workers 9`: saved predictions load concurrently and nine
-target/season cases score in parallel, with four numerical-library threads per
-worker. Hubverse exports are rewritten each time. EpiBench reuses completed scores
-when their provenance matches; cases interrupted after writing scores are moved to
-`interrupted-scoring/` and rescored. Rankings and plotting follow scoring.
-
-`comparison.json` records status, output directory, host, Slurm IDs, the scoring
-commit, and the commits of the compared runs. On failure, inspect the job log and
-resubmit the scoring script after the previous job has ended.
-Review `REPORT.md`, `leaderboard.csv`, `run_ranking.csv`,
-`configuration_ranking.csv`, and `scores.parquet`. Report WIS, bias, and 50%/95%
-coverage by pathogen, horizon, season, and states/DC versus native US, including
-means and variability across three seeds. Use the matched controls in
-[the manager workflow](workflows/experiment-manager.md) to assess separate heads,
-decoder uncertainty, and candidates for combination.
+`rank` computes WIS in pure Python (`tapestry.evaluation.totals`) against the
+frozen ensemble denominator and writes `season_scores.csv`,
+`season_composite_scores.csv`, `run_scores.csv`, and `configuration_ranking.csv`
+under `data/experiments/<experiment>/ranking-<hash>/`; pass `--allow-incomplete`
+to rank before every run has finished. `configuration_ranking.csv` averages
+across seeds -- read that for the WIS-vs-ensemble ratio by scenario.

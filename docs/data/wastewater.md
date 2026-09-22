@@ -1,20 +1,70 @@
 # Wastewater: CDC WVAL, Delphi NWSS, and what we can rebuild
 
-Status: analysis note, 2026-09-20. Supersedes nothing; it extends the
+Status: production indices section current as of 2026-09-22; the rest is an analysis note, 2026-09-20. Supersedes nothing; it extends the
 September 13 audit (`analysis/wval/report.md`), whose evidence files and
 scripts remain the primary record for the revision counts quoted here.
 
-For the implemented forecasting experiment, see the
-[B2 results and diagnosis](../results/B2-screen/index.md). B2 uses `wval_like`
-and `pct_rank` with native publisher vintages. The alternative index proposal
-and synthetic wastewater availability used in the exploratory regressions
-below were not used in B2.
+## Production indices (`derived_nwss_state_indices`)
 
-Wastewater is **not** in Build B (see
-[Build B definition](build-b-finalized.md)) and sewershed observations are
-excluded from `SelectedData` and the explorer (see
-[shared selection](selection.md)). This note decides what we would acquire if we
-add a state wastewater channel.
+The panel's wastewater covariates (`ww_wval_like`, `ww_pct_rank`; one column per
+pathogen) come from the derived raw snapshot `derived_nwss_state_indices`, rebuilt by
+
+```bash
+python -m tapestry.dataset.build nwss-indices --data-root data
+```
+
+(`src/tapestry/dataset/nwss.py`). Run it after pulling `delphi_nwss` or
+`delphi_nwss_aux` and before `tapestry.dataset.build build`. It is not part of
+`build` because it streams the 1.2 GB auxiliary archive (minutes) and its inputs
+only change when NWSS is re-pulled. It registers a new snapshot (`data.csv.gz`:
+`report_time, geo_type, geo_value, reference_time, pathogen, wval_like, pct_rank,
+n_sites`, plus `derivation.json` with input checksums) and moves `latest.json` to it.
+
+History: this is the builder that produced the 2026-09-21 snapshot
+(`tapestry.model_data build-b2-nwss`, removed in the 2026-09-21 restructure,
+restored 2026-09-22 with the same policy, from the deleted source in git history).
+Regenerating it on 2026-09-22 from the same `delphi_nwss`/`delphi_nwss_aux`
+snapshots (identical input sha256s) gave 880,352 rows against the stored 880,384:
+**every shared row is bit-identical** (`wval_like`, `pct_rank`, `n_sites`, max
+absolute difference 0), and the 32 extra stored rows are one US row per report time
+for reference week 2020-02-29 with `n_sites = 1`, which the >= 3 site rule excludes.
+The committed builder had that rule, so the stored snapshot came from a variant that
+did not apply it nationally; the week is before the panel calendar (2023-09-02), so
+`panel.npz` is unchanged by the regeneration (verified array by array; only the
+recorded snapshot id changes). The two formulas
+(`score_wval`, `score_pct_rank`) are defined in `tapestry.dataset.nwss` and imported
+by the analysis module `analysis/covariates/indices.py`, which keeps the
+full-history (not origin-safe) variant used in §7 below.
+
+Policy, applied separately at every Delphi report time R from 2026-02-25 (first
+archive vintage; earlier states cannot be reconstructed):
+
+- Publisher state at R: latest row per sample key reported on or before R
+  (retractions count); value finite and > 0, reference date <= R, and a visible
+  aux row giving the state (`state_territory`) and `major_lab_method`, both
+  versioned. Same-release conflicting duplicates become missing.
+- Group g = (sewershed, `nwss_source`, `pcr_target`, `major_lab_method`), x = ln(value).
+  Eligible with >= 26 distinct weeks and sd(x) > 0, using only samples visible at R.
+- `wval_like` = exp((x - p10_g) / sd_g); `pct_rank` = percentile of x within g.
+- Mean over a group's samples in a Saturday-ending week, median over groups at a
+  site, median over sites per state and nationally (`US`); both need >= 3 sites.
+- A state-week present at an earlier report time and absent now gets an explicit
+  null row.
+
+`tapestry.dataset.build` then takes, for each cutoff day, the latest non-missing
+value reported on or before it. Plots of both indices for US, NC and a few states,
+and their state coverage per week: [panel analysis §5](panel.md#5-wastewater-indices-nwss).
+
+## Earlier analysis note (2026-09-20)
+
+The rest of this page is the analysis that chose the indices. It predates the
+restructure. For the forecasting experiment that used them, see the
+[B2 results and diagnosis](../legacy-v0/results/B2-screen/index.md) (legacy). The
+alternative index proposal and synthetic wastewater availability used in the
+exploratory regressions below were not used in B2. Its "Build B" and selection
+remarks refer to the [legacy B0 dataset](../legacy-v0/data/build-b-finalized.md);
+sewershed observations are still excluded from `SelectedData` and the explorer
+(see [shared selection](selection.md)).
 
 ## Summary
 

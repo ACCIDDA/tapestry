@@ -1,27 +1,34 @@
-"""Candidate state-level wastewater activity indices from Delphi NWSS.
+"""The two production wastewater indices from Delphi NWSS: `wval_like`, `pct_rank`.
 
-Every index shares the same skeleton and differs in exactly one place, so the
-plots are a controlled comparison:
+Every index shares the same skeleton and differs in exactly one place:
 
   group g   = (sewershed, nwss_source, pcr_target, major_lab_method)
   x         = ln(signal value)
   score     = <per-index transform of x against g's own history>   <- DENOMINATOR
   site-week = mean of score over the week's samples, then median over groups at the site
-  state-wk  = <per-index aggregation over sites>                   <- WEIGHTING
+  state-wk  = median over sites
 
 Keys
   wval_like       exp((x - p10_g) / sd_g), unweighted median over sites
-  robust_z        (x - median_g) / IQR_g, unweighted median over sites
   pct_rank        empirical percentile of x within g's history, unweighted median
-  flowpop_wval    wval_like transform applied to flowpop_lin instead of avg_conc_lin
-  conc_matched    wval_like on avg_conc_lin, restricted to the flowpop_wval panel
-  wval_popw       wval_like scores, population-weighted median over sites
+
+These are the only two indices `dataset.build`/`COVARIATE_GROUPS` promotes into
+the production covariate panel (`ww_wval_like`/`ww_pct_rank`). The two formulas and
+thresholds live in `tapestry.dataset.nwss` (2026-09-22) and are imported here, so the
+analysis and the production build cannot drift. This module remains the full-history
+(not origin-safe) analysis variant: it reads local CSV extracts, takes the state from
+the site table, and applies no minimum-site rule to the national median; the
+production snapshot is built per report time by
+`python -m tapestry.dataset.build nwss-indices`. Four other
+candidates that were screened but not promoted — `robust_z`, `flowpop_wval`,
+`conc_matched`, `wval_popw` — moved to `analysis/covariates/exploratory.py`
+(docs/design/restructure-2026-unified.md §2).
 """
 import numpy as np
 import pandas as pd
 
-MIN_WEEKS = 26
-MIN_SITES = 3
+from tapestry.dataset.nwss import MIN_SITES, MIN_WEEKS, score_pct_rank, score_wval
+
 FLOWPOP_COVERAGE = 0.80
 
 
@@ -49,22 +56,6 @@ def eligible(d):
     spread = grp['x'].std()
     keep = nweeks[nweeks >= MIN_WEEKS].index.intersection(spread[spread > 0].index)
     return d[d['g'].isin(keep)].copy()
-
-
-def score_wval(d):
-    grp = d.groupby('g')['x']
-    return np.exp((d['x'] - d['g'].map(grp.quantile(0.10))) / d['g'].map(grp.std()))
-
-
-def score_robust_z(d):
-    grp = d.groupby('g')['x']
-    iqr = grp.quantile(0.75) - grp.quantile(0.25)
-    iqr = iqr.where(iqr > 0)
-    return (d['x'] - d['g'].map(grp.median())) / d['g'].map(iqr)
-
-
-def score_pct_rank(d):
-    return d.groupby('g')['x'].rank(pct=True)
 
 
 def weighted_median(values, weights):
@@ -110,26 +101,7 @@ def build_all(pathogen='covid'):
          'pcr_target', 'major_lab_method']]
 
     conc = eligible(load_signal(f'{pathogen}.csv', site, lab))
-    fpop = eligible(load_signal(f'{pathogen}_flowpop_lin.csv', site, lab))
-
-    fp_groups = set(fpop['g'])
-    cov = conc.groupby('g').size()
-    fcov = fpop.groupby('g').size()
-    shared = [g for g in fp_groups
-              if g in cov.index and fcov[g] / cov[g] >= FLOWPOP_COVERAGE]
-    matched = conc[conc['g'].isin(shared)].copy()
-
-    out = {
-        'wval_like':    aggregate(conc, score_wval(conc)),
-        'robust_z':     aggregate(conc, score_robust_z(conc)),
-        'pct_rank':     aggregate(conc, score_pct_rank(conc)),
-        'flowpop_wval': aggregate(fpop[fpop['g'].isin(shared)],
-                                  score_wval(fpop[fpop['g'].isin(shared)])),
-        'conc_matched': aggregate(matched, score_wval(matched)),
-        'wval_popw':    aggregate(conc, score_wval(conc), popweight=True),
-    }
-    print(f"groups: conc {conc['g'].nunique()}, flowpop {fpop['g'].nunique()}, "
-          f"matched panel {len(shared)}")
+    out = {'wval_like': aggregate(conc, score_wval(conc)), 'pct_rank': aggregate(conc, score_pct_rank(conc))}
     res = pd.concat([v.assign(key=k) for k, v in out.items()], ignore_index=True)
     res['pathogen'] = pathogen
     return res

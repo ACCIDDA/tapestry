@@ -31,13 +31,13 @@ and the `status`/`rank` that follow. They are what the user runs to check on and
 resume the work, so a launch reported without them is incomplete.
 
 ```bash
-.venv/bin/python -m tapestry.models.manager plan -e NAME --suite SUITE --seeds 42 43 44 --retrospective --device cuda
+.venv/bin/python -m tapestry.experiment.planner plan -e NAME -s SCENARIO --seeds 42 43 44 --device cuda
 sbatch --job-name=NAME --array=0-3 scripts/jlessler.sbatch NAME
-.venv/bin/python -m tapestry.models.manager status -e NAME
-.venv/bin/python -m tapestry.models.manager rank -e NAME
+.venv/bin/python -m tapestry.experiment.planner status -e NAME
+.venv/bin/python -m tapestry.experiment.planner rank -e NAME
 ```
 
-One manager and one scorer serve every model; `status` prints the exact
+One planner and one scorer serve every scenario; `status` prints the exact
 resubmission command for unfinished tasks. ntfy notifications are on by default:
 `scripts/jlessler.sbatch` queues its own `afterany` summary job, so a timeout or
 cancellation still reports. `NTFY=0` disables it, `NTFY_URL` retargets the topic.

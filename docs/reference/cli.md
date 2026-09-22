@@ -1,7 +1,7 @@
 # Command-line reference
 
-The installed commands are `tapestry-data`, `tapestry-model-data`,
-`tapestry-select`, and `tapestry-explore`. The
+The installed commands are `tapestry-data`, `tapestry-dataset`,
+`tapestry-experiment`, `tapestry-select`, and `tapestry-explore`. The
 checkout scripts shown below are equivalent.
 
 ## Data repository

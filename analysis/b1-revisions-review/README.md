@@ -13,7 +13,7 @@ Reproduce from the repository root:
 .venv/bin/python -m mkdocs build --strict
 ```
 
-Outputs are under `docs/results/b1-overnight/revisions/`. The audit reads each saved
+Outputs are under `docs/legacy-v0/results/b1-overnight/revisions/`. The audit reads each saved
 recent per-cell parquet and aggregates existing errors. It does not inspect plots.
 
 Material assumptions and weighting:
