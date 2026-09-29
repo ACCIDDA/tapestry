@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-p=Path('docs/results/b2-direct-research-v1/availability')
+p=Path('docs/data/availability')
 s=pd.read_csv(p/'summary.csv');a=pd.read_csv(p/'conflict-audit.csv')
 def table(h,rs):return '\n'.join(['| '+' | '.join(h)+' |','| '+' | '.join(['---']*len(h))+' |']+['| '+' | '.join(map(str,r))+' |' for r in rs])
 rows=[]
@@ -64,7 +64,7 @@ if start in text:text=text[:text.index(start)]+text[text.index(end)+len(end):]
 intro=f'''{start}
 ## Full tables: all 14 covariates and 12 lags
 
-[Availability, unique missing states and distinct missing weeks](full-tables.md) · [All-lag revisions](full-revisions.md) · [Per-state counts and exact missing dates](missing-by-state-lag.csv).
+[Availability, unique missing states and distinct missing weeks](full-availability-summary.csv) · [All-lag revisions](summary.csv) · [Per-state counts and exact missing dates](missing-by-state-lag.csv).
 
 Every covariate link in the full table opens its state-by-lag missing-week counts. DC and national gaps are separate; unsupported geographies are listed explicitly.
 

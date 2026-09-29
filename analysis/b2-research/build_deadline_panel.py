@@ -235,7 +235,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', default='data/processed/panel.npz')
     parser.add_argument('--output', default='data/processed/panel-b2-deadline.npz')
-    parser.add_argument('--report-dir', default='docs/results/b2-research/data')
+    parser.add_argument('--report-dir', default='docs/data/availability/provenance')
     parser.add_argument('--workers', type=int, default=3)
     args = parser.parse_args()
     report_dir = Path(args.report_dir)

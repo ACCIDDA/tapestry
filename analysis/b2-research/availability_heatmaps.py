@@ -9,7 +9,7 @@ from matplotlib.colors import ListedColormap,BoundaryNorm
 from matplotlib.patches import Patch
 from tapestry.dataset.build import load
 from tapestry.dataset import extract as ex
-p=Path('docs/results/b2-direct-research-v1/availability');out=p/'timeline';out.mkdir(exist_ok=True)
+p=Path('docs/data/availability');out=p/'timeline';out.mkdir(exist_ok=True)
 a=load('data/processed/panel-b2-deadline.npz');dates=pd.to_datetime(a['dates']);issuance=pd.to_datetime(a['issuance_dates']);ti=np.where((dates>='2025-08-02')&(dates<='2026-08-01'))[0];wi=np.where(issuance>='2025-08-06')[0];obs=dates[ti];issued=issuance[wi];cutoffs=pd.to_datetime(a['forecast_cutoff_utc'][wi],utc=True);locs=a['locations'].astype(str)
 colors=['#f5f5f5','#18864b','#b5d96c','#f1c84b','#e77a42','#a93446'];labels=['Future week','Complete','Missing 1–2 states','Missing 3–10 states','Missing >10 states','No archived values'];cmap=ListedColormap(colors);norm=BoundaryNorm(np.arange(-.5,6.5),6)
 records=[];payload=[]
@@ -76,7 +76,7 @@ Each covariate uses its native geographic support, excluding structurally unsupp
 
 The six target plots cover admissions and ED for flu (FluSight), COVID and RSV. They use the existing deadline reconstruction combining the three Hubs' historical files and Delphi releases, with the latest eligible statement winning. **They are target-specific availability plots, not independent audits of each Hub's file alone.** Targets use the frozen reconstructed values; no finalized substitutes are added.
 
-[All matrix cells and missing locations](timeline/timeline-cells.csv.gz) · [Counts by lag](full-tables.md) · [Conflict audit](conflict-audit.md).
+[All matrix cells and missing locations](timeline/timeline-cells.csv.gz) · [Counts by lag](full-availability-summary.csv) · [Conflict audit](conflict-audit.md).
 
 '''
 for n in series:text+=f'## {n}\n\n[![{n} availability timeline](timeline/{n}.png)](timeline/{n}.png)\n\n'

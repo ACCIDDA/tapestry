@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-p=Path('docs/results/b2-direct-research-v1/availability');x=pd.read_csv(p/'raw-archive-starts.csv');ww=pd.read_csv(p/'raw-nwss-starts.csv')
+p=Path('docs/data/availability');x=pd.read_csv(p/'raw-archive-starts.csv');ww=pd.read_csv(p/'raw-nwss-starts.csv')
 rows=[]
 for r in x.itertuples():
  if r.covariate.startswith('nwss'):continue
@@ -21,4 +21,8 @@ A long archive history does not imply continuous coverage. In particular FluSurv
 
 [All signal dates and raw row counts](raw-archive-starts.csv) · [Raw NWSS dates](raw-nwss-starts.csv) · [Availability evidence](evidence.md).
 '''
-(p/'archive-starts.md').write_text(s);print(table)
+main=Path('docs/data/index.md')
+body=s.split('\n',1)[1].strip().replace('(raw-archive-starts.csv)', '(availability/raw-archive-starts.csv)').replace('(raw-nwss-starts.csv)', '(availability/raw-nwss-starts.csv)').replace('(evidence.md)', '(availability/evidence.md)')
+text=main.read_text();start='<!-- source-history:start -->';end='<!-- source-history:end -->'
+a=text.index(start);b=text.index(end)+len(end)
+main.write_text(text[:a]+start+'\n## First observation and first archived report dates\n\n'+body+'\n'+end+text[b:]);print(table)

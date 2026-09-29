@@ -220,10 +220,10 @@ The immediate unresolved issue is robustness on the most recent season and inter
 
 ## Availability assumptions and interpretation
 
-**Subsequent raw-data audit:** same-report-date conflicts in claims were converted to missing by the shared extractor, affecting both deadline and final arrays. This understates reported claims availability and limits claims attribution and revision estimates. The [corrected availability audit](availability/conflict-audit.md) separates finite source reports from retained pipeline inputs. Saved runs have not been changed; the performance effect of resolving these conflicts remains unmeasured.
+**Subsequent raw-data audit:** same-report-date conflicts in claims were converted to missing by the shared extractor, affecting both deadline and final arrays. This understates reported claims availability and limits claims attribution and revision estimates. The [corrected availability audit](../../data/availability/conflict-audit.md) separates finite source reports from retained pipeline inputs. Saved runs have not been changed; the performance effect of resolving these conflicts remains unmeasured.
 
 
-[Detailed 2025–26 covariate availability by observation lag and revisions to final](availability/index.md) counts actual archived reports separately from assumed availability.
+[Detailed 2025–26 covariate availability by observation lag and revisions to final](../../data/availability/index.md) counts actual archived reports separately from assumed availability.
 
 Training uses complete finalized target and covariate histories after holding out the evaluation/validation weeks. Normalization uses fitting data only. Artificial missingness affects target histories in 50% of training examples; covariates receive no extra artificial dropout. All three backbones use cap 300/patience 30, including families whose historical best used cap 100. Finality flags, B0 normalization and fixed calendar, current validation draws and smaller loss scale remain as planned.
 
@@ -231,7 +231,7 @@ Forecasting uses actual deadline vintages when available, then finalized histori
 
 Among available input cells in 12-week contexts, **Kinsa, wastewater and FluSurv are 100% finalized proxies in 2023–24 and 2024–25**. In 2025–26, proxy shares remain **67.6% for Kinsa, 53–55% for wastewater and 29.1% for FluSurv**. These unweighted input-context counts include all modeled origins and repeat observations across contexts; they are not percentages of scored forecast cells. Finalized substitutes can contain later revisions; wastewater's final index can also use retrospectively updated baselines. Consequently, covariate benefit is conditional on these assumptions.
 
-[Availability fractions by source/season](availability-summary.csv) · [Release lags and exact proxy counts](../b2-research/data/operational-source-lags.csv) · [Full data policy and checksums](../b2-research/data/operational-policy.json) · [Design and launch commands](../../design/b2-direct-research.md).
+[Availability fractions by source/season](availability-summary.csv) · [Release lags and exact proxy counts](../../data/availability/provenance/operational-source-lags.csv) · [Full data policy and checksums](../../data/availability/provenance/operational-policy.json) · [Design and launch commands](../../design/b2-direct-research.md).
 
 ## Evidence and reproduction
 

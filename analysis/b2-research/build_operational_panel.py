@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', default='data/processed/panel-b2-deadline.npz')
     parser.add_argument('--output', default='data/processed/panel-b2-operational.npz')
-    parser.add_argument('--report-dir', default='docs/results/b2-research/data')
+    parser.add_argument('--report-dir', default='docs/data/availability/provenance')
     args = parser.parse_args()
     panel = load(args.source)
     metadata = json.loads(str(panel['metadata']))

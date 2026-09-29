@@ -318,9 +318,9 @@ inpatient claims 3; outpatient flu/COVID 0/1; Kinsa 1; ILI, clinical labs and
 FluSurv 6; wastewater flu/COVID 13 and RSV 9. These govern only archive-gap
 substitutes: an actual observed release remains available even if earlier than
 the typical delay. The substitute release must precede the actual cutoff.
-[Exact policy and hashes](../results/b2-research/data/operational-policy.json),
-[source lags and counts](../results/b2-research/data/operational-source-lags.csv),
-and [context-level proxy usage](../results/b2-research/data/operational-proxy-coverage.csv)
+[Exact policy and hashes](../data/availability/provenance/operational-policy.json),
+[source lags and counts](../data/availability/provenance/operational-source-lags.csv),
+and [context-level proxy usage](../data/availability/provenance/operational-proxy-coverage.csv)
 make every assumption auditable. Fixed delays and finalized substitutes are an
 optimistic operational hypothesis; effects do not establish prospective skill.
 

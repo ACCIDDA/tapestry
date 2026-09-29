@@ -30,7 +30,7 @@ for held in SEASONS:
  roles=week_roles(dates,Scenario(),held)
  assert np.isin(roles[sel],['fit','validation']).all()
  assert not np.isin(roles[labels==held],['fit','validation']).any()
-out=Path('docs/results/dataset-2022-extension');out.mkdir(exist_ok=True)
+out=Path('docs/data/dataset');out.mkdir(exist_ok=True)
 pd.DataFrame(rows).to_csv(out/'coverage.csv',index=False);pd.DataFrame(changes).to_csv(out/'finalized-nhsn-changes.csv',index=False)
 record=dict(start=dates[0],end=dates[-1],weeks=len(dates),issuances=len(issu),training_added='2022-2023',evaluation_seasons=list(SEASONS),future_vintages_empty=True,overlap_vintages_covariates_ed_unchanged=True,nhsn_final_precedence_changes=changes,sha256=hashlib.sha256(Path('data/processed/panel-expanded-building.npz').read_bytes()).hexdigest())
 (out/'verification.json').write_text(json.dumps(record,indent=2));print(pd.DataFrame(rows).to_string(index=False));print(json.dumps(record,indent=2))

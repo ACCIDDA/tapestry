@@ -4,7 +4,7 @@ import numpy as np,pandas as pd
 from tapestry.dataset import extract as ex
 from tapestry.dataset.build import load
 from tapestry.dataset.cv import season
-out=Path('docs/results/b2-direct-research-v1/availability')
+out=Path('docs/data/availability')
 p=load('data/processed/panel-b2-deadline.npz');iss=pd.to_datetime(p['issuance_dates'])
 base=pd.read_csv(out/'cells.csv.gz');base=base[base.covariate.isin(ex.DELPHI_COVARIATES)].copy()
 original=ex._without_conflicts

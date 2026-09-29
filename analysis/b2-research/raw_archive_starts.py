@@ -19,4 +19,4 @@ p=ex._latest_snapshot('data',ex.NWSS_DERIVED_DATASET)/'data.csv.gz';x=pd.read_cs
 for pathogen,g in x.groupby('pathogen'):
  for metric in ['wval_like','pct_rank']:
   q=g[np.isfinite(pd.to_numeric(g[metric],errors='coerce'))];rows.append(dict(covariate='nwss_'+str(pathogen).lower()+'_'+metric,earliest_raw_report=g.report_time.astype(str).str[:10].min(),earliest_finite_report=q.report_time.astype(str).str[:10].min(),earliest_observation=q.reference_time.astype(str).str[:10].min(),finite_raw_rows=len(q),files=1))
-out=Path('docs/results/b2-direct-research-v1/availability/raw-archive-starts.csv');pd.DataFrame(rows).to_csv(out,index=False);print(pd.DataFrame(rows).to_string(index=False),flush=True)
+out=Path('docs/data/availability/raw-archive-starts.csv');pd.DataFrame(rows).to_csv(out,index=False);print(pd.DataFrame(rows).to_string(index=False),flush=True)

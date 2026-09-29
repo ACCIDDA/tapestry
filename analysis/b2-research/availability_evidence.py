@@ -9,7 +9,7 @@ from matplotlib.colors import ListedColormap,BoundaryNorm
 from matplotlib.patches import Patch
 from tapestry.dataset.build import load
 from tapestry.dataset import extract as ex
-p=Path('docs/results/b2-direct-research-v1/availability');out=p/'timeline';a=load('data/processed/panel-b2-deadline.npz');dates=pd.to_datetime(a['dates']);iss=pd.to_datetime(a['issuance_dates']);ti=np.where((dates>='2025-08-02')&(dates<='2026-08-01'))[0];wi=np.where(iss>='2025-08-06')[0];obs=dates[ti];issued=iss[wi];cut=pd.to_datetime(a['forecast_cutoff_utc'][wi],utc=True);locations=a['locations'].astype(str)
+p=Path('docs/data/availability');out=p/'timeline';a=load('data/processed/panel-b2-deadline.npz');dates=pd.to_datetime(a['dates']);iss=pd.to_datetime(a['issuance_dates']);ti=np.where((dates>='2025-08-02')&(dates<='2026-08-01'))[0];wi=np.where(iss>='2025-08-06')[0];obs=dates[ti];issued=iss[wi];cut=pd.to_datetime(a['forecast_cutoff_utc'][wi],utc=True);locations=a['locations'].astype(str)
 labels=['Future observation','Reported value','Timing unknown / archive gap','Explicitly missing, later observed','Explicitly missing, no later value observed','No value anywhere in inspected history','Mixed geographic evidence'];colors=['#ffffff','#238b45','#c3c8cf','#4d9bd5','#cf5060','#eee1cf','#f0c85a'];cm=ListedColormap(colors);norm=BoundaryNorm(np.arange(-.5,7.5),7)
 items=[];totals=[]
 for key,nameskey in [('targets','target_names'),('covariates','covariate_names'),('covariates_national','covariate_national_names')]:

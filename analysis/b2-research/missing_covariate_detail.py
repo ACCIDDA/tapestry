@@ -2,7 +2,7 @@
 from pathlib import Path
 import pandas as pd
 from tapestry.dataset.build import load
-p=Path('docs/results/b2-direct-research-v1/availability')
+p=Path('docs/data/availability')
 x=pd.read_csv(p/'cells.csv.gz');keys=['covariate','issuance','lag','location']
 x['reported_available']=x.available
 for file in p.glob('*-statements.csv.gz'):
@@ -33,7 +33,7 @@ Availability means at least one finite value in the latest eligible source state
 - **Per-state missing weeks:** each source link opens a state-by-lag table. Each count is the number of distinct missing submission dates for that state at that lag. Exact submission and observation dates are downloadable. At a fixed lag these date counts are identical; **do not sum across lags to obtain unique weeks**.
 - **Location-weeks checked:** native locations × 53 deadlines; this is not the number of finite revision pairs. All-season archive gaps remain in the denominator.
 
-[Full summary CSV](full-availability-summary.csv) · [Every state's counts and exact dates](missing-by-state-lag.csv) · [All missing cells](missing-cells.csv.gz) · [All-lag conditional revisions](full-revisions.md) · [Conflict diagnosis](conflict-audit.md) · [Main availability report](index.md).
+[Full summary CSV](full-availability-summary.csv) · [Every state's counts and exact dates](missing-by-state-lag.csv) · [All missing cells](missing-cells.csv.gz) · [All-lag conditional revisions](summary.csv) · [Conflict diagnosis](conflict-audit.md) · [Main availability report](index.md).
 
 '''
 text=intro
@@ -43,7 +43,7 @@ for k in range(12):
   r=s[(s.covariate==n)&(s.lag==k)].iloc[0]
   rows.append([f'[{n}]({n}.md)',freq(n),f'{r.reported_available}/{r.opportunities} ({r.availability_pct:.1f}%)',r.unique_missing_states if r.native_states else '—',r.unique_missing_state_weeks if r.native_states else '—',r.dc_missing_weeks if r.dc_supported else '—',r.us_missing_weeks if r.us_supported else '—',r.missing_location_weeks])
  text+=f'## Lag {k}: '+('latest observation week' if k==0 else f'{k} observation weeks earlier')+'\n\n'+table(['Covariate','Frequency / representation','Reported / checked','Missing states (of 50)','Distinct weeks, states','DC missing weeks','US missing weeks','Missing location-weeks'],rows)+'\n\n'
-(p/'full-tables.md').write_text(text)
+# Standalone full-tables page removed; downloadable CSV remains.
 allstates=set(map(str,panel['locations']))-{'US','DC'}
 for n in names:
  g=b[b.covariate==n];native=set(g.location);unsupported=sorted(allstates-native)
@@ -61,13 +61,13 @@ States outside this source's native season support ({len(unsupported)}): {', '.j
 
 {table(['Location']+[f'Lag {k}' for k in range(12)],rows)}
 
-[Exact missing submission and observation dates for every state/lag](missing-by-state-lag.csv) · [All covariates and missing-state totals](full-tables.md).
+[Exact missing submission and observation dates for every state/lag](missing-by-state-lag.csv) · [All covariates and missing-state totals](full-availability-summary.csv).
 ''')
 r=pd.read_csv(p/'summary.csv');rev='''# All covariates: revisions at every lag
 
 These are **conditional on the old pipeline retaining both an unambiguous deadline value and final value**. The conflict correction improves availability counts but does not pick an arbitrary value to recompute revisions. Percentages are sum of absolute revisions divided by sum of absolute final values, ×100; n is the number of finite pairs. Missing pairs do not count as zero change. Sample composition varies by lag. Frozen final values can themselves have missing cells from conflict rejection.
 
-[Original-unit bias, mean and 90th percentile absolute changes](summary.csv) · [Availability and missing states](full-tables.md) · [Conflict diagnosis](conflict-audit.md).
+[Original-unit bias, mean and 90th percentile absolute changes](summary.csv) · [Availability and missing states](full-availability-summary.csv) · [Conflict diagnosis](conflict-audit.md).
 
 '''
 for start in [0,6]:
@@ -75,7 +75,7 @@ for start in [0,6]:
  for n in names:
   g=r[r.covariate.eq(n)].set_index('lag');rows.append([n,freq(n)]+[f'{g.loc[k,"relative_absolute_revision_pct"]:.1f}% (n={int(g.loc[k,"paired"])})' if g.loc[k,'paired'] else '— (n=0)' for k in range(start,start+6)])
  rev+=table(['Covariate','Frequency / representation']+[f'Lag {k}' for k in range(start,start+6)],rows)+'\n\n'
-(p/'full-revisions.md').write_text(rev)
+# Standalone full-revisions page removed; downloadable summary.csv remains.
 assert len(s)==14*12
 assert (s.reported_available+s.missing_location_weeks==s.opportunities).all()
 assert b.missing_weeks.between(0,53).all()

@@ -6,7 +6,7 @@ import pandas as pd
 from tapestry.dataset.build import load
 from tapestry.dataset.cv import season
 
-ROOT=Path('docs/results/b2-direct-research-v1/availability')
+ROOT=Path('docs/data/availability')
 ROOT.mkdir(parents=True,exist_ok=True)
 path=Path('data/processed/panel-b2-deadline.npz')
 p=load(path)
@@ -76,7 +76,7 @@ text=f'''# Covariate availability and revisions, 2025–26
 
 This checks **actual archived values at the Hub deadline**, not the assumed-available finalized proxies used to fill gaps in the B2 operational panel. The B0 reproduction audited targets; the existing B2 covariate coverage table combined 12 history weeks and did not show this lag/revision breakdown.
 
-[Full tables for all 14 covariates and 12 lags, including unique missing states and weeks](full-tables.md) · [All-lag revisions](full-revisions.md).
+[Full tables for all 14 covariates and 12 lags, including unique missing states and weeks](full-availability-summary.csv) · [All-lag revisions](summary.csv).
 
 ## What the counts mean
 
@@ -120,9 +120,9 @@ The [weekly counts](by-week.csv) separate temporal gaps from geographic coverage
 
 “Final” means the frozen finalized arrays used by this experiment, not an assertion that the source can never revise again. The deadline and final values are aligned in the panel's native units. Wastewater WVAL-like/percentile changes may include changes to index construction or historical baseline as well as revisions to underlying measurements; they should not be interpreted as raw-concentration revisions. Kinsa values are complete seven-day averages of its national daily signal. Claims are the source's trailing-seven-day percentage sampled at Saturday.
 
-Source: `data/processed/panel-b2-deadline.npz`, SHA256 **{hashlib.sha256(path.read_bytes()).hexdigest()}**. Original [deadline policy and pinned source snapshots](../../b2-research/data/deadline-policy.json). The operational proxy-filled panel is deliberately not used.
+Source: `data/processed/panel-b2-deadline.npz`, SHA256 **{hashlib.sha256(path.read_bytes()).hexdigest()}**. Original [deadline policy and pinned source snapshots](provenance/deadline-policy.json). The operational proxy-filled panel is deliberately not used.
 
-[All paired and missing cells](cells.csv.gz) · [Native geographic support](native-support.csv) · [Full summary](summary.csv) · [Main experiment report](../index.md).
+[All paired and missing cells](cells.csv.gz) · [Native geographic support](native-support.csv) · [Full summary](summary.csv) · [Main experiment report](../../results/b2-direct-research-v1/index.md).
 
 Reproduce from the repository root:
 

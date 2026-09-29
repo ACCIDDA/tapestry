@@ -1,6 +1,6 @@
 from pathlib import Path
 import json,pandas as pd
-p=Path('docs/results/dataset-2022-extension');r=json.loads((p/'verification.json').read_text());x=pd.read_csv(p/'coverage.csv');changes=pd.read_csv(p/'finalized-nhsn-changes.csv')
+p=Path('docs/data/dataset');r=json.loads((p/'verification.json').read_text());x=pd.read_csv(p/'coverage.csv');changes=pd.read_csv(p/'finalized-nhsn-changes.csv')
 def table(frame):return '\n'.join(['| '+' | '.join(frame.columns)+' |','| '+' | '.join(['---']*len(frame.columns))+' |']+['| '+' | '.join(map(str,row))+' |' for row in frame.itertuples(index=False,name=None)])
 s=f'''# Dataset extended with the 2022–23 season
 
@@ -36,4 +36,4 @@ Rebuild the base panel with the same truth cutoff:
 .venv/bin/python -m tapestry.dataset.build build --start 2022-05-14 --truth-day 2026-09-22 --workers 3 --output data/processed/panel.npz
 ```
 '''
-(p/'index.md').write_text(s)
+# Dataset details live in docs/data/index.md; verification CSV/JSON are retained.

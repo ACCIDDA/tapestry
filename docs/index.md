@@ -1,5 +1,8 @@
 # Tapestry
 
+**[Data: dataset coverage, availability staircase, source dates and revision tables](data/index.md)**
+
+
 This is the project with all my wishlist for infectious disease modeling:
 Flusion's idea of learning across surveillance sources, InfluPaint's modeling
 ideas and infrastructure, CRPS fitting like that very smart DeepMind paper,
