@@ -1,0 +1,29 @@
+[
+  {
+    "issuance": "2024-10-02",
+    "reference_week": "2024-09-28",
+    "location": "NC",
+    "covariate": "nwss_flu_wval_like",
+    "final_value": 1.9843581914901733,
+    "model_available": false,
+    "model_value": 0.0
+  },
+  {
+    "issuance": "2024-10-02",
+    "reference_week": "2024-09-28",
+    "location": "NC",
+    "covariate": "nwss_covid_wval_like",
+    "final_value": 5.646049976348877,
+    "model_available": false,
+    "model_value": 0.0
+  },
+  {
+    "issuance": "2024-10-02",
+    "reference_week": "2024-09-28",
+    "location": "NC",
+    "covariate": "nwss_rsv_wval_like",
+    "final_value": 3.640409231185913,
+    "model_available": false,
+    "model_value": 0.0
+  }
+]

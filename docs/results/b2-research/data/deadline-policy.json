@@ -1,0 +1,213 @@
+{
+  "source": "data/processed/panel.npz",
+  "source_sha256": "3e12481cb04b189f44d6315f0790682a37a74659569af7f8aae2f7fba2e23b89",
+  "builder_sha256": "d747eda4e288882f5824520d58706185b6b50132648db3f19dba5b68c2f4698c",
+  "covariate_snapshots": {
+    "delphi_claims_inpatient": "20260916T142718.964296Z",
+    "delphi_claims_outpatient": "20260916T142831.880328Z",
+    "delphi_flusurv": "20260922T204051.916853Z",
+    "delphi_fluview_clinical": "20260922T204051.880663Z",
+    "delphi_fluview_ilinet": "20260922T204051.781844Z",
+    "derived_nwss_state_indices": "20260922T170917.373373Z",
+    "pophive_kinsa_ili": "20260921T161214.502587Z"
+  },
+  "holiday_dates": {
+    "2024-12-28": "2024-12-26",
+    "2025-01-04": "2025-01-02",
+    "2025-12-27": "2025-12-29",
+    "2026-01-03": "2026-01-04"
+  },
+  "holiday_evidence": {
+    "2024-12-28,2025-01-04": {
+      "flusight": "6da755c738e2ac01c99f5d48c0a7a967c68a766e",
+      "covid": "a79500e (tasks.json Thursday extension)",
+      "policy": "reference_date minus 2 days, 23:00 America/New_York"
+    },
+    "2025-12-27,2026-01-03": {
+      "policy": "Earliest COVID/RSV deadline: Dec29/Jan4 23:00 ET; FluSight Dec30/Jan5",
+      "audit": "docs/results/b1-to-b0-chain/availability_inventory.md"
+    }
+  },
+  "target_policy": "Actual historical Hub files plus Delphi reports; latest public statement per observation among extant source files. Missing public archive cells remain missing; finalized truth is never substituted.",
+  "covariate_policy": "Latest native report per observation by the common deadline; all midnight/date-only releases conservatively placed at end of their UTC day. No future value substitution or imputed source lag.",
+  "deadline_policy": "Wednesday 23:00 America/New_York except documented extensions; earliest participating Hub deadline for joint issuance. Wednesday IDs and preceding Saturday context remain fixed.",
+  "source_details": {
+    "nwss": {
+      "first_release": {
+        "nwss_flu_wval_like": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 7625,
+          "operational_first_releases": 1135,
+          "first_release_median_days": 13.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 46.0,
+          "excluded_backfill_over60days": 6181
+        },
+        "nwss_covid_wval_like": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 11698,
+          "operational_first_releases": 1190,
+          "first_release_median_days": 13.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 46.0,
+          "excluded_backfill_over60days": 10198
+        },
+        "nwss_rsv_wval_like": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 7157,
+          "operational_first_releases": 982,
+          "first_release_median_days": 9.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 47.799999999999955,
+          "excluded_backfill_over60days": 5764
+        },
+        "nwss_flu_pct_rank": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 7625,
+          "operational_first_releases": 1135,
+          "first_release_median_days": 13.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 46.0,
+          "excluded_backfill_over60days": 6181
+        },
+        "nwss_covid_pct_rank": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 11698,
+          "operational_first_releases": 1190,
+          "first_release_median_days": 13.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 46.0,
+          "excluded_backfill_over60days": 10198
+        },
+        "nwss_rsv_pct_rank": {
+          "first_release": "2026-02-25T23:59:59.999999999+00:00",
+          "recent_first_releases": 7157,
+          "operational_first_releases": 982,
+          "first_release_median_days": 9.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 47.799999999999955,
+          "excluded_backfill_over60days": 5764
+        }
+      },
+      "seconds": 12.7
+    },
+    "kinsa_ili": {
+      "first_release": {
+        "kinsa_ili": {
+          "first_release": "2026-04-06T23:59:59.999999999+00:00",
+          "recent_first_releases": 394,
+          "operational_first_releases": 25,
+          "first_release_median_days": 3.0,
+          "first_release_p10_days": 1.0,
+          "first_release_p90_days": 41.20000000000001,
+          "excluded_backfill_over60days": 369
+        }
+      },
+      "seconds": 0.23
+    },
+    "ilinet_ili": {
+      "first_release": {
+        "ilinet_ili": {
+          "first_release": "2003-11-28T23:59:59.999999999+00:00",
+          "recent_first_releases": 2412,
+          "operational_first_releases": 2255,
+          "first_release_median_days": 6.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 20.0,
+          "excluded_backfill_over60days": 105
+        }
+      },
+      "seconds": 3.32
+    },
+    "inpatient_flu": {
+      "first_release": {
+        "inpatient_flu": {
+          "first_release": "2020-05-29T23:59:59.999999999+00:00",
+          "recent_first_releases": 2558,
+          "operational_first_releases": 2540,
+          "first_release_median_days": 3.0,
+          "first_release_p10_days": 2.0,
+          "first_release_p90_days": 12.099999999999909,
+          "excluded_backfill_over60days": 18
+        }
+      },
+      "seconds": 36.05
+    },
+    "outpatient_covid": {
+      "first_release": {
+        "outpatient_covid": {
+          "first_release": "2020-05-29T23:59:59.999999999+00:00",
+          "recent_first_releases": 2685,
+          "operational_first_releases": 2684,
+          "first_release_median_days": 1.0,
+          "first_release_p10_days": 0.0,
+          "first_release_p90_days": 4.0,
+          "excluded_backfill_over60days": 1
+        }
+      },
+      "seconds": 151.69
+    },
+    "outpatient_flu": {
+      "first_release": {
+        "outpatient_flu": {
+          "first_release": "2020-05-29T23:59:59.999999999+00:00",
+          "recent_first_releases": 2686,
+          "operational_first_releases": 2685,
+          "first_release_median_days": 0.0,
+          "first_release_p10_days": 0.0,
+          "first_release_p90_days": 4.0,
+          "excluded_backfill_over60days": 1
+        }
+      },
+      "seconds": 147.67
+    },
+    "inpatient_covid": {
+      "first_release": {
+        "inpatient_covid": {
+          "first_release": "2020-05-29T23:59:59.999999999+00:00",
+          "recent_first_releases": 2555,
+          "operational_first_releases": 2537,
+          "first_release_median_days": 3.0,
+          "first_release_p10_days": 2.0,
+          "first_release_p90_days": 13.0,
+          "excluded_backfill_over60days": 18
+        }
+      },
+      "seconds": 69.11
+    },
+    "clinical_lab_flu_pct_positive": {
+      "first_release": {
+        "clinical_lab_flu_pct_positive": {
+          "first_release": "2018-10-05T23:59:59.999999999+00:00",
+          "recent_first_releases": 1926,
+          "operational_first_releases": 1805,
+          "first_release_median_days": 6.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 27.0,
+          "excluded_backfill_over60days": 83
+        }
+      },
+      "seconds": 1.49
+    },
+    "flusurv_flu_rate": {
+      "first_release": {
+        "flusurv_flu_rate": {
+          "first_release": "2012-11-02T23:59:59.999999999+00:00",
+          "recent_first_releases": 2601,
+          "operational_first_releases": 442,
+          "first_release_median_days": 6.0,
+          "first_release_p10_days": 6.0,
+          "first_release_p90_days": 38.0,
+          "excluded_backfill_over60days": 2159
+        }
+      },
+      "seconds": 1.0
+    }
+  },
+  "limitation": "Public archive availability is a lower bound on upstream availability. Kinsa first public release is April 2026; NWSS vintage support also starts in 2026. A source deletion in one public Hub does not retract a value still present in another public Hub.",
+  "truth_policy": "All finalized target and covariate truth arrays retained bit-for-bit from frozen source panel.",
+  "seconds": 196.57,
+  "output": "data/processed/panel-b2-deadline.npz",
+  "output_sha256": "27c36c76c96cbd1a6705fe9dd9d848a4e734861d61fd300495868bbe78fd6d9a",
+  "truth_arrays_unchanged": true
+}

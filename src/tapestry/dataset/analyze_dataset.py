@@ -181,6 +181,7 @@ def _covariates(panel, eps):
     frame['issuance'] = pd.to_datetime(frame.issuance)
     frame['source'] = frame.covariate.str.replace(r'_(flu|covid|rsv)', '', regex=True)
     frame['pathogen'] = frame.covariate.str.extract(r'(flu|covid|rsv)', expand=False).fillna('ili')
+    frame.loc[frame.covariate.eq('ilinet_ili'), 'pathogen'] = 'ili'  # ILI, not an influenza-specific signal
     grid = sns.relplot(frame, x='issuance', y='share', hue='pathogen', col='source', col_wrap=3, kind='line',
                        height=2.4, aspect=1.9, lw=1, palette={'flu': 'C0', 'covid': 'C1', 'rsv': 'C2', 'ili': 'C4'})
     grid.set_titles('{col_name}')
@@ -201,8 +202,9 @@ def _covariate_lines(panel):
     dates = pd.to_datetime(panel['dates'])
     ends = pd.to_datetime(panel['issuance_dates']) - pd.Timedelta(days=4)
     week = {d: t for t, d in enumerate(dates)}
-    colour = {'flu': 'C0', 'covid': 'C1', 'rsv': 'C2', 'kinsa': 'C4'}
-    style = {'inpatient': '-', 'outpatient': '--', 'wval_like': ':', 'pct_rank': '-.', 'kinsa': '-'}
+    colour = {'flu': 'C0', 'covid': 'C1', 'rsv': 'C2', 'kinsa': 'C4', 'ilinet': 'C5'}
+    style = {'inpatient': '-', 'outpatient': '--', 'wval_like': ':', 'pct_rank': '-.', 'kinsa': '-',
+             'ilinet': '-', 'clinical_lab': (0, (5, 1)), 'flusurv': (0, (3, 1, 1, 1, 1, 1))}
     pick = lambda table, name: next(v for k, v in table.items() if k in name)
     locations = [str(l) for l in panel['locations']]
     fig, axes = plt.subplots(len(PLACES), 1, figsize=(14, 4.2 * len(PLACES)), sharex=True, constrained_layout=True)
@@ -367,7 +369,8 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
         '## 4. Covariates in ' + ' and '.join(PLACES), '',
         'Final (truth-day) values, each divided by its own maximum at that location over the calendar. '
         'Colour = pathogen, line style = source (solid inpatient claims, dashed outpatient claims, dotted '
-        'NWSS wval_like, dash-dot NWSS pct_rank; Kinsa purple). Faint dots: the context-end week of each '
+        'NWSS wval_like, dash-dot NWSS pct_rank; Kinsa purple; ILINet ILI brown; long dashes clinical-lab '
+        'influenza percent positive; dash-dot-dot FluSurv-NET rate). Faint dots: the context-end week of each '
         'Wednesday issuance as visible at its cutoff, same scale (the latest as-of value an episode sees). '
         'A covariate with no value at a location is listed in the legend as not available.', '',
         _covariate_lines(panel), '',

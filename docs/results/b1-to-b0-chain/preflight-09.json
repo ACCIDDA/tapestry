@@ -1,0 +1,29 @@
+[
+  {
+    "stage": "09",
+    "held": "2023-2024",
+    "fit_examples": 85,
+    "validation_examples": 40,
+    "held_out_and_hidden_excluded": true,
+    "original_finalized_values_unchanged": true,
+    "full_component_weight_mass": 1.0
+  },
+  {
+    "stage": "09",
+    "held": "2024-2025",
+    "fit_examples": 80,
+    "validation_examples": 40,
+    "held_out_and_hidden_excluded": true,
+    "original_finalized_values_unchanged": true,
+    "full_component_weight_mass": 1.0
+  },
+  {
+    "stage": "09",
+    "held": "2025-2026",
+    "fit_examples": 81,
+    "validation_examples": 36,
+    "held_out_and_hidden_excluded": true,
+    "original_finalized_values_unchanged": true,
+    "full_component_weight_mass": 1.0
+  }
+]

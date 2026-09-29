@@ -1,19 +1,6 @@
-"""The one network: today's B0 forward pass, plus B1-direct's thin input wrapping.
-
-B2 was already `B1(direct=True)` was already `B0` wrapped to accept a known-final
-flag channel instead of always-finalized input; B1's other pipelines (`two_stage`,
-`parallel_recent`, `direct_finalflag`-as-a-separate-thing, `joint_aux025`, and their
-`SampleHead`/two-stage encode/decode machinery) are dropped, since `direct` is the
-only one this project still uses (see docs/design/restructure-2026-unified.md §1).
-
-`Model.forward` accepts either an already-packed `x` tensor (B0's original
-interface) or separate `values`/`available`/`known_final` tensors plus a
-`vintaged` bool: `vintaged=False` treats every visible cell as known-final
-(finalized-input training); `vintaged=True` uses the supplied flags as-is
-(vintaged-input training). This is the whole of what B1 added over B0 — no
-subclass, no separate pipeline dispatch.
-"""
+"""Shared probabilistic network for standalone and composable model stages."""
 import torch
+from .covariates import CovariateEncoder, signed_log, trailing_mean
 from torch import nn
 import torch.nn.functional as F
 
@@ -124,6 +111,18 @@ class MultiscaleEncoder(nn.Module):
         return self.project(torch.cat([v for h in features for v in (h.mean(-1), h[..., -1])], -1))
 
 
+def pooled_context(context, observed, locations):
+    """Equal-weight observed state/DC mean plus a separate native-US token."""
+    states = context.new_tensor([loc != 'US' for loc in locations], dtype=torch.bool)
+    keep = observed & states[None]
+    pooled = (context * keep[..., None]).sum(1) / keep.sum(1).clamp_min(1)[:, None]
+    national = torch.zeros_like(pooled)
+    if 'US' in locations:
+        us = locations.index('US')
+        national = context[:, us] * observed[:, us, None]
+    return torch.cat((pooled, national), -1)
+
+
 class SpatialBlock(nn.Module):
     """One pre-norm attention block across the location tokens of each episode."""
     def __init__(self, width, heads=4):
@@ -134,10 +133,37 @@ class SpatialBlock(nn.Module):
         self.attention = nn.MultiheadAttention(width, heads, batch_first=True)
         self.feedforward = nn.Sequential(nn.Linear(width, 2 * width), nn.SiLU(), nn.Linear(2 * width, width))
 
-    def forward(self, h):  # [N, L, width]
+    def forward(self, h, observed=None):  # [N, L, width]
+        original = h
         query = self.norms[0](h)
-        h = h + self.attention(query, query, query, need_weights=False)[0]
-        return h + self.feedforward(self.norms[1](h))
+        padding = None
+        if observed is not None:
+            any_observed = observed.any(-1)
+            # Attention needs one unmasked key even in an entirely missing episode.
+            # Its result is discarded for that episode below.
+            padding = ~observed.clone()
+            padding[~any_observed, 0] = False
+        h = h + self.attention(query, query, query, key_padding_mask=padding, need_weights=False)[0]
+        h = h + self.feedforward(self.norms[1](h))
+        return h if observed is None else torch.where(any_observed[:, None, None], h, original)
+
+
+class PooledMessage(nn.Module):
+    """Native-US broadcast or recipient-gated state-mean plus native-US message."""
+    def __init__(self, width, kind):
+        super().__init__()
+        self.kind = kind
+        self.message = nn.Linear(width if kind == 'national_broadcast' else 2 * width, width, bias=False)
+        if kind == 'gated_pool':
+            self.gate = nn.Linear(3 * width, width)
+
+    def forward(self, context, observed, locations):
+        summary = pooled_context(context, observed, locations)
+        if self.kind == 'national_broadcast':
+            return context + self.message(summary.chunk(2, -1)[1])[:, None]
+        message = self.message(summary)[:, None]
+        gate = torch.sigmoid(self.gate(torch.cat((context, summary[:, None].expand(-1, context.shape[1], -1)), -1)))
+        return context + gate * message
 
 
 class ModulatedDecoder(nn.Module):
@@ -252,12 +278,13 @@ class Model(nn.Module):
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
                  annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False,
-                 covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None):
+                 covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
+                 supplied_estimated=False, covariate_encoder='raw'):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           supplied_final=supplied_final)
+                           supplied_final=supplied_final, supplied_estimated=supplied_estimated)
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
-                or spatial not in ('none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
+                or spatial not in ('none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
             raise ValueError('Unknown model architecture option')
         if min(lookback, width, latent) < 1:
@@ -278,6 +305,9 @@ class Model(nn.Module):
         covariate_names = list(covariate_names)
         if len(set(covariate_names)) != len(covariate_names):
             raise ValueError('Covariate names must be unique')
+        if covariate_encoder not in ('raw', 'smooth', 'summary', 'shared'):
+            raise ValueError('Unknown covariate encoder')
+        self.config['covariate_encoder'] = covariate_encoder
         self.config['covariate_names'] = covariate_names
         self.register_buffer('input_scale', self._per_location(input_scale, 1.))
         if ed_transform == 'logit':
@@ -300,9 +330,13 @@ class Model(nn.Module):
         self.config['covariate_scale'] = self.covariate_scale.tolist()
         self.config['covariate_trained'] = self.covariate_trained.tolist()
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
-        fields_per_cell = 3 if supplied_final else 2
+        fields_per_cell = 2 + int(supplied_final) + int(supplied_estimated)
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
-        context_fields = 6 * fields_per_cell + 2 * len(covariate_names)
+        compact_covariates = bool(covariate_names) and covariate_encoder in ('summary', 'shared')
+        if compact_covariates:
+            self.covariate_encoder = CovariateEncoder(lookback, covariate_encoder)
+            extra_width += 6 * len(covariate_names)
+        context_fields = 6 * fields_per_cell + (0 if compact_covariates else 2 * len(covariate_names))
         self.context = nn.Sequential(nn.Linear((lookback * context_fields if encoder == 'mlp' else width) + extra_width, width),
                                      nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
@@ -322,13 +356,21 @@ class Model(nn.Module):
         self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
         if heads == 'state_us':
             self.us_output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
-        if spatial != 'none':
+        if spatial == 'pooled':
+            self.national_context = nn.Linear(2 * width, width)
+        elif spatial in ('national_broadcast', 'gated_pool'):
+            self.pooled_message = PooledMessage(width, spatial)
+        elif spatial != 'none':
             self.spatial = SpatialBlock(width)
-        if spatial not in ('none', 'attention'):
+        if spatial in ('pathogen_spatial', 'target_spatial', 'joint_location_target'):
             scope_channels = 2 if spatial == 'pathogen_spatial' else 1
             self.remote = (nn.Sequential(nn.Linear(lookback * scope_channels * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
                            if encoder == 'mlp' else temporal(scope_channels * fields_per_cell, width))
             self.remote_identity = nn.Embedding(3 if spatial == 'pathogen_spatial' else 6, width)
+            if covariate_names:
+                covariate_width = len(covariate_names) * (6 if compact_covariates else 2 * lookback)
+                self.remote_covariates = nn.Sequential(nn.Linear(covariate_width, width), nn.SiLU(),
+                                                       nn.Linear(width, width))
             if geography or location_embedding:
                 self.remote_geo = nn.Linear(2 * geography + location_embedding, width)
         if us_error == 'shared_factor':
@@ -360,14 +402,16 @@ class Model(nn.Module):
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
     def forward(self, x=None, calendar=None, members=8, z=None, locations=None, local_z=None, national_z=None,
-                covariates=None, *, values=None, available=None, known_final=None, vintaged=True):
+                covariates=None, *, values=None, available=None, known_final=None, vintaged=True, estimated=None):
         """Native samples [member, episode, output week, component target, location].
 
         Either pass a pre-packed `x` [N,P,C,fields,L] (this model's own format,
         `fields` = 2 or 3 matching `supplied_final`), or pass `values`/`available`
         (and, when `vintaged=True`, `known_final`) and let this wrapper pack them:
         `vintaged=False` treats every visible cell as known-final (a finalized-input
-        scenario); `vintaged=True` uses the supplied flags as-is.
+        scenario); `vintaged=True` uses supplied flags, defaulting to unknown finality when omitted.
+        `estimated`, when enabled by supplied_estimated, is appended as a separate
+        field to either input format; packed x does not include it.
         """
         if x is None:
             if values is None or available is None:
@@ -375,12 +419,16 @@ class Model(nn.Module):
             available = available.bool()
             if self.config['supplied_final']:
                 if vintaged:
-                    known_final = available if known_final is None else known_final.bool() & available
+                    known_final = torch.zeros_like(available) if known_final is None else known_final.bool() & available
                 else:
                     known_final = available
                 x = torch.stack((values, available.to(values.dtype), known_final.to(values.dtype)), dim=3)
             else:
                 x = torch.stack((values, available.to(values.dtype)), dim=3)
+        if self.config['supplied_estimated']:
+            if estimated is None:
+                estimated = torch.zeros_like(x[:, :, :, 1, :], dtype=torch.bool)
+            x = torch.cat((x, estimated.unsqueeze(3).to(x.dtype)), dim=3)
         return self._forward(x, calendar, members=members, z=z, locations=locations,
                               local_z=local_z, national_z=national_z, covariates=covariates)
 
@@ -407,10 +455,14 @@ class Model(nn.Module):
         if offset is not None:
             transformed = transformed - offset[None, None, :, :]
         values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
-        fields = torch.stack((values, mask, (x[:, :, :, 2, :].bool() & valid).to(values.dtype))
-                             if config['supplied_final'] else (values, mask), dim=-1)
+        fields = [values, mask]
+        if config['supplied_final']:
+            fields.append((x[:, :, :, 2, :].bool() & valid).to(values.dtype))
+        if config['supplied_estimated']:
+            fields.append((x[:, :, :, -1, :].bool() & valid).to(values.dtype))
+        fields = torch.stack(fields, dim=-1)
         fpc = fields.shape[-1]
-        cov_fields = None
+        cov_fields = cov_summary = None
         k = len(config['covariate_names'])
         if k:
             expected = (n, p, k, 2, l)
@@ -421,7 +473,15 @@ class Model(nn.Module):
                 raise ValueError(f'Covariate scale holds {self.covariate_scale.shape[-1]} locations, not {l}')
             cov_values = (covariates[:, :, :, 0] - self.covariate_offset[None, None]) / self.covariate_scale[None, None]
             cov_values = torch.where(cov_available, cov_values, 0)
-            cov_fields = torch.stack((cov_values, cov_available.to(cov_values.dtype)), -1)
+            kind = config['covariate_encoder']
+            if kind != 'raw':
+                cov_values = signed_log(cov_values)
+            if kind == 'smooth':
+                cov_values, cov_available = trailing_mean(cov_values, cov_available)
+            if kind in ('summary', 'shared'):
+                cov_summary = self.covariate_encoder(cov_values, cov_available)
+            else:
+                cov_fields = torch.stack((cov_values, cov_available.to(cov_values.dtype)), -1)
         elif covariates is not None and covariates.shape[2]:
             raise ValueError('Model was fitted without covariates')
         if config['encoder'] == 'mlp':
@@ -435,6 +495,8 @@ class Model(nn.Module):
                 pieces.append(cov_fields.permute(0, 3, 2, 4, 1).reshape(n * l, 2 * k, p))
             context = self.temporal_context(torch.cat(pieces, 1)).reshape(n, l, -1)
         extras, geo_features = [], []
+        if cov_summary is not None:
+            extras.append(cov_summary)
         if config['annual_calendar']:
             if calendar.shape[-1] != 3:
                 raise ValueError('Calendar requires annual phase and Christmas timing')
@@ -453,12 +515,27 @@ class Model(nn.Module):
             focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * fpc))
         else:
             focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, fpc, p)).reshape(n, l, c, -1)
+        if config['spatial'] in ('pooled', 'national_broadcast', 'gated_pool', 'attention'):
+            observed = valid.any(dim=(1, 2))
+            if k:
+                observed = observed | cov_available.any(dim=(1, 2))
+        if config['spatial'] == 'pooled':
+            national = pooled_context(context, observed, locations)
+            context = context + self.national_context(national)[:, None]
+        if config['spatial'] in ('national_broadcast', 'gated_pool'):
+            context = self.pooled_message(context, observed, locations)
         if config['spatial'] == 'attention':
-            context = self.spatial(context)
+            context = self.spatial(context, observed)
         h = context[:, :, None, :] + focal + self.source.weight[None, None, :, :]
-        if config['spatial'] not in ('none', 'attention'):
+        if config['spatial'] in ('pathogen_spatial', 'target_spatial', 'joint_location_target'):
             scope = config['spatial']
             groups = ([[0, 3], [1, 4], [2, 5]] if scope == 'pathogen_spatial' else [[i] for i in range(6)])
+            remote_covariates = None
+            if k:
+                cov_input = (cov_summary if cov_summary is not None else
+                             cov_fields.permute(0, 3, 1, 2, 4).reshape(n, l, -1))
+                remote_covariates = self.remote_covariates(cov_input)
+                remote_covariates = torch.where(cov_available.any(dim=(1, 2))[..., None], remote_covariates, 0)
             tokens = []
             for gi, channels in enumerate(groups):
                 f = fields[:, :, channels]
@@ -466,14 +543,20 @@ class Model(nn.Module):
                                 else f.permute(0, 3, 2, 4, 1).reshape(n * l, len(channels) * fpc, p))
                 token = self.remote(remote_input).reshape(n, l, -1)
                 token = token + self.remote_identity.weight[gi]
+                if remote_covariates is not None:
+                    token = token + remote_covariates
                 if geo_features:
                     token = token + self.remote_geo(torch.cat(geo_features, -1))
                 tokens.append(token)
             remote = torch.stack(tokens, 2)  # N,L,group,W
+            observed = torch.stack([valid[:, :, channels].any(dim=(1, 2)) for channels in groups], -1)
+            if k:
+                observed = observed | cov_available.any(dim=(1, 2))[..., None]
             if scope == 'joint_location_target':
-                remote = self.spatial(remote.reshape(n, l * len(groups), -1)).reshape_as(remote)
+                remote = self.spatial(remote.reshape(n, l * len(groups), -1), observed.reshape(n, -1)).reshape_as(remote)
             else:
-                remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
+                remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1),
+                                      observed.permute(0, 2, 1).reshape(n * len(groups), l)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
             mapping = [next(i for i, group in enumerate(groups) if c in group) for c in range(6)]
             h = h + remote[:, :, mapping]
         offsets = x.new_tensor(config['horizons']).reshape(-1, 1) / 4
@@ -554,12 +637,19 @@ class IndependentBundle(nn.Module):
 def checkpoint(model, metadata):
     import json
     metadata = json.loads(json.dumps(metadata))
+    from .pipeline import NowcastForecast
+    if isinstance(model, NowcastForecast):
+        return dict(nowcaster=checkpoint(model.nowcaster, {}), forecaster=checkpoint(model.forecaster, {}),
+                    metadata=metadata)
     if isinstance(model, IndependentBundle):
         return dict(groups=model.groups, components=[checkpoint(m, {}) for m in model.models], metadata=metadata)
     return dict(config=model.config, state_dict={k: v.cpu() for k, v in model.state_dict().items()}, metadata=metadata)
 
 
 def load_model(saved):
+    if 'nowcaster' in saved:
+        from .pipeline import NowcastForecast
+        return NowcastForecast(load_model(saved['nowcaster']), load_model(saved['forecaster']))
     if 'components' in saved:
         return IndependentBundle([load_model(c) for c in saved['components']], saved['groups'])
     model = Model(**saved['config'])

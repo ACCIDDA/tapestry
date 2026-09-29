@@ -1,0 +1,344 @@
+{
+  "source": "data/processed/panel-b2-deadline.npz",
+  "source_sha256": "27c36c76c96cbd1a6705fe9dd9d848a4e734861d61fd300495868bbe78fd6d9a",
+  "builder_sha256": "7b39218c6ef23e8707a8e4e9fdc1ddab9e101ff54bd22584e9d4a0249941507d",
+  "authorized_assumption": "Backcast the expected 2025-26 source reporting regime; when archive evidence is absent, lean toward availability using finalized historical values after source-specific delay.",
+  "covariate_lags_days": {
+    "nwss_flu_wval_like": 13,
+    "nwss_covid_wval_like": 13,
+    "nwss_rsv_wval_like": 9,
+    "nwss_flu_pct_rank": 13,
+    "nwss_covid_pct_rank": 13,
+    "nwss_rsv_pct_rank": 9,
+    "kinsa_ili": 1,
+    "ilinet_ili": 6,
+    "inpatient_flu": 3,
+    "outpatient_covid": 1,
+    "outpatient_flu": 0,
+    "inpatient_covid": 3,
+    "clinical_lab_flu_pct_positive": 6,
+    "flusurv_flu_rate": 6
+  },
+  "target_lag_days": 4,
+  "sources": [
+    {
+      "name": "nhsn_flu_admissions",
+      "lag_days": 4,
+      "proxy_cells": 22706,
+      "actual_cells": 634688,
+      "protected_null_cells": 3456,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "nhsn_covid_admissions",
+      "lag_days": 4,
+      "proxy_cells": 105802,
+      "actual_cells": 551592,
+      "protected_null_cells": 3456,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "nhsn_rsv_admissions",
+      "lag_days": 4,
+      "proxy_cells": 59276,
+      "actual_cells": 426362,
+      "protected_null_cells": 118494,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "nssp_flu_proportion",
+      "lag_days": 4,
+      "proxy_cells": 37580,
+      "actual_cells": 610317,
+      "protected_null_cells": 3051,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "nssp_covid_proportion",
+      "lag_days": 4,
+      "proxy_cells": 37580,
+      "actual_cells": 610483,
+      "protected_null_cells": 2885,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "nssp_rsv_proportion",
+      "lag_days": 4,
+      "proxy_cells": 37580,
+      "actual_cells": 608861,
+      "protected_null_cells": 4507,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": null
+    },
+    {
+      "name": "inpatient_flu",
+      "lag_days": 3,
+      "proxy_cells": 2382,
+      "actual_cells": 579886,
+      "protected_null_cells": 62282,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2020-05-29T23:59:59.999999999+00:00",
+        "recent_first_releases": 2558,
+        "operational_first_releases": 2540,
+        "first_release_median_days": 3.0,
+        "first_release_p10_days": 2.0,
+        "first_release_p90_days": 12.099999999999909,
+        "excluded_backfill_over60days": 18
+      }
+    },
+    {
+      "name": "inpatient_covid",
+      "lag_days": 3,
+      "proxy_cells": 2323,
+      "actual_cells": 555260,
+      "protected_null_cells": 86908,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2020-05-29T23:59:59.999999999+00:00",
+        "recent_first_releases": 2555,
+        "operational_first_releases": 2537,
+        "first_release_median_days": 3.0,
+        "first_release_p10_days": 2.0,
+        "first_release_p90_days": 13.0,
+        "excluded_backfill_over60days": 18
+      }
+    },
+    {
+      "name": "outpatient_flu",
+      "lag_days": 0,
+      "proxy_cells": 236,
+      "actual_cells": 478926,
+      "protected_null_cells": 181840,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2020-05-29T23:59:59.999999999+00:00",
+        "recent_first_releases": 2686,
+        "operational_first_releases": 2685,
+        "first_release_median_days": 0.0,
+        "first_release_p10_days": 0.0,
+        "first_release_p90_days": 4.0,
+        "excluded_backfill_over60days": 1
+      }
+    },
+    {
+      "name": "outpatient_covid",
+      "lag_days": 1,
+      "proxy_cells": 185,
+      "actual_cells": 473036,
+      "protected_null_cells": 187730,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2020-05-29T23:59:59.999999999+00:00",
+        "recent_first_releases": 2685,
+        "operational_first_releases": 2684,
+        "first_release_median_days": 1.0,
+        "first_release_p10_days": 0.0,
+        "first_release_p90_days": 4.0,
+        "excluded_backfill_over60days": 1
+      }
+    },
+    {
+      "name": "nwss_flu_wval_like",
+      "lag_days": 13,
+      "proxy_cells": 323030,
+      "actual_cells": 179746,
+      "protected_null_cells": 5995,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 7625,
+        "operational_first_releases": 1135,
+        "first_release_median_days": 13.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 46.0,
+        "excluded_backfill_over60days": 6181
+      }
+    },
+    {
+      "name": "nwss_covid_wval_like",
+      "lag_days": 13,
+      "proxy_cells": 370762,
+      "actual_cells": 199567,
+      "protected_null_cells": 1908,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 11698,
+        "operational_first_releases": 1190,
+        "first_release_median_days": 13.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 46.0,
+        "excluded_backfill_over60days": 10198
+      }
+    },
+    {
+      "name": "nwss_rsv_wval_like",
+      "lag_days": 9,
+      "proxy_cells": 309926,
+      "actual_cells": 172935,
+      "protected_null_cells": 5215,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 7157,
+        "operational_first_releases": 982,
+        "first_release_median_days": 9.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 47.799999999999955,
+        "excluded_backfill_over60days": 5764
+      }
+    },
+    {
+      "name": "nwss_flu_pct_rank",
+      "lag_days": 13,
+      "proxy_cells": 323030,
+      "actual_cells": 179746,
+      "protected_null_cells": 5995,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 7625,
+        "operational_first_releases": 1135,
+        "first_release_median_days": 13.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 46.0,
+        "excluded_backfill_over60days": 6181
+      }
+    },
+    {
+      "name": "nwss_covid_pct_rank",
+      "lag_days": 13,
+      "proxy_cells": 370762,
+      "actual_cells": 199567,
+      "protected_null_cells": 1908,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 11698,
+        "operational_first_releases": 1190,
+        "first_release_median_days": 13.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 46.0,
+        "excluded_backfill_over60days": 10198
+      }
+    },
+    {
+      "name": "nwss_rsv_pct_rank",
+      "lag_days": 9,
+      "proxy_cells": 309926,
+      "actual_cells": 172935,
+      "protected_null_cells": 5215,
+      "latest_observation_origins_2025_2026": 24,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-02-25T23:59:59.999999999+00:00",
+        "recent_first_releases": 7157,
+        "operational_first_releases": 982,
+        "first_release_median_days": 9.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 47.799999999999955,
+        "excluded_backfill_over60days": 5764
+      }
+    },
+    {
+      "name": "ilinet_ili",
+      "lag_days": 6,
+      "proxy_cells": 2618,
+      "actual_cells": 640894,
+      "protected_null_cells": 0,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 7.0,
+      "native_first_release": {
+        "first_release": "2003-11-28T23:59:59.999999999+00:00",
+        "recent_first_releases": 2412,
+        "operational_first_releases": 2255,
+        "first_release_median_days": 6.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 20.0,
+        "excluded_backfill_over60days": 105
+      }
+    },
+    {
+      "name": "clinical_lab_flu_pct_positive",
+      "lag_days": 6,
+      "proxy_cells": 2954,
+      "actual_cells": 520597,
+      "protected_null_cells": 0,
+      "latest_observation_origins_2025_2026": 53,
+      "latest_observation_median_lag_from_context_days": 7.0,
+      "native_first_release": {
+        "first_release": "2018-10-05T23:59:59.999999999+00:00",
+        "recent_first_releases": 1926,
+        "operational_first_releases": 1805,
+        "first_release_median_days": 6.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 27.0,
+        "excluded_backfill_over60days": 83
+      }
+    },
+    {
+      "name": "flusurv_flu_rate",
+      "lag_days": 6,
+      "proxy_cells": 78175,
+      "actual_cells": 66952,
+      "protected_null_cells": 0,
+      "latest_observation_origins_2025_2026": 40,
+      "latest_observation_median_lag_from_context_days": 7.0,
+      "native_first_release": {
+        "first_release": "2012-11-02T23:59:59.999999999+00:00",
+        "recent_first_releases": 2601,
+        "operational_first_releases": 442,
+        "first_release_median_days": 6.0,
+        "first_release_p10_days": 6.0,
+        "first_release_p90_days": 38.0,
+        "excluded_backfill_over60days": 2159
+      }
+    },
+    {
+      "name": "kinsa_ili",
+      "lag_days": 1,
+      "proxy_cells": 9190,
+      "actual_cells": 3530,
+      "protected_null_cells": 0,
+      "latest_observation_origins_2025_2026": 18,
+      "latest_observation_median_lag_from_context_days": 0.0,
+      "native_first_release": {
+        "first_release": "2026-04-06T23:59:59.999999999+00:00",
+        "recent_first_releases": 394,
+        "operational_first_releases": 25,
+        "first_release_median_days": 3.0,
+        "first_release_p10_days": 1.0,
+        "first_release_p90_days": 41.20000000000001,
+        "excluded_backfill_over60days": 369
+      }
+    }
+  ],
+  "native_delay_estimator": "Median first publication delay per event-week/location among 2025-26 first releases with delay 0-60 days; floor fractional median days. Reports >60 days are treated as archive backfills and excluded. Explicit overrides: daily Kinsa1day after May2026 stabilization; ILINet and clinical lab6days from CDC weekly release schedule.",
+  "proxy_value_policy": "Actual deadline vintage if present. Otherwise frozen finalized value only where no report/null exists, truth is finite, assumed source release precedes actual deadline, and event week does not exceed original context end. Missouri ED missing cells are never proxied.",
+  "timestamp_policy": "Assumed publication at end of UTC release day; actual holiday-aware Eastern cutoffs retained. This is conservative within the assumed release day.",
+  "interpretation": "Operational availability hypothesis, not reconstructed historical real-time data. Proxy values include later revisions; NWSS proxies additionally use retrospective finalized index baselines. Results measure model/covariate value under this reporting hypothesis and cannot establish historical deployable performance.",
+  "unchanged": "All finalized training/label truth arrays; all actually observed deadline input values; Wednesday origin identities and context boundaries.",
+  "output": "data/processed/panel-b2-operational.npz",
+  "output_sha256": "84ca1a89f3da43cbb41a794e06b09c039aaf26d4f4c3443a42dbd1f4be8ebd81"
+}

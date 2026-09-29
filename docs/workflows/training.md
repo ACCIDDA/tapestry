@@ -1,19 +1,20 @@
 # Training and prediction
 
-The single current workflow: build the dataset panel, define a scenario,
-plan and run it, then rank. There is one model (`tapestry.model.network.Model`)
-and one scenario space (`tapestry.model.scenario.Scenario`) -- no separate
-B0/B1/B2 commands. See
-[docs/design/restructure-2026-unified.md](../design/restructure-2026-unified.md)
-for why. Everything below runs from the repository root; prefix with `uv run`
-or activate `.venv` first.
+Build the shared panel, choose `task=nowcast`, `task=forecast`, or `task=pipeline`,
+then plan, run and rank with the same manager. Pipeline mode fits independent
+nowcasting and forecasting checkpoints and passes sampled reconstructed histories
+between them. See [the two-stage workflow and Python handoff](../design/nowcast-forecast.md)
+for settings, assumptions, commands and outputs. Both stages use the same network
+architecture and scenario space; no separate B0/B1/B2 commands are needed.
+Everything below runs from the repository root.
 
 ## 1. Acquire raw sources
 
 ```bash
 python -m tapestry.data --data-root data pull delphi_nhsn delphi_nssp \
     delphi_claims_inpatient delphi_claims_outpatient delphi_nwss delphi_nwss_aux \
-    hub_flusight_current hub_covid_current hub_rsv_current pophive_kinsa_ili
+    hub_flusight_current hub_covid_current hub_rsv_current pophive_kinsa_ili \
+    delphi_fluview_ilinet delphi_fluview_clinical delphi_flusurv
 ```
 
 Only needed when acquiring or refreshing sources; see
@@ -55,7 +56,8 @@ and every choice are in
 [the design doc](../design/restructure-2026-unified.md#3-one-dataset-panel).
 Covariate columns are grouped by `COVARIATE_GROUPS` into the source groups a
 scenario's `covariate_set` string selects from (`inpatient`, `outpatient`,
-`ww_wval_like`, `ww_pct_rank`, `kinsa`).
+`ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv`;
+the last three since 2026-09-22, see [FluView and FluSurv-NET](../data/fluview-flusurv.md)).
 
 ## 3. Define a scenario
 
@@ -95,8 +97,8 @@ not in the string):
   `patience > 0`, defaults 3/16/4): the early-stopping weeks hidden in each
   training season.
 
-National covariates (Kinsa) reach only the US row; states cannot see them
-(with the default `spatial='none'`, nothing mixes locations).
+National covariates (Kinsa) are broadcast to every location, preserving the
+national reporting mask. State covariates remain location-specific.
 
 ## 4. Plan, run, rank
 
@@ -189,7 +191,7 @@ one queue across every node in the array -- no static task slices). See
 ## Cross-validation folds
 
 `tapestry.dataset.cv.fold(panel, scenario, held_out_season, inner)` is the one
-place a train/validation/score boundary is defined; `experiment.planner.fit()`
+place a train/validation/score boundary is defined; `experiment.fitting.fit()`
 is its only caller. It masks the panel, not episodes: every week outside the
 two training seasons becomes unavailable in targets, covariates and the as-of
 arrays, and training episodes are cut from that masked panel, so held-out

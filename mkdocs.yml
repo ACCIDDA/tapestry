@@ -49,10 +49,21 @@ nav:
   - Home: index.md
   - Getting started: getting-started.md
   - Current workflow: workflows/training.md
+  - Nowcasting and forecasting: design/nowcast-forecast.md
+  - Direct covariate research: design/b2-direct-research.md
+  - Fresh forecasting experiments: design/forecast-covariates.md
   - Unified model design: design/restructure-2026-unified.md
   - Architecture: design/architecture.md
   - Longleaf setup: longleaf-setup.md
   - Results:
+      - Dataset extension to 2022–23: results/dataset-2022-extension/index.md
+      - Direct covariates and spatial exchange: results/b2-direct-research-v1/index.md
+      - Covariate availability and revisions: results/b2-direct-research-v1/availability/index.md
+      - Availability evidence and missing values: results/b2-direct-research-v1/availability/evidence.md
+      - Availability timeline heatmaps: results/b2-direct-research-v1/availability/timeline.md
+      - Full covariate missingness tables: results/b2-direct-research-v1/availability/full-tables.md
+      - Geography and covariate conclusions: results/forecast-geography-v2/conclusions.md
+      - Geography full report: results/forecast-geography-v2/index.md
       - kinsa-finalized-5seeds: results/kinsa-finalized-5seeds/index.md
   - Data repository:
       - Overview: data/index.md
@@ -63,6 +74,7 @@ nav:
       - Wastewater (WVAL and Delphi NWSS): data/wastewater.md
       - Clinical covariates (claims, PopHIVE): data/covariates.md
       - Kinsa cough, cold and flu (PopHIVE): data/kinsa.md
+      - FluView and FluSurv-NET (Delphi V5): data/fluview-flusurv.md
       - Panel analysis (truth fallback, revisions, wastewater): data/panel.md
   - Explorer:
       - Live explorer: https://accidda.github.io/tapestry/explorer/

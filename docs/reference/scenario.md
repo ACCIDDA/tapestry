@@ -4,6 +4,11 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 
 | Field | Type | Default | Allowed values | Meaning |
 |---|---|---|---|---|
+| `task` | str | `'forecast'` | `forecast`, `nowcast`, `pipeline` | forecast, nowcast, or an independently fitted nowcast-to-forecast pipeline. |
+| `nowcast_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Completed weeks reconstructed, ending at the context Saturday. |
+| `nowcast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as nowcast.<field>=value; unprefixed fields supply defaults. |
+| `forecast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as forecast.<field>=value; unprefixed fields supply defaults. |
+| `nowcast_members` | int | `16` | any int (checked in `Scenario.__post_init__`) | Cached out-of-fold history draws per training episode. |
 | `lookback` | int | `12` | any int (checked in `Scenario.__post_init__`) | Context weeks per episode (the history the network sees). |
 | `count_transform` | str | `'fourth_root'` | `fourth_root`, `log1p`, `rate`, `raw`, `sqrt` | Admissions in model space: raw counts, rate per 100,000, or its sqrt / fourth root / log1p (`model/network.py` `transform_counts`). |
 | `ed_transform` | str | `'linear'` | `fourth_root`, `linear`, `logit` | ED proportions in model space (`model/network.py`); scores stay in native units. |
@@ -11,7 +16,7 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `dynamics` | bool | `1` | `0`, `1` | Recent-dynamics feature block (30 slope/acceleration/age/validity features); see design/b0.1.md. |
 | `loss_weights` | str | `'objective'` | `balanced_admissions`, `flu_only`, `influenza_first`, `objective` | Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the score's target weights. |
 | `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv` | Temporal context encoder; see design/b0.1.md. |
-| `spatial` | str | `'none'` | `attention`, `joint_location_target`, `none`, `pathogen_spatial`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see design/b0.1.md. |
+| `spatial` | str | `'none'` | `attention`, `gated_pool`, `joint_location_target`, `national_broadcast`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see design/b0.1.md. |
 | `heads` | str | `'shared'` | `shared`, `state_us` | State and US output heads shared or separate (`state_us`). |
 | `decoder` | str | `'legacy'` | `legacy`, `residual2` | Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see design/b0.1.md. |
 | `noise` | str | `'global'` | `global`, `local` | Global latent noise, or global plus a per-location latent (`local`). |
@@ -34,9 +39,13 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `mask_recent` | float | `0.5` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1). |
 | `mask_gap` | float | `0.3` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a local gap in one location history. |
 | `mask_outage` | float | `0.2` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a whole-channel outage. |
-| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflows/training.md and design/b2.md. |
-| `input_mode` | str | `'finalized'` | `finalized`, `vintaged` | How episodes are cut from the panel: finalized truth, or Wednesday-vintage as-of context (design §3). |
-| `asof_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Vintaged only: most recent context weeks whose targets are as visible at the issuance; older weeks take final truth (design §3). |
+| `covariate_encoder` | str | `'raw'` | `raw`, `shared`, `smooth`, `summary` | Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age. |
+| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflows/training.md and design/b2.md. |
+| `input_mode` | str | `'finalized'` | `finalized`, `finalized_available`, `vintaged` | Finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context (design §3). |
+| `training_inputs` | str | `'same'` | `finalized`, `same` | same as forecasting, or complete finalized target and covariate histories during fitting only. |
+| `input_normalization` | str | `'none'` | `b0`, `none` | none, or B0 per-location transformed target scales fitted on training contexts only. |
+| `validation_calendar` | str | `'season'` | `b0`, `season` | season-relative blocks, or B0 blocks counted from the first stored week of each season. |
+| `asof_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; older weeks take final truth (design §3). |
 | `validation_weeks` | int | `3` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: consecutive early-stopping weeks hidden per block (design §4). |
 | `validation_spacing` | int | `16` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: one validation block every this many weeks of a training season. |
 | `validation_offset` | int | `4` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: week of each training season where the first block starts (0-based, counted from the season's first epiweek, CDC week 31). |

@@ -40,7 +40,7 @@ resume mechanics and architecture execution are checked through research runs.
 | `test_network.py` | Wrong CRPS or masked-label gradients; count/proportion transforms changing native values |
 | `test_objective.py` | Missingness or batching changing scientific loss weights; incorrect native loss scales |
 | `test_dataset.py` | Held-out-season or validation-week values reaching training inputs, labels, loss scales/weights or covariate standardization (panel masking, `dataset.cv`); score labels outside the held-out season; vintaged episodes using as-of values at the wrong weeks or misaligned with the issuance; wrong season assignment |
-| `test_planner.py` | Channel/location or covariate/location axes swapped between the panel and `Model` |
+| `test_training.py` | Channel/location or covariate/location axes swapped between the panel and `Model` |
 | `test_hub_history.py` | Git full-snapshot deletions resurrected, or Git overriding native Hub `as_of` coverage, in vintage resolution |
 | `test_totals.py` | Incorrect WIS, location/season/target/seed weighting, undefined relative scores or comparisons on different locations |
 | `test_hub_evaluation.py` | Forecasts assigned to the wrong target channel, location or week |

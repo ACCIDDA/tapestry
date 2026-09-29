@@ -1,13 +1,10 @@
 # Architecture
 
-Tapestry uses available surveillance data to learn across pathogens and
-generate plausible futures. B0 is the simple version: six
-channels, finalized histories, and four-week forecasts. B1 adds historical
-reporting states and corrections for recent weeks.
-
-The [front page](../index.md) has the motivation and unicorn results. This page
-explains the model and the masks. Exact experiment settings live in
-[B0.1](../legacy-v0/design/b0.1.md); the vintage implementation is described in [B1](../legacy-v0/design/b1.md).
+Tapestry fits a nowcaster and a forecaster independently, using the same network
+building blocks. The nowcaster reconstructs recent completed weeks from as-of
+reports; each sampled history conditions a sampled four-week future. Both stages
+also work independently. The [pipeline contract](nowcast-forecast.md) defines
+configuration, masks, date alignment, training partitions and runnable commands.
 
 ## Where the ideas come from {#2-what-is-borrowed-from-each-paper}
 
@@ -90,33 +87,21 @@ not reveal a masked observation. Masking arbitrary sources and adding new
 covariates still require evaluation; having mask arrays alone is not evidence
 that all missing-data patterns work well.
 
-## B0 prediction and B1 nowcasting
+## Nowcasting and forecasting
 
-B0 reads a saved finalized panel with axes
-`[week, channel, value_or_mask, location]`. A history window has shape
-`[lookback, 6, 2, 52]`; its four-week label window has shape `[4, 6, 2, 52]`.
-The 52 locations are states, DC, and native US. No state-to-US summation is used.
-The [B0 data page](../legacy-v0/data/build-b-finalized.md) gives units and source details.
+`task=nowcast` predicts the last `nowcast_weeks` completed weeks; `task=forecast`
+predicts the next four weeks. `task=pipeline` fits both using cross-fitted
+reconstructions for forecaster training. The pipeline uses as-of inputs throughout
+its history; unpublished cells are unavailable, never filled with later truth.
 
-B1 saves finalized older history and two recent weeks of Wednesday reports,
-falling back to flagged reference finals where reports are absent. It corrects
-unknown recent values, passes through visible known finals, and forecasts four
-future weeks. Known finals are excluded from nowcast loss and scoring; hiding
-them also hides their flag and restores permitted nowcast supervision.
+`HistorySamples` connects the stages with joint samples, masks, dates and location
+identifiers. `CovariateHistory` supplies named and dated predictors. Reconstructed
+cells are marked estimated, not known-final. Each stage uses its own trailing
+history window and its own covariate selection. The saved reference truth supplies
+labels only. See [the complete interface](nowcast-forecast.md#explicit-handoff).
 
-```mermaid
-flowchart TD
-    A["B0: finalized six-channel history"] --> B["Encode history → sample four future weeks"]
-    C["B1: finalized history + recent reports/finals + flags"] --> D["Encode history → correct unknown / pass through known finals"]
-    D --> E["Each corrected history → sample four future weeks"]
-    B --> F["Quantiles and hub evaluation"]
-    E --> F
-```
-
-B0's latest frozen ED snapshot is treated as truth, not assumed permanently
-final. B1 reference truth is separately pinned to a cutoff. Recent report selection
-includes all of Wednesday UTC. Supplied finals can contain later revisions, so
-this experiment measures retrospective conditional forecasting. B0's unicorn results do not establish B1 performance.
+Historical B0/B1 formulations and their results remain in the legacy notes. Their
+reference-truth fallback policy is not the operational pipeline input policy.
 
 ## Fitting with CRPS
 

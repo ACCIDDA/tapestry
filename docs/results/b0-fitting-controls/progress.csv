@@ -1,0 +1,13 @@
+arm,seed,status,complete,folds
+current,42,complete,True,3
+current,43,complete,True,3
+current,44,complete,True,3
+split,42,complete,True,3
+split,43,complete,True,3
+split,44,complete,True,3
+draws,42,complete,True,3
+draws,43,complete,True,3
+draws,44,complete,True,3
+split-draws,42,complete,True,3
+split-draws,43,complete,True,3
+split-draws,44,complete,True,3

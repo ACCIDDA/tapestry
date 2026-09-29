@@ -1,0 +1,14 @@
+{
+  "seed": 42,
+  "configurations": {
+    "Independent: mixed summaries": "ed_transform=logit,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.5,covariate_encoder=summary,covariate_set=inpatient+outpatient+ww_wval_like+kinsa+ilinet+clinical_lab+flusurv,input_mode=finalized_available",
+    "Independent: new flu smoothed": "ed_transform=logit,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.5,covariate_encoder=smooth,covariate_set=ilinet+clinical_lab+flusurv,input_mode=finalized_available",
+    "Independent: Kinsa summaries": "ed_transform=logit,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.5,covariate_encoder=summary,covariate_set=kinsa,input_mode=finalized_available"
+  },
+  "selection": "Top three three-seed mean scores; fans use seed 42, not the best seed.",
+  "intervals": [
+    50,
+    90
+  ],
+  "reference_spacing_weeks": 4
+}

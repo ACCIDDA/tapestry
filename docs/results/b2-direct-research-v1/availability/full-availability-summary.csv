@@ -1,0 +1,169 @@
+covariate,lag,frequency,locations,native_states,dc_supported,us_supported,opportunities,reported_available,availability_pct,missing_location_weeks,unique_missing_states,dc_missing_weeks,us_missing_weeks,unique_missing_state_weeks,unique_missing_state_dc_weeks,unique_missing_all_weeks
+inpatient_flu,0,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2109,78.02441731409544,594,49,42,4,53,53,53
+inpatient_flu,1,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2329,86.16352201257862,374,49,13,3,52,52,52
+inpatient_flu,2,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2410,89.16019237883833,293,49,7,2,50,50,50
+inpatient_flu,3,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2477,91.63891971883092,226,49,2,1,49,49,49
+inpatient_flu,4,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2534,93.74768775434703,169,45,1,0,49,49,49
+inpatient_flu,5,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2583,95.56048834628191,120,6,0,0,48,48,48
+inpatient_flu,6,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2588,95.74546799852016,115,5,0,0,48,48,48
+inpatient_flu,7,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2596,96.04143544210136,107,5,0,0,48,48,48
+inpatient_flu,8,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2603,96.30040695523493,100,5,0,0,47,47,47
+inpatient_flu,9,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2607,96.44839067702553,96,5,0,0,45,45,45
+inpatient_flu,10,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2612,96.63337032926378,91,5,0,0,45,45,45
+inpatient_flu,11,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2617,96.81834998150204,86,5,0,0,44,44,44
+inpatient_covid,0,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2109,78.02441731409544,594,49,42,4,53,53,53
+inpatient_covid,1,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2329,86.16352201257862,374,49,13,3,52,52,52
+inpatient_covid,2,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2410,89.16019237883833,293,49,7,2,50,50,50
+inpatient_covid,3,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2477,91.63891971883092,226,49,2,1,49,49,49
+inpatient_covid,4,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2534,93.74768775434703,169,45,1,0,49,49,49
+inpatient_covid,5,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2583,95.56048834628191,120,6,0,0,48,48,48
+inpatient_covid,6,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2588,95.74546799852016,115,5,0,0,48,48,48
+inpatient_covid,7,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2596,96.04143544210136,107,5,0,0,48,48,48
+inpatient_covid,8,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2603,96.30040695523493,100,5,0,0,47,47,47
+inpatient_covid,9,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2607,96.44839067702553,96,5,0,0,45,45,45
+inpatient_covid,10,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2612,96.63337032926378,91,5,0,0,45,45,45
+inpatient_covid,11,Daily; Saturday trailing-7-day value,51,49,True,True,2703,2617,96.81834998150204,86,5,0,0,44,44,44
+outpatient_flu,0,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2520,91.43686502177069,236,50,4,4,13,13,13
+outpatient_flu,1,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2597,94.23076923076923,159,50,3,3,5,5,5
+outpatient_flu,2,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2649,96.11756168359942,107,50,2,2,4,4,4
+outpatient_flu,3,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2701,98.00435413642961,55,50,1,1,3,3,3
+outpatient_flu,4,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2753,99.89114658925979,3,2,0,0,2,2,2
+outpatient_flu,5,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,6,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,7,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,8,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,9,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,10,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_flu,11,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,0,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2520,91.43686502177069,236,50,4,4,13,13,13
+outpatient_covid,1,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2597,94.23076923076923,159,50,3,3,5,5,5
+outpatient_covid,2,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2649,96.11756168359942,107,50,2,2,4,4,4
+outpatient_covid,3,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2701,98.00435413642961,55,50,1,1,3,3,3
+outpatient_covid,4,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2753,99.89114658925979,3,2,0,0,2,2,2
+outpatient_covid,5,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,6,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,7,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,8,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,9,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,10,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+outpatient_covid,11,Daily; Saturday trailing-7-day value,52,50,True,True,2756,2755,99.96371552975326,1,1,0,0,1,1,1
+nwss_flu_wval_like,0,Weekly derived index; irregular samples,49,48,False,True,2597,339,13.053523296110898,2258,48,0,38,53,53,53
+nwss_flu_wval_like,1,Weekly derived index; irregular samples,49,48,False,True,2597,805,30.997304582210244,1792,48,0,29,53,53,53
+nwss_flu_wval_like,2,Weekly derived index; irregular samples,49,48,False,True,2597,1012,38.968040046207165,1585,48,0,29,53,53,53
+nwss_flu_wval_like,3,Weekly derived index; irregular samples,49,48,False,True,2597,1039,40.00770119368502,1558,48,0,29,53,53,53
+nwss_flu_wval_like,4,Weekly derived index; irregular samples,49,48,False,True,2597,1056,40.66230265691182,1541,48,0,29,53,53,53
+nwss_flu_wval_like,5,Weekly derived index; irregular samples,49,48,False,True,2597,1070,41.201386214863305,1527,48,0,29,53,53,53
+nwss_flu_wval_like,6,Weekly derived index; irregular samples,49,48,False,True,2597,1074,41.35541008856373,1523,48,0,29,53,53,53
+nwss_flu_wval_like,7,Weekly derived index; irregular samples,49,48,False,True,2597,1078,41.509433962264154,1519,48,0,29,53,53,53
+nwss_flu_wval_like,8,Weekly derived index; irregular samples,49,48,False,True,2597,1081,41.624951867539465,1516,48,0,29,53,53,53
+nwss_flu_wval_like,9,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_flu_wval_like,10,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_flu_wval_like,11,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_covid_wval_like,0,Weekly derived index; irregular samples,51,49,True,True,2703,326,12.060673325934147,2377,49,53,40,53,53,53
+nwss_covid_wval_like,1,Weekly derived index; irregular samples,51,49,True,True,2703,774,28.634850166481684,1929,49,53,29,53,53,53
+nwss_covid_wval_like,2,Weekly derived index; irregular samples,51,49,True,True,2703,1059,39.178690344062154,1644,49,53,29,53,53,53
+nwss_covid_wval_like,3,Weekly derived index; irregular samples,51,49,True,True,2703,1093,40.43655197928228,1610,49,53,29,53,53,53
+nwss_covid_wval_like,4,Weekly derived index; irregular samples,51,49,True,True,2703,1107,40.95449500554939,1596,49,53,29,53,53,53
+nwss_covid_wval_like,5,Weekly derived index; irregular samples,51,49,True,True,2703,1120,41.43544210136885,1583,49,53,29,53,53,53
+nwss_covid_wval_like,6,Weekly derived index; irregular samples,51,49,True,True,2703,1125,41.620421753607104,1578,49,53,29,53,53,53
+nwss_covid_wval_like,7,Weekly derived index; irregular samples,51,49,True,True,2703,1129,41.76840547539771,1574,49,53,29,53,53,53
+nwss_covid_wval_like,8,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_wval_like,9,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_wval_like,10,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_wval_like,11,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_rsv_wval_like,0,Weekly derived index; irregular samples,49,48,False,True,2597,443,17.05814401232191,2154,48,0,31,53,53,53
+nwss_rsv_wval_like,1,Weekly derived index; irregular samples,49,48,False,True,2597,948,36.50365806700038,1649,48,0,29,53,53,53
+nwss_rsv_wval_like,2,Weekly derived index; irregular samples,49,48,False,True,2597,1021,39.31459376203312,1576,48,0,29,53,53,53
+nwss_rsv_wval_like,3,Weekly derived index; irregular samples,49,48,False,True,2597,1037,39.93068925683481,1560,48,0,29,53,53,53
+nwss_rsv_wval_like,4,Weekly derived index; irregular samples,49,48,False,True,2597,1046,40.277242972660765,1551,48,0,29,53,53,53
+nwss_rsv_wval_like,5,Weekly derived index; irregular samples,49,48,False,True,2597,1054,40.585290720061614,1543,48,0,29,53,53,53
+nwss_rsv_wval_like,6,Weekly derived index; irregular samples,49,48,False,True,2597,1058,40.73931459376203,1539,48,0,29,53,53,53
+nwss_rsv_wval_like,7,Weekly derived index; irregular samples,49,48,False,True,2597,1063,40.93184443588756,1534,48,0,29,53,53,53
+nwss_rsv_wval_like,8,Weekly derived index; irregular samples,49,48,False,True,2597,1068,41.12437427801309,1529,48,0,29,53,53,53
+nwss_rsv_wval_like,9,Weekly derived index; irregular samples,49,48,False,True,2597,1070,41.201386214863305,1527,48,0,29,53,53,53
+nwss_rsv_wval_like,10,Weekly derived index; irregular samples,49,48,False,True,2597,1072,41.27839815171351,1525,48,0,29,53,53,53
+nwss_rsv_wval_like,11,Weekly derived index; irregular samples,49,48,False,True,2597,1073,41.31690412013862,1524,48,0,29,53,53,53
+nwss_flu_pct_rank,0,Weekly derived index; irregular samples,49,48,False,True,2597,339,13.053523296110898,2258,48,0,38,53,53,53
+nwss_flu_pct_rank,1,Weekly derived index; irregular samples,49,48,False,True,2597,805,30.997304582210244,1792,48,0,29,53,53,53
+nwss_flu_pct_rank,2,Weekly derived index; irregular samples,49,48,False,True,2597,1012,38.968040046207165,1585,48,0,29,53,53,53
+nwss_flu_pct_rank,3,Weekly derived index; irregular samples,49,48,False,True,2597,1039,40.00770119368502,1558,48,0,29,53,53,53
+nwss_flu_pct_rank,4,Weekly derived index; irregular samples,49,48,False,True,2597,1056,40.66230265691182,1541,48,0,29,53,53,53
+nwss_flu_pct_rank,5,Weekly derived index; irregular samples,49,48,False,True,2597,1070,41.201386214863305,1527,48,0,29,53,53,53
+nwss_flu_pct_rank,6,Weekly derived index; irregular samples,49,48,False,True,2597,1074,41.35541008856373,1523,48,0,29,53,53,53
+nwss_flu_pct_rank,7,Weekly derived index; irregular samples,49,48,False,True,2597,1078,41.509433962264154,1519,48,0,29,53,53,53
+nwss_flu_pct_rank,8,Weekly derived index; irregular samples,49,48,False,True,2597,1081,41.624951867539465,1516,48,0,29,53,53,53
+nwss_flu_pct_rank,9,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_flu_pct_rank,10,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_flu_pct_rank,11,Weekly derived index; irregular samples,49,48,False,True,2597,1082,41.66345783596457,1515,48,0,29,53,53,53
+nwss_covid_pct_rank,0,Weekly derived index; irregular samples,51,49,True,True,2703,326,12.060673325934147,2377,49,53,40,53,53,53
+nwss_covid_pct_rank,1,Weekly derived index; irregular samples,51,49,True,True,2703,774,28.634850166481684,1929,49,53,29,53,53,53
+nwss_covid_pct_rank,2,Weekly derived index; irregular samples,51,49,True,True,2703,1059,39.178690344062154,1644,49,53,29,53,53,53
+nwss_covid_pct_rank,3,Weekly derived index; irregular samples,51,49,True,True,2703,1093,40.43655197928228,1610,49,53,29,53,53,53
+nwss_covid_pct_rank,4,Weekly derived index; irregular samples,51,49,True,True,2703,1107,40.95449500554939,1596,49,53,29,53,53,53
+nwss_covid_pct_rank,5,Weekly derived index; irregular samples,51,49,True,True,2703,1120,41.43544210136885,1583,49,53,29,53,53,53
+nwss_covid_pct_rank,6,Weekly derived index; irregular samples,51,49,True,True,2703,1125,41.620421753607104,1578,49,53,29,53,53,53
+nwss_covid_pct_rank,7,Weekly derived index; irregular samples,51,49,True,True,2703,1129,41.76840547539771,1574,49,53,29,53,53,53
+nwss_covid_pct_rank,8,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_pct_rank,9,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_pct_rank,10,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_covid_pct_rank,11,Weekly derived index; irregular samples,51,49,True,True,2703,1131,41.84239733629301,1572,49,53,29,53,53,53
+nwss_rsv_pct_rank,0,Weekly derived index; irregular samples,49,48,False,True,2597,443,17.05814401232191,2154,48,0,31,53,53,53
+nwss_rsv_pct_rank,1,Weekly derived index; irregular samples,49,48,False,True,2597,948,36.50365806700038,1649,48,0,29,53,53,53
+nwss_rsv_pct_rank,2,Weekly derived index; irregular samples,49,48,False,True,2597,1021,39.31459376203312,1576,48,0,29,53,53,53
+nwss_rsv_pct_rank,3,Weekly derived index; irregular samples,49,48,False,True,2597,1037,39.93068925683481,1560,48,0,29,53,53,53
+nwss_rsv_pct_rank,4,Weekly derived index; irregular samples,49,48,False,True,2597,1046,40.277242972660765,1551,48,0,29,53,53,53
+nwss_rsv_pct_rank,5,Weekly derived index; irregular samples,49,48,False,True,2597,1054,40.585290720061614,1543,48,0,29,53,53,53
+nwss_rsv_pct_rank,6,Weekly derived index; irregular samples,49,48,False,True,2597,1058,40.73931459376203,1539,48,0,29,53,53,53
+nwss_rsv_pct_rank,7,Weekly derived index; irregular samples,49,48,False,True,2597,1063,40.93184443588756,1534,48,0,29,53,53,53
+nwss_rsv_pct_rank,8,Weekly derived index; irregular samples,49,48,False,True,2597,1068,41.12437427801309,1529,48,0,29,53,53,53
+nwss_rsv_pct_rank,9,Weekly derived index; irregular samples,49,48,False,True,2597,1070,41.201386214863305,1527,48,0,29,53,53,53
+nwss_rsv_pct_rank,10,Weekly derived index; irregular samples,49,48,False,True,2597,1072,41.27839815171351,1525,48,0,29,53,53,53
+nwss_rsv_pct_rank,11,Weekly derived index; irregular samples,49,48,False,True,2597,1073,41.31690412013862,1524,48,0,29,53,53,53
+ilinet_ili,0,Weekly,52,50,True,True,2756,52,1.8867924528301887,2704,50,52,52,52,52,52
+ilinet_ili,1,Weekly,52,50,True,True,2756,2001,72.60522496371553,755,50,6,6,44,44,44
+ilinet_ili,2,Weekly,52,50,True,True,2756,2054,74.52830188679245,702,50,5,5,43,43,43
+ilinet_ili,3,Weekly,52,50,True,True,2756,2107,76.45137880986937,649,50,4,4,42,42,42
+ilinet_ili,4,Weekly,52,50,True,True,2756,2160,78.3744557329463,596,50,3,3,41,41,41
+ilinet_ili,5,Weekly,52,50,True,True,2756,2213,80.29753265602322,543,50,2,2,40,40,40
+ilinet_ili,6,Weekly,52,50,True,True,2756,2266,82.22060957910014,490,50,1,1,39,39,39
+ilinet_ili,7,Weekly,52,50,True,True,2756,2341,84.94194484760523,415,22,0,0,37,37,37
+ilinet_ili,8,Weekly,52,50,True,True,2756,2363,85.74020319303338,393,22,0,0,36,36,36
+ilinet_ili,9,Weekly,52,50,True,True,2756,2385,86.53846153846155,371,21,0,0,35,35,35
+ilinet_ili,10,Weekly,52,50,True,True,2756,2406,87.30043541364296,350,21,0,0,34,34,34
+ilinet_ili,11,Weekly,52,50,True,True,2756,2427,88.06240928882438,329,21,0,0,33,33,33
+clinical_lab_flu_pct_positive,0,Weekly,45,44,False,True,2385,38,1.5932914046121591,2347,44,0,52,53,53,53
+clinical_lab_flu_pct_positive,1,Weekly,45,44,False,True,2385,1476,61.886792452830186,909,44,0,6,53,53,53
+clinical_lab_flu_pct_positive,2,Weekly,45,44,False,True,2385,1607,67.37945492662473,778,44,0,5,53,53,53
+clinical_lab_flu_pct_positive,3,Weekly,45,44,False,True,2385,1669,69.979035639413,716,44,0,4,53,53,53
+clinical_lab_flu_pct_positive,4,Weekly,45,44,False,True,2385,1714,71.86582809224319,671,44,0,3,53,53,53
+clinical_lab_flu_pct_positive,5,Weekly,45,44,False,True,2385,1759,73.75262054507338,626,44,0,2,53,53,53
+clinical_lab_flu_pct_positive,6,Weekly,45,44,False,True,2385,1800,75.47169811320755,585,44,0,1,53,53,53
+clinical_lab_flu_pct_positive,7,Weekly,45,44,False,True,2385,1858,77.9035639412998,527,25,0,0,53,53,53
+clinical_lab_flu_pct_positive,8,Weekly,45,44,False,True,2385,1880,78.82599580712788,505,24,0,0,53,53,53
+clinical_lab_flu_pct_positive,9,Weekly,45,44,False,True,2385,1898,79.58071278825996,487,21,0,0,53,53,53
+clinical_lab_flu_pct_positive,10,Weekly,45,44,False,True,2385,1914,80.25157232704403,471,21,0,0,53,53,53
+clinical_lab_flu_pct_positive,11,Weekly,45,44,False,True,2385,1930,80.92243186582809,455,21,0,0,53,53,53
+flusurv_flu_rate,0,Weekly,14,13,False,True,742,26,3.5040431266846364,716,13,0,51,53,53,53
+flusurv_flu_rate,1,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,2,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,3,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,4,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,5,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,6,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,7,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,8,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,9,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,10,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+flusurv_flu_rate,11,Weekly,14,13,False,True,742,351,47.304582210242586,391,13,0,26,53,53,53
+kinsa_ili,0,Daily; complete weekly mean,1,0,False,True,53,14,26.41509433962264,39,0,0,39,0,0,39
+kinsa_ili,1,Daily; complete weekly mean,1,0,False,True,53,15,28.30188679245283,38,0,0,38,0,0,38
+kinsa_ili,2,Daily; complete weekly mean,1,0,False,True,53,16,30.18867924528302,37,0,0,37,0,0,37
+kinsa_ili,3,Daily; complete weekly mean,1,0,False,True,53,17,32.075471698113205,36,0,0,36,0,0,36
+kinsa_ili,4,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,5,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,6,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,7,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,8,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,9,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,10,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35
+kinsa_ili,11,Daily; complete weekly mean,1,0,False,True,53,18,33.9622641509434,35,0,0,35,0,0,35

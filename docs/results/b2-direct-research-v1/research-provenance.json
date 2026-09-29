@@ -1,0 +1,22 @@
+{
+  "experiment": "b2-direct-research-v1",
+  "ranking": "data/experiments/b2-direct-research-v1/ranking-ac92a3c7dbcc",
+  "design": "data/experiments/b2-direct-research-v1/research-design.json",
+  "design_sha256": "ffea2d3a4e1b61b14c5512e5b35feda5553079526024c316c2420032db9aede4",
+  "complete_runs": 468,
+  "planned_runs": 468,
+  "expected_seeds": [
+    42,
+    43,
+    44
+  ],
+  "status": "COMPLETE",
+  "inputs": {
+    "run_scores.csv": "a90b4283dfc315ee78e64a1b8dc1ec1fb66027714f62f8885f5c0ede9f79af57",
+    "season_composite_scores.csv": "4325301615c14820346219ff7a3f912522f9598884bde10b74666764647579d6",
+    "configuration_ranking.csv": "af3550376ffb15f3c6c7d06f31a53cb680cfc8ce0ada2998d418b9a04d990b48",
+    "season_scores.csv": "bbbce853509433e8255617d46da733c151fb26f20f7c9505e68e4779afdc062f"
+  },
+  "percent": "Mean of 100*(candidate/baseline - 1), paired on seed and score support.",
+  "uncertainty": "Across-seed SD, not a confidence interval or epidemiological replication."
+}

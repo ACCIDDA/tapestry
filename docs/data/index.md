@@ -1,5 +1,8 @@
 # Data repository
 
+[2022–23 dataset extension: finalized NHSN targets, covariate coverage, and verification](../results/dataset-2022-extension/index.md).
+
+
 The `tapestry.data` package is the durable acquisition layer. It separates
 source-specific retrieval from a shared snapshot repository:
 
@@ -55,5 +58,5 @@ code should consume repository snapshots rather than call publishers directly.
 ## Shared consumer selection
 
 The explorer and downstream analysis share [post-intake selection](selection.md):
-25 raw datasets become 15 logical source groups, with explicit outcome allowlists.
+23 raw datasets become 11 logical source groups, with explicit outcome allowlists.
 Use `SelectedData` for native selected records; raw acquisition remains unchanged.

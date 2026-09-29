@@ -1,0 +1,47 @@
+[
+  {
+    "seed": 42,
+    "season": "2023-2024",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 42,
+    "season": "2024-2025",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 42,
+    "season": "2025-2026",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 43,
+    "season": "2023-2024",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 43,
+    "season": "2024-2025",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 43,
+    "season": "2025-2026",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 44,
+    "season": "2023-2024",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 44,
+    "season": "2024-2025",
+    "max_parameter_difference": 0.0
+  },
+  {
+    "seed": 44,
+    "season": "2025-2026",
+    "max_parameter_difference": 0.0
+  }
+]

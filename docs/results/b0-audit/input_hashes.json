@@ -1,0 +1,218 @@
+[
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2023-2024/units.parquet",
+    "sha256": "4f133d0c353fdfbf002f43f704cec5e781c8c44274e5caa7cbbabab03550c0f8"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2023-2024/quantiles.parquet",
+    "sha256": "14a70019b6de89c39468d0bb58f8986042ff74bf141be468c15ccdf09f0519a4"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2024-2025/units.parquet",
+    "sha256": "cc1b98f43c6a8ffb529342ad49d870df4eae5d19c4887570847a410aa60ec4a3"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2024-2025/quantiles.parquet",
+    "sha256": "eac4008b40ee70981b2b06b39ad3f6b8850cbae8f84bc6f1545cbf78d8e48161"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2025-2026/units.parquet",
+    "sha256": "9b104e69e73bda4e380467f9b05cdbd6aa9aee1de691cc6367f9ddc5f2645b7c"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_hosp_2025-2026/quantiles.parquet",
+    "sha256": "52a5ab89bc311ba9709fe678f671a27beb61575b3494e4c71a337506a17b6a78"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_prop_ed_visits_2025-2026/units.parquet",
+    "sha256": "4af32c7015f78d9eff46650f8098fd63c0a318d3be596b6cedc1058c814028dd"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/flusight_flu_prop_ed_visits_2025-2026/quantiles.parquet",
+    "sha256": "546112851d6d37fdf3bbf5a38196043dcdb98048c001dec8b6353bc42a71b4ec"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_hosp_2024-2025/units.parquet",
+    "sha256": "106ff88007cb3045b26c8979d1f171f4c8f999ba0f2bda68deb43fe5399eebda"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_hosp_2024-2025/quantiles.parquet",
+    "sha256": "b70d5e34169c094d5de184ae93086d4d7451a63e076ce9fb8976e43db487aec7"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_hosp_2025-2026/units.parquet",
+    "sha256": "ef37cb9f564bcad8bf2c1416649720759921996764b910041cd88d0954bb0ac4"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_hosp_2025-2026/quantiles.parquet",
+    "sha256": "9f2c3ed736e3577beaca35457d9844822f9584c97f67c1fd01cd2c28fcdbd4dd"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_prop_ed_visits_2025-2026/units.parquet",
+    "sha256": "645343f1a78669d15f4643521f4cc27acd68353eb1fd03a104d5019c23572630"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/covid_covid_prop_ed_visits_2025-2026/quantiles.parquet",
+    "sha256": "0c2006fcb188ac8d90b039aebaa1ad86d3bef861a8806140dd6031232875905a"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/rsv_rsv_hosp_2025-2026/units.parquet",
+    "sha256": "9012084dbb3b4e5e90843fe92268149c66ff069349b81716423c4eea0cc0d121"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/rsv_rsv_hosp_2025-2026/quantiles.parquet",
+    "sha256": "6be4aa7d2ded01a9b9e56b6aafe4a122371643817e6e66d8d083d90796a0f5ac"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/rsv_rsv_prop_ed_visits_2025-2026/units.parquet",
+    "sha256": "2963128944fb62a554b9a7689e8dae6ad68ee8e41881ed8976a9b5e7069b93b5"
+  },
+  {
+    "path": "data/evaluation/b0_hub_comparison_q23/rsv_rsv_prop_ed_visits_2025-2026/quantiles.parquet",
+    "sha256": "567b6bbf29e5da50031086c6615d4fec99bec2cc46914c9d4dccacefb9331f5d"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s42/eval_2023-2024/forecasts.npz",
+    "sha256": "26ea441f5910b29c5fa04b8b338bfd25f5d5056e989faa96cea4b684ae90c1d6"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s42/eval_2024-2025/forecasts.npz",
+    "sha256": "87d84ae8b80ce88ebb2b64cf52d7ef15e73310e7181531e69c76befcecb3df83"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s42/eval_2025-2026/forecasts.npz",
+    "sha256": "047095276704efa751687f29be0c2d4440c547cd33b572496f423476495d754e"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s43/eval_2023-2024/forecasts.npz",
+    "sha256": "e87319c30defd31af6675369368be703d7ed77c43307569df4c458ca964728c4"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s43/eval_2024-2025/forecasts.npz",
+    "sha256": "247b2d169b97999794e67fd3074280707a56e3c85791163c1539f57c52481139"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s43/eval_2025-2026/forecasts.npz",
+    "sha256": "be715e933c21754361ece572aac63696102c8de60d26236092373184dd7a8cc3"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s44/eval_2023-2024/forecasts.npz",
+    "sha256": "bec078cbdbfc4a2a9794c2d408438bb05f75badd45cbbab37e79cb5efefe12a1"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s44/eval_2024-2025/forecasts.npz",
+    "sha256": "78a16fa9152f7f33829f29dc6a8abe87d0188e5cf280de254399b09fa8599a6d"
+  },
+  {
+    "path": "data/audits/b0/b0-target100/s44/eval_2025-2026/forecasts.npz",
+    "sha256": "16a438a1c973c75ef151f337d8defc7bed377b71b7a1752b2f33dd8e61855d7a"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s42/eval_2023-2024/forecasts.npz",
+    "sha256": "c2fc5c94865e6b35ce91101ccd681549e0e751e97bbfcf92889a31468cc1fd10"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s42/eval_2024-2025/forecasts.npz",
+    "sha256": "93c4b9cb304e7425b12aeb7c7a753bfbf880ea128036807fc53f4d47f363b282"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s42/eval_2025-2026/forecasts.npz",
+    "sha256": "c3b22dc0353b14ffb8c43c9eaa479278d3388a517257c6a7df27cbd41cc60bd4"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s43/eval_2023-2024/forecasts.npz",
+    "sha256": "0d75bb8d36d45808d04ca31864108f3dbbf233e7dc0a3b998da4a3e43e873569"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s43/eval_2024-2025/forecasts.npz",
+    "sha256": "3ea8c515cf9bd0b10fa574e95a49af2fe5928819167998784309e855d1436d51"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s43/eval_2025-2026/forecasts.npz",
+    "sha256": "4868d1d97a663773f7a8e01c709237ece5f0378a505c363e55a1db5db8d40367"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s44/eval_2023-2024/forecasts.npz",
+    "sha256": "a52cb90285ae12ded85e60969aa9d7a180d126c7f30cdf8c1783324faf2460e4"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s44/eval_2024-2025/forecasts.npz",
+    "sha256": "93496d48bcc78025f5b4f20a1c9ebe08c558f8a400c0567b810cf9ac3eace909"
+  },
+  {
+    "path": "data/audits/b0/b0-pathogen300/s44/eval_2025-2026/forecasts.npz",
+    "sha256": "695ccbf2dbecf2a66121517f2a972c79e81713f9b4db4b038b14a3068104e486"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s42/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "77ede5d1a13ed1589fe4f379dbc269e5857085effd4d7068d4a69c68f2438ceb"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s42/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "a8d9660489a4dac59648d26371cb40fe46142f97c1d644892e4e1c42d838ae90"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s42/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "dacdff6b6db53b97169491d3792fc2a13c74ea2c0ad87ecacbad4413c31b9b15"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s43/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "8ee882dc6266ddde5098ffcd1ec72ae3b8191bab31bc529207b1963b2a967985"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s43/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "8117ca2348c1510263e696680df9b7e340309f27e05c45ba05949d0adf16f950"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s43/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "8cb19b18927c27571e196a39e0e9c5ecba0bf9e813f9ea4388e0389c42bd26b5"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s44/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "4986501caf7f5dd2b4d90ccda02d81088350b29a20ebda2199587cd3da639a50"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s44/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "9d5e7e2527075a1e8cebb78dae22b708755f291e6cbdcdfcd09519b31f06a631"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s44/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "7f5a10e629037a2ba58da32419dc9ddbc04e2087fd0ce5443223a5b6e9fa8b7b"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s42/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "ff1e171e6f0b6abeee49c6cf63e2a5cc52d4e1d093e4badace4b35269db9a9a8"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s42/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "119ca53aa53456b150a711456dc2a3eac775bbd0ee9639a80185766e65ebb106"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s42/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "484b7e23deccfd95bee035247e0c406b03f2c7156149ee657b2e6a06278e0e85"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s43/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "7af62a73df7ae73f8f6aff0d7aad27edf9a2819c84c5f5031c4b26f605c1e4b2"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s43/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "1cc1d3bb5e341926e36ea206e058bd9a8578a246c5fc872ffbd1c4c9372c603a"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s43/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "8f6f3230e31c609c89bee2c201eeb261d7734d1e3670965ca69e09ad21dc1bcf"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s44/attempt-001/eval_2023-2024/forecasts.npz",
+    "sha256": "2a23ca4e6d68a166f22a3ed0b1f947898b2553742b2894b8fca0e82208a67d6f"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s44/attempt-001/eval_2024-2025/forecasts.npz",
+    "sha256": "20bca1dea874b863accb05979584f5807257c4b476080b31fa54512535df1267"
+  },
+  {
+    "path": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-c27efb4751dd/s44/attempt-001/eval_2025-2026/forecasts.npz",
+    "sha256": "5e669942d684bddb53454233f0bae27d2d41ac694c087ee7223a761a79637d8d"
+  }
+]

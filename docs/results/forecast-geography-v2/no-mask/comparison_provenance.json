@@ -1,0 +1,15 @@
+{
+  "configurations": 32,
+  "seeds": 3,
+  "runs": 96,
+  "rankings": [
+    "data/experiments/forecast-geography-v2/ranking-e53fd92c4f32",
+    "data/experiments/forecast-no-mask-top32-v3/ranking-981191c4dc56"
+  ],
+  "improved_configurations": 3,
+  "improved_seeds": 18,
+  "average_paired_percent": 5.959081235692124,
+  "median_paired_percent": 5.357060257643622,
+  "support": "Every matched seed has identical frozen target/season/location/horizon/n rows and pinned inputs.",
+  "caveat": "Selected top half of the original masked ranking; no independent confirmation and no inference to all 63 formulations."
+}

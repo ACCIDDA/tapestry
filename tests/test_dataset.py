@@ -10,11 +10,13 @@ from conftest import LOCATIONS, code, synthetic_panel
 from tapestry.dataset.build import COVARIATE_GROUPS, SOURCE_GROUPS, covariate_names_for, decode, encode
 from tapestry.dataset.cv import SEASONS, fold, season, week_roles
 from tapestry.dataset.episodes import episodes
-from tapestry.experiment.planner import model_options, unique_truth
+from tapestry.experiment.training import model_options, unique_truth
 from tapestry.model.objective import loss_cell_weights, loss_scales
 from tapestry.model.scenario import Scenario
 
 SCENARIOS = [Scenario(lookback=6, epochs=3, patience=1),
+             Scenario(lookback=6, epochs=3, patience=1, input_mode='finalized_available',
+                      covariate_set='inpatient+kinsa'),
              Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', covariate_set='inpatient+kinsa'),
              Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', asof_weeks=6, covariate_set='inpatient',
                       validation_weeks=2, validation_spacing=10, validation_offset=1)]
@@ -125,7 +127,8 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
                 assert value == truth and final  # older week: truth, flagged final
             cov = e['covariates'][i]
             assert cov[0, 0, nc] == code(day) + 1000 + .5 and cov[0, 1, nc]  # inpatient_flu, as of the issuance
-            assert cov[1, 0, us] == code(day) + 50000 + .5 and cov[1, 1, us] and not cov[1, 1, nc]  # kinsa, US only
+            assert cov[1, 0, us] == code(day) + 50000 + .5 and cov[1, 1, us] and cov[1, 1, nc]  # national Kinsa broadcast to all locations
+            assert cov[1, 0, nc] == cov[1, 0, us]
         labelled = e['target_available'][:, 0, nc]
         np.testing.assert_array_equal(e['target_values'][labelled, 0, nc],
                                       [code(d) + 1000 for d, m in zip(e['target_dates'], labelled) if m])
@@ -154,3 +157,29 @@ def test_covariate_names_for_expands_groups_in_fixed_order():
         covariate_names_for('not_a_group')
     names = [name for group in SOURCE_GROUPS for name in COVARIATE_GROUPS[group]]
     assert len(names) == len(set(names))
+
+
+def test_finalized_available_uses_final_values_but_only_published_inputs(panel):
+    names = ('inpatient_flu', 'kinsa_ili')
+    panel = {k: v.copy() if isinstance(v, np.ndarray) else v for k, v in panel.items()}
+    panel['asof_covariates'][20, 18, 0, 0] = np.nan
+    panel['asof_covariates_national'][20, 18, 0] = np.nan
+    final = {e['context_dates'][-1]: e for e in episodes(panel, 6, 'finalized', names)}
+    asof = {e['issuance']: e for e in episodes(panel, 6, 'vintaged', names, asof_weeks=6)}
+    checked = 0
+    for e in episodes(panel, 6, 'finalized_available', names):
+        truth = final.get(e['context_dates'][-1])
+        if truth is None:
+            continue
+        seen = asof[e['issuance']]
+        expected = truth['available'] & seen['available']
+        np.testing.assert_array_equal(e['available'], expected)
+        np.testing.assert_array_equal(e['known_final'], expected)
+        np.testing.assert_array_equal(e['values'], np.where(expected, truth['values'], 0))
+        visible_cov = truth['covariates'][..., 1, :].astype(bool) & seen['covariates'][..., 1, :].astype(bool)
+        np.testing.assert_array_equal(e['covariates'][..., 1, :], visible_cov)
+        np.testing.assert_array_equal(e['covariates'][..., 0, :],
+                                      np.where(visible_cov, truth['covariates'][..., 0, :], 0))
+        np.testing.assert_array_equal(e['Y'], truth['Y'])
+        checked += 1
+    assert checked > 100

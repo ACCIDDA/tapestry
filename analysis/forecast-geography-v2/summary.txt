@@ -1,0 +1,48 @@
+BASELINES
+                     name  combined_mean  combined_sd  states_dc_combined_mean  US_combined_mean
+attention / no covariates       1.118681     0.145863                 1.100205          1.192586
+     none / no covariates       1.124000     0.062167                 1.104068          1.203725
+   pooled / no covariates       1.180513     0.046412                 1.151221          1.297682
+LEADERS
+ rank                            name  combined_mean  combined_sd  paired_percent  seeds_improved
+  1.0          none / Mixed / summary       1.036003     0.029990       -7.602532               3
+  2.0         none / New flu / smooth       1.049205     0.037733       -6.585839               3
+  3.0          none / Kinsa / summary       1.062972     0.025373       -5.299805               3
+  4.0       pooled / Claims / summary       1.066549     0.038522       -9.471571               3
+  5.0          none / Claims / smooth       1.071405     0.034804       -4.407570               2
+  6.0      pooled / New flu / summary       1.075747     0.027528       -8.784917               3
+  7.0           none / Mixed / smooth       1.075758     0.040672       -3.975886               2
+  8.0         attention / Kinsa / raw       1.079478     0.031235       -2.698771               1
+  9.0        none / New flu / summary       1.080481     0.049177       -3.833308               3
+ 10.0     attention / Kinsa / summary       1.083877     0.028429       -2.055780               1
+ 11.0 attention / Wastewater / smooth       1.092906     0.035906       -1.518162               1
+ 12.0           none / Kinsa / shared       1.095186     0.018067       -2.311822               1
+ 13.0         none / New flu / shared       1.099677     0.045043       -1.835014               2
+ 14.0     none / Wastewater / summary       1.099732     0.037554       -2.028697               2
+ 15.0             none / Claims / raw       1.107443     0.060083       -1.228647               2
+ 16.0       pooled / New flu / shared       1.110174     0.049936       -5.913431               3
+ 17.0          pooled / New flu / raw       1.112159     0.060660       -5.757764               3
+ 18.0      none / Wastewater / shared       1.115882     0.079137       -0.453748               2
+ 19.0    attention / New flu / smooth       1.117404     0.065796        0.510185               1
+ 20.0       attention / no covariates       1.118681     0.145863        0.000000               0
+MATCHED MEANS
+representation   raw  shared  smooth  summary
+spatial                                      
+attention       8.46    8.69    7.04     4.72
+none            1.29   -0.38   -2.39    -3.39
+pooled         -2.36   -1.08   -1.03    -1.51
+BUNDLE MEANS
+bundle     Claims  Kinsa  Mixed  New flu  Wastewater
+spatial                                             
+attention   13.85   0.46   9.44     6.30        6.09
+none        -0.66  -1.49  -2.46    -2.91        1.45
+pooled      -1.54   1.04  -1.99    -5.45        0.47
+SEASONS: TOP AND CONTROLS
+season                     2023-2024  2024-2025  2025-2026
+name                                                      
+attention / no covariates      1.154      0.966      1.236
+none / Kinsa / summary         0.989      0.875      1.325
+none / Mixed / summary         1.019      0.878      1.210
+none / New flu / smooth        0.956      0.921      1.271
+none / no covariates           1.077      0.966      1.329
+pooled / no covariates         1.331      0.973      1.238

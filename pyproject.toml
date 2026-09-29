@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tapestry"
 version = "0.1.0"
-description = "Surveillance data, B0 forecasting experiments, evaluation, and exploration"
+description = "Surveillance data, nowcasting, forecasting, evaluation, and exploration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
