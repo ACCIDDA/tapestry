@@ -49,11 +49,12 @@ uv run python scripts/pull_covariates.py --data-root data init
 uv run python scripts/pull_covariates.py --data-root data pull \
     delphi_nhsn delphi_nssp delphi_claims_inpatient delphi_claims_outpatient \
     delphi_nwss delphi_nwss_aux hub_flusight_current hub_covid_current \
-    hub_rsv_current pophive_kinsa_ili
+    hub_rsv_current pophive_kinsa_ili \
+    delphi_fluview_ilinet delphi_fluview_clinical delphi_flusurv
 ```
 
 These are the sources `tapestry.dataset.build` reads (targets, claims,
-wastewater, Kinsa; see [the source catalog](data/sources.md)). The
+wastewater, Kinsa, ILINet, clinical labs, FluSurv-NET; see [the source catalog](data/sources.md)). The
 `cdc_nhsn_*`/`cdc_nssp_*` Socrata specs and the legacy/RSVNet Hub mirrors
 remain in the catalog for comparison and are not required for the training
 panel. Downloading sources does not build them; see
@@ -278,7 +279,7 @@ sbatch --job-name=b0-explore --array=0-3 scripts/jlessler.sbatch b0-explore
 Task numbers are rows of `data/experiments/b0-explore/jobs.csv` (one per
 scenario). Each seed attempt writes only its own folder, so there is no prepare
 or collect step. `jlessler.sbatch` queues a follow-up `notify.sbatch` job automatically
-(`NTFY=0` to disable); see `scripts/b01_notify.py`.
+(`NTFY=0` to disable); see `scripts/notify.py`.
 
 ## Monitor and resume
 

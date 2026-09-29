@@ -1,8 +1,8 @@
 # Source catalog
 
-The checked-in catalog defines 26 independently retrievable datasets. The table
+The checked-in catalog defines 23 independently retrievable datasets. The table
 below summarizes acquisition and modeling metadata; run
-`python scripts/pull_covariates.py catalog` for the complete machine-readable
+`python -m tapestry.data catalog` for the complete machine-readable
 specifications, signals, natural keys, and source URLs.
 
 | Dataset key | Provider | Fetcher | Cadence | Versioned | Native geography |
@@ -10,22 +10,19 @@ specifications, signals, natural keys, and source URLs.
 | `cdc_nhsn_final` | CDC | `socrata` | `weekly` | no | state, territory, hhs, nation |
 | `cdc_nhsn_initial_release` | CDC | `socrata` | `weekly` | yes | state, territory, hhs, nation |
 | `cdc_nhsn_preliminary` | CDC | `socrata` | `weekly` | no | state, territory, hhs, nation |
-| `cdc_nrevss_comprehensive` | CDC | `socrata` | `weekly` | no | state, hhs, nation |
-| `cdc_nrevss_covid_vintages` | CDC | `socrata` | `weekly` | yes | hhs, nation |
-| `cdc_nrevss_national` | CDC | `socrata` | `weekly` | no | nation |
-| `cdc_nrevss_rsv_vintages` | CDC | `socrata` | `weekly` | yes | hhs, nation |
 | `cdc_nssp_daily` | CDC | `socrata` | `daily` | no | state, nation |
 | `cdc_nssp_demographics` | CDC | `socrata` | `weekly` | no | nation |
 | `cdc_nssp_trajectories` | CDC | `socrata` | `weekly` | no | state, hsa |
-| `cdc_nwss_covid_raw` | CDC | `socrata` | `sample` | no | sewershed, county, state |
-| `cdc_nwss_influenza_raw` | CDC | `socrata` | `sample` | no | sewershed, county, state |
-| `cdc_nwss_rsv_raw` | CDC | `socrata` | `sample` | no | sewershed, county, state |
-| `cdc_nwss_wval` | CDC | `socrata` | `weekly` | no | sewershed, state |
 | `delphi_claims_inpatient` | CMU Delphi | `delphi_v5` | `daily` | yes | county, hrr, msa, state, hhs, census region/division, nation |
 | `delphi_claims_outpatient` | CMU Delphi | `delphi_v5` | `daily` | yes | county, hrr, msa, state, hhs, census region/division, nation |
+| `delphi_flusurv` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, msa, misc |
+| `delphi_fluview_clinical` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, hhs, census division |
+| `delphi_fluview_ilinet` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, hhs, census division |
 | `delphi_nhsn` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, hhs, census region/division |
 | `delphi_nssp` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, hhs, county, hsa, hrr, msa, census region/division |
 | `delphi_nwss` | CMU Delphi | `delphi_v5` | `sample` | yes | sewershed |
+| `delphi_nwss_aux` | CMU Delphi | `delphi_v5_aux` | `sample` | yes | sewershed |
+| `derived_nwss_state_indices` | Tapestry, derived from CMU Delphi NWSS | `derived` | `weekly` | yes | state, nation |
 | `hub_covid_current` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |
 | `hub_covid_legacy` | Hubverse community | `hubverse` | `weekly` | yes | county, state, nation |
 | `hub_flusight_current` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |
@@ -39,7 +36,7 @@ with multiple release dates. A `yes` does not necessarily mean every revision
 is available; see the NHSN distinction below.
 
 For the consumer-facing organization and retained measures, see
-[Shared selection](selection.md): 26 acquisitions map to 13 logical groups.
+[Shared selection](selection.md): 23 acquisitions map to 11 logical groups.
 
 ## Source families
 
@@ -83,8 +80,9 @@ preservation, not a complete sequence of vintages.
 
 ### Delphi Epidata
 
-Only the five Delphi V5 sources listed above are enabled. Direct CDC and Hubverse
-sources are separate.
+The Delphi V5 sources listed above are enabled (NHSN, NSSP, NWSS with its
+auxiliary table, both claims feeds, FluView ILINet, FluView clinical and public
+health laboratories, and FluSurv-NET). Direct CDC and Hubverse sources are separate.
 
 Following Delphi's [Python migration guide](https://cmu-delphi.github.io/epidatpy/migration_guide.html),
 the downloader uses `EpiDataContext.epidata_meta()` to discover and validate live
@@ -133,6 +131,15 @@ Source details:
   evaluation because claims backfill substantially. Claims rows carry blank fill
   labels even though the source docs describe `source`; imposing that filter
   would discard these rows.
+
+- [FluView ILINet](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_ilinet.html),
+  [FluView clinical labs](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_resp_lab_clinical.html)
+  and [FluSurv-NET](https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/flusurv.html):
+  the V5 replacements (September 2026) for the legacy V3 `fluview`,
+  `fluview_clinical` and `flusurv` endpoints. FluView rows carry an extra
+  `age_group` key column. The public health labs (`fluview_resp_lab_ph`) are
+  not acquired (state rows are season totals). Release timing, archive gaps and the New York pool are
+  in [FluView and FluSurv-NET](fluview-flusurv.md).
 
 Full reference-date history is not necessarily full historical release coverage.
 Inspect the saved `reference_time_range` and `report_time_range` before selecting

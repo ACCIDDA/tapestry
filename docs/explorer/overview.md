@@ -24,6 +24,15 @@ Kinsa's national cough, cold and flu signal is a normal raw source too:
 `kinsa_cough_cold_flu`. It is a national series, filed under acute respiratory
 illness with provider kind `pophive`.
 
+The Delphi V5 FluView and FluSurv-NET archives (added 2026-09-22) appear as two
+families: **FluView · Outpatient ILI and laboratory surveillance** (ILINet under
+influenza-like illness; clinical laboratory signals under influenza, keyed
+`fluview:ilinet_*`, `fluview:clinical_*`) and
+**FluSurv-NET · Influenza hospitalization rates**. `age_group` and
+`fill_method` are variant facets, so ILINet age strata and Delphi's pooled
+statewide New York stay labelled. FluSurv state series exist only for
+catchment states. Delphi's public health laboratory source is not included. See [FluView and FluSurv-NET](../data/fluview-flusurv.md).
+
 In the local 2026-09-16 claims snapshots, the selected influenza and COVID-19
 series in both claims products begin their publisher-vintage history on
 2020-05-29. The wastewater start is intentionally reported from the processed
@@ -190,6 +199,10 @@ today when showing latest values); the next step stops at today.
 The **← / →** version arrows step through Wednesday and Saturday as-of views.
 Typed dates and chart clicks round back to the preceding Wednesday or Saturday;
 they never move the information cutoff forward. The API applies the same rule.
+Scrolling or arrowing the date field forward rounds forward instead, to the next
+Wednesday or Saturday (never past today), so it walks Wednesday ↔ Saturday rather
+than sticking on a Saturday (fixed 2026-09-23). The as-of date shown is therefore
+always a Wednesday or a Saturday.
 Daily observation dates remain daily; only the historical information cutoffs
 are restricted. A Tuesday report contributes to the Wednesday view, for example.
 **Finalized (latest)** always shows the latest available source values, including
@@ -271,7 +284,9 @@ deploys the site.
 ## History policy — 2026-09-20
 
 At the user's request, the explorer retains Wednesday and Saturday historical
-views plus final/latest values. Compaction reuses the export's change selection,
+views plus final/latest values. This thins only the explorer's own disposable
+index: the raw snapshots under `data/raw/` keep every publisher release, and the
+dataset builder reads those, never the explorer index. Compaction reuses the export's change selection,
 keeps original publisher timestamps and float64 values in the local index, and
 selects complete-snapshot releases as whole states to preserve omissions.
 Repeated contributions within the same observation/release retain their

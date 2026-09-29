@@ -1,0 +1,16 @@
+{
+  "run": "data/experiments/forecast-geography-v2/mlp-pathogen-finalized_available-bec467b68bb5/s42/attempt-001",
+  "ranking": "data/experiments/forecast-geography-v2/ranking-e53fd92c4f32",
+  "keys": [
+    "reference_date",
+    "target_end_date",
+    "location",
+    "horizon"
+  ],
+  "scored_cases": 9,
+  "scored_cells": 56662,
+  "missing_ensemble_cells": 0,
+  "missing_model_cells": 0,
+  "truth_mismatches": 0,
+  "inference": "Support audit uses the top model seed 42; shared scorer enforces these same constraints for every run."
+}

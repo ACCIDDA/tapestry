@@ -16,19 +16,89 @@ across locations and targets. The
 explain the contributions from Flusion, InfluPaint, and DeepMind's Functional
 Generative Networks paper, and their adaptations here.
 
+## Run the current model
+
+One shared panel feeds independently fitted nowcasting and forecasting stages.
+Use the [current pipeline interface and manager commands](design/nowcast-forecast.md)
+for training, prediction and ranking. The results below describe earlier research;
+legacy experiment names do not select a separate implementation.
+
+## Current direct-forecasting study
+
+**Completed: 468/468 runs** in `b2-direct-research-v1`: 156 configurations,
+three seeds, three held-out seasons and 256 evaluation draws. The best model
+combines target-specific multiscale encoders, all seven covariates and geographic
+pooling (WIS ratio **1.059**; Hub ensemble = 1). Covariates improve its matched
+pooled control by 9.0%, mainly in 2024–25. No configuration mean beats the Hub
+overall or in 2025–26; nominal 95% coverage is 79.3% for the leader.
+
+Read the [completed analysis and best-model fan plots](results/b2-direct-research-v1/index.md)
+for source attribution, spatial comparisons, uncertainty and the explicit
+availability assumptions. The [study design and manager commands](design/b2-direct-research.md)
+record the training recipe and launch.
+
+## Previous forecasting results
+
+**No-mask follow-up:** all 96 runs completed. Removing artificial target masking
+worsened 29 of 32 selected formulations. The previous leader worsened from 1.036
+to 1.121; the masked mixed-summary model remains best. The
+[same main report](results/forecast-geography-v2/conclusions.md#follow-up-removing-artificial-masking-mostly-hurt)
+contains the full paired analysis. The chart and US fan comparisons are directly below.
+
+![Matched masking comparison](results/forecast-geography-v2/no-mask/matched-masking.png)
+
+![US admissions: mixed summaries with and without masking, seed 42](results/forecast-geography-v2/no-mask/fans-US-hosp.png)
+
+![US ED: mixed summaries with and without masking, seed 42](results/forecast-geography-v2/no-mask/fans-US-ed.png)
+
+
+All 189 geography/covariate runs completed. Mixed covariate summaries lead with
+relative WIS **1.036**, versus **1.124** without covariates. These are Wednesday-
+availability-masked inputs, including target histories; they are not directly
+comparable to B0's full finalized-input results. Read the
+[conclusions](results/forecast-geography-v2/conclusions.md) and
+[B0 protocol comparison](results/forecast-geography-v2/b0-comparison.md).
+
+## Fan plots: the three leading models
+
+Shown directly below: the Hub ensemble, mixed covariate summaries, smoothed new
+flu covariates, and Kinsa summaries. The models were selected by three-seed mean
+WIS; all fans use **seed 42**, not the best seed. Black curves are final truth;
+fans show medians and 50%/90% intervals at four-week reference intervals.
+The native US and North Carolina are shown; these are illustrative locations,
+not substitutes for all-location scores. Hub fans appear only where benchmark
+support exists.
+
+### US admissions
+
+![US admissions: Hub ensemble and three leading models](results/forecast-geography-v2/best-fans/fans-US-hosp.png)
+
+### US ED proportions
+
+![US ED proportions: Hub ensemble and three leading models](results/forecast-geography-v2/best-fans/fans-US-ed.png)
+
+### North Carolina admissions
+
+![North Carolina admissions: Hub ensemble and three leading models](results/forecast-geography-v2/best-fans/fans-NC-hosp.png)
+
+### North Carolina ED proportions
+
+![North Carolina ED proportions: Hub ensemble and three leading models](results/forecast-geography-v2/best-fans/fans-NC-ed.png)
+
 ## Unicorns exist
 
 A **unicorn** is a model formulation that beats the ensemble across three
 pathogens, on both admissions and ED visits — six targets — across the past
-three seasons. It was unclear whether such a model existed, given how different
-the seasons are. These retrospective experiments found candidates. Evaluation
+three seasons. The [September 25 audit](results/b0-audit/index.md) found that
+none of the 172 B0 formulations meets this strict criterion, although their
+aggregate gains reproduce exactly. Evaluation
 uses season cross-validation: train on two seasons and forecast the third,
 rotating through 2023–24, 2024–25, and 2025–26.
 
 These models see finalized data with revisions unavailable to the hub ensembles
 at forecast time. Whether the gains carry over to vintaged data remains to be
 established. Ensemble comparisons cover flu admissions in 2023–24, flu and COVID
-admissions in 2024–25, and all six targets in 2025–26. The unicorn finding applies
+admissions in 2024–25, and all six targets in 2025–26. The aggregate results apply
 to this available support, not a complete six-by-three grid. These same seasons
 guided architecture selection, so this is exploratory cross-validation, not an
 untouched final evaluation.

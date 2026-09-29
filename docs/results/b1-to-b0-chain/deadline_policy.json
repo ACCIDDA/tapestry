@@ -1,0 +1,10 @@
+{
+  "purpose": "Original B0 finalized values; 2025\u201326 target availability reconstructed at Hub deadlines from Git",
+  "source_sha256": "f0acf14d130899b56f0a34813cb2061e098f9ee31c7d4cd55315e2e2566e7b48",
+  "earlier_seasons": "Unchanged saved Wednesday archive policy",
+  "numerical_inputs": "Finalized values where report exists; not preliminary values",
+  "deadlines": "23:00 America/New_York; Christmas flu Dec30, COVID/RSV Dec29; New Year flu Jan5, COVID/RSV Jan4",
+  "sources": "Union three Hub series/direct target files, raw NSSP and dated Delphi reports; no inference of worldwide nonpublication from absence",
+  "unchanged": "Finalized values, calendar, covariates, locations",
+  "output_sha256": "b88de9dbbaf5ea164ba0aaf53eaa3a97115898786dbbf2913b2d7ab0ea446a59"
+}

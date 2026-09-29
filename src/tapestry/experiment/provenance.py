@@ -3,6 +3,7 @@
 Moved unchanged from `models/provenance.py`: model-agnostic already.
 """
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -48,3 +49,11 @@ def torch_state():
 def environment():
     return dict(host=socket.gethostname(), slurm={name: os.environ.get(name) for name in SLURM},
                 **torch_state(), **git_state())
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with open(path, 'rb') as stream:
+        for block in iter(lambda: stream.read(1 << 20), b''):
+            digest.update(block)
+    return digest.hexdigest()

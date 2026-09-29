@@ -1,0 +1,10 @@
+season,target,ensemble,scored_cells,ensemble_cells,ensemble_outside_frozen,model_exported_cells,model_outside_frozen,missing_ensemble,missing_model,truth_mismatches,duplicate_ensemble
+2023-2024,wk inc flu hosp,FluSight-ensemble,6234,6234,0,8632,2398,0,0,0,0
+2024-2025,wk inc flu hosp,FluSight-ensemble,5616,5616,0,10296,4680,0,0,0,0
+2025-2026,wk inc flu hosp,FluSight-ensemble,5824,5824,0,10504,4680,0,0,0,0
+2025-2026,wk inc flu prop ed visits,FluSight-ensemble,5768,5768,0,10504,4736,0,0,0,0
+2024-2025,wk inc covid hosp,CovidHub-ensemble,6968,6968,0,10296,3328,0,0,0,0
+2025-2026,wk inc covid hosp,CovidHub-ensemble,9048,9048,0,10504,1456,0,0,0,0
+2025-2026,wk inc covid prop ed visits,CovidHub-ensemble,5586,5586,0,10504,4918,0,0,0,0
+2025-2026,wk inc rsv hosp,RSVHub-ensemble,6032,6032,0,10504,4472,0,0,0,0
+2025-2026,wk inc rsv prop ed visits,RSVHub-ensemble,5586,5586,0,10504,4918,0,0,0,0

@@ -4,7 +4,7 @@ The single read path for the dataset builder (`dataset.build`) and ad-hoc analys
 (docs/design/restructure-2026-unified.md §2). Vintage policy (2026-09-22, latest
 release per cell; see the decision log entry "Hub vintages stop shadowing"):
 
-- Archive-backed sources (six targets, four Delphi claims covariates) carry three
+- Archive-backed sources (six targets, seven Delphi covariates) carry three
   tiers of revisions: `hub` (the Hub's native `as_of` full snapshots), `git` (Hub
   Git-history full snapshots, each registered release is a full snapshot even when
   empty for this target) and `delphi` (per-observation Delphi report-time revisions).
@@ -36,9 +36,14 @@ release per cell; see the decision log entry "Hub vintages stop shadowing"):
   to label + 4 days when the source has no Git history.
 - A release is visible at a cutoff day if released by 23:59:59.999999 UTC that day.
 - Values must be finite and nonnegative; NSSP percentages must be at most 100 and
-  are divided by 100. Claims archives are daily: only Saturday reference days are
-  kept, as the pre-restructure builder did (`model_data/b2.py:_claims_frame`), with
-  no weekly averaging. Delphi rows with a non-native `fill_method` are dropped.
+  are divided by 100. Covariates keep their native units (claims and ILI percent,
+  clinical-lab percent positive, FluSurv rate per 100,000). Claims archives are daily:
+  only Saturday reference days are kept, as the pre-restructure builder did
+  (`model_data/b2.py:_claims_frame`), with no weekly averaging; the weekly FluView and
+  FluSurv archives are Saturday-dated already. Delphi rows with a non-native
+  `fill_method` are dropped, except each covariate's `DELPHI_FILLS` (ILINet statewide
+  New York exists only as Delphi's `nyc_plus_ny_minus_nyc` pool of its two CDC
+  jurisdictions). Rows with an `age_group` other than `all` are dropped.
 - NWSS indices and Kinsa (report-date files, not archives) use the latest report
   dated on or before the cutoff day, after dropping missing values.
 
@@ -79,19 +84,26 @@ TARGET_SOURCES = {
     'nssp_covid_proportion': ('hub_covid_current', 'delphi_nssp', 'pct_ed_visits_covid', 'percent_visits_covid'),
     'nssp_rsv_proportion': ('hub_rsv_current', 'delphi_nssp', 'pct_ed_visits_rsv', 'percent_visits_rsv'),
 }
-CLAIMS_SOURCES = {
+# Covariates read from one Delphi archive signal each (no Hub tier).
+DELPHI_COVARIATES = {
     'inpatient_flu': ('delphi_claims_inpatient', 'claims_inpatient_adm_pct_claims_flu'),
     'inpatient_covid': ('delphi_claims_inpatient', 'claims_inpatient_adm_pct_claims_covid'),
     'outpatient_flu': ('delphi_claims_outpatient', 'claims_outpatient_ov_pct_claims_flu'),
     'outpatient_covid': ('delphi_claims_outpatient', 'claims_outpatient_ov_pct_claims_covid'),
+    # Unweighted ILI %: weighted ILI is suppressed at state level, so one definition serves states and US.
+    'ilinet_ili': ('delphi_fluview_ilinet', 'ili'),
+    'clinical_lab_flu_pct_positive': ('delphi_fluview_clinical', 'pct_positive'),
+    # FluSurv-NET catchment rate; states only where the network has a catchment.
+    'flusurv_flu_rate': ('delphi_flusurv', 'rate_overall'),
 }
+DELPHI_FILLS = {'ilinet_ili': ('nyc_plus_ny_minus_nyc',)}
 NWSS_INDICES = ('nwss_flu_wval_like', 'nwss_covid_wval_like', 'nwss_rsv_wval_like',
                 'nwss_flu_pct_rank', 'nwss_covid_pct_rank', 'nwss_rsv_pct_rank')
 NWSS_DERIVED_DATASET = 'derived_nwss_state_indices'
 KINSA_DATASET = 'pophive_kinsa_ili'
 KINSA_SIGNAL = 'kinsa_cough_cold_flu'
 NATIONAL_ONLY = ('kinsa_ili',)
-ARCHIVE_SOURCES = tuple(TARGET_SOURCES) + tuple(CLAIMS_SOURCES)
+ARCHIVE_SOURCES = tuple(TARGET_SOURCES) + tuple(DELPHI_COVARIATES)
 TIERS = ('hub', 'git', 'delphi')
 LOCATIONS = (*sorted(STATE_NAMES), 'US')
 
@@ -196,17 +208,18 @@ class Revisions:
 
 
 def revisions(name, data_root='data'):
-    """Read one archive-backed source (a target or a claims covariate) into `Revisions`."""
+    """Read one archive-backed source (a target or a Delphi covariate) into `Revisions`."""
     if name in TARGET_SOURCES:
         hub_dataset, delphi_dataset, delphi_signal, hub_origin = TARGET_SOURCES[name]
         upper, saturdays_only = name.startswith('nssp_'), False
-    elif name in CLAIMS_SOURCES:
-        (delphi_dataset, delphi_signal), hub_dataset, hub_origin = CLAIMS_SOURCES[name], None, None
+    elif name in DELPHI_COVARIATES:
+        (delphi_dataset, delphi_signal), hub_dataset, hub_origin = DELPHI_COVARIATES[name], None, None
         upper, saturdays_only = False, True
     else:
         raise ValueError(f'Not an archive-backed source: {name}')
     if not selected_row(delphi_dataset, f'signal={delphi_signal}', {}):
         raise ValueError(f'{delphi_signal} is not a selected {delphi_dataset} signal')
+    fills = {*NATIVE_FILL, *DELPHI_FILLS.get(name, ())}
     parts, git_releases = [], []
     selected = SelectedData(data_root)
     for key in filter(None, (hub_dataset, delphi_dataset)):
@@ -224,14 +237,16 @@ def revisions(name, data_root='data'):
             day_columns = [c for c in (table.event_date_column, 'target_end_date', 'date') if c]
             value_column = 'observation' if hub else 'value'
             columns = {*GEOGRAPHY_COLUMNS, *ORIGIN_COLUMNS, *day_columns, table.vintage_column,
-                       value_column, 'fill_method'}
+                       value_column, 'fill_method', 'age_group'}
             for frame in _read(table.path, table.source_path.split('!/')[-1], sorted(columns)):
                 if not hub:
                     signal = frame['signal'] if 'signal' in frame else pd.Series('', index=frame.index)
                     signal = signal.fillna('').astype(str).where(lambda s: s != '', path_signal)
                     keep = signal.eq(delphi_signal)
                     if 'fill_method' in frame:
-                        keep &= frame['fill_method'].fillna('None').astype(str).str.lower().isin(NATIVE_FILL)
+                        keep &= frame['fill_method'].fillna('None').astype(str).str.lower().isin(fills)
+                    if 'age_group' in frame:
+                        keep &= frame['age_group'].fillna('all').astype(str).str.lower().eq('all')
                     frame = frame[keep]
                 day = pd.Series('', index=frame.index, dtype=object)
                 for column in reversed(day_columns):

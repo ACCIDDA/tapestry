@@ -1,0 +1,15 @@
+{
+  "baseline": "data/experiments/b0-current-training-normalized",
+  "filtering_removes_zero_episodes": true,
+  "loss_mass_per_pathogen": 0.3333333333333333,
+  "b0_validation_dates_match": true,
+  "held_out_and_validation_weeks_excluded": true,
+  "b0_validation_draws_match": true,
+  "input_and_recipe_hashes_match": true,
+  "factors": [
+    "validation calendar",
+    "validation random draws"
+  ],
+  "multiplier_intervention": false,
+  "new_runs": 9
+}

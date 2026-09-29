@@ -71,11 +71,12 @@ manifests, or catalog files.
 
 ```bash
 uv run python scripts/pull_covariates.py --data-root data init
-uv run python scripts/pull_covariates.py --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
+uv run python scripts/pull_covariates.py --data-root data pull delphi_nhsn delphi_nssp hub_flusight_current hub_covid_current hub_rsv_current
 ```
 
-These two CDC sources supply the current training dataset. Broader acquisition
-is optional. A selective Delphi example, when researching revisions:
+These sources supply the surveillance targets. The full panel also includes
+claims, wastewater, FluView/FluSurv and Kinsa: follow the [training guide](workflows/training.md)
+for the full source list and panel build. A selective Delphi example:
 
 ```bash
 uv run python scripts/pull_covariates.py --data-root data pull delphi_nhsn \

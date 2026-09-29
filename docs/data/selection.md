@@ -14,7 +14,7 @@ does not reclaim their disk space or select the model's final channel set.
 ```text
 Publisher → intake → immutable raw snapshots
                          ↓
-                SelectedData (policy v4)
+                SelectedData (policy v6)
                    ↙              ↘
           ExplorerIndex       native SelectedRecord stream
           display variants    downstream materialization
@@ -26,17 +26,19 @@ Publisher → intake → immutable raw snapshots
 |---|---:|---:|
 | NHSN | 4 | 1 |
 | NSSP | 4 | 1 |
-| NWSS | 5 | 1 |
-| NREVSS | 4 | 4 |
+| NWSS (Delphi archive, auxiliary table, derived state indices) | 3 | 1 |
 | Inpatient and outpatient claims | 2 | 2 |
+| FluView (ILINet, clinical labs) | 2 | 1 |
+| FluSurv-NET | 1 | 1 |
 | Kinsa (via PopHIVE) | 1 | 1 |
 | Current and historical forecast hubs | 6 | 3 additional (current hubs join NHSN/NSSP) |
-| **Total** | **26** | **13** |
+| **Total** | **23** | **11** |
 
 These are catalog definitions, not claims that every source has been downloaded
 or every geography is displayable. The selection summary reports missing
-acquisitions. Delphi FluView/clinical/FluSurv snapshots on disk are excluded
-from the selected inventory.
+acquisitions. A V3-era `delphi_fluview` migration left on an old data root is
+excluded; its V5 replacements are the `delphi_fluview_*` and `delphi_flusurv`
+datasets (policy v6, 2026-09-22).
 
 A **signal** is a meaningful measure within a logical group. A **variant** retains
 its acquisition source, cadence, release product, geography, units, smoothing,
@@ -112,6 +114,27 @@ or geographic crosswalk is performed. CDC also publishes a separate weekly
 [state/territory WVAL product](https://www.cdc.gov/wastewater/respiratory-viruses/state.html)
 for influenza A, COVID-19, and RSV; it is not yet in this acquisition catalog. HHS and catchment observations are excluded
 as well; a genuine national row from a mixed catchment/national source can remain.
+
+## FluView and FluSurv-NET
+
+Policy v6 (2026-09-22) adds the Delphi V5 FluView and FluSurv-NET archives. Each
+retains `value` for its configured catalog signals only.
+
+- **FluView** is one group with two components. Signal keys carry a component
+  prefix (`fluview:ilinet_ili`, `fluview:clinical_pct_positive`). ILINet signals
+  are filed under *Influenza-like illness*, laboratory signals under
+  *Influenza*. `age_group` and `fill_method` stay variant facets: ILINet visit
+  counts are age-stratified, and statewide New York is Delphi's
+  `nyc_plus_ny_minus_nyc` pool of CDC's two New York jurisdictions (NYC and
+  NY-minus-NYC are not states and are excluded).
+- **FluSurv-NET** signals are catchment hospitalization rates per 100,000,
+  labelled by stratum (`rate_age_0` is ages 0–4, following Delphi's legacy V3
+  numbering). The state variants cover only FluSurv-NET catchment states; the
+  national row is the network rate. `misc` network rows (EIP, IHSP) and MSA
+  rows are not state or national support and are excluded.
+
+Delphi's public health laboratory source is not acquired (its state rows are
+season totals). See [FluView and FluSurv-NET](fluview-flusurv.md).
 
 ## Hubs: canonical observations grouped under their origins
 

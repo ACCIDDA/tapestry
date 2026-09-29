@@ -7,6 +7,10 @@ One builder, one switch (docs/design/restructure-2026-unified.md §3):
   Origins run from the first calendar week to the last one whose four target weeks
   lie inside the calendar. Context weeks before the calendar are unavailable (padding).
   Every visible context cell is known-final.
+- `input_mode='finalized_available'`: one episode per Wednesday; targets and
+  covariates use final values only where the Wednesday snapshot has a report.
+  This permits later revisions, but never fills an unpublished input. Labels
+  are final truth. It is a retrospective forecaster training protocol.
 - `input_mode='vintaged'`: one episode per Wednesday issuance, origin = its context
   end (the Saturday four days earlier). With `asof_weeks` = the scenario's field
   (default 2, the previous vintaged builder):
@@ -20,10 +24,14 @@ One builder, one switch (docs/design/restructure-2026-unified.md §3):
     NaN where nothing was visible (no truth fallback), as the previous builder did.
   `known_final` is not stored in the panel: it follows from position and visibility.
 
+The `horizons` argument controls label offsets from the context end; forecasting
+uses (1,2,3,4), nowcasting uses (1-R,...,0). Nowcast/pipeline CV callers set
+asof_weeks=lookback so their entire input history is as-of.
+
 An episode is kept only if some context cell and some target cell are available.
 Covariates (`covariate_names`) are per-location `[lookback, K, 2, L]` (value, available);
-a national-only name (Kinsa) is placed in the `US` column only, so with
-`spatial='none'` state rows never see it (current behaviour, documented in §3).
+a national name (Kinsa) is broadcast to every location with its original
+availability. This is a shared national signal, not a state-level measurement.
 """
 from datetime import date, timedelta
 import numpy as np
@@ -36,15 +44,12 @@ HORIZONS = (1, 2, 3, 4)
 def select_covariates(state, national, state_names, national_names, locations, names):
     """`[..., L, Ks]` state + `[..., Kn]` national arrays -> `[..., K, L]` values and availability."""
     state_names, national_names, locations = list(state_names), list(national_names), list(locations)
-    us = locations.index('US') if 'US' in locations else None
     values = np.zeros((*state.shape[:-2], len(names), len(locations)), np.float32)
     for k, name in enumerate(names):
         if name in state_names:
             values[..., k, :] = state[..., state_names.index(name)]
         elif name in national_names:
-            values[..., k, :] = np.nan
-            if us is not None:
-                values[..., k, us] = national[..., national_names.index(name)]
+            values[..., k, :] = national[..., national_names.index(name), None]
         else:
             raise ValueError(f'Unknown covariate: {name}')
     available = ~np.isnan(values)
@@ -64,25 +69,32 @@ def _channel_first(panel):
 
 def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, horizons=HORIZONS):
     """All usable episodes of a (possibly masked) panel; see the module docstring."""
-    if input_mode not in ('finalized', 'vintaged'):
+    if input_mode not in ('finalized', 'finalized_available', 'vintaged'):
         raise ValueError(f'Unknown input_mode: {input_mode}')
     vintaged = input_mode == 'vintaged'
+    dated = input_mode != 'finalized'
     dates = [str(d) for d in panel['dates']]
     first, locations = date.fromisoformat(dates[0]), tuple(str(l) for l in panel['locations'])
-    pad, tail = lookback - 1, max(horizons)
+    pad, tail = lookback - 1, max(0, max(horizons))
     targets = _channel_first(_pad(panel['targets'], pad, tail))  # padded index = calendar index + pad
-    if vintaged:
+    if dated:
         asof_targets = _channel_first(_pad(panel['asof_targets'], pad, tail, axis=1))
     if covariate_names:
         names = (panel['covariate_names'], panel['covariate_national_names'], locations, covariate_names)
-        if vintaged:
+        if dated:
             covariates = select_covariates(_pad(panel['asof_covariates'], pad, tail, axis=1),
                                            _pad(panel['asof_covariates_national'], pad, tail, axis=1), *names)
         else:
             covariates = select_covariates(_pad(panel['covariates'], pad, tail),
                                            _pad(panel['covariates_national'], pad, tail), *names)
+        if input_mode == 'finalized_available':
+            final_values, final_available = select_covariates(
+                _pad(panel['covariates'], pad, tail),
+                _pad(panel['covariates_national'], pad, tail), *names)
+            available = covariates[1] & final_available[None]
+            covariates = (np.where(available, final_values[None], 0), available)
     week = lambda t: (first + timedelta(weeks=t)).isoformat()
-    if vintaged:
+    if dated:
         origins = [((date.fromisoformat(context_end(d)) - first).days // 7, w)
                    for w, d in enumerate(panel['issuance_dates'])]
     else:
@@ -100,6 +112,9 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
             # Nothing visible at the cutoff stays NaN: unavailable, never truth-filled.
             values[-recent:] = asof_targets[w, context][-recent:]
             known_final[-recent:] = False
+        if input_mode == 'finalized_available':
+            values[np.isnan(asof_targets[w, context])] = np.nan
+            known_final = ~np.isnan(values)
         available = ~np.isnan(values)
         target_values = targets[future]
         target_available = ~np.isnan(target_values)
@@ -110,6 +125,8 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
                        context_dates=tuple(week(t - pad + i) for i in range(lookback)),
                        target_dates=tuple(week(t + h) for h in horizons), locations=locations,
                        issuance=None if w is None else str(panel['issuance_dates'][w]))
+        if w is not None and 'forecast_cutoff_utc' in panel:
+            episode['forecast_cutoff_utc'] = str(panel['forecast_cutoff_utc'][w])
         episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
         if covariate_names:
             cov_values, cov_available = (covariates[0][context], covariates[1][context]) if w is None else \
@@ -126,3 +143,12 @@ def restrict_labels(episode, allowed_dates):
     episode['target_values'] = np.where(episode['target_available'], episode['target_values'], 0).astype(np.float32)
     episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
     return episode if episode['target_available'].any() else None
+
+
+def calendar(days, dynamics=True):
+    phase = np.array([date.fromisoformat(day).timetuple().tm_yday for day in days]) * (2 * np.pi / 365.25)
+    columns = [np.sin(phase), np.cos(phase)]
+    if dynamics:
+        dates = [date.fromisoformat(day) for day in days]
+        columns.append(np.array([(d - date(d.year if d.month >= 7 else d.year - 1, 12, 25)).days / (7 * 26) for d in dates]))
+    return np.stack(columns, axis=-1).astype('float32')

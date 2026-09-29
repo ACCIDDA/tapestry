@@ -1,0 +1,121 @@
+series,status,cells
+nhsn_flu_admissions,Future observation,71656
+nhsn_flu_admissions,Reported value,89492
+nhsn_flu_admissions,Timing unknown / archive gap,1456
+nhsn_flu_admissions,"Explicitly missing, later observed",0
+nhsn_flu_admissions,"Explicitly missing, no later value observed",0
+nhsn_flu_admissions,No value anywhere in inspected history,0
+nhsn_covid_admissions,Future observation,71656
+nhsn_covid_admissions,Reported value,89492
+nhsn_covid_admissions,Timing unknown / archive gap,1456
+nhsn_covid_admissions,"Explicitly missing, later observed",0
+nhsn_covid_admissions,"Explicitly missing, no later value observed",0
+nhsn_covid_admissions,No value anywhere in inspected history,0
+nhsn_rsv_admissions,Future observation,71656
+nhsn_rsv_admissions,Reported value,89492
+nhsn_rsv_admissions,Timing unknown / archive gap,1456
+nhsn_rsv_admissions,"Explicitly missing, later observed",0
+nhsn_rsv_admissions,"Explicitly missing, no later value observed",0
+nhsn_rsv_admissions,No value anywhere in inspected history,0
+nssp_flu_proportion,Future observation,71656
+nssp_flu_proportion,Reported value,88159
+nssp_flu_proportion,Timing unknown / archive gap,2520
+nssp_flu_proportion,"Explicitly missing, later observed",269
+nssp_flu_proportion,"Explicitly missing, no later value observed",0
+nssp_flu_proportion,No value anywhere in inspected history,0
+nssp_covid_proportion,Future observation,71656
+nssp_covid_proportion,Reported value,88191
+nssp_covid_proportion,Timing unknown / archive gap,2520
+nssp_covid_proportion,"Explicitly missing, later observed",237
+nssp_covid_proportion,"Explicitly missing, no later value observed",0
+nssp_covid_proportion,No value anywhere in inspected history,0
+nssp_rsv_proportion,Future observation,71656
+nssp_rsv_proportion,Reported value,87936
+nssp_rsv_proportion,Timing unknown / archive gap,2520
+nssp_rsv_proportion,"Explicitly missing, later observed",492
+nssp_rsv_proportion,"Explicitly missing, no later value observed",0
+nssp_rsv_proportion,No value anywhere in inspected history,0
+inpatient_flu,Future observation,71656
+inpatient_flu,Reported value,85280
+inpatient_flu,Timing unknown / archive gap,1463
+inpatient_flu,"Explicitly missing, later observed",0
+inpatient_flu,"Explicitly missing, no later value observed",0
+inpatient_flu,No value anywhere in inspected history,4205
+inpatient_covid,Future observation,71656
+inpatient_covid,Reported value,85280
+inpatient_covid,Timing unknown / archive gap,1463
+inpatient_covid,"Explicitly missing, later observed",0
+inpatient_covid,"Explicitly missing, no later value observed",0
+inpatient_covid,No value anywhere in inspected history,4205
+outpatient_flu,Future observation,71656
+outpatient_flu,Reported value,90379
+outpatient_flu,Timing unknown / archive gap,569
+outpatient_flu,"Explicitly missing, later observed",0
+outpatient_flu,"Explicitly missing, no later value observed",0
+outpatient_flu,No value anywhere in inspected history,0
+outpatient_covid,Future observation,71656
+outpatient_covid,Reported value,90379
+outpatient_covid,Timing unknown / archive gap,569
+outpatient_covid,"Explicitly missing, later observed",0
+outpatient_covid,"Explicitly missing, no later value observed",0
+outpatient_covid,No value anywhere in inspected history,0
+nwss_flu_wval_like,Future observation,71656
+nwss_flu_wval_like,Reported value,58676
+nwss_flu_wval_like,Timing unknown / archive gap,20409
+nwss_flu_wval_like,"Explicitly missing, later observed",2667
+nwss_flu_wval_like,"Explicitly missing, no later value observed",0
+nwss_flu_wval_like,No value anywhere in inspected history,9196
+nwss_covid_wval_like,Future observation,71656
+nwss_covid_wval_like,Reported value,61156
+nwss_covid_wval_like,Timing unknown / archive gap,20844
+nwss_covid_wval_like,"Explicitly missing, later observed",1569
+nwss_covid_wval_like,"Explicitly missing, no later value observed",0
+nwss_covid_wval_like,No value anywhere in inspected history,7379
+nwss_rsv_wval_like,Future observation,71656
+nwss_rsv_wval_like,Reported value,57973
+nwss_rsv_wval_like,Timing unknown / archive gap,19886
+nwss_rsv_wval_like,"Explicitly missing, later observed",2310
+nwss_rsv_wval_like,"Explicitly missing, no later value observed",0
+nwss_rsv_wval_like,No value anywhere in inspected history,10779
+nwss_flu_pct_rank,Future observation,71656
+nwss_flu_pct_rank,Reported value,58676
+nwss_flu_pct_rank,Timing unknown / archive gap,20409
+nwss_flu_pct_rank,"Explicitly missing, later observed",2667
+nwss_flu_pct_rank,"Explicitly missing, no later value observed",0
+nwss_flu_pct_rank,No value anywhere in inspected history,9196
+nwss_covid_pct_rank,Future observation,71656
+nwss_covid_pct_rank,Reported value,61156
+nwss_covid_pct_rank,Timing unknown / archive gap,20844
+nwss_covid_pct_rank,"Explicitly missing, later observed",1569
+nwss_covid_pct_rank,"Explicitly missing, no later value observed",0
+nwss_covid_pct_rank,No value anywhere in inspected history,7379
+nwss_rsv_pct_rank,Future observation,71656
+nwss_rsv_pct_rank,Reported value,57973
+nwss_rsv_pct_rank,Timing unknown / archive gap,19886
+nwss_rsv_pct_rank,"Explicitly missing, later observed",2310
+nwss_rsv_pct_rank,"Explicitly missing, no later value observed",0
+nwss_rsv_pct_rank,No value anywhere in inspected history,10779
+ilinet_ili,Future observation,71656
+ilinet_ili,Reported value,76185
+ilinet_ili,Timing unknown / archive gap,4731
+ilinet_ili,"Explicitly missing, later observed",0
+ilinet_ili,"Explicitly missing, no later value observed",0
+ilinet_ili,No value anywhere in inspected history,10032
+clinical_lab_flu_pct_positive,Future observation,71656
+clinical_lab_flu_pct_positive,Reported value,60572
+clinical_lab_flu_pct_positive,Timing unknown / archive gap,3964
+clinical_lab_flu_pct_positive,"Explicitly missing, later observed",0
+clinical_lab_flu_pct_positive,"Explicitly missing, no later value observed",0
+clinical_lab_flu_pct_positive,No value anywhere in inspected history,26412
+flusurv_flu_rate,Future observation,71656
+flusurv_flu_rate,Reported value,13988
+flusurv_flu_rate,Timing unknown / archive gap,2314
+flusurv_flu_rate,"Explicitly missing, later observed",0
+flusurv_flu_rate,"Explicitly missing, no later value observed",0
+flusurv_flu_rate,No value anywhere in inspected history,74646
+kinsa_ili,Future observation,1378
+kinsa_ili,Reported value,1109
+kinsa_ili,Timing unknown / archive gap,640
+kinsa_ili,"Explicitly missing, later observed",0
+kinsa_ili,"Explicitly missing, no later value observed",0
+kinsa_ili,No value anywhere in inspected history,0

@@ -298,6 +298,97 @@ _SPECS = [
         },
         groups=("all", "delphi", "core"),
     ),
+    # FluView and FluSurv moved from the V3 endpoints (pub_fluview,
+    # pub_fluview_clinical, pub_flusurv) to V5 on 2026-09-19 (Delphi email to the
+    # user). V3 fluview_clinical is split into clinical and public-health labs;
+    # the public-health labs (fluview_resp_lab_ph) are not acquired (user decision
+    # 2026-09-22: their state rows are season totals, not weekly values).
+    DatasetSpec(
+        key="delphi_fluview_ilinet",
+        title="Delphi FluView ILINet revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_ilinet.html",
+        description=(
+            "Weekly outpatient influenza-like illness (ILINet): unweighted and weighted ILI "
+            "percentages, ILI and patient visit counts, reporting providers. Weighted ILI is "
+            "suppressed at state level; statewide NY is Delphi's NYC + NY-minus-NYC pool."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "census_division"),
+        measures=("ili_percent", "ili_visits", "patient_visits", "providers"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time", "age_group"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "fluview_ilinet",
+            "signals": ("ili", "wili", "num_ili", "num_patients", "num_providers"),
+            "geo_types": ("state", "nation", "hhs", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_fluview_clinical",
+        title="Delphi FluView clinical laboratory revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_resp_lab_clinical.html",
+        description=(
+            "Weekly NREVSS clinical laboratory influenza tests: specimens tested, influenza A and "
+            "B positives, and percent positive."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "census_division"),
+        measures=("percent_positive", "positive_specimens", "specimens_tested"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time", "age_group"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "fluview_resp_lab_clinical",
+            "signals": ("pct_positive", "pct_positive_a", "pct_positive_b",
+                        "positive_a", "positive_b", "total_specimens"),
+            "geo_types": ("state", "nation", "hhs", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_flusurv",
+        title="Delphi FluSurv-NET revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/flusurv.html",
+        description=(
+            "Weekly laboratory-confirmed influenza hospitalization rates per 100,000 in the "
+            "FluSurv-NET catchment (EIP and IHSP counties, about 9% of the US population), "
+            "overall and by age, race and ethnicity, sex and influenza type."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "msa", "misc"),
+        measures=("hospitalization_rate",),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "flusurv",
+            "signals": (
+                "rate_overall", "rate_flu_a", "rate_flu_b",
+                "rate_age_0", "rate_age_0tlt1", "rate_age_1", "rate_age_1t4", "rate_age_2",
+                "rate_age_3", "rate_age_4", "rate_age_5", "rate_age_5t11", "rate_age_6",
+                "rate_age_7", "rate_age_12t17", "rate_age_18t29", "rate_age_30t39",
+                "rate_age_40t49", "rate_age_gte18", "rate_age_gte75", "rate_age_lt18",
+                "rate_race_asian", "rate_race_black", "rate_race_hisp", "rate_race_natamer",
+                "rate_race_white", "rate_sex_female", "rate_sex_male",
+            ),
+            "geo_types": ("state", "nation", "msa", "misc"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
     DatasetSpec(
         key="pophive_kinsa_ili",
         title="PopHIVE Kinsa cough, cold and flu signal",

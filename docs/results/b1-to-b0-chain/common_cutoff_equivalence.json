@@ -1,0 +1,7 @@
+{
+  "availability_masks_identical": true,
+  "finalized_values_identical": true,
+  "pinned_dataset_sha256": "b88de9dbbaf5ea164ba0aaf53eaa3a97115898786dbbf2913b2d7ab0ea446a59",
+  "numerical_input_policy": "finalized_available: uses only as-of presence then finalized values",
+  "earliest_deadline_satisfied_for_all_input_channels": true
+}

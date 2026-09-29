@@ -18,5 +18,5 @@ shift
 # Reuse the experiment's pinned snapshot; the notifier never depends on the
 # working tree, so an edit mid-run cannot change what it reports.
 export PYTHONPATH="$PWD/data/experiments/$experiment/code/src${PYTHONPATH:+:$PYTHONPATH}"
-.venv/bin/python "data/experiments/$experiment/notifications/b01_notify.py" \
+.venv/bin/python "data/experiments/$experiment/notifications/notify.py" \
     -e "$experiment" --jobs "$@" ${NTFY_URL:+--url "$NTFY_URL"}

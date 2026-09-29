@@ -29,7 +29,7 @@ def export(run):
     frames = {}
     for held in SEASONS:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
-            if not np.array_equal(data['quantile_levels'], LEVELS):  # planner.evaluate saves exactly LEVELS
+            if not np.array_equal(data['quantile_levels'], LEVELS):  # training.evaluate saves exactly LEVELS
                 raise ValueError(f'{run}/eval_{held}/forecasts.npz holds other quantile levels than LEVELS')
             selected = data['quantiles']
             for target, c in CHANNEL.items():

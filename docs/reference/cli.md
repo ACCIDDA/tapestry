@@ -18,8 +18,8 @@ python scripts/pull_covariates.py --data-root data pull --group core --dry-run
 python scripts/pull_covariates.py --data-root data pull --group all
 
 # Inspect and verify immutable snapshots.
-python scripts/pull_covariates.py --data-root data show cdc_nhsn_final
-python scripts/pull_covariates.py --data-root data verify cdc_nhsn_final
+python scripts/pull_covariates.py --data-root data show delphi_nhsn
+python scripts/pull_covariates.py --data-root data verify delphi_nhsn
 ```
 
 Groups are `all`, `core`, `cdc`, `delphi`, `hubverse`, and `pophive`. Dataset keys can be
@@ -50,7 +50,8 @@ variants by default. Use `--fill-method source` only for a source that publishes
 that variant; claims return blank labels.
 
 The `delphi` group contains `delphi_nhsn`, `delphi_nssp`, `delphi_nwss`,
-`delphi_claims_inpatient`, and `delphi_claims_outpatient`.
+`delphi_claims_inpatient`, `delphi_claims_outpatient`, `delphi_fluview_ilinet`,
+`delphi_fluview_clinical`, and `delphi_flusurv`.
 
 ```bash
 python scripts/pull_covariates.py pull delphi_claims_inpatient \
@@ -111,3 +112,17 @@ tapestry-select --data-root data
 This read-only command reports policy version, the 25-to-15 grouping, the
 53-measure NHSN allowlist size, Delphi/CDC crosswalks, and missing downloads. See
 [Shared selection](../data/selection.md) for the downstream interface.
+
+
+## Nowcasting and forecasting
+
+One manager serves `task=nowcast`, `task=forecast`, and `task=pipeline`:
+`python -m tapestry.experiment.planner`. Use `nowcast.<field>` and
+`forecast.<field>` for stage-specific settings. The current
+[training guide](../design/nowcast-forecast.md#manager-commands) gives plan,
+launch, status and rank commands, including Longleaf.
+
+
+For the fresh standalone forecasting comparison, use
+`bash experiments/forecast-covariates.sh`. See the
+[protocol and launch commands](../design/forecast-covariates.md).

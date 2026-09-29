@@ -125,7 +125,8 @@ def cv_layout(panel, scenarios, labels, output):
     us = list(panel['locations']).index('US')
     groups = {}
     for scenario in scenarios:
-        key = (bool(scenario.patience), scenario.validation_weeks, scenario.validation_spacing, scenario.validation_offset)
+        effective = scenario.stage('forecast') if scenario.task == 'pipeline' else scenario
+        key = (bool(effective.patience), effective.validation_weeks, effective.validation_spacing, effective.validation_offset)
         groups.setdefault(key, []).append(scenario)
     paths = []
     for (early, weeks, spacing, offset), members in groups.items():
@@ -343,6 +344,9 @@ def write_scenario_key(path):
              '[the unified design](../design/restructure-2026-unified.md); other documents are under `docs/`.', '',
              '| Field | Type | Default | Allowed values | Meaning |', '|---|---|---|---|---|']
     for f in fields(Scenario):
+        if f.name in ('nowcast', 'forecast'):
+            lines.append(f'| `{f.name}.<field>` | stage override | inherit | Model/training fields | {MEANING[f.name]} |')
+            continue
         allowed = (', '.join(f'`{v}`' for v in sorted(CODES[f.name])) if f.name in CODES
                    else '`0`, `1`' if f.type is bool
                    else '`+`-joined subset of ' + ', '.join(f'`{g}`' for g in SOURCE_GROUPS) if f.name == 'covariate_set'

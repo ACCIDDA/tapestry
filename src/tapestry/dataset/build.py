@@ -41,10 +41,10 @@ import time
 
 import numpy as np
 
-from .extract import (TARGET_SOURCES, CLAIMS_SOURCES, NWSS_INDICES, NATIONAL_ONLY, LOCATIONS,
+from .extract import (TARGET_SOURCES, DELPHI_COVARIATES, NWSS_INDICES, NATIONAL_ONLY, LOCATIONS,
                       revisions, resolve, resolve_reports, nwss_frame, kinsa_frame, extract, _latest_snapshot)
 
-CALENDAR_START = '2023-09-02'  # First modelled Saturday.
+CALENDAR_START = '2022-05-14'  # Twelve context weeks before the 2022–23 season.
 ASOF_ARRAYS = {'asof_targets': 'targets', 'asof_covariates': 'covariates',
                'asof_covariates_national': 'covariates_national'}  # as-of array -> its truth array
 CHANNELS = tuple(TARGET_SOURCES)  # nhsn_*_admissions, nssp_*_proportion, in that order.
@@ -54,6 +54,9 @@ COVARIATE_GROUPS = {
     'ww_wval_like': ('nwss_flu_wval_like', 'nwss_covid_wval_like', 'nwss_rsv_wval_like'),
     'ww_pct_rank': ('nwss_flu_pct_rank', 'nwss_covid_pct_rank', 'nwss_rsv_pct_rank'),
     'kinsa': ('kinsa_ili',),
+    'ilinet': ('ilinet_ili',),
+    'clinical_lab': ('clinical_lab_flu_pct_positive',),
+    'flusurv': ('flusurv_flu_rate',),
 }
 SOURCE_GROUPS = tuple(COVARIATE_GROUPS)
 COVARIATE_NAMES = tuple(name for group in COVARIATE_GROUPS.values() for name in group)
@@ -61,7 +64,7 @@ STATE_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n not in NATIONAL_ON
 NATIONAL_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n in NATIONAL_ONLY)
 PANEL_DATASET = 'data/processed/panel.npz'
 SNAPSHOT_DATASETS = sorted({d for spec in TARGET_SOURCES.values() for d in spec[:2] if d} |
-                           {spec[0] for spec in CLAIMS_SOURCES.values()} |
+                           {spec[0] for spec in DELPHI_COVARIATES.values()} |
                            {'derived_nwss_state_indices', 'pophive_kinsa_ili'})
 
 
@@ -105,6 +108,26 @@ def visible_weeks(dates, issuances):
     return np.asarray(dates, dtype='datetime64[D]')[None, :] <= ends[:, None]
 
 
+def finalized_admissions(name, values, dates, data_root):
+    """Prefer finite CDC finalized admission counts for retrospective truth only."""
+    if not name.startswith('nhsn_'):
+        return values
+    import pandas as pd
+    column = TARGET_SOURCES[name][3]
+    frame = pd.read_json(_latest_snapshot(data_root, 'cdc_nhsn_final') / 'data.ndjson.gz', lines=True)
+    frame['day'] = frame.weekendingdate.astype(str).str[:10]
+    frame['location'] = frame.jurisdiction.replace({'USA': 'US'})
+    frame['value'] = pd.to_numeric(frame[column], errors='coerce')
+    frame = frame[frame.day.isin(dates) & frame.location.isin(LOCATIONS) & np.isfinite(frame.value) & frame.value.ge(0)]
+    if frame.duplicated(['day', 'location']).any():
+        raise ValueError('Duplicate finalized NHSN location/week')
+    result = values.copy()
+    ti, li = {d:i for i,d in enumerate(dates)}, {l:i for i,l in enumerate(LOCATIONS)}
+    for row in frame.itertuples():
+        result[ti[row.day], li[row.location], ...] = row.value
+    return result
+
+
 def _source(task):
     """One process per source: its truth panel and its dense as-of array [W, T, L, K]."""
     name, data_root, dates, issuances, truth_day = task
@@ -118,7 +141,7 @@ def _source(task):
     else:
         archive = revisions(name, data_root)
         at = lambda day, days: resolve(archive, day, days, LOCATIONS)[:, :, None]
-    truth = at(truth_day, dates)
+    truth = finalized_admissions(name, at(truth_day, dates), dates, data_root)
     asof = np.full((len(issuances), *truth.shape), np.nan)
     for w, seen in enumerate(visible_weeks(dates, issuances)):
         weeks = int(seen.sum())  # visible weeks are a calendar prefix
@@ -132,20 +155,22 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     truth_day = truth_day or date.today().isoformat()
     dates = weekly_calendar(start, truth_day)
     issuances = wednesdays(start, truth_day)
-    names = (*CHANNELS, *CLAIMS_SOURCES, 'nwss', 'kinsa_ili')
+    names = (*CHANNELS, *DELPHI_COVARIATES, 'nwss', 'kinsa_ili')
     tasks = [(name, data_root, dates, issuances, truth_day) for name in names]
     with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:
         results = {name: (truth, asof, seconds) for name, truth, asof, seconds in pool.map(_source, tasks)}
     timings = {name: round(seconds, 1) for name, (_, _, seconds) in results.items()}
     targets = np.concatenate([results[n][0] for n in CHANNELS], axis=2)
     asof_targets = np.concatenate([results[n][1] for n in CHANNELS], axis=3)
-    covariates = np.concatenate([results[n][0] for n in CLAIMS_SOURCES] + [results['nwss'][0]], axis=2)
-    asof_covariates = np.concatenate([results[n][1] for n in CLAIMS_SOURCES] + [results['nwss'][1]], axis=3)
+    columns = {n: (results[n][0], results[n][1]) for n in DELPHI_COVARIATES}
+    columns |= {n: (results['nwss'][0][..., k:k + 1], results['nwss'][1][..., k:k + 1])
+                for k, n in enumerate(NWSS_INDICES)}
+    covariates = np.concatenate([columns[n][0] for n in STATE_COVARIATE_NAMES], axis=2)
+    asof_covariates = np.concatenate([columns[n][1] for n in STATE_COVARIATE_NAMES], axis=3)
     national = results['kinsa_ili'][0][:, LOCATIONS.index('US'), :]
     asof_national = results['kinsa_ili'][1][:, :, LOCATIONS.index('US'), :]
-    assert list(CLAIMS_SOURCES) + list(NWSS_INDICES) == list(STATE_COVARIATE_NAMES)
-    snapshots = {key: _latest_snapshot(data_root, key).name for key in SNAPSHOT_DATASETS}
-    metadata = dict(version=3, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
+    snapshots = {key: _latest_snapshot(data_root, key).name for key in [*SNAPSHOT_DATASETS, 'cdc_nhsn_final']}
+    metadata = dict(finalized_admissions_policy='Finite CDC finalized NHSN counts take precedence in retrospective truth; archive-resolved values remain where the finalized source has no finite value. Historical as-of arrays never receive this override.', version=4, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
                     asof='asof_*[w, t]: calendar week t as visible by 23:59:59.999999 UTC on issuance day w; '
                          'NaN after context_end(w) = issuance - 4 days. Stored as <name>_revised mask + '
                          '<name>_values where it differs from the truth panel.',
@@ -209,11 +234,13 @@ def _check_source(task):
     """Direct `extract` resolution of one source at each sampled day -> max mismatch count."""
     name, data_root, days, dates = task
     mismatches = {}
-    for day, weeks, expected in days:
+    for index, (day, weeks, expected) in enumerate(days):
         frame = extract(name, day, data_root=data_root, dates=dates[:weeks])
         direct = np.full((weeks, len(LOCATIONS)), np.nan, np.float32)
         direct[frame.date.map({d: i for i, d in enumerate(dates)}).to_numpy(int),
                frame.location.map({l: i for i, l in enumerate(LOCATIONS)}).to_numpy(int)] = frame.value
+        if index == len(days) - 1:
+            direct = finalized_admissions(name, direct, dates[:weeks], data_root)
         stored = expected[:weeks]
         equal = (direct == stored) | (np.isnan(direct) & np.isnan(stored))
         mismatches[day] = int((~equal).sum())
@@ -230,11 +257,12 @@ def check(path=PANEL_DATASET, data_root='data', samples=4, seed=0, workers=None)
     visible = visible_weeks(dates, issuances)
     locations = list(arrays['locations'])
     tasks = []
-    for name in (*CHANNELS, *CLAIMS_SOURCES, *NWSS_INDICES, 'kinsa_ili'):
+    stored = [str(n) for n in arrays['covariate_names']]
+    for name in (*CHANNELS, *DELPHI_COVARIATES, *NWSS_INDICES, 'kinsa_ili'):
         if name in CHANNELS:
             k, truth, asof = list(CHANNELS).index(name), arrays['targets'], arrays['asof_targets']
-        elif name in STATE_COVARIATE_NAMES:
-            k, truth, asof = list(STATE_COVARIATE_NAMES).index(name), arrays['covariates'], arrays['asof_covariates']
+        elif name in stored:
+            k, truth, asof = stored.index(name), arrays['covariates'], arrays['asof_covariates']
         else:  # national: compare on the US column, NaN elsewhere
             k = list(NATIONAL_COVARIATE_NAMES).index(name)
             truth = np.full((len(dates), len(locations), 1), np.nan, np.float32)

@@ -942,7 +942,14 @@
     model.selected.clear(); model.hidden.clear(); model.lineColors.clear();
     renderSeriesList(); loadVersions(); updatePlot();
   });
-  versionDate.addEventListener("change", () => { if (versionDate.validity.valid) setVersion(versionDate.value); });
+  versionDate.addEventListener("change", () => {
+    if (!versionDate.validity.valid || !versionDate.value) return;
+    // Scrolling/arrowing the day field moves one day; snap in that direction so
+    // the date walks Wednesday <-> Saturday instead of sticking on a Saturday.
+    const day = versionDate.value;
+    const forward = model.asOf && day > model.asOf ? projectVersionOnOrAfter(day) : day;
+    setVersion(forward > today() ? today() : forward);
+  });
   versionLatest.addEventListener("click", () => setVersion(""));
   versionPrevWednesday.addEventListener("click", () => setVersion(wednesday(model.asOf, -1)));
   versionNextWednesday.addEventListener("click", () => setVersion(wednesday(model.asOf, 1)));

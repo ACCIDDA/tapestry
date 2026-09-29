@@ -1,5 +1,9 @@
 # Unified B0/B1/B2 restructuring (2026-09)
 
+The model organization in §1 is extended by the implemented
+[nowcast/forecast split](nowcast-forecast.md): independent stage weights and a
+sampled-history interface, sharing this panel, scenario codec and planner.
+
 Decisions for collapsing the model/data/scoring stack into one simpler shape.
 This document is the spec; implementation follows it exactly rather than
 re-deriving choices. Research project — favor deleting code over guarding it.
@@ -109,12 +113,14 @@ Saturday target, only state + national geography, plus wastewater):
   the sources actually used by the training panel (§3) plus what the
   explorer needs to show provenance: NHSN final/preliminary, NSSP,
   Delphi claims inpatient/outpatient, derived NWSS state indices, PopHive
-  Kinsa, Hub current + git-mirror target data. Delete specs for anything else
+  Kinsa, Hub current + git-mirror target data; since 2026-09-22 also Delphi
+  FluView (ILINet, clinical labs) and FluSurv-NET. Delete specs for anything else
   (comprehensive/legacy Hub variants no longer scored, county sources).
 
 **Extraction** lives in `src/tapestry/dataset/extract.py` (rewritten
 2026-09-22 for speed, same policy). Each archive-backed source (six targets,
-four Delphi claims covariates) is read once into a revision table
+seven Delphi covariates: four claims, ILINet ILI, clinical-lab percent positive,
+FluSurv-NET rate) is read once into a revision table
 (`revisions(name)`: tier, release, reference Saturday, location, value) and
 resolved as of any cutoff day by `resolve(revisions, day, dates)`; NWSS indices
 and Kinsa, which are report-dated files rather than archives, resolve through
@@ -181,7 +187,7 @@ dates:                    datetime64[D] [T]      Saturdays from CALENDAR_START (
 locations:                str [L]                50 states + DC + 'US'
 target_names:             str [C=6]              nhsn_{flu,covid,rsv}_admissions, nssp_{flu,covid,rsv}_proportion
 targets:                  float32 [T, L, C]      truth, NaN = unavailable
-covariate_names:          str [K]                inpatient/outpatient claims, NWSS wval_like/pct_rank
+covariate_names:          str [K]                claims, NWSS wval_like/pct_rank, ILINet, clinical labs, FluSurv (COVARIATE_GROUPS order)
 covariates:               float32 [T, L, K]      truth, NaN = unavailable
 covariate_national_names: str [Kn]               kinsa_ili
 covariates_national:      float32 [T, Kn]        truth (national only)
@@ -210,6 +216,15 @@ revised values are 8.5 MB. Encoding along the issuance axis (store a cell only
 when it changes from the previous issuance) was measured at about 6 MB but
 needs a forward fill to decode; the simpler difference-from-truth encoding was
 kept.
+
+**What the panel does not hold (made explicit 2026-09-23).** The panel is not the
+full revision history. It holds (1) the truth, i.e. every week as visible at the
+end of the build day, and (2) for each Wednesday issuance, every week as visible
+at that Wednesday's cutoff. Releases between two Wednesdays are superseded and
+not stored, and nothing before `CALENDAR_START` (2023-09-02) is in it. The full
+history stays in the raw snapshots (`data/raw/`), from which the panel is rebuilt;
+`metadata.snapshots` records which ones. The explorer's Wednesday/Saturday index is
+a separate, independent thinning of the same raw data.
 
 `python -m tapestry.dataset.build check [--samples 4]` compares the stored panel
 (decoded) with a direct `extract.extract(name, day, dates=...)` for every
@@ -440,7 +455,7 @@ mutation.
   synced to the cluster with the code (docs/longleaf-setup.md). The Slurm
   launcher runs the code snapshot `plan` pinned in `<experiment>/code`; a local
   `planner run` runs the working tree.
-- **Evaluation** (`planner.evaluate`): 256 members by default
+- **Evaluation** (`training.evaluate`): 256 members by default
   (`--eval-members`), drawn in forward passes of 32 (`EVAL_CHUNK`, bounds memory);
   the 23 quantiles are taken over the draws, and admission quantiles are rounded
   to integers (counts), ED proportions are not. `plan` defaults to seeds 42 43 44.
@@ -788,3 +803,236 @@ ED target file). Earlier whole-issuance gaps are all explained: NHSN flu
 Rebuilt panel: `build check` exact, 69 tests pass, and a two-epoch CPU smoke
 experiment (one finalized, one `input_mode=vintaged`, seed 42) ran through
 plan/run/rank with all figures.
+
+### FluView and FluSurv-NET from Delphi V5 — 2026-09-22
+
+**User request.** Add the new Delphi V5 FluView ILINet, FluView clinical and
+FluSurv sources to the explorer, the dataset and the documentation. Delphi
+announced the V3 → V5 move in an email to the user (2026-09-19): V3
+`pub_fluview` → `fluview_ilinet`, `pub_fluview_clinical` →
+`fluview_resp_lab_clinical` + `fluview_resp_lab_ph`, `pub_flusurv` → `flusurv`.
+
+**Acquisition.** Four catalog specs on the existing `delphi_v5` fetcher (no new
+code path): `delphi_fluview_ilinet`, `delphi_fluview_clinical`,
+`delphi_fluview_ph`, `delphi_flusurv`, full archives, all published signals at
+state/nation/regional support. The public-health-lab source is included
+although the user named three sources, because Delphi's email splits the V3
+clinical endpoint into both; it was meant to be acquisition and explorer only
+(its state rows are season totals). **Update, same day (user decision):** the
+public-health labs are dropped from the explorer too, so the spec, its raw
+snapshot and its selection labels were deleted; `SelectedData` still ignores a
+leftover `delphi_fluview_ph` snapshot on other data roots. The selection filter that hid V3-era
+`delphi_fluview_clinical`/`delphi_flusurv` migrations was removed: those keys
+now name the V5 datasets. Only the V3 `delphi_fluview` key stays excluded.
+
+**Explorer.** Selection policy v6: families *FluView* (ILINet under
+influenza-like illness, laboratory signals under influenza; signal keys carry
+the component prefix because both lab sources publish `positive_b` and
+`total_specimens`) and *FluSurv-NET* (rates labelled by stratum).
+
+**Dataset.** `CLAIMS_SOURCES` became `DELPHI_COVARIATES` (one Delphi signal per
+covariate, no Hub tier) with three additions: `ilinet_ili` (unweighted ILI;
+weighted ILI is suppressed at state level), `clinical_lab_flu_pct_positive`,
+`flusurv_flu_rate` (`rate_overall`). New `COVARIATE_GROUPS`: `ilinet`,
+`clinical_lab`, `flusurv`. Two extraction rules were needed and apply to Delphi
+archives generally: rows with `age_group` other than `all` are dropped (ILINet
+visit counts are age-stratified; without the filter, strata sharing a release
+would collide and become unavailable), and `DELPHI_FILLS` admits
+`nyc_plus_ny_minus_nyc` for ILINet only, because statewide New York exists only
+as Delphi's pool of CDC's two New York jurisdictions. Panel metadata version 4;
+stored covariates now follow `COVARIATE_GROUPS` order (consumers select by
+name, so existing scenarios are unaffected).
+
+**Measured.** FluView is released on the Friday after the week ends, so j = 0
+is never visible at a Wednesday cutoff (99.3% / 99.4% not visible) and j = 1
+nearly always is (ILINet 6.5%, clinical labs 14.0% not visible). Delphi's
+FluSurv archive has no vintage from 2020-11-06 to 2025-11-03 nor from then to
+2026-02-03: as-of FluSurv exists at 46 of 160 issuances, the first 2025-11-05.
+FluView has no vintage from 2025-09-26 to 2025-11-14, the same shutdown window
+as the NHSN/NSSP gaps above (a publication pause is inferred, not verified).
+Rebuilt panel: `build check` exact; target unpublished shares identical to the
+previous entry. No scenario uses the new groups yet. Details:
+[FluView and FluSurv-NET](../data/fluview-flusurv.md).
+
+
+**2026-09-25 — B0 forensic scoring and normalization audit.** Rescoring saved
+B0.1 target-cap-100 and pathogen-cap-300 forecasts (three seeds each) through
+the current scorer reproduces 0.883377 and 0.894767 on 56,662 identical frozen
+tasks per run. Independent pinball WIS agrees. No historical configuration
+wins all supported target–season comparisons (or all six target-specific
+season averages); “unicorn” was an overstatement of aggregate performance.
+The old finalized panel matches its original run hash; shared target values
+are unchanged within floating precision across the CV seasons.
+
+The current training model-options builder omitted historical fitted target
+input scales and ED logit centers, leaving defaults 1/0. Experiment
+`b0-normalization-audit` restores those statistics only in its pinned snapshot,
+for the latest leader/control and seeds 42–44; production code is unchanged.
+Its finalized-available rule unions observed fitting-context cells by date,
+without held-out/validation values. Matched performance results are pending.
+Other verified changes include 2,048 versus 256 evaluation draws and independent
+component loss normalization (current pathogen mass 1/3, historical 1; the
+audited season shares remain equal). See the [audit report](../results/b0-audit/index.md)
+for assumptions, evidence, plots and exact plan/launch/status/rank commands.
+
+
+**2026-09-25 — normalization-only results complete.** All six runs of
+`b0-normalization-audit` finished. Against identical benchmark support and paired
+seeds, restoring B0 input normalization changes the latest no-covariate control
+from 1.124000 to 1.082407 (2/3 seeds improve), and the best covariate formulation
+from 1.036003 to 1.047787 (1/3 improves). Every normalized seed remains above
+ensemble parity. COVID ED improves markedly but remains poor; other targets
+show mixed changes. The normalization omission is real but does not explain
+most of the B0 performance gap in this intervention. Production code remains
+unchanged. These three-seed means are descriptive; other B0/current differences
+are not isolated. The [audit report](../results/b0-audit/index.md#matched-normalization-only-experiment)
+contains paired CSVs, the graph, protocol assumptions and manager commands.
+
+
+**2026-09-25 — B0 reproduction and controlled comparisons complete.** All 18
+hardware-matched folds reproduce 25,833,600 quantile values byte-for-byte, with
+zero maximum difference and identical stopping epochs. Dates, locations, truth,
+masks and quantile levels also match. Historical target/pathogen combined WIS
+is recovered at 0.883377/0.894767. Existing jobs finished; no re-planning or new
+training launches were needed. Production training code remains unchanged.
+
+On L40s with pathogen cap300 and seeds 42–44, old training scores 0.888892,
+current unscaled/finalized training 0.974340, restored normalization/finalized
+0.929660, and restored normalization/Wednesday availability 1.198981. Paired
+mean deltas are +0.085449, −0.044680 and +0.269321. Normalization improves two
+seeds; availability worsens all three and all nine target–season means. The
+first intervention includes the normalization omission; after restoring it,
+a +0.040768 gap to old training remains. Remaining loss/stopping/random-draw
+differences are not individually identified.
+
+These are conditional sequential comparisons on the same frozen support, not
+an order-independent decomposition of the latest covariate screen. Availability
+changes both fitting and forecasting and the fitted normalization statistics.
+Archive absence does not establish nonpublication. Exact retrospective
+repeatability does not establish real-time superiority: finalized revisions,
+exploratory selected seasons, a frozen benchmark and only three seeds remain
+material assumptions. No score-math error was found; no historical formulation
+wins every target–season. Full evidence, graphs and manager commands are in the
+[completed reproduction report](../results/b0-reproduction/index.md).
+
+
+**2026-09-25 — remaining B0 fitting differences, loss multiplier held fixed.**
+User requested experiments on other fitting changes and interpretation under
+2025–26-like future availability. A 2×2 comparison crosses B0 validation calendar
+(first observed season week) and B0 validation latent draws (separate CPU generator,
+component seed + 2000). Reuse the completed normalized/full-finalized current-code
+baseline; new `b0-fitting-split`, `b0-fitting-draws`, `b0-fitting-split-draws`
+experiments have three seeds each, 2,048 forecast draws, and L40 hardware. Slurm
+jobs 2488021/2488022/2488023. New snapshots derive from the saved normalized
+baseline's source. No production fitting change or existing re-plan.
+
+Preflight found no examples lacking all outcomes for their pathogen in either
+validation-calendar policy: 54 pathogen/fold/phase/calendar cases, zero removable
+episodes. The historical filtering rule is thus a no-op for these finalized
+fits; no redundant filter arms were launched. Fixed loss mass remains 1/3 in
+all cases. Checks matched B0 validation dates/draws and verified split exclusion
+and unchanged dataset/benchmark/population settings. Paired effects at each
+factor level and interactions will be reported after completion.
+
+The latest own-target input was present on 100% of 2025–26 scored admissions
+cases, but only 94.6% flu ED, 98.6% COVID ED and 95.1% RSV ED. These separate
+scored-support denominators do not imply all channels/history weeks were present
+at once. Full-calendar fitting retention is lower. Assuming similar future
+availability makes complete-history fitting worth evaluating, but does not
+establish optimal fitting or the availability of finalized revisions at issuance.
+Earlier availability interventions jointly changed training and forecasting;
+this new fitting experiment does not silently claim to separate those stages.
+See [experiment design, evidence and commands](../results/b0-fitting-controls/index.md).
+
+
+**2026-09-25 — Christmas availability interpretation corrected.** User noted
+changed Hub holiday deadlines. COVID/RSV document December 29 deadline/data
+release for reference December 27; FluSight extended its accepted window.
+The fixed-Wednesday audit incorrectly treated December 24 input absence as
+evidence of absence at the Hub deadline. Actual December 29 Git states contain
+December 20 ED values for all modeled locations except Missouri in FluSight and
+COVID. RSV's canonical time-series update lagged, but its raw NSSP file in the
+December 29 Git state already held December 20 RSV values for 51 modeled
+locations (all except Missouri); this directly confirms availability by the
+extended deadline for all three pathogens. Earlier percentages and the 0.930 → 1.199 intervention
+measure the fixed-Wednesday policy, not a complete operational Hub-deadline
+reconstruction. Do not attribute that full score effect to real-time missingness.
+Saved experiments and finalized-input fitting controls remain unchanged; an
+operational comparison must explicitly model per-round deadlines/timezones in a
+new data policy. See [holiday correction](../results/b0-fitting-controls/hub-ed-check.md).
+
+
+**2026-09-25 — remaining fitting controls complete.** All nine new L40 runs
+(jobs 2488021–2488023) completed; the comparison reuses three normalized/finalized
+baseline runs, totaling 36 evaluated folds. Current baseline 0.929660, B0
+validation-calendar-only 0.910424, B0 validation-randomness-only 0.929660, both
+0.911037. The calendar improves combined WIS in all three seeds and closes 47%
+of the numerical gap to original B0/L40 (0.888892), leaving 0.021532. Validation
+randomness has no scored effect under the current calendar and a small effect
+under the B0 calendar. This is not a claim of identical forecasts for targets
+outside scoring support. Episode filtering is a verified no-op; loss multiplier
+was unchanged and untested.
+
+On held-out 2025–26, the calendar changes mean WIS 0.906485 → 0.884676, but seed
+42 supplies the improvement (−0.090255); seeds 43/44 worsen (+0.003031/+0.021795).
+The original B0/L40 2025–26 mean is 0.900254. Thus copying the entire original
+fitting implementation is not established as best for the most recent season.
+Three seeds, finalized inputs and exploratory season/model selection limit the
+conclusion. Holiday-aware input availability remains a separate unresolved
+operational comparison. No production changes or further training launches.
+[Completed report and graphs](../results/b0-fitting-controls/index.md).
+
+
+**2026-09-25 — B0 report consolidated.** The [complete B0 investigation](../results/b0-reproduction/index.md) now contains the scoring audit, all 18 exact fold comparisons, normalization and original-data controls, completed fitting factorial, holiday/Git correction, defined terms, graphs, assumptions, evidence links and exact manager commands. Former audit, fitting and Git-check pages are pointers; evidence artifacts retain their existing paths. This documentation consolidation changes no forecasts, scores or experiment snapshots and launches no jobs.
+
+
+**2026-09-25 — B0-to-B1 narrative revision.** At the user's request, the consolidated report now moves from small implementation effects through validation weeks, normalization and input availability to the B1 design and later forecasting setup. Definitions are introduced in context. The glossary, command appendix and detailed reproduction mechanics were removed from the report; measurements and scientific caveats remain. This is a narrative revision only.
+
+
+**2026-09-25 — B1-to-B0 comparison clarified.** The report now starts with a table and follows measured reversals toward B0. It explicitly separates the later-model normalization baseline from the original-data controls; no additive attribution is claimed across that break. The consecutive controlled sequence is 1.198981 → 0.929660 → 0.910424 → 0.911037, followed by the bundled original-B0 reference 0.888892. Commands and reproduction mechanics remain outside the narrative.
+
+
+**2026-09-25 — Consecutive comparison completed, replacing disconnected baselines.** All 30 fixed-draw scoring runs (90 folds) completed on L40. The nine useful table rows run from a newly matched B1-derived direct baseline 1.098300 through normalization 1.121097, no artificial masking 1.194839, no finality flag 1.270849, complete forecast inputs 1.070263, complete training histories 0.933389, B0 validation weeks 0.914759, B0 validation draws 0.915398, and B0 error mass 0.888892. Additional reduction/layout controls produce identical fitted models and forecasts in all nine seed/season cases, so they are omitted from the report. Restoring error mass closes the original-B0 gap; the earlier CPU minibatch rounding discrepancy does not affect these completed GPU fits. Original 18-fold reproduction remains verified.
+
+The rewritten fitter had not reset evaluation randomness as B0 did. Every chain stage was therefore reforecast from its saved model with seed + 1000 and the common full-finalized origin calendar; restricted stages mask inputs on that calendar. Production code is unchanged. Corrected 2025–26 availability unions checked Hub Git canonical/direct files, raw NSSP CSV/Parquet and dated Delphi reports, including holiday deadlines. The common earliest Hub cutoff has the same visibility masks as the individual cutoffs. Earlier seasons retain the original Wednesday archive; all supplied numerical values remain finalized. Missing scored latest inputs are exclusively Missouri ED (COVID 21, flu 28, RSV 29), with no admissions gaps. Complete training histories improve 2025–26 1.338363→0.906519 across all targets/seeds; B0 calendar gives 0.885678, but its aggregate gain is seed-dependent. B0 error mass worsens that season to 0.900254. The [single report](../results/b0-reproduction/index.md) starts with the consecutive table, explains the validation dates relative to peaks, and includes graphs and every missing week/location. Redundant experiments and reproduction mechanics are excluded from the narrative.
+
+
+**2026-09-27 — Direct covariate research protocol.** Added separate complete-finalized
+fitting and deadline-input validation/evaluation policies, opt-in B0 target input
+normalization and its fixed validation calendar, and a reset evaluation seed.
+The source/architecture study retains the smaller component objective, fixed
+validation draws, finality flag, and target missingness in 50% of fitting examples.
+User clarified ILI-only, not ED input removal, and authorized expected source
+availability based on 2025–26 when archives are incomplete. Actual vintages remain
+preferred; lag-gated finalized substitutes, explicit withdrawals and geographic
+support are recorded in the data evidence. National Kinsa remains broadcast to
+all locations. New national/gated-pool messages complement existing attention;
+scoped target/pathogen/joint tokens now carry covariates and mask unavailable
+senders. All models are freshly fitted; old rankings are not matched controls.
+See [study design and launch record](b2-direct-research.md).
+
+**2026-09-28 — Direct covariate study completed.** All 468 runs (156 configurations,
+three seeds, 1,404 outer folds) completed with 256 evaluation draws. The final
+ranking `ranking-ac92a3c7dbcc` selects target multiscale/all sources/pooled
+(WIS ratio 1.059). Its matched covariate improvement is 9.0% overall, concentrated
+in 2024–25; only one seed improves in 2025–26. Simple pooling and national
+broadcasts are more consistent than scoped target attention. No single source
+helps every backbone, and leave-one-out attribution was not run inside the
+winning pooled architecture. Nominal 95% coverage is 79.3%. Results retain the
+authorized availability assumptions, including lag-gated finalized proxies
+where historical archives are missing. No prospective superiority is claimed.
+The [report and fixed-seed fan plots](../results/b2-direct-research-v1/index.md)
+use all completed seeds for ranking and seed 42's saved 256-draw forecasts for
+illustration; no refitting or recalibration was performed.
+
+**2026-09-28 — Covariate availability and revision audit.** Added a 2025–26 table for all 12 context lags, using actual archived reports at holiday-adjusted Hub deadlines and no operational proxies. Counts use native location × issuance opportunities, with national Kinsa counted once. Revision summaries compare finite same-location/week pairs to the frozen final panel, and disclose claims cells with reported values but missing final counterparts. Archive gaps are not interpreted as proven upstream unavailability. See [tables and downloadable cells](../results/b2-direct-research-v1/availability/index.md).
+
+**2026-09-28 — Availability audit correction.** Raw claims archives contain conflicting finite values sharing a report date, reference date and location. The shared extraction conflict policy turns these into missing for both deadline and final arrays. Availability reporting now separates finite publisher reports from unambiguous pipeline inputs; claims revision estimates remain explicitly conditional on the retained subset. ILI gaps were checked directly in the raw archive and with a read-only Delphi query. Daily claims are sampled on Saturday, daily Kinsa is weekly averaged, and the remaining modeled signals are weekly. No frozen model data or fitted results were changed and no within-date ordering was assumed. See [diagnosis](../results/b2-direct-research-v1/availability/conflict-audit.md).
+
+**2026-09-28 — Full missingness tables.** Expanded corrected source availability to every one of the 14 panel covariates and all 12 history lags. Reports distinguish unique missing states, distinct submission weeks across states, per-state missing weeks, DC and national gaps, and structurally unsupported geographies. Exact missing submission and observation dates are exported. Revision tables retain the explicit unambiguous-pair restriction. See [full tables](../results/b2-direct-research-v1/availability/full-tables.md).
+
+**2026-09-28 — Season availability timelines.** Added full observation-week × submission-date matrices for all 14 covariates and six target series, extending submission rounds through the frozen panel end. Colors distinguish complete native support, 1–2, 3–10, >10 missing locations, no archived observations, and future weeks. Claims use raw finite-report presence; target series use the joint Hub/Delphi deadline reconstruction. Native national coverage is shown separately. Retrospective final-panel coverage is not presented as proof of historical dashboard availability. Static plots and an interactive missing-location explorer are linked from the availability report.
+
+**2026-09-28 — Distinguish availability evidence.** Added separate unknown-timing, explicit-missing-then-later-observed, explicit-missing-with-no-later-report, and never-observed categories. A later archive entry alone is not treated as proof of delayed first publication. Crosses mark explicit missing or never observed, distinguished by color; neither is described as permanent absence. Gray periods require explicit next-season availability assumptions. State selection and per-cell evidence accompany all 20 series.
+
+**2026-09-28 — Add 2022–23 training data.** Rebuilt the default panel from May 14, 2022 with all six target channels and 14 covariate series. Finite CDC finalized NHSN counts take precedence for retrospective admissions; archive values remain where CDC final has no finite value. Historical as-of arrays are not truth-filled. Existing-period target, covariate and vintage values are unchanged. The added season has complete flu/COVID admissions, all three ED outcomes from October 1, and no RSV admissions. Training includes 2022–23; evaluation remains the three existing seasons. The base dataset is extended; completed experiment pins and its separate operational/deadline panels are unchanged. See [coverage and verification](../results/dataset-2022-extension/index.md).

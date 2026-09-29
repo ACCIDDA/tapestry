@@ -1,0 +1,15 @@
+{
+  "ranking": "data/experiments/forecast-geography-v2/ranking-e53fd92c4f32",
+  "runs": 189,
+  "configurations": 63,
+  "folds": 567,
+  "panel_sha256": "3e12481cb04b189f44d6315f0790682a37a74659569af7f8aae2f7fba2e23b89",
+  "paired_percent": "Mean across seeds of 100*(model/baseline-1), paired within geography.",
+  "ensemble_coverage95": 0.9066974290493844,
+  "assumptions": [
+    "Retrospective finalized values masked by Wednesday reporting availability.",
+    "Three seeds quantify optimization variability, not independent epidemiological replicates.",
+    "Selection and conclusions use these same development folds; no independent confirmation.",
+    "Coverage uses the same location/target/season weighting as the primary score."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "start": "2022-05-14",
+  "end": "2026-09-19",
+  "weeks": 228,
+  "issuances": 228,
+  "training_added": "2022-2023",
+  "evaluation_seasons": [
+    "2023-2024",
+    "2024-2025",
+    "2025-2026"
+  ],
+  "future_vintages_empty": true,
+  "overlap_vintages_covariates_ed_unchanged": true,
+  "nhsn_final_precedence_changes": [
+    {
+      "target": "nhsn_flu_admissions",
+      "changed_existing_cells": 0
+    },
+    {
+      "target": "nhsn_covid_admissions",
+      "changed_existing_cells": 0
+    },
+    {
+      "target": "nhsn_rsv_admissions",
+      "changed_existing_cells": 0
+    }
+  ],
+  "sha256": "54d0e3306a76ded067c6d1b65493d50b1c19bde2e66ab80a438674ec37e6c80f"
+}

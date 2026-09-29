@@ -22,12 +22,14 @@ from .lineage import NHSN_DELPHI, series_lineage
 from .geography import observation_geography
 from .tables import Artifact, RawTables, TableSource
 
-POLICY_VERSION = "5"
+POLICY_VERSION = "6"
 FAMILY_TITLES = {
     "nhsn": "NHSN · Hospital surveillance",
     "nssp": "NSSP · Emergency department surveillance",
     "nwss": "NWSS · Wastewater surveillance",
     "kinsa": "Kinsa · Thermometer symptom surveillance (via PopHIVE)",
+    "fluview": "FluView · Outpatient ILI and laboratory surveillance",
+    "flusurv": "FluSurv-NET · Influenza hospitalization rates",
 }
 PATHOGENS = {"c19": "COVID-19", "flu": "Influenza", "rsv": "RSV"}
 NHSN_MEASURES: dict[str, str] = {}
@@ -69,6 +71,39 @@ NWSS_LABELS = {
     "wval_like": "WVAL-like relative activity index",
     "pct_rank": "Within-site percentile-rank index",
 }
+# FluView components share one family; the prefix names the component.
+FLUVIEW_COMPONENTS = {
+    "delphi_fluview_ilinet": ("ilinet", "ILINet"),
+    "delphi_fluview_clinical": ("clinical", "Clinical labs"),
+}
+FLUVIEW_LABELS = {
+    "ili": "% outpatient visits for ILI (unweighted)",
+    "wili": "% outpatient visits for ILI (population-weighted)",
+    "num_ili": "ILI visits", "num_patients": "Patient visits", "num_providers": "Reporting providers",
+    "pct_positive": "% specimens positive for influenza",
+    "pct_positive_a": "% specimens positive for influenza A",
+    "pct_positive_b": "% specimens positive for influenza B",
+    "positive_a": "Influenza A positive specimens", "positive_b": "Influenza B positive specimens",
+    "total_specimens": "Specimens tested",
+}
+FLUSURV_AGES = {
+    "0": "0–4", "1": "5–17", "2": "18–49", "3": "50–64", "4": "65+", "5": "65–74", "6": "75–84", "7": "85+",
+    "0tlt1": "<1", "1t4": "1–4", "5t11": "5–11", "12t17": "12–17", "18t29": "18–29", "30t39": "30–39",
+    "40t49": "40–49", "gte75": "75+", "lt18": "<18", "gte18": "18+",
+}
+
+
+def flusurv_label(signal: str) -> str:
+    kind, _, value = signal.removeprefix("rate_").partition("_")
+    if kind == "overall":
+        return "overall"
+    if kind == "age":
+        return f"age {FLUSURV_AGES.get(value, value)}"
+    if kind == "flu":
+        return f"influenza {value.upper()}"
+    return f"{kind} {value}"
+
+
 HUB_FILES = {
     "hub_flusight_current": ("target-data/time-series.csv",),
     "hub_covid_current": ("target-data/time-series.parquet",),
@@ -90,12 +125,14 @@ RELEASE_LABELS = {
     "hub_rsv_current": "RSV Hub target data",
     "derived_nwss_state_indices": "Tapestry state index",
     "pophive_kinsa_ili": "PopHIVE Git history",
+    **{key: "Delphi archive" for key in (*FLUVIEW_COMPONENTS, "delphi_flusurv")},
 }
 # Menu order; unlisted pathogens follow alphabetically, then non-pathogen measures.
 PATHOGEN_TITLES = {
     "covid": "COVID-19", "influenza": "Influenza", "rsv": "RSV",
     "combined": "Combined COVID-19, influenza, and RSV",
     "ari": "Acute respiratory illness",
+    "ili": "Influenza-like illness",
     "adenovirus": "Adenovirus", "hcov": "Seasonal coronaviruses (HCoV)",
     "hmpv": "Human metapneumovirus (HMPV)", "piv": "Parainfluenza (PIV)",
     "rv/ev": "Rhinovirus/enterovirus (RV/EV)",
@@ -109,6 +146,8 @@ def pathogen_of(key: str, name: str, pathogen: str = "") -> tuple[str, str, int]
     text = " ".join([explicit, name.lower(), key.lower()])
     if key == "pophive_kinsa_ili":
         canonical = "ari"
+    elif key == "delphi_fluview_ilinet":
+        canonical = "ili"
     elif explicit in {"sars-cov-2", "covid-19", "c19"} or re.search(r"covid|c19|sars", text):
         canonical = "covid"
     elif explicit == "flu" or re.search(r"flu", text):
@@ -175,6 +214,8 @@ def measure_columns(key: str, columns: Sequence[str], path: str = "") -> tuple[s
         allowed = {"wval_like", "pct_rank"}
     elif key == "pophive_kinsa_ili":
         allowed = {"kinsa_cough_cold_flu"}
+    elif key in FLUVIEW_COMPONENTS or key == "delphi_flusurv":
+        allowed = {"value"}
     elif key in HUB_FILES or key == "hub_rsvnet":
         allowed = {"observation"} if key.endswith("_current") else {"value"}
     else:
@@ -187,7 +228,7 @@ def selected_row(key: str, path: str, row: Mapping[str, Any]) -> bool:
         return source_signal(path, row) in NHSN_DELPHI
     if key == "delphi_nssp":
         return source_signal(path, row) in CATALOG[key].config["signals"]
-    if key == "delphi_nwss":
+    if key in {"delphi_nwss", "delphi_flusurv", *FLUVIEW_COMPONENTS}:
         return source_signal(path, row) in CATALOG[key].config["signals"]
     return True
 
@@ -228,6 +269,13 @@ def describe(key: str, column: str, path: str, dimensions: Mapping[str, Any], *,
         pathogen = {"sars-cov-2": "covid", "covid-19": "covid", "influenza a": "flu"}.get(pathogen.lower(), pathogen.lower())
         title = f"{pathogen.upper()} · {NWSS_LABELS.get(name, name)}"
         name = f"{pathogen}_{name}"
+    elif group == "fluview":
+        prefix, component = FLUVIEW_COMPONENTS[key]
+        name = f"{prefix}_{signal or column}"
+        title = f"{component} · {FLUVIEW_LABELS.get(signal, signal)}"
+    elif group == "flusurv":
+        name = signal or column
+        title = f"Hospitalization rate per 100,000 · {flusurv_label(signal)}"
     elif group == "kinsa":
         name = column
         title = "Cough, cold and flu symptoms · share of Kinsa users (%)"
@@ -341,9 +389,10 @@ class SelectedData(RawTables):
 
     def _catalog(self):
         catalog = super()._catalog()
-        # Old migrated Delphi feeds stay on disk, but are not selected anymore.
-        return {k: v for k, v in catalog.items()
-                if k not in {"delphi_fluview", "delphi_fluview_clinical", "delphi_flusurv"}}
+        # The V3-era `delphi_fluview` migration may remain on old data roots; its
+        # V5 replacements are the delphi_fluview_* and delphi_flusurv datasets.
+        # Public-health labs were pulled once and dropped (user decision 2026-09-22).
+        return {k: v for k, v in catalog.items() if k not in {"delphi_fluview", "delphi_fluview_ph"}}
 
     def table_decision(self, key: str, name: str, names: Sequence[str]) -> tuple[bool, str]:
         if key in HUB_FILES:

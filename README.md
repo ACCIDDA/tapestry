@@ -1,114 +1,66 @@
 # Tapestry
-influpaint v2, or maybe not too much like influpaint.  Tapestry is a research project for multi-disease epidemic forecasting. In alpha, not ready, changing.
 
-* [Documenations (WIP)](https://accidda.github.io/tapestry/)
+Tapestry is a research project for multi-disease epidemic nowcasting and forecasting.
+It is in active development.
+
+* [Documentation](https://accidda.github.io/tapestry/)
 * [Data explorer with revisions](https://accidda.github.io/tapestry/explorer/)
 
-## Environment
+## Current experiment
 
-From the repository root:
+[Fresh forecasting covariate comparison](docs/design/forecast-covariates.md):
+matched standalone forecasters comparing raw, smoothed, summarized and
+encoded covariates across independent, pooled and attention-based geography, trained from scratch on finalized values masked by Wednesday availability.
+Nowcasting is trained separately.
+
+```bash
+bash experiments/forecast-covariates.sh
+.venv/bin/python -m tapestry.experiment.planner status -e forecast-geography-v2
+```
+
+## One workflow
+
+The shared dataset is `data/processed/panel.npz`: six admission/ED targets across
+states, DC and native US, with covariates, frozen reference labels and historical
+Wednesday as-of observations. Independently fitted nowcasting and forecasting
+models connect through sampled reconstructed histories.
+
+From the repository root, using an existing panel:
 
 ```bash
 uv sync
-uv run python -m tapestry.experiment.planner --help
-uv run pytest -q
+.venv/bin/python -m tapestry.dataset.build show --dataset data/processed/panel.npz
+.venv/bin/python -m tapestry.experiment.planner plan -e my-experiment -s 'task=pipeline,input_mode=vintaged,nowcast.covariate_set=inpatient+ilinet,nowcast.lookback=12,forecast.lookback=8' --seeds 42 --device cpu
+.venv/bin/python -m tapestry.experiment.planner run -e my-experiment
+.venv/bin/python -m tapestry.experiment.planner status -e my-experiment
+.venv/bin/python -m tapestry.experiment.planner rank -e my-experiment
 ```
 
-`uv` manages the Python 3.11 `.venv` and Python dependencies for training,
-evaluation, explorer and tests. Scoring is pure Python (`tapestry.evaluation.totals`);
-no R or EpiBenchmark dependency remains. See [environment setup](docs/getting-started.md)
-for lighter Python installs.
+Use `task=nowcast` or `task=forecast` for standalone fits through the same manager.
+Use `nowcast.<field>` and `forecast.<field>` for independent pipeline stage settings.
+The epochs, architecture, covariates and lookback can differ by stage.
 
-## Start with the canonical training dataset
+[Model interface and manager commands](docs/design/nowcast-forecast.md) ·
+[Training and source acquisition](docs/workflows/training.md) ·
+[Environment setup](docs/getting-started.md) ·
+[Longleaf setup](docs/longleaf-setup.md)
 
-Run from the repository root:
+## Refresh the data
+
+Training uses the saved panel without downloading sources. To acquire or refresh
+sources and rebuild it, follow the [training guide](docs/workflows/training.md).
+The current data catalog uses Delphi and Hub source names; old CDC source commands
+and the former finalized/B1/B2 panel files are no longer the training interface.
+
+Pipeline inputs are entirely as-of; labels use the frozen reference snapshot.
+Season cross-validation is retrospective and is not a claim of historical
+real-time deployment performance. Native-unit scoring is implemented in Python.
+
+## Explore
 
 ```bash
-uv sync
-# Needed only when acquiring or refreshing the training sources:
-uv run python -m tapestry.data --data-root data pull cdc_nhsn_final cdc_nssp_trajectories
-uv run python -m tapestry.dataset.build build --data-root data
-uv run python -m tapestry.dataset.build show --dataset data/processed/finalized.npz
-uv run python -m tapestry.experiment.planner plan -e my_experiment -s '' --seeds 42
+.venv/bin/python -m tapestry.explorer serve
 ```
 
-The dataset contains weekly NHSN admissions and NSSP ED proportions for
-flu/COVID/RSV, with values and availability masks for 50 states, DC, and native US.
-Training reads the saved dataset; it does not need to download data or run the explorer.
-Use a new output directory for a new experiment. See the
-[dataset contract](docs/legacy-v0/data/build-b-finalized.md) and
-[training/prediction guide](docs/workflows/training.md).
-
-This is finalized retrospective research: NSSP's latest saved values are assumed
-truth, and season CV does not recreate the observations available in real time.
-Raw snapshots and source hashes are retained so results can be traced to the
-exact inputs. Snapshots support reproducibility; publisher revision archives
-add historical release information where the source provides it.
-
-## B1: Wednesday snapshots and masked training
-
-B1 uses finalized older history and recent Wednesday reports, supplying flagged
-reference finals where recent reports are absent. Visible known finals bypass
-nowcasting and its loss; hidden finals become nowcast targets again. Four future
-weeks are forecast from the resulting recent values. This is retrospective
-conditional forecasting; later finals are not claimed available on Wednesday.
-MLP, convolution, multiscale and spatial formulations have canonical scenario
-strings, with independently configurable masking rates.
-See the [B1 implementation and commands](docs/legacy-v0/design/b1.md).
-
-## Explore and compare
-
-```bash
-uv run python -m tapestry.explorer --data-root data serve
-```
-
-The explorer builds a disposable SQLite index and Parquet revision ledger.
-See [explorer usage](docs/explorer/overview.md), [selective acquisition](docs/reference/cli.md),
-[source catalog](docs/data/sources.md), [selection policy](docs/data/selection.md),
-and [storage/provenance](docs/data/storage.md). Broad `--group all` downloads are
-optional; they are not required to train the current six-channel model.
-Delphi requires an API key; Git is needed for Hubverse sources.
-
-Saved CV forecasts can be evaluated without refitting; hub scoring is pure
-Python (`tapestry.evaluation.totals`).
-
-## Where things live
-
-| Directory | Purpose |
-|---|---|
-| `src/tapestry/data/` | Acquisition, snapshots, source readers, geography, selection |
-| `src/tapestry/dataset/` | `extract`/`build`/`episodes`/`cv`: the one panel (`panel.npz`) and season CV |
-| `src/tapestry/model/` | The unified `Model` network, `Scenario` codec, objective |
-| `src/tapestry/experiment/` | `planner.py` plan/run/status/rank/plots, `dispatch.py`, `provenance.py` |
-| `src/tapestry/evaluation/` | `totals.py` the one score, `hubs.py` export, `plots.py` the four figures |
-| `src/tapestry/explorer/` | `index.py`, `server.py`, `cli.py`, browser assets |
-| `analysis/wval/` | Standalone wastewater analysis and evidence |
-| `scripts/` | Slurm launchers, notifier, data/explorer checkout launchers, CSV conversion |
-| `docs/workflows/` | Current commands and behavior |
-| `docs/results/` | Experiment reports written by `planner rank` |
-| `docs/design/` | The unified-model design |
-| `docs/legacy-v0/` | Pre-2026-09-22 B0/B1/B2 designs, results and workflows |
-| `tests/` | Checks that protect reported results: leakage, masks, scoring, export |
-
-Downloaded data, checkpoints, and generated results live in `data/`, `output/`,
-and `tmp/`. `tapestry.experiment.planner` plans, runs, and scores experiments.
-See [development](docs/development.md) and [features and tests](docs/maintenance.md).
-
-## Tests
-
-```bash
-uv sync
-uv run pytest -q
-```
-
-The suite only keeps tests that protect reported results. GitHub Actions runs it
-on pushes and pull requests to `main`. Tests use fixtures and local temporary files.
-See [what the tests do](docs/maintenance.md#what-the-tests-do).
-
-## Files kept locally
-
-Git excludes surveillance data, processed panels, checkpoints, generated output
-folders, downloaded analysis evidence, reference PDFs/extracted text, and credentials.
-The source catalog is `src/tapestry/data/catalog.py`. Download/build the data
-separately using the commands above.
-The supported dataset command is `python -m tapestry.dataset.build build`.
+[Explorer guide](docs/explorer/overview.md). Historical B0/B1/B2 research notes
+remain under `docs/legacy-v0/`; their commands are not the current workflow.

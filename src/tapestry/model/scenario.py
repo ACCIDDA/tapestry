@@ -23,24 +23,29 @@ Consequences, all intentional (see docs/design/restructure-2026-unified.md §1):
 + `input_mode='vintaged'` reproduces B1-direct. A nonempty `covariate_set` with
 `input_mode='vintaged'` reproduces B2. One scenario space, no subclassing.
 """
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 import hashlib
 
 # Enum-like string fields: a fixed set of legal values, so a typo raises instead
 # of silently becoming a new field the way an unconstrained string would.
 CODES = {
+    'training_inputs': {'same', 'finalized'},
+    'input_normalization': {'none', 'b0'},
+    'validation_calendar': {'season', 'b0'},
     'count_transform': {'raw', 'rate', 'sqrt', 'fourth_root', 'log1p'},
     'ed_transform': {'linear', 'logit', 'fourth_root'},
     'loss_weights': {'influenza_first', 'balanced_admissions', 'flu_only', 'objective'},
+    'covariate_encoder': {'raw', 'smooth', 'summary', 'shared'},
     'encoder': {'mlp', 'conv', 'multiscale_conv'},
-    'spatial': {'none', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target'},
+    'spatial': {'none', 'pooled', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target', 'national_broadcast', 'gated_pool'},
     'heads': {'shared', 'state_us'},
     'decoder': {'legacy', 'residual2'},
     'noise': {'global', 'local'},
     'us_error': {'none', 'shared_factor'},
     'head_sharing': {'shared', 'pathogen', 'target'},
     'fit_partition': {'all', 'pathogen', 'target'},
-    'input_mode': {'finalized', 'vintaged'},
+    'input_mode': {'finalized', 'finalized_available', 'vintaged'},
+    'task': {'forecast', 'nowcast', 'pipeline'},
 }
 
 
@@ -48,6 +53,14 @@ CODES = {
 # taken from the existing design docs and code; where the meaning is longer than a
 # line the entry points to the document that defines it.
 MEANING = {
+    'training_inputs': 'same as forecasting, or complete finalized target and covariate histories during fitting only.',
+    'input_normalization': 'none, or B0 per-location transformed target scales fitted on training contexts only.',
+    'validation_calendar': 'season-relative blocks, or B0 blocks counted from the first stored week of each season.',
+    'task': 'forecast, nowcast, or an independently fitted nowcast-to-forecast pipeline.',
+    'nowcast_weeks': 'Completed weeks reconstructed, ending at the context Saturday.',
+    'nowcast': 'Pipeline stage overrides written as nowcast.<field>=value; unprefixed fields supply defaults.',
+    'forecast': 'Pipeline stage overrides written as forecast.<field>=value; unprefixed fields supply defaults.',
+    'nowcast_members': 'Cached out-of-fold history draws per training episode.',
     'lookback': 'Context weeks per episode (the history the network sees).',
     'count_transform': 'Admissions in model space: raw counts, rate per 100,000, or its sqrt / fourth root / log1p '
                        '(`model/network.py` `transform_counts`).',
@@ -84,11 +97,12 @@ MEANING = {
     'mask_recent': 'Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1).',
     'mask_gap': 'Share of masked episodes whose pattern is a local gap in one location history.',
     'mask_outage': 'Share of masked episodes whose pattern is a whole-channel outage.',
+    'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age.',
     'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
                      'workflows/training.md and design/b2.md.',
-    'input_mode': 'How episodes are cut from the panel: finalized truth, or Wednesday-vintage as-of context '
+    'input_mode': 'Finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context '
                   '(design §3).',
-    'asof_weeks': 'Vintaged only: most recent context weeks whose targets are as visible at the issuance; '
+    'asof_weeks': 'Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; '
                   'older weeks take final truth (design §3).',
     'validation_weeks': 'patience > 0 only: consecutive early-stopping weeks hidden per block (design §4).',
     'validation_spacing': 'patience > 0 only: one validation block every this many weeks of a training season.',
@@ -127,6 +141,11 @@ def _decode(name, raw, field_type):
 @dataclass(frozen=True)
 class Scenario:
     # Network shape and training budget (formerly TrainingScenario).
+    task: str = 'forecast'
+    nowcast_weeks: int = 2
+    nowcast: tuple = ()
+    forecast: tuple = ()
+    nowcast_members: int = 16
     lookback: int = 12
     count_transform: str = 'fourth_root'
     ed_transform: str = 'linear'
@@ -162,8 +181,12 @@ class Scenario:
     mask_gap: float = .3
     mask_outage: float = .2
     # Covariates and dataset selection (formerly B2Scenario).
+    covariate_encoder: str = 'raw'
     covariate_set: str = ''
     input_mode: str = 'finalized'
+    training_inputs: str = 'same'
+    input_normalization: str = 'none'
+    validation_calendar: str = 'season'
     # Vintaged episodes only (2026-09-22): the number of most recent context weeks
     # whose targets are taken as visible at the issuance cutoff; older context weeks
     # take final truth. 2 reproduces the previous vintaged builder (B1); a value >=
@@ -184,6 +207,10 @@ class Scenario:
         for key in CODES:
             if getattr(self, key) not in CODES[key]:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)!r}')
+        if self.training_inputs != 'same' and (self.task != 'forecast' or self.input_mode != 'vintaged'):
+            raise ValueError('Complete target training requires standalone forecast with dated vintage evaluation')
+        if self.validation_calendar == 'b0' and not self.patience:
+            raise ValueError('B0 validation calendar requires early stopping')
         if min(self.lookback, self.latent, self.width, self.epochs, self.batch_size) < 1 or self.members < 2:
             raise ValueError('Positive dimensions/epochs required; training members >= 2')
         if self.lookback < 2:
@@ -194,16 +221,24 @@ class Scenario:
             raise ValueError('Patience must be 0 (fixed epochs) or below the epoch cap')
         if not (0 < self.lr < float('inf')):
             raise ValueError(f'lr must be finite and positive: {self.lr}')
-        if self.spatial != 'none' and self.width % 4:
+        if self.spatial not in ('none', 'pooled', 'national_broadcast', 'gated_pool') and self.width % 4:
             raise ValueError('Spatial attention requires width divisible by four')
         if not 0 <= self.mask_rate <= 1:
             raise ValueError('mask_rate must be between zero and one')
         mix = (self.mask_recent, self.mask_gap, self.mask_outage)
         if any(p < 0 for p in mix) or abs(sum(mix) - 1) > 1e-9:
             raise ValueError('mask_recent/mask_gap/mask_outage must be nonnegative and sum to one')
+        if self.nowcast_weeks < 1 or (self.task == 'nowcast' and self.nowcast_weeks > self.lookback):
+            raise ValueError('nowcast_weeks must be between 1 and lookback')
+        if self.nowcast_members < 2:
+            raise ValueError('nowcast_members >= 2 required')
+        if self.task != 'forecast' and self.input_mode != 'vintaged':
+            raise ValueError('nowcast and pipeline require input_mode=vintaged')
+        if self.task != 'pipeline' and (self.nowcast or self.forecast):
+            raise ValueError('Stage overrides only apply to task=pipeline')
         if self.asof_weeks < 0:
             raise ValueError('asof_weeks must be nonnegative')
-        if self.input_mode == 'finalized' and self.asof_weeks != 2:
+        if self.input_mode != 'vintaged' and self.asof_weeks != 2:
             raise ValueError('asof_weeks only applies to input_mode=vintaged')
         if not (1 <= self.validation_weeks and 0 <= self.validation_offset
                 and self.validation_offset + self.validation_weeks <= self.validation_spacing):
@@ -215,17 +250,62 @@ class Scenario:
         # Canonicalize so equivalent spellings ('a+b' vs 'b+a' vs 'a+a+b') collapse
         # to one string and one `run_id`, instead of silently training the same
         # configuration twice under different scenario strings.
-        groups = self.covariate_set.split('+') if self.covariate_set else []
-        unknown = set(groups) - set(SOURCE_GROUPS)
-        if unknown:
-            raise ValueError(f'Unknown covariate group(s): {sorted(unknown)}')
-        canonical = '+'.join(group for group in SOURCE_GROUPS if group in groups)
-        if canonical != self.covariate_set:
-            object.__setattr__(self, 'covariate_set', canonical)
+        for field in ('covariate_set',):
+            value = getattr(self, field)
+            groups = value.split('+') if value else []
+            unknown = set(groups) - set(SOURCE_GROUPS)
+            if unknown:
+                raise ValueError(f'Unknown covariate group(s): {sorted(unknown)}')
+            canonical = '+'.join(group for group in SOURCE_GROUPS if group in groups)
+            object.__setattr__(self, field, canonical)
+
+        field_types = {f.name: f.type for f in fields(self)}
+        for stage in ('nowcast', 'forecast'):
+            overrides = dict(getattr(self, stage))
+            unknown = set(overrides) - self.stage_fields()
+            if unknown:
+                raise ValueError(f'Invalid {stage} override fields: {sorted(unknown)}')
+            # Copy to immutable, canonical key/value pairs, preserving frozen scenarios.
+            overrides = {key: _decode(key, _encode(key, value), field_types[key])
+                         for key, value in overrides.items()}
+            object.__setattr__(self, stage, tuple(sorted(overrides.items())))
+        if self.task == 'pipeline':
+            for name in ('nowcast', 'forecast'):
+                resolved = self.stage(name)
+                object.__setattr__(self, name, tuple((key, getattr(resolved, key))
+                                                    for key, _ in getattr(self, name)))
+
+    @classmethod
+    def stage_fields(cls):
+        return {f.name for f in fields(cls)} - {
+            'task', 'nowcast', 'forecast', 'nowcast_weeks', 'nowcast_members', 'input_mode', 'asof_weeks'}
+
+    def stage(self, name):
+        """Resolve independent stage settings; epochs/patience have identical meanings in both."""
+        if self.task != 'pipeline' or name not in ('nowcast', 'forecast'):
+            raise ValueError('Resolve nowcast or forecast only on a pipeline scenario')
+        overrides = dict(getattr(self, name))
+        return replace(self, task=name, nowcast=(), forecast=(),
+                       asof_weeks=overrides.get('lookback', self.lookback), **overrides)
+
+    def episode_scenario(self):
+        """Operational input window and forecast labels for the coupled pipeline."""
+        nowcast, forecast = self.stage('nowcast'), self.stage('forecast')
+        lookback = max(nowcast.lookback, forecast.lookback)
+        groups = '+'.join(filter(None, (nowcast.covariate_set, forecast.covariate_set)))
+        return replace(forecast, lookback=lookback, asof_weeks=lookback, covariate_set=groups)
+
+    @property
+    def horizons(self):
+        return tuple(range(1 - self.nowcast_weeks, 1)) if self.task == 'nowcast' else (1, 2, 3, 4)
 
     @property
     def scenario_string(self):
-        return ','.join(f'{f.name}={_encode(f.name, v)}' for f in fields(self) if (v := getattr(self, f.name)) != f.default)
+        tokens = [f'{f.name}={_encode(f.name, v)}' for f in fields(self)
+                  if f.name not in ('nowcast', 'forecast') and (v := getattr(self, f.name)) != f.default]
+        tokens.extend(f'{stage}.{key}={_encode(key, value)}'
+                      for stage in ('nowcast', 'forecast') for key, value in getattr(self, stage))
+        return ','.join(tokens)
 
     @classmethod
     def from_string(cls, value):
@@ -238,9 +318,15 @@ class Scenario:
             if '=' not in token:
                 raise ValueError(f'Invalid scenario token: {token!r}')
             key, _, raw = token.partition('=')
-            if key not in field_types:
-                raise ValueError(f'Unknown scenario field: {key!r}')
-            options[key] = _decode(key, raw, field_types[key])
+            if '.' in key:
+                stage, key = key.split('.', 1)
+                if stage not in ('nowcast', 'forecast') or key not in cls.stage_fields():
+                    raise ValueError(f'Unknown stage setting: {stage}.{key}')
+                options.setdefault(stage, {})[key] = _decode(key, raw, field_types[key])
+            else:
+                if key not in field_types or key in ('nowcast', 'forecast'):
+                    raise ValueError(f'Unknown scenario field: {key!r}')
+                options[key] = _decode(key, raw, field_types[key])
         try:
             return cls(**options)
         except TypeError as error:
@@ -258,7 +344,7 @@ class Scenario:
                 self.mask_rate * self.mask_gap, self.mask_rate * self.mask_outage)
 
     def model_options(self):
-        return dict(encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
+        return dict(covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
                     noise=self.noise, head_sharing=self.head_sharing, count_transform=self.count_transform,
                     ed_transform=self.ed_transform, geography=self.geography, dynamics=self.dynamics,
                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,

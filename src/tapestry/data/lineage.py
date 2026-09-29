@@ -27,6 +27,12 @@ NHSN_DELPHI = {
     "inpatient_beds_occupied_pct_ew": "numinptbedsocc",
 }
 
+FLU_PARENTS = {
+    "delphi_fluview_ilinet": "ILINet",
+    "delphi_fluview_clinical": "NREVSS clinical laboratories",
+    "delphi_flusurv": "FluSurv-NET",
+}
+
 def with_lineage(spec: DatasetSpec) -> DatasetSpec:
     key = spec.key
     rules = []
@@ -67,6 +73,11 @@ def with_lineage(spec: DatasetSpec) -> DatasetSpec:
         parent = key.split("_")[1].upper()
         rules = [{"column": "*", "parent_dataset": parent, "parent_column": "{column}",
                   "transform": "identity", "source_url": spec.source_url}]
+    elif key in FLU_PARENTS:
+        parent = FLU_PARENTS[key]
+        rules = [{"signal": signal, "column": "value", "parent_dataset": parent, "parent_column": signal,
+                  "transform": "identity; Delphi V5 re-publication of the CDC FluView / FluSurv-NET portal",
+                  "source_url": spec.source_url} for signal in spec.config["signals"]]
     elif key.startswith("delphi_"):
         parent = key.removeprefix("delphi_").upper()
         if parent == "NHSN":

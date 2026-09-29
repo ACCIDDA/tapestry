@@ -1,0 +1,163 @@
+{
+  "runs": [
+    {
+      "config_id": "reproduced-b0-target100",
+      "seed": 42,
+      "path": "data/experiments/b0-exact-reproduction/mlp-target-finalized-5098c7dbf6ab/s42/attempt-002"
+    },
+    {
+      "config_id": "historical-b0-target100",
+      "seed": 42,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0/s42/attempt-001/cv"
+    },
+    {
+      "config_id": "reproduced-b0-target100",
+      "seed": 43,
+      "path": "data/experiments/b0-exact-reproduction-l40/mlp-target-finalized-5098c7dbf6ab/s43/attempt-001"
+    },
+    {
+      "config_id": "historical-b0-target100",
+      "seed": 43,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0/s43/attempt-001/cv"
+    },
+    {
+      "config_id": "reproduced-b0-target100",
+      "seed": 44,
+      "path": "data/experiments/b0-exact-reproduction-l40/mlp-target-finalized-5098c7dbf6ab/s44/attempt-001"
+    },
+    {
+      "config_id": "historical-b0-target100",
+      "seed": 44,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep100:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_targ:vm256:wd0/s44/attempt-001/cv"
+    },
+    {
+      "config_id": "reproduced-b0-pathogen300",
+      "seed": 42,
+      "path": "data/experiments/b0-exact-reproduction/mlp-pathogen-finalized-f435d5e305e1/s42/attempt-002"
+    },
+    {
+      "config_id": "historical-b0-pathogen300",
+      "seed": 42,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0/s42/attempt-004/cv"
+    },
+    {
+      "config_id": "reproduced-b0-pathogen300",
+      "seed": 43,
+      "path": "data/experiments/b0-exact-reproduction/mlp-pathogen-finalized-f435d5e305e1/s43/attempt-002"
+    },
+    {
+      "config_id": "historical-b0-pathogen300",
+      "seed": 43,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0/s43/attempt-001/cv"
+    },
+    {
+      "config_id": "reproduced-b0-pathogen300",
+      "seed": 44,
+      "path": "data/experiments/b0-exact-reproduction-l40/mlp-pathogen-finalized-f435d5e305e1/s44/attempt-001"
+    },
+    {
+      "config_id": "historical-b0-pathogen300",
+      "seed": 44,
+      "path": "data/experiments/B0.1/b0:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob:us_none:z16:w64:ep300:pat30:bs8:m128:lr0.001:hs_sh:cal1:id0:fit_path:vm256:wd0/s44/attempt-001/cv"
+    },
+    {
+      "config_id": "old-training-l40",
+      "seed": 44,
+      "path": "data/experiments/b0-exact-reproduction-l40/mlp-pathogen-finalized-f435d5e305e1/s44/attempt-001"
+    },
+    {
+      "config_id": "old-training-l40",
+      "seed": 42,
+      "path": "data/experiments/b0-training-code-reference/mlp-pathogen-finalized-f435d5e305e1/s42/attempt-001"
+    },
+    {
+      "config_id": "old-training-l40",
+      "seed": 43,
+      "path": "data/experiments/b0-training-code-reference/mlp-pathogen-finalized-f435d5e305e1/s43/attempt-001"
+    },
+    {
+      "config_id": "current-unscaled-finalized",
+      "seed": 42,
+      "path": "data/experiments/b0-current-training-control/mlp-pathogen-finalized-f435d5e305e1/s42/attempt-001"
+    },
+    {
+      "config_id": "current-unscaled-finalized",
+      "seed": 43,
+      "path": "data/experiments/b0-current-training-control/mlp-pathogen-finalized-f435d5e305e1/s43/attempt-001"
+    },
+    {
+      "config_id": "current-unscaled-finalized",
+      "seed": 44,
+      "path": "data/experiments/b0-current-training-control/mlp-pathogen-finalized-f435d5e305e1/s44/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-finalized",
+      "seed": 42,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized-f435d5e305e1/s42/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-finalized",
+      "seed": 43,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized-f435d5e305e1/s43/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-finalized",
+      "seed": 44,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized-f435d5e305e1/s44/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-wednesday",
+      "seed": 42,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized_available-73c193617cb2/s42/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-wednesday",
+      "seed": 43,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized_available-73c193617cb2/s43/attempt-001"
+    },
+    {
+      "config_id": "current-normalized-wednesday",
+      "seed": 44,
+      "path": "data/experiments/b0-current-training-normalized/mlp-pathogen-finalized_available-73c193617cb2/s44/attempt-001"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally sharing 1 - us_weight; the US ratio gets us_weight (default 0.2). Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions_weight (default 1) and ed_weight (default .5). Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped. Summed WIS columns are raw totals, not a score.",
+  "score_version": "location-relative-season-first-v2",
+  "us_weight": 0.2,
+  "admissions_weight": 1.0,
+  "ed_weight": 0.5,
+  "runs_sha256": "b547101ab56a51ea631d4e9ba0b538c15d965894c86c4f98240c12e3a7e5ee91"
+}
