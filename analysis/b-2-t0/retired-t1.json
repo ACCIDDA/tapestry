@@ -1,0 +1,24 @@
+{
+  "reason": "User corrected all six target histories from T-1 to T-0; run data deleted.",
+  "removed": [
+    "data/experiments/b-2",
+    "data/experiments/b-2-smoke",
+    "data/experiments/b-2-final-smoke",
+    "analysis/b-2-smoke",
+    "analysis/b-2-final-smoke",
+    "analysis/b-2/design.json",
+    "analysis/b-2/launch.json",
+    "output/slurm/b-2-2850376_3.log",
+    "output/slurm/b-2-smoke-notify-2850081.log",
+    "output/slurm/b-2-2850376_0.log",
+    "output/slurm/b-2-h100-2850377_1.log",
+    "output/slurm/b-2-notify-2850383.log",
+    "output/slurm/b-2-final-smoke-2850191_0.log",
+    "output/slurm/b-2-notify-2850382.log",
+    "output/slurm/b-2-h100-2850377_0.log",
+    "output/slurm/b-2-2850376_1.log",
+    "output/slurm/b-2-smoke-2850079_0.log",
+    "output/slurm/b-2-2850376_2.log",
+    "output/slurm/b-2-final-smoke-notify-2850200.log"
+  ]
+}

@@ -2,7 +2,6 @@
 
 These pages are the project's history before the 2026-09-22 unified-model
 restructure ([design](../design/restructure-2026-unified.md)). They describe
-separate B0, B0.1, B1 and B2 models, their datasets (`finalized.npz`,
 `vintaged.npz`, `build_b2.npz`) and modules that no longer exist
 (`tapestry.models`, `tapestry.model_data`, the experiment manager and backends,
 the EpiBench/R scorer). Commands on these pages do not run on the current code;
@@ -21,15 +20,12 @@ Moved here on 2026-09-22 from `docs/design/`, `docs/data/`, `docs/results/` and
 
 - [B0.1 architecture crosses](design/b0.1.md)
 - [B1: masked-vintage model](design/b1.md)
-- [B2 covariate experiment](design/b2.md)
-- [B2 interpretation and next-season training](design/b2-next-season.md)
 - [Historical surveillance transfer into B1](design/historical-curve-transfer.md)
 - [Archived architecture candidates](design/old%20LLM%20things/architecture-candidates.md)
 
 ## Data
 
 - [B0 definition: finalized six-channel pilot](data/build-b-finalized.md)
-- [B2 model data](data/b2.md)
 - [Forward benchmark data](data/forward-2025.md)
 - [What is available when we forecast?](data/reporting-availability.md)
 - [Local measure inventory, 2026-09-13](data/local-inventory-2026-09-13.md)
@@ -43,9 +39,6 @@ Moved here on 2026-09-22 from `docs/design/`, `docs/data/`, `docs/results/` and
 - B1: [overview](results/b1-conclusions.md), [first good results](results/first-good-b1.md),
   [screen and 300-epoch](results/b1-overnight/index.md),
   [reporting regimes](results/b1-reporting-regimes/index.md)
-- B2: [covariate screen](results/B2-screen/index.md),
-  [benchmark report](results/B2-screen/benchmark/REPORT.md),
-  [Kinsa-only](results/B2-kinsa/index.md)
 - Forward 2025–26: [benchmark](results/Forward-2025/index.md),
   [analysis](results/Forward-2025/analysis.md),
   [analysis tables](results/Forward-2025/analysis-tables.md),

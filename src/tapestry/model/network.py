@@ -1,6 +1,7 @@
 """Shared probabilistic network for standalone and composable model stages."""
 import torch
-from .covariates import CovariateEncoder, signed_log, trailing_mean
+from .geographic import GeographicMessage, COORDINATES
+from .covariates import CovariateEncoder, signed_log, trailing_mean, multiscale_features
 from torch import nn
 import torch.nn.functional as F
 
@@ -279,12 +280,12 @@ class Model(nn.Module):
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
                  annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False,
                  covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
-                 supplied_estimated=False, covariate_encoder='raw'):
+                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none'):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
                            supplied_final=supplied_final, supplied_estimated=supplied_estimated)
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
-                or spatial not in ('none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
+                or spatial not in ('neighbors', 'distance', 'gravity', 'none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
             raise ValueError('Unknown model architecture option')
         if min(lookback, width, latent) < 1:
@@ -298,7 +299,7 @@ class Model(nn.Module):
         if populations and any(not torch.isfinite(torch.tensor(float(v))) or float(v) <= 0 for v in populations.values()):
             raise ValueError('Populations must be finite and positive')
         self.config.update(count_transform=count_transform, populations=populations,
-                           geography=geography, dynamics=dynamics, encoder=encoder, heads=heads, decoder=decoder,
+                           geography=geography, coordinates=coordinates, dynamics=dynamics, encoder=encoder, heads=heads, decoder=decoder,
                            ed_transform=ed_transform, spatial=spatial, noise=noise, us_error=us_error,
                            head_sharing=head_sharing, annual_calendar=annual_calendar,
                            location_embedding=location_embedding, location_ids=location_ids or list(populations or {}))
@@ -307,6 +308,9 @@ class Model(nn.Module):
             raise ValueError('Covariate names must be unique')
         if covariate_encoder not in ('raw', 'smooth', 'summary', 'shared'):
             raise ValueError('Unknown covariate encoder')
+        if signal_features not in ('none', 'multiscale', 'smooth_multiscale'):
+            raise ValueError('Unknown signal features')
+        self.config['signal_features'] = signal_features
         self.config['covariate_encoder'] = covariate_encoder
         self.config['covariate_names'] = covariate_names
         self.register_buffer('input_scale', self._per_location(input_scale, 1.))
@@ -332,6 +336,8 @@ class Model(nn.Module):
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         fields_per_cell = 2 + int(supplied_final) + int(supplied_estimated)
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
+        if signal_features != 'none':
+            extra_width += 18 * (6 + len(covariate_names))
         compact_covariates = bool(covariate_names) and covariate_encoder in ('summary', 'shared')
         if compact_covariates:
             self.covariate_encoder = CovariateEncoder(lookback, covariate_encoder)
@@ -356,11 +362,15 @@ class Model(nn.Module):
         self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
         if heads == 'state_us':
             self.us_output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+        if coordinates:
+            self.coordinate_project = nn.Linear(3, width, bias=False)
+        if spatial in ('neighbors', 'distance', 'gravity'):
+            self.geographic_message = GeographicMessage(width, spatial)
         if spatial == 'pooled':
             self.national_context = nn.Linear(2 * width, width)
         elif spatial in ('national_broadcast', 'gated_pool'):
             self.pooled_message = PooledMessage(width, spatial)
-        elif spatial != 'none':
+        elif spatial not in ('none', 'neighbors', 'distance', 'gravity'):
             self.spatial = SpatialBlock(width)
         if spatial in ('pathogen_spatial', 'target_spatial', 'joint_location_target'):
             scope_channels = 2 if spatial == 'pathogen_spatial' else 1
@@ -473,6 +483,8 @@ class Model(nn.Module):
                 raise ValueError(f'Covariate scale holds {self.covariate_scale.shape[-1]} locations, not {l}')
             cov_values = (covariates[:, :, :, 0] - self.covariate_offset[None, None]) / self.covariate_scale[None, None]
             cov_values = torch.where(cov_available, cov_values, 0)
+            feature_cov_values = signed_log(cov_values)
+            feature_cov_available = cov_available
             kind = config['covariate_encoder']
             if kind != 'raw':
                 cov_values = signed_log(cov_values)
@@ -495,6 +507,11 @@ class Model(nn.Module):
                 pieces.append(cov_fields.permute(0, 3, 2, 4, 1).reshape(n * l, 2 * k, p))
             context = self.temporal_context(torch.cat(pieces, 1)).reshape(n, l, -1)
         extras, geo_features = [], []
+        if config['signal_features'] != 'none':
+            smooth_features = config['signal_features'] == 'smooth_multiscale'
+            extras.append(multiscale_features(values, valid, smooth_features))
+            if k:
+                extras.append(multiscale_features(feature_cov_values, feature_cov_available, smooth_features))
         if cov_summary is not None:
             extras.append(cov_summary)
         if config['annual_calendar']:
@@ -515,10 +532,16 @@ class Model(nn.Module):
             focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * fpc))
         else:
             focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, fpc, p)).reshape(n, l, c, -1)
-        if config['spatial'] in ('pooled', 'national_broadcast', 'gated_pool', 'attention'):
+        if config['coordinates']:
+            coordinates = context.new_tensor([[*COORDINATES.get(loc, [0., 0.]), float(loc != 'US')] for loc in locations])
+            coordinates[:, :2] /= 180
+            context = context + self.coordinate_project(coordinates)[None]
+        if config['spatial'] in ('neighbors', 'distance', 'gravity', 'pooled', 'national_broadcast', 'gated_pool', 'attention'):
             observed = valid.any(dim=(1, 2))
             if k:
                 observed = observed | cov_available.any(dim=(1, 2))
+        if config['spatial'] in ('neighbors', 'distance', 'gravity'):
+            context = self.geographic_message(context, observed, locations, config['populations'])
         if config['spatial'] == 'pooled':
             national = pooled_context(context, observed, locations)
             context = context + self.national_context(national)[:, None]

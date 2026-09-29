@@ -110,7 +110,10 @@ def forecast_cells(run, frozen):
     frozen = Path(frozen)
     frames = export(run)
     parts = []
+    seasons = set(json.loads((Path(run) / 'manifest.json').read_text())['folds'])
     for case in frozen_cases(frozen):
+        if case['season'] not in seasons:
+            continue
         units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
         quantiles = pd.read_parquet(frozen / case['directory'] / 'quantiles.parquet')
         model = match_forecasts(frames[(case['season'], case['target'])], units, case['target'])

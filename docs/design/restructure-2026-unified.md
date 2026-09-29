@@ -997,44 +997,7 @@ operational comparison. No production changes or further training launches.
 The rewritten fitter had not reset evaluation randomness as B0 did. Every chain stage was therefore reforecast from its saved model with seed + 1000 and the common full-finalized origin calendar; restricted stages mask inputs on that calendar. Production code is unchanged. Corrected 2025–26 availability unions checked Hub Git canonical/direct files, raw NSSP CSV/Parquet and dated Delphi reports, including holiday deadlines. The common earliest Hub cutoff has the same visibility masks as the individual cutoffs. Earlier seasons retain the original Wednesday archive; all supplied numerical values remain finalized. Missing scored latest inputs are exclusively Missouri ED (COVID 21, flu 28, RSV 29), with no admissions gaps. Complete training histories improve 2025–26 1.338363→0.906519 across all targets/seeds; B0 calendar gives 0.885678, but its aggregate gain is seed-dependent. B0 error mass worsens that season to 0.900254. The [single report](../results/b0-reproduction/index.md) starts with the consecutive table, explains the validation dates relative to peaks, and includes graphs and every missing week/location. Redundant experiments and reproduction mechanics are excluded from the narrative.
 
 
-**2026-09-27 — Direct covariate research protocol.** Added separate complete-finalized
-fitting and deadline-input validation/evaluation policies, opt-in B0 target input
-normalization and its fixed validation calendar, and a reset evaluation seed.
-The source/architecture study retains the smaller component objective, fixed
-validation draws, finality flag, and target missingness in 50% of fitting examples.
-User clarified ILI-only, not ED input removal, and authorized expected source
-availability based on 2025–26 when archives are incomplete. Actual vintages remain
-preferred; lag-gated finalized substitutes, explicit withdrawals and geographic
-support are recorded in the data evidence. National Kinsa remains broadcast to
-all locations. New national/gated-pool messages complement existing attention;
-scoped target/pathogen/joint tokens now carry covariates and mask unavailable
-senders. All models are freshly fitted; old rankings are not matched controls.
-See [study design and launch record](b2-direct-research.md).
-
-**2026-09-28 — Direct covariate study completed.** All 468 runs (156 configurations,
-three seeds, 1,404 outer folds) completed with 256 evaluation draws. The final
-ranking `ranking-ac92a3c7dbcc` selects target multiscale/all sources/pooled
-(WIS ratio 1.059). Its matched covariate improvement is 9.0% overall, concentrated
-in 2024–25; only one seed improves in 2025–26. Simple pooling and national
-broadcasts are more consistent than scoped target attention. No single source
-helps every backbone, and leave-one-out attribution was not run inside the
-winning pooled architecture. Nominal 95% coverage is 79.3%. Results retain the
-authorized availability assumptions, including lag-gated finalized proxies
-where historical archives are missing. No prospective superiority is claimed.
-The [report and fixed-seed fan plots](../results/b2-direct-research-v1/index.md)
-use all completed seeds for ranking and seed 42's saved 256-draw forecasts for
-illustration; no refitting or recalibration was performed.
-
-**2026-09-28 — Covariate availability and revision audit.** Added a 2025–26 table for all 12 context lags, using actual archived reports at holiday-adjusted Hub deadlines and no operational proxies. Counts use native location × issuance opportunities, with national Kinsa counted once. Revision summaries compare finite same-location/week pairs to the frozen final panel, and disclose claims cells with reported values but missing final counterparts. Archive gaps are not interpreted as proven upstream unavailability. See [tables and downloadable cells](../data/availability/index.md).
-
-**2026-09-28 — Availability audit correction.** Raw claims archives contain conflicting finite values sharing a report date, reference date and location. The shared extraction conflict policy turns these into missing for both deadline and final arrays. Availability reporting now separates finite publisher reports from unambiguous pipeline inputs; claims revision estimates remain explicitly conditional on the retained subset. ILI gaps were checked directly in the raw archive and with a read-only Delphi query. Daily claims are sampled on Saturday, daily Kinsa is weekly averaged, and the remaining modeled signals are weekly. No frozen model data or fitted results were changed and no within-date ordering was assumed. See [diagnosis](../data/availability/conflict-audit.md).
-
-**2026-09-28 — Full missingness tables.** Expanded corrected source availability to every one of the 14 panel covariates and all 12 history lags. Reports distinguish unique missing states, distinct submission weeks across states, per-state missing weeks, DC and national gaps, and structurally unsupported geographies. Exact missing submission and observation dates are exported. Revision tables retain the explicit unambiguous-pair restriction. See [full tables](../data/availability/full-availability-summary.csv).
-
-**2026-09-28 — Season availability timelines.** Added full observation-week × submission-date matrices for all 14 covariates and six target series, extending submission rounds through the frozen panel end. Colors distinguish complete native support, 1–2, 3–10, >10 missing locations, no archived observations, and future weeks. Claims use raw finite-report presence; target series use the joint Hub/Delphi deadline reconstruction. Native national coverage is shown separately. Retrospective final-panel coverage is not presented as proof of historical dashboard availability. Static plots and an interactive missing-location explorer are linked from the availability report.
-
-**2026-09-28 — Distinguish availability evidence.** Added separate unknown-timing, explicit-missing-then-later-observed, explicit-missing-with-no-later-report, and never-observed categories. A later archive entry alone is not treated as proof of delayed first publication. Crosses mark explicit missing or never observed, distinguished by color; neither is described as permanent absence. Gray periods require explicit next-season availability assumptions. State selection and per-cell evidence accompany all 20 series.
-
-**2026-09-28 — Add 2022–23 training data.** Rebuilt the default panel from May 14, 2022 with all six target channels and 14 covariate series. Finite CDC finalized NHSN counts take precedence for retrospective admissions; archive values remain where CDC final has no finite value. Historical as-of arrays are not truth-filled. Existing-period target, covariate and vintage values are unchanged. The added season has complete flu/COVID admissions, all three ED outcomes from October 1, and no RSV admissions. Training includes 2022–23; evaluation remains the three existing seasons. The base dataset is extended; completed experiment pins and its separate operational/deadline panels are unchanged. See [coverage and verification](../data/index.md#current-dataset).
-
-**2026-09-28 — Consolidated Data documentation.** Dataset coverage and extension, availability evidence and heatmaps, full lag/state tables, revisions, source archive dates, and availability provenance now live under the single Data navigation section. The landing page distinguishes the expanded base dataset from the frozen B2 audit. Source and acquisition documentation and the general explorer are organized beneath it. Old experiment-data pages point to the canonical pages, and old HTML staircase explorer routes redirect. Report generators write to the new locations.
+**2026-09-28 — B-2 replacement.** Retired the prior B2 implementation-specific
+plans, derived panels and results, locally and on Longleaf. The replacement uses
+scheduled final values, two held-out seasons, light state/recent masking and
+Census-point geographic proxies. See [B-2 design and decision log](b-2.md).

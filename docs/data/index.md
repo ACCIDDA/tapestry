@@ -1,5 +1,21 @@
 # Data
 
+## Human-made assumptions on availability
+
+| Data source | Availability |
+| --- | --- |
+| Kinsa ILI | T-0 |
+| FluSurv-NET | T-1 |
+| All six targets (NHSN / NSSP) | T-0 |
+| Clinical lab flu percent positive | T-1 |
+| ILINet ILI | T-1 |
+| Inpatient flu / COVID | T-0 |
+| Outpatient flu / COVID | T-0 |
+| NWSS | T-0 |
+
+T is the latest completed Saturday in the forecast context. These are human
+assumptions for the [B-2 training protocol](../design/b-2.md), not measured release dates.
+
 Start here for **what is in the dataset, when it was available, and how much it changed**. Coverage of finalized history and evidence of historical availability are different questions; the pages below keep them separate.
 
 ## Explore the data
@@ -12,11 +28,13 @@ Start here for **what is in the dataset, when it was available, and how much it 
 
 ## Current dataset
 
-The default dataset is `data/processed/panel.npz`: **May 14, 2022–September 19, 2026**, 228 observation weeks, 52 locations (50 states, DC and native US), six targets and 14 covariate series. It includes the 12 weeks preceding the August 6, 2022 season start. **2022–23 is available for training**; the scored evaluation seasons remain 2023–24, 2024–25 and 2025–26.
+The default dataset is `data/processed/panel.npz`: **May 14, 2022–September 19, 2026**, 228 observation weeks, 52 locations (50 states, DC and native US), six targets and 14 covariate series. It includes the 12 weeks preceding the August 6, 2022 season start. **2022–23 is available for training**; B-2 evaluates 2025–26 and 2024–25; the general scenario default also supports 2023–24.
 
 The added season has finalized NHSN flu/COVID admissions for all 52 weeks and locations. The three ED outcomes begin October 1, 2022; RSV admissions are absent. Covariates retain their native gaps. Finite CDC finalized NHSN counts take precedence in retrospective targets; dated inputs do not receive that override.
 
-**The availability study and its plots still describe the frozen 2025–26 audit underlying the completed B2 experiment.** They have not been silently recomputed from the expanded base dataset. That experiment's deadline and operational panels remain separate, and must be rebuilt before a new run uses the added season.
+The availability study remains a dated audit. B-2 uses the assumptions above
+and the current finalized panel, retaining native gaps; it does not use the audit's
+historical release masks.
 
 <!-- source-history:start -->
 ## First observation and first archived report dates

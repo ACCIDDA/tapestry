@@ -62,7 +62,7 @@ This audit **does not change the frozen training panels, resolve ambiguous value
 Reproduce with:
 
 ```bash
-.venv/bin/python analysis/b2-research/covariate_availability.py
-.venv/bin/python analysis/b2-research/audit_covariate_conflicts.py
-.venv/bin/python analysis/b2-research/write_availability_audit.py
+# Retired audit command: covariate_availability.py
+# Retired audit command: audit_covariate_conflicts.py
+# Retired audit command: write_availability_audit.py
 ```

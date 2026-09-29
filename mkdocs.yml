@@ -50,14 +50,13 @@ nav:
   - Getting started: getting-started.md
   - Current workflow: workflows/training.md
   - Nowcasting and forecasting: design/nowcast-forecast.md
-  - Direct covariate research: design/b2-direct-research.md
+  - B-2 with T-0 targets: design/b-2.md
   - Fresh forecasting experiments: design/forecast-covariates.md
   - Unified model design: design/restructure-2026-unified.md
   - Architecture: design/architecture.md
   - Other models: reference/other-models.md
   - Longleaf setup: longleaf-setup.md
   - Results:
-      - Direct covariates and spatial exchange: results/b2-direct-research-v1/index.md
       - Geography and covariate conclusions: results/forecast-geography-v2/conclusions.md
       - Geography full report: results/forecast-geography-v2/index.md
       - kinsa-finalized-5seeds: results/kinsa-finalized-5seeds/index.md
@@ -110,13 +109,6 @@ nav:
           - Reporting regimes and revisions: legacy-v0/results/b1-reporting-regimes/index.md
           - Historical curve transfer: legacy-v0/design/historical-curve-transfer.md
           - Reporting availability: legacy-v0/data/reporting-availability.md
-      - B2:
-          - Covariate experiment: legacy-v0/design/b2.md
-          - Dataset and vintage support: legacy-v0/data/b2.md
-          - Covariate results and diagnosis: legacy-v0/results/B2-screen/index.md
-          - Benchmark report: legacy-v0/results/B2-screen/benchmark/REPORT.md
-          - Kinsa-only results: legacy-v0/results/B2-kinsa/index.md
-          - Interpretation and next season: legacy-v0/design/b2-next-season.md
       - Forward 2025-26:
           - Data: legacy-v0/data/forward-2025.md
           - Benchmark: legacy-v0/results/Forward-2025/index.md

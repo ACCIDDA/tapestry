@@ -130,9 +130,9 @@ def cv_layout(panel, scenarios, labels, output):
         groups.setdefault(key, []).append(scenario)
     paths = []
     for (early, weeks, spacing, offset), members in groups.items():
-        fig, axes = plt.subplots(len(SEASONS), len(CHANNEL), figsize=(3.2 * len(CHANNEL), 2.2 * len(SEASONS)),
+        fig, axes = plt.subplots(len(members[0].scored_seasons), len(CHANNEL), figsize=(3.2 * len(CHANNEL), 2.2 * len(members[0].scored_seasons)),
                                  sharex=True, squeeze=False)
-        for row, held_out in enumerate(SEASONS):
+        for row, held_out in enumerate(members[0].scored_seasons):
             roles = week_roles(dates, members[0], held_out)
             starts = np.flatnonzero(np.r_[True, roles[1:] != roles[:-1]])
             ends = np.r_[starts[1:], len(roles)] - 1
@@ -163,7 +163,7 @@ def cv_layout(panel, scenarios, labels, output):
 def default_dates(frames):
     """Every FAN_EVERY-th score reference date of each held-out season, from its first."""
     chosen = []
-    for held in SEASONS:
+    for held in dict.fromkeys(key[0] for key in frames):
         chosen += sorted(frames[(held, next(iter(CHANNEL)))].reference_date.unique())[::FAN_EVERY]
     return chosen
 
@@ -181,7 +181,8 @@ def fans(panel, runs, configs, labels, frozen, dates, output):
         ensemble[(case['season'], case['target'])] = table[table.model == case['ensemble']]
     tables = {'hub ensemble': ensemble, **{c: frames[c] for c in configs}}
     truth_dates = pd.to_datetime([str(d) for d in panel['dates']])
-    held_out = np.isin([season(d) for d in truth_dates.strftime('%Y-%m-%d')], SEASONS)
+    scored_seasons = sorted({held for config in configs for held, _ in frames[config]})
+    held_out = np.isin([season(d) for d in truth_dates.strftime('%Y-%m-%d')], scored_seasons)
     fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
     band = lambda alpha: plt.Rectangle((0, 0), 1, 1, color=MODEL_COLOR, alpha=alpha, lw=0)
     legend = ([plt.Line2D([], [], color='black', lw=1), plt.Line2D([], [], color=MODEL_COLOR, lw=1.2), band(.3), band(.15)],
@@ -198,7 +199,7 @@ def fans(panel, runs, configs, labels, frozen, dates, output):
                 for row, target in enumerate(targets):
                     ax = axes[row, column]
                     ax.plot(truth_dates[held_out], panel['targets'][held_out, l, CHANNEL[target]], color='black', lw=1)
-                    parts = [frame[key] for key in ((held, target) for held in SEASONS) if key in frame]
+                    parts = [frame[key] for key in ((held, target) for held in scored_seasons) if key in frame]
                     for table in parts:
                         part = table[table.location.eq(fips[location]) & table.reference_date.isin(dates)]
                         for _, fan in part.sort_values('horizon').groupby('reference_date'):
@@ -268,9 +269,10 @@ def heatmaps(runs, configs, labels, output):
                             for r in runs if r['config_id'] == config])
         cells = totals.groupby(['seed', 'target', 'season', 'location'])[['model_wis', 'ensemble_wis']].sum()
         ratio = (cells.model_wis / cells.ensemble_wis).groupby(['target', 'location', 'season']).mean()
+        scored_seasons = sorted(totals.season.unique())
         for target in CHANNEL:
-            grid = (ratio.xs(target).unstack('season').reindex(columns=list(SEASONS)) if target in ratio.index.levels[0]
-                    else pd.DataFrame(columns=list(SEASONS), dtype=float))
+            grid = (ratio.xs(target).unstack('season').reindex(columns=scored_seasons) if target in ratio.index.levels[0]
+                    else pd.DataFrame(columns=scored_seasons, dtype=float))
             grid['mean of seasons'] = grid.mean(axis=1)
             grids[(config, target)] = grid
     locations = sorted({i for g in grids.values() for i in g.index} - {'US'})

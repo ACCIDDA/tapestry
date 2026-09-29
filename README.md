@@ -8,15 +8,19 @@ It is in active development.
 
 ## Current experiment
 
-[Fresh forecasting covariate comparison](docs/design/forecast-covariates.md):
-matched standalone forecasters comparing raw, smoothed, summarized and
-encoded covariates across independent, pooled and attention-based geography, trained from scratch on finalized values masked by Wednesday availability.
-Nowcasting is trained separately.
+[B-2: scheduled availability and final values](docs/design/b-2.md), experiment
+`b-2-t0`: all six target histories available at T-0, source-specific covariate
+lags, two held-out seasons, 309 configurations and three seeds. This replaces the
+cancelled T-1-target run; all models are retrained from scratch.
 
 ```bash
-bash experiments/forecast-covariates.sh
-.venv/bin/python -m tapestry.experiment.planner status -e forecast-geography-v2
+.venv/bin/python experiments/b-2.py --plan
+.venv/bin/python -m tapestry.experiment.planner status -e b-2-t0
+.venv/bin/python -m tapestry.experiment.planner rank -e b-2-t0
 ```
+
+The current experiment is already planned and launched on Longleaf. Use `status`
+to follow or resume it; do not re-plan it. See the design for GPU launch commands.
 
 ## One workflow
 
@@ -62,5 +66,5 @@ real-time deployment performance. Native-unit scoring is implemented in Python.
 .venv/bin/python -m tapestry.explorer serve
 ```
 
-[Explorer guide](docs/explorer/overview.md). Historical B0/B1/B2 research notes
+[Explorer guide](docs/explorer/overview.md). Historical B0/B1 research notes
 remain under `docs/legacy-v0/`; their commands are not the current workflow.

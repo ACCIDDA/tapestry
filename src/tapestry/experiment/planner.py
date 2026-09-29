@@ -90,7 +90,7 @@ def snapshot_code(folder):
     destination = folder / 'code'
     if destination.exists():
         shutil.rmtree(destination)
-    files = list((root / 'src').rglob('*.py')) + [root / 'pyproject.toml']
+    files = list((root / 'src').rglob('*.py')) + list((root / 'src').rglob('*.json')) + [root / 'pyproject.toml']
     for source in files:
         target = destination / source.relative_to(root)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -127,7 +127,12 @@ def attempts(folder, scenario, seed):
 
 
 def complete_artifacts(output):
-    required = ['manifest.json'] + [f'eval_{s}/model.pt' for s in SEASONS] + [f'eval_{s}/forecasts.npz' for s in SEASONS]
+    try:
+        manifest = json.loads((output / 'manifest.json').read_text())
+        seasons = Scenario.from_string(manifest.get('scenario', '')).scored_seasons
+    except (OSError, ValueError, TypeError):
+        return False
+    required = ['manifest.json'] + [f'eval_{s}/model.pt' for s in seasons] + [f'eval_{s}/forecasts.npz' for s in seasons]
     if not all((output / n).is_file() and (output / n).stat().st_size for n in required):
         return False
     try:
@@ -136,8 +141,8 @@ def complete_artifacts(output):
         extra = (['nowcast_scores.json'] if task == 'nowcast' else
                  ['nowcaster.pt', 'forecaster.pt', 'nowcast/forecasts.npz', 'nowcast/nowcast_scores.json']
                  if task == 'pipeline' else [])
-        return (sorted(manifest.get('folds', [])) == sorted(SEASONS)
-                and all((output / f'eval_{season}' / name).is_file() for season in SEASONS for name in extra))
+        return (sorted(manifest.get('folds', [])) == sorted(seasons)
+                and all((output / f'eval_{season}' / name).is_file() for season in seasons for name in extra))
     except (KeyError, ValueError, TypeError):
         return False
 
@@ -341,11 +346,11 @@ def main(argv=None):
     if args.command == 'fit':
         scenario = Scenario.from_string(args.scenario)
         output = Path(args.output)
-        for held_out in SEASONS:
+        for held_out in scenario.scored_seasons:
             fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}', args.dataset)
-        folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in SEASONS}
+        folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in scenario.scored_seasons}
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
-                                            seed=args.seed, folds=list(SEASONS), fold_manifests=folds,
+                                            seed=args.seed, folds=list(scenario.scored_seasons), fold_manifests=folds,
                                             eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
         if scenario.task != 'nowcast':
             from tapestry.evaluation.totals import score_run

@@ -69,10 +69,10 @@ def _channel_first(panel):
 
 def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, horizons=HORIZONS):
     """All usable episodes of a (possibly masked) panel; see the module docstring."""
-    if input_mode not in ('finalized', 'finalized_available', 'vintaged'):
+    if input_mode not in ('finalized', 'finalized_available', 'scheduled_final', 'vintaged'):
         raise ValueError(f'Unknown input_mode: {input_mode}')
     vintaged = input_mode == 'vintaged'
-    dated = input_mode != 'finalized'
+    dated = input_mode not in ('finalized', 'scheduled_final')
     dates = [str(d) for d in panel['dates']]
     first, locations = date.fromisoformat(dates[0]), tuple(str(l) for l in panel['locations'])
     pad, tail = lookback - 1, max(0, max(horizons))
@@ -115,6 +115,8 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         if input_mode == 'finalized_available':
             values[np.isnan(asof_targets[w, context])] = np.nan
             known_final = ~np.isnan(values)
+        # scheduled_final keeps all six target histories through T-0, including
+        # the latest context week. Source-specific covariate lags apply below.
         available = ~np.isnan(values)
         target_values = targets[future]
         target_available = ~np.isnan(target_values)
@@ -131,6 +133,14 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         if covariate_names:
             cov_values, cov_available = (covariates[0][context], covariates[1][context]) if w is None else \
                 (covariates[0][w, context], covariates[1][w, context])
+            if input_mode == 'scheduled_final':
+                cov_values, cov_available = cov_values.copy(), cov_available.copy()
+                for k, name in enumerate(covariate_names):
+                    if name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'):
+                        cov_available[-1, k] = False
+                    if name in ('inpatient_flu', 'inpatient_covid') and 'VT' in locations:
+                        cov_available[:, k, locations.index('VT')] = False
+                cov_values = np.where(cov_available, cov_values, 0)
             episode['covariates'] = np.stack((cov_values, cov_available), axis=-2)
         result.append(episode)
     return result

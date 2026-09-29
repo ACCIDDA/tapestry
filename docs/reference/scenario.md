@@ -13,10 +13,11 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `count_transform` | str | `'fourth_root'` | `fourth_root`, `log1p`, `rate`, `raw`, `sqrt` | Admissions in model space: raw counts, rate per 100,000, or its sqrt / fourth root / log1p (`model/network.py` `transform_counts`). |
 | `ed_transform` | str | `'linear'` | `fourth_root`, `linear`, `logit` | ED proportions in model space (`model/network.py`); scores stay in native units. |
 | `geography` | bool | `1` | `0`, `1` | Adds log population and a native-US flag per location as features. |
+| `coordinates` | bool | `0` | `0`, `1` | Census state internal-point latitude/longitude and non-US indicator. |
 | `dynamics` | bool | `1` | `0`, `1` | Recent-dynamics feature block (30 slope/acceleration/age/validity features); see design/b0.1.md. |
 | `loss_weights` | str | `'objective'` | `balanced_admissions`, `flu_only`, `influenza_first`, `objective` | Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the score's target weights. |
 | `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv` | Temporal context encoder; see design/b0.1.md. |
-| `spatial` | str | `'none'` | `attention`, `gated_pool`, `joint_location_target`, `national_broadcast`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see design/b0.1.md. |
+| `spatial` | str | `'none'` | `attention`, `distance`, `gated_pool`, `gravity`, `joint_location_target`, `national_broadcast`, `neighbors`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see design/b0.1.md. |
 | `heads` | str | `'shared'` | `shared`, `state_us` | State and US output heads shared or separate (`state_us`). |
 | `decoder` | str | `'legacy'` | `legacy`, `residual2` | Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see design/b0.1.md. |
 | `noise` | str | `'global'` | `global`, `local` | Global latent noise, or global plus a per-location latent (`local`). |
@@ -40,11 +41,13 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `mask_gap` | float | `0.3` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a local gap in one location history. |
 | `mask_outage` | float | `0.2` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a whole-channel outage. |
 | `covariate_encoder` | str | `'raw'` | `raw`, `shared`, `smooth`, `summary` | Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age. |
-| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflows/training.md and design/b2.md. |
-| `input_mode` | str | `'finalized'` | `finalized`, `finalized_available`, `vintaged` | Finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context (design §3). |
+| `signal_features` | str | `'none'` | `multiscale`, `none`, `smooth_multiscale` | Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing. |
+| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflows/training.md and design/b-2.md. |
+| `input_mode` | str | `'finalized'` | `finalized`, `finalized_available`, `scheduled_final`, `vintaged` | scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context (design §3). |
 | `training_inputs` | str | `'same'` | `finalized`, `same` | same as forecasting, or complete finalized target and covariate histories during fitting only. |
 | `input_normalization` | str | `'none'` | `b0`, `none` | none, or B0 per-location transformed target scales fitted on training contexts only. |
 | `validation_calendar` | str | `'season'` | `b0`, `season` | season-relative blocks, or B0 blocks counted from the first stored week of each season. |
+| `evaluation_seasons` | str | `'all'` | `all`, `recent_two` | all three held-out seasons, or recent_two (2025-26 and 2024-25). |
 | `asof_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; older weeks take final truth (design §3). |
 | `validation_weeks` | int | `3` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: consecutive early-stopping weeks hidden per block (design §4). |
 | `validation_spacing` | int | `16` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: one validation block every this many weeks of a training season. |

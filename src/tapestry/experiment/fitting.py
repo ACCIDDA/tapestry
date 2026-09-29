@@ -30,7 +30,8 @@ def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=P
     metadata = dict(scenario=scenario.scenario_string, run_id=scenario.run_id, config=asdict(scenario),
                     seed=seed, held_out_season=held_out_season, groups=groups,
                     parameter_count=sum(p.numel() for p in model.parameters() if p.requires_grad),
-                    protocol=('complete_history_deadline_refit_v1' if scenario.training_inputs == 'finalized'
+                    protocol=('scheduled_final_targets_t0_two_season_v2' if scenario.input_mode == 'scheduled_final' else
+                              'complete_history_deadline_refit_v1' if scenario.training_inputs == 'finalized'
                               else 'masked_panel_season_cv_refit_v2'), evaluation_seed=seed + 1000, fold=full.info,
                     inner_fold=inner.info if inner else None, records=records,
                     loss=LOSS_DEFINITION, us_weight=US_WEIGHT, channels=[str(c) for c in panel['target_names']],
@@ -44,4 +45,3 @@ def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=P
     metadata['evaluation_scores'] = len(scores)
     save(output / 'manifest.json', metadata)
     return output / 'model.pt'
-

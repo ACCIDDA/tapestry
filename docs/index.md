@@ -28,17 +28,12 @@ legacy experiment names do not select a separate implementation.
 
 ## Current direct-forecasting study
 
-**Completed: 468/468 runs** in `b2-direct-research-v1`: 156 configurations,
-three seeds, three held-out seasons and 256 evaluation draws. The best model
-combines target-specific multiscale encoders, all seven covariates and geographic
-pooling (WIS ratio **1.059**; Hub ensemble = 1). Covariates improve its matched
-pooled control by 9.0%, mainly in 2024–25. No configuration mean beats the Hub
-overall or in 2025–26; nominal 95% coverage is 79.3% for the leader.
-
-Read the [completed analysis and best-model fan plots](results/b2-direct-research-v1/index.md)
-for source attribution, spatial comparisons, uncertainty and the explicit
-availability assumptions. The [study design and manager commands](design/b2-direct-research.md)
-record the training recipe and launch.
+[B-2](design/b-2.md), current run `b-2-t0`, supplies T-0 final targets and
+source-specific covariate availability,
+trains three seasons and evaluates 2025–2026 plus a separate 2024–2025 cross-validation
+fold. The design has 309 configurations and three seeds (927 runs), comparing
+covariate encoders, geographic/national sharing and light training masking.
+See [the availability table](data/index.md) and [manager commands](design/b-2.md#run-and-resume-on-longleaf).
 
 ## Previous forecasting results
 
@@ -224,15 +219,10 @@ still needs to be evaluated.
 
 ## Working with Tapestry
 
-The [B2 covariate results](legacy-v0/results/B2-screen/index.md) include the completed
-32-run screen, heatmaps, forecast fans and an explanation of the source-timing
-and training-support limitations. The [B2-kinsa results](legacy-v0/results/B2-kinsa/index.md)
-add the national Kinsa signal (PopHIVE) to that comparison.
-
 Start with [Getting started](getting-started.md), the
 [training workflow](workflows/training.md), or the [data explorer](explorer/overview.md).
 The [architecture notes](design/architecture.md) explain the model and masks. Since 2026-09-22 B0, B1 and B2 are one
-model and one scenario space ([unified design](design/restructure-2026-unified.md)); the B0/B1/B2 results quoted
+model and one scenario space ([unified design](design/restructure-2026-unified.md)); the older B0/B1 results quoted
 above were produced by the earlier code and are kept under [Legacy (v0)](legacy-v0/index.md).
 
 *Documentation note · September 16, 2026: the “unicorn” terminology comes from the

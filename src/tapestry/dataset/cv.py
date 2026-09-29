@@ -105,11 +105,15 @@ def fold(panel, scenario, held_out, inner=False):
     """Episodes for one leave-one-season-out fold; `inner=True` gives the early-stopping split."""
     if scenario.task == 'pipeline':
         scenario = scenario.episode_scenario()
-    if held_out not in SEASONS:
+    if held_out not in scenario.scored_seasons:
         raise ValueError(f'Unknown season {held_out}; expected one of {SEASONS}')
     if inner and not scenario.patience:
         raise ValueError('The inner early-stopping fold needs patience > 0')
     dates = np.array([str(d) for d in panel['dates']])
+    if scenario.evaluation_seasons == 'recent_two':
+        missing = set(TRAINING_SEASONS) - {season(d) for d in dates}
+        if missing:
+            raise ValueError(f'Two-season protocol requires the expanded panel; absent seasons: {sorted(missing)}')
     roles = week_roles(dates, scenario, held_out)
     training = np.isin(roles, ['fit', 'validation'])
     hidden = (roles == 'validation') if inner else np.zeros(len(dates), dtype=bool)
@@ -121,7 +125,7 @@ def fold(panel, scenario, held_out, inner=False):
     train_mode = 'finalized' if scenario.training_inputs == 'finalized' else scenario.input_mode
     train = [e for e in cut(masked(panel, keep), train_mode) if e['context_dates'][-1] in kept]
     validation = score = None
-    info = dict(held_out=held_out, inner=inner, training_weeks=int(training.sum()), fit_weeks=int(keep.sum()))
+    info = dict(held_out=held_out, training_seasons=[s for s in TRAINING_SEASONS if s != held_out], inner=inner, training_weeks=int(training.sum()), fit_weeks=int(keep.sum()))
     if inner:
         origins = np.zeros(len(dates), dtype=bool)
         for i in np.flatnonzero(hidden):

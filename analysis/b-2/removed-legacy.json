@@ -1,0 +1,21 @@
+[
+  "analysis/b2-research",
+  "experiments/b2-direct-research.py",
+  "scripts/b2-research-report.sbatch",
+  "docs/design/b2-direct-research.md",
+  "docs/results/b2-direct-research-v1",
+  "docs/results/b2-research",
+  "docs/legacy-v0/design/b2-next-season.md",
+  "docs/legacy-v0/design/b2.md",
+  "docs/legacy-v0/data/b2.md",
+  "docs/legacy-v0/results/B2-kinsa",
+  "docs/legacy-v0/results/B2-screen",
+  "data/experiments/b2-direct-research-v1",
+  "data/audits/b2",
+  "data/processed/build_b2.json",
+  "data/processed/build_b2.npz",
+  "data/processed/panel-b2-deadline.npz",
+  "data/processed/panel-b2-operational.npz",
+  "data/legacy-results/2026-09-24/B2-covariates",
+  "data/legacy-results/2026-09-24-retired-plans/nowcast-pipeline-smoke/ranking-a93fb28a6073"
+]

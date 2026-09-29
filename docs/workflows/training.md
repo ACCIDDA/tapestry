@@ -1,5 +1,12 @@
 # Training and prediction
 
+**Current experiment: [B-2 with T-0 targets](../design/b-2.md)** (`b-2-t0`).
+It uses standalone forecasting, finalized target histories through the latest
+completed week, and source-specific covariate lags. Both evaluation seasons are
+held-out cross-validation folds. The previous T-1-target run is cancelled and its
+data deleted. Use the design's current manager commands; the modes below describe
+the wider shared interface.
+
 Build the shared panel, choose `task=nowcast`, `task=forecast`, or `task=pipeline`,
 then plan, run and rank with the same manager. Pipeline mode fits independent
 nowcasting and forecasting checkpoints and passes sampled reconstructed histories

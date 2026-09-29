@@ -139,12 +139,12 @@ The [weekly counts](by-week.csv) separate temporal gaps from geographic coverage
 
 Source: `data/processed/panel-b2-deadline.npz`, SHA256 **27c36c76c96cbd1a6705fe9dd9d848a4e734861d61fd300495868bbe78fd6d9a**. Original [deadline policy and pinned source snapshots](provenance/deadline-policy.json). The operational proxy-filled panel is deliberately not used.
 
-[All paired and missing cells](cells.csv.gz) · [Native geographic support](native-support.csv) · [Full summary](summary.csv) · [Main experiment report](../../results/b2-direct-research-v1/index.md).
+[All paired and missing cells](cells.csv.gz) · [Native geographic support](native-support.csv) · [Full summary](summary.csv) · Main experiment report (retired).
 
 Reproduce from the repository root:
 
 ```bash
-.venv/bin/python analysis/b2-research/covariate_availability.py
+# Retired audit command: covariate_availability.py
 ```
 
 [First observation dates and first archived reports, before model filters](../index.md#first-observation-and-first-archived-report-dates).

@@ -32,19 +32,21 @@ CODES = {
     'training_inputs': {'same', 'finalized'},
     'input_normalization': {'none', 'b0'},
     'validation_calendar': {'season', 'b0'},
+    'evaluation_seasons': {'all', 'recent_two'},
     'count_transform': {'raw', 'rate', 'sqrt', 'fourth_root', 'log1p'},
     'ed_transform': {'linear', 'logit', 'fourth_root'},
     'loss_weights': {'influenza_first', 'balanced_admissions', 'flu_only', 'objective'},
+    'signal_features': {'none', 'multiscale', 'smooth_multiscale'},
     'covariate_encoder': {'raw', 'smooth', 'summary', 'shared'},
     'encoder': {'mlp', 'conv', 'multiscale_conv'},
-    'spatial': {'none', 'pooled', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target', 'national_broadcast', 'gated_pool'},
+    'spatial': {'neighbors', 'distance', 'gravity', 'none', 'pooled', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target', 'national_broadcast', 'gated_pool'},
     'heads': {'shared', 'state_us'},
     'decoder': {'legacy', 'residual2'},
     'noise': {'global', 'local'},
     'us_error': {'none', 'shared_factor'},
     'head_sharing': {'shared', 'pathogen', 'target'},
     'fit_partition': {'all', 'pathogen', 'target'},
-    'input_mode': {'finalized', 'finalized_available', 'vintaged'},
+    'input_mode': {'finalized', 'finalized_available', 'scheduled_final', 'vintaged'},
     'task': {'forecast', 'nowcast', 'pipeline'},
 }
 
@@ -53,6 +55,9 @@ CODES = {
 # taken from the existing design docs and code; where the meaning is longer than a
 # line the entry points to the document that defines it.
 MEANING = {
+    'signal_features': 'Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing.',
+    'coordinates': 'Census state internal-point latitude/longitude and non-US indicator.',
+    'evaluation_seasons': 'all three held-out seasons, or recent_two (2025-26 and 2024-25).',
     'training_inputs': 'same as forecasting, or complete finalized target and covariate histories during fitting only.',
     'input_normalization': 'none, or B0 per-location transformed target scales fitted on training contexts only.',
     'validation_calendar': 'season-relative blocks, or B0 blocks counted from the first stored week of each season.',
@@ -99,8 +104,8 @@ MEANING = {
     'mask_outage': 'Share of masked episodes whose pattern is a whole-channel outage.',
     'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age.',
     'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
-                     'workflows/training.md and design/b2.md.',
-    'input_mode': 'Finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context '
+                     'workflows/training.md and design/b-2.md.',
+    'input_mode': 'scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context '
                   '(design §3).',
     'asof_weeks': 'Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; '
                   'older weeks take final truth (design §3).',
@@ -150,6 +155,7 @@ class Scenario:
     count_transform: str = 'fourth_root'
     ed_transform: str = 'linear'
     geography: bool = True
+    coordinates: bool = False
     dynamics: bool = True
     loss_weights: str = 'objective'
     encoder: str = 'mlp'
@@ -182,11 +188,13 @@ class Scenario:
     mask_outage: float = .2
     # Covariates and dataset selection (formerly B2Scenario).
     covariate_encoder: str = 'raw'
+    signal_features: str = 'none'
     covariate_set: str = ''
     input_mode: str = 'finalized'
     training_inputs: str = 'same'
     input_normalization: str = 'none'
     validation_calendar: str = 'season'
+    evaluation_seasons: str = 'all'
     # Vintaged episodes only (2026-09-22): the number of most recent context weeks
     # whose targets are taken as visible at the issuance cutoff; older context weeks
     # take final truth. 2 reproduces the previous vintaged builder (B1); a value >=
@@ -296,6 +304,10 @@ class Scenario:
         return replace(forecast, lookback=lookback, asof_weeks=lookback, covariate_set=groups)
 
     @property
+    def scored_seasons(self):
+        return ('2025-2026', '2024-2025') if self.evaluation_seasons == 'recent_two' else ('2023-2024', '2024-2025', '2025-2026')
+
+    @property
     def horizons(self):
         return tuple(range(1 - self.nowcast_weeks, 1)) if self.task == 'nowcast' else (1, 2, 3, 4)
 
@@ -344,8 +356,8 @@ class Scenario:
                 self.mask_rate * self.mask_gap, self.mask_rate * self.mask_outage)
 
     def model_options(self):
-        return dict(covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
+        return dict(signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
                     noise=self.noise, head_sharing=self.head_sharing, count_transform=self.count_transform,
-                    ed_transform=self.ed_transform, geography=self.geography, dynamics=self.dynamics,
+                    ed_transform=self.ed_transform, geography=self.geography, coordinates=self.coordinates, dynamics=self.dynamics,
                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,
                     us_error=self.us_error, supplied_final=self.supplied_final)

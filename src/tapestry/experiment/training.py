@@ -116,15 +116,33 @@ def fit_component(train, validation, channels, component, options, scenario, see
     for epoch in range(budget):
         dropout = None
         a = available.cpu().numpy()
-        if scenario.mask_rate:
+        if scenario.mask_rate and scenario.input_mode != 'scheduled_final':
             dropout = torch.as_tensor(draw_dropout(a, rng, scenario.mask_probabilities), device=device)
+        epoch_cov = cov
+        if scenario.mask_rate and scenario.input_mode == 'scheduled_final':
+            dropout = torch.zeros_like(available)
+            epoch_cov = None if cov is None else cov.clone()
+            state_ids = [i for i, loc in enumerate(train[0]['locations']) if loc != 'US']
+            for n in range(len(train)):
+                if rng.random() >= scenario.mask_rate:
+                    continue
+                loc = int(rng.choice(state_ids))
+                whole = rng.random() < .25
+                recent = int(rng.integers(1, 3))
+                weeks = slice(None) if whole else slice(-recent, None)
+                dropout[n, weeks, :, loc] = True
+                if epoch_cov is not None:
+                    for k, name in enumerate(covariate_names_for(scenario.covariate_set)):
+                        lag = int(name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'))
+                        window = slice(None) if whole else slice(-recent - lag, -lag if lag else None)
+                        epoch_cov[n, window, k, :, loc] = 0
         model.train()
         total = 0.
         for ids in torch.randperm(len(train), device=device).split(scenario.batch_size):
             optimizer.zero_grad()
             visible = available[ids] if dropout is None else available[ids] & ~dropout[ids]
             samples = training_samples(model, train, ids, values[ids], visible, known_final[ids], cal[ids],
-                                       None if cov is None else cov[ids], scenario.members,
+                                       None if epoch_cov is None else epoch_cov[ids], scenario.members,
                                        scenario.input_mode == 'vintaged')
             score = fair_crps_cells(samples[:, :, :, channels], y[ids][:, :, channels], y_mask[ids][:, :, channels])
             loss = (weights[ids] * score / model.scale[channels]).sum() * len(train) / len(ids)

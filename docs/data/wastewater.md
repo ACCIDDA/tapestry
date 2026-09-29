@@ -58,8 +58,7 @@ and their state coverage per week: [panel analysis §5](panel.md#5-wastewater-in
 ## Earlier analysis note (2026-09-20)
 
 The rest of this page is the analysis that chose the indices. It predates the
-restructure. For the forecasting experiment that used them, see the
-[B2 results and diagnosis](../legacy-v0/results/B2-screen/index.md) (legacy). The
+restructure. The
 alternative index proposal and synthetic wastewater availability used in the
 exploratory regressions below were not used in B2. Its "Build B" and selection
 remarks refer to the [legacy B0 dataset](../legacy-v0/data/build-b-finalized.md);
