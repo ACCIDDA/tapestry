@@ -18,26 +18,6 @@ The added season has finalized NHSN flu/COVID admissions for all 52 weeks and lo
 
 **The availability study and its plots still describe the frozen 2025–26 audit underlying the completed B2 experiment.** They have not been silently recomputed from the expanded base dataset. That experiment's deadline and operational panels remain separate, and must be rebuilt before a new run uses the added season.
 
-## Read the staircase
-
-The horizontal axis is the **Saturday observation week**. The vertical axis is the **nominal Wednesday forecast round**, with later rounds higher. **T−0 lies on the diagonal boundary:** the Saturday four days before Wednesday. One cell left is T−1; two left is T−2. Follow a column upward to see the evidence for that same observation change over time.
-
-For Wednesday January 14, 2026, T−0 is January 10 and T−1 is January 3. Holiday extensions change the actual cutoff, but retain the nominal Wednesday row and its original Saturday. Hover shows the actual cutoff.
-
-| Appearance | What it establishes |
-| --- | --- |
-| Green | A finite value was reported by the deadline |
-| Gray | Arrival timing is unknown from the archive; it may need to be inferred from documented periods |
-| Blue | An explicit missing report was followed by a later finite report |
-| Red × | Explicitly missing, with no later finite value observed |
-| Beige × | No finite value anywhere in the inspected history for that location/week |
-| Yellow | Locations have different evidence; hover or select a state |
-| White | A future observation week |
-
-A cross does **not** prove permanent absence. A later archive entry does **not** by itself prove late publication. A dashboard can display historical values now without preserving evidence of when they first appeared. [Classification details and state explorer](availability/evidence.md).
-
-[![Example: flu admissions availability evidence](availability/timeline/nhsn_flu_admissions-evidence.png)](availability/timeline.md)
-
 <!-- source-history:start -->
 ## First observation and first archived report dates
 

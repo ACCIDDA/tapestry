@@ -54,6 +54,7 @@ nav:
   - Fresh forecasting experiments: design/forecast-covariates.md
   - Unified model design: design/restructure-2026-unified.md
   - Architecture: design/architecture.md
+  - Other models: reference/other-models.md
   - Longleaf setup: longleaf-setup.md
   - Results:
       - Direct covariates and spatial exchange: results/b2-direct-research-v1/index.md

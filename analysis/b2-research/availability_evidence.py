@@ -55,6 +55,12 @@ text='''# Availability evidence: unknown timing, later arrival, and missing valu
 
 **[Open the evidence explorer](timeline/evidence.html)**. Select a covariate/target and then a state. The aggregate view can mix statuses across states; hover lists the states in each category.
 
+## Read the staircase
+
+The horizontal axis is the **Saturday observation week**. The vertical axis is the **nominal Wednesday forecast round**, with later rounds higher. **T−0 lies on the diagonal boundary:** the Saturday four days before Wednesday. One cell left is T−1; two left is T−2. Follow a column upward to see the evidence for that same observation change over time.
+
+For Wednesday January 14, 2026, T−0 is January 10 and T−1 is January 3. Holiday extensions change the actual cutoff, but retain the nominal Wednesday row and its original Saturday. Hover shows the actual cutoff.
+
 | Mark | What the archive establishes | Use for next season |
 | --- | --- | --- |
 | Green | A finite value was reported by this deadline | Observed availability |
