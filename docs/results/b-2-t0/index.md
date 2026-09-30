@@ -88,6 +88,7 @@ Each comparison below changes only the named factor and holds **every other Scen
 | sources: none → all | 30 | +0.0499 | [-0.0026, +0.1024] | 4/30 |
 | sources: none → kinsa | 30 | -0.0077 | [-0.0430, +0.0275] | 21/30 |
 | sources: none → ilinet | 30 | -0.0124 | [-0.0610, +0.0363] | 18/30 |
+| mask_rate: 0.0 → 0.1 | 54 | +0.0079 | [-0.0240, +0.0398] | 20/54 |
 | mask_rate: 0.0 → 0.2 | 54 | +0.0154 | [-0.0020, +0.0328] | 14/54 |
 | signal_features: none → multiscale | 27 | -0.0135 | [-0.0500, +0.0231] | 16/27 |
 | coordinates: False → True | 24 | +0.0047 | [-0.0291, +0.0385] | 9/24 |
@@ -96,7 +97,9 @@ Each comparison below changes only the named factor and holds **every other Scen
 
 **Inputs are selective, not “more is better.”** Adding all covariates worsens 26/30 matched contexts (mean +0.0499), although its seed-only interval includes zero. Kinsa helps 21/30 and ILINet 18/30, with intervals also crossing zero: promising but context-dependent. Outpatient alone harms all three backbone comparisons (mean +0.0930). Removing outpatient from the full bundle improves all three backbones: −0.0288 for pathogen MLP, −0.0980 for target MLP, and −0.0048 for the multiscale CNN. That is a result for this source representation and protocol, not proof outpatient information is intrinsically unhelpful.
 
-**Weak or mixed evidence:** target-wise versus pathogen-wise MLP fitting, coordinates, distance/neighbor sharing, smoothed/shared encoders, and engineered signal features have intervals spanning zero. C1’s distance sharing does not establish a general distance-sharing benefit: its average effect is approximately zero across matched contexts. All three winners use 20% masking, yet increasing masking from zero to 20% worsens 40/54 matched contexts on average (+0.0154; interval includes zero). Winner features should not be interpreted as individually beneficial.
+**Weak or mixed evidence:** target-wise versus pathogen-wise MLP fitting, coordinates, distance/neighbor sharing, smoothed/shared encoders, and engineered signal features have intervals spanning zero. C1’s distance sharing does not establish a general distance-sharing benefit: its average effect is approximately zero across matched contexts.
+
+**Masking did not clearly improve B-2 T-0 and worsened performance on average.** Holding every other Scenario field fixed, 10% masking versus none increases the combined relative-WIS score by +0.0079 and improves only 20/54 contexts; 20% masking increases it by +0.0154 and improves only 14/54. The respective 95% seed-only intervals are [−0.0240, +0.0398] and [−0.0020, +0.0328], so the evidence suggests harm but is not conclusive. All three leading configurations use 20% masking, but their ranking does not establish that masking helped them. Based on these matched comparisons, **use no masking as the default for this protocol**; this recommendation is conditional on the tested configurations and seasons, not proof that masking never helps.
 
 ![Matched source and backbone heatmap](source-backbone-heatmap.png)
 
