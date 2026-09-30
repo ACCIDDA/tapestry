@@ -1,0 +1,106 @@
+{
+  "date": "2026-09-16",
+  "title": "B0.1 \u2014 Shared versus separate target models and temporal encoders",
+  "stage": "forecast",
+  "archived": true,
+  "date_basis": "first recorded publication in git",
+  "source": "docs/legacy-v0/results/b0-1-crosses/index.md",
+  "figures": [
+    {
+      "path": "figures/ranking-combined.png",
+      "caption": "Combined score for all 172 configurations",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/family-spread.png",
+      "caption": "Score distribution by reference family",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/seed-instability.png",
+      "caption": "Seed instability",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/quality-pairplot.png",
+      "caption": "Quality pairplot",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/coverage.png",
+      "caption": "Coverage by target",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/states-vs-us.png",
+      "caption": "States versus US",
+      "section": "Forecast fans",
+      "width": 1094
+    },
+    {
+      "path": "figures/horizon.png",
+      "caption": "Skill by horizon",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-flu_hosp-2023-2024.png",
+      "caption": "Influenza admissions, 2023-2024",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-flu_hosp-2024-2025.png",
+      "caption": "Influenza admissions, 2024-2025",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-flu_hosp-2025-2026.png",
+      "caption": "Influenza admissions, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-flu_prop_ed_visits-2025-2026.png",
+      "caption": "Influenza ED visits, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-covid_hosp-2024-2025.png",
+      "caption": "COVID-19 admissions, 2024-2025",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-covid_hosp-2025-2026.png",
+      "caption": "COVID-19 admissions, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-covid_prop_ed_visits-2025-2026.png",
+      "caption": "COVID-19 ED visits, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-rsv_hosp-2025-2026.png",
+      "caption": "RSV admissions, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/fans-rsv_prop_ed_visits-2025-2026.png",
+      "caption": "RSV ED visits, 2025-2026",
+      "section": "Forecast fans",
+      "width": 1200
+    }
+  ]
+}

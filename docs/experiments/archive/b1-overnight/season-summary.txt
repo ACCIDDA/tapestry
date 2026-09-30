@@ -1,0 +1,11 @@
+Top three configurations by the reported combined score (all configurations if fewer than three). Season columns are seed means. Lower is better; 1 is the matched Hub ensemble.
+
+| Model | 2023-2024 | 2024-2025 | 2025-2026 | Combined |
+|---|---:|---:|---:|---:|
+| C1 · `b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob` | 0.9681 | 0.8932 | 0.9553 | 0.9389 |
+| C2 · `b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob` | 0.9914 | 0.9311 | 0.9328 | 0.9518 |
+| C3 · `b1:v2:h12:tr_4rt:ed_logit:geo1:dyn1:lw_obj:enc_mlp:sp_none:hd_sh:dec_leg:nz_glob` | 0.9715 | 0.9464 | 0.9411 | 0.9530 |
+| Hub ensemble | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| B0 reference | 1.0179 | 0.7485 | 0.9003 | 0.8889 |
+
+C1–C3 are the three lowest saved combined scores. B0 is the reproduced stage09 reference on the same seasons. Inputs, training recipes and forecast sampling can differ; this is contextual, not a paired intervention. Archive dates identify first recorded publication.

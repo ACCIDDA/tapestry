@@ -1,0 +1,10 @@
+Top three configurations by the reported combined score (all configurations if fewer than three). Season columns are seed means. Lower is better; 1 is the matched Hub ensemble.
+
+| Model | 2023-2024 | 2024-2025 | 2025-2026 | Combined |
+|---|---:|---:|---:|---:|
+| C1 · target history only | No known result | No known result | No known result | 1.0430 |
+| C2 · Kinsa | No known result | No known result | No known result | 1.0440 |
+| Hub ensemble | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| B0 reference | No known result | No known result | No known result | No known result |
+
+Only rounded combined scores are recorded in this report. No known saved per-season scores or matched B0 comparison; these are not reconstructed from plot pixels.

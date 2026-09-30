@@ -1,0 +1,244 @@
+{
+  "date": "2026-09-17",
+  "title": "B1 \u2014 Final-value flags, masking and revision nowcasting",
+  "stage": "forecast",
+  "archived": true,
+  "date_basis": "first recorded publication in git",
+  "source": "docs/legacy-v0/results/b1-overnight/index.md",
+  "figures": [
+    {
+      "path": "figures/ranking.png",
+      "caption": "All configurations and seed scores",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations.png",
+      "caption": "Paired formulation changes",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/stress.png",
+      "caption": "Stress comparisons",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/target-season.png",
+      "caption": "Relative WIS by target and held-out season",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/coverage.png",
+      "caption": "Interval coverage against nominal and ensemble levels",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-flu_hosp-2023-2024.png",
+      "caption": "Influenza admissions, 2023-2024 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-flu_hosp-2024-2025.png",
+      "caption": "Influenza admissions, 2024-2025 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-flu_hosp-2025-2026.png",
+      "caption": "Influenza admissions, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-flu_prop_ed_visits-2025-2026.png",
+      "caption": "Influenza ED visits, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-covid_hosp-2024-2025.png",
+      "caption": "COVID-19 admissions, 2024-2025 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-covid_hosp-2025-2026.png",
+      "caption": "COVID-19 admissions, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-covid_prop_ed_visits-2025-2026.png",
+      "caption": "COVID-19 ED visits, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-rsv_hosp-2025-2026.png",
+      "caption": "RSV admissions, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/leaders-rsv_prop_ed_visits-2025-2026.png",
+      "caption": "RSV ED visits, 2025-2026 \u2014 leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-flu_hosp-2023-2024.png",
+      "caption": "Influenza admissions, 2023-2024 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-flu_hosp-2024-2025.png",
+      "caption": "Influenza admissions, 2024-2025 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-flu_hosp-2025-2026.png",
+      "caption": "Influenza admissions, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-flu_prop_ed_visits-2025-2026.png",
+      "caption": "Influenza ED visits, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-covid_hosp-2024-2025.png",
+      "caption": "COVID-19 admissions, 2024-2025 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-covid_hosp-2025-2026.png",
+      "caption": "COVID-19 admissions, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-covid_prop_ed_visits-2025-2026.png",
+      "caption": "COVID-19 ED visits, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-rsv_hosp-2025-2026.png",
+      "caption": "RSV admissions, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/formulations-rsv_prop_ed_visits-2025-2026.png",
+      "caption": "RSV ED visits, 2025-2026 \u2014 matched formulations",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/comparison.png",
+      "caption": "Matched budget comparisons",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/target-season-change.png",
+      "caption": "Changes by disease, target, and year",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-flu_hosp-2023-2024.png",
+      "caption": "Influenza admissions, 2023-2024 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-flu_hosp-2024-2025.png",
+      "caption": "Influenza admissions, 2024-2025 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-flu_hosp-2025-2026.png",
+      "caption": "Influenza admissions, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-flu_prop_ed_visits-2025-2026.png",
+      "caption": "Influenza ED visits, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-covid_hosp-2024-2025.png",
+      "caption": "COVID-19 admissions, 2024-2025 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-covid_hosp-2025-2026.png",
+      "caption": "COVID-19 admissions, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-covid_prop_ed_visits-2025-2026.png",
+      "caption": "COVID-19 ED visits, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-rsv_hosp-2025-2026.png",
+      "caption": "RSV admissions, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "epoch300/figures/budget-rsv_prop_ed_visits-2025-2026.png",
+      "caption": "RSV ED visits, 2025-2026 \u2014 matched training budgets",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "revisions/figures/forecast-ranking.png",
+      "caption": "Forecast ranking",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "revisions/figures/forecast-heatmap.png",
+      "caption": "Forecast skill by disease, target and season",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "revisions/figures/forecast-vs-nowcast.png",
+      "caption": "Forecast against nowcast",
+      "section": "Forecast fans",
+      "width": 1189
+    },
+    {
+      "path": "revisions/figures/recent-kinds.png",
+      "caption": "Revision against reconstruction",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "revisions/figures/paired-contrasts.png",
+      "caption": "Paired factor changes",
+      "section": "Forecast fans",
+      "width": 1200
+    }
+  ]
+}

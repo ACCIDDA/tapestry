@@ -1,0 +1,133 @@
+{
+  "date": "2026-09-25",
+  "title": "Covariate encoders and spatial sharing with reporting gaps",
+  "stage": "forecast",
+  "figures": [
+    {
+      "path": "figures/05d494dbfdec1310.png",
+      "caption": "cv-layout-es3-16-4",
+      "section": "Season splits",
+      "width": 1200
+    },
+    {
+      "path": "figures/3edca13b3c825ffd.png",
+      "caption": "fans-US-hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/8fc1dcbe49ae3610.png",
+      "caption": "fans-US-ed",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/238d95ffb179ad77.png",
+      "caption": "fans-NC-hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/7d4eaad2a98aa3c2.png",
+      "caption": "fans-NC-ed",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/74b5647f9e51d729.png",
+      "caption": "dotplot",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/1cce5cbf3b6404ba.png",
+      "caption": "heatmap-C1",
+      "section": "Score diagnostics",
+      "width": 1182
+    },
+    {
+      "path": "no-mask/matched-masking.png",
+      "caption": "Paired artificial-masking comparison for all 32 formulations",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "no-mask/fans-US-hosp.png",
+      "caption": "US admissions: original leader with and without artificial masking",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "no-mask/fans-US-ed.png",
+      "caption": "US ED: original leader with and without artificial masking",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "no-mask/fans-NC-hosp.png",
+      "caption": "North Carolina admissions: original leader with and without artificial masking",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "no-mask/fans-NC-ed.png",
+      "caption": "North Carolina ED: original leader with and without artificial masking",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "leaders-and-seeds.png",
+      "caption": "Leading models and individual seeds",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "best-fans/fans-US-hosp.png",
+      "caption": "US admissions: Hub ensemble and three leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "best-fans/fans-US-ed.png",
+      "caption": "US ED proportions: Hub ensemble and three leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "best-fans/fans-NC-hosp.png",
+      "caption": "North Carolina admissions: Hub ensemble and three leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "best-fans/fans-NC-ed.png",
+      "caption": "North Carolina ED proportions: Hub ensemble and three leading models",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "covariate-effects-overall.png",
+      "caption": "Covariate effects against matched controls",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "covariate-effects-states.png",
+      "caption": "State and DC effects",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "covariate-effects-us.png",
+      "caption": "US effects",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "leading-seasons.png",
+      "caption": "Leading models across seasons",
+      "section": "Score diagnostics",
+      "width": 1200
+    }
+  ]
+}

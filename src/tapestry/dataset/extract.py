@@ -1,7 +1,7 @@
 """Read each dataset source once into a revision table, then resolve it as of any cutoff.
 
 The single read path for the dataset builder (`dataset.build`) and ad-hoc analysis
-(docs/design/restructure-2026-unified.md §2). Vintage policy (2026-09-22, latest
+(docs/architecture.md). Vintage policy (2026-09-22, latest
 release per cell; see the decision log entry "Hub vintages stop shadowing"):
 
 - Archive-backed sources (six targets, seven Delphi covariates) carry three

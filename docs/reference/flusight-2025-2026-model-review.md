@@ -113,7 +113,7 @@ The [UVA project page](https://biocomplexity.virginia.edu/project/phoenix-phase-
 
 These are research priorities inferred from the evidence, not claims that any unrun change will improve performance.
 
-1. **Align the comparison metric first.** Tapestry's [architecture documentation](../design/architecture.md) says losses are evaluated after inverting transforms, on original-scale values. This report ranks log-scale forecasts. Both evaluations are useful, but they answer different questions. Add a separately labeled, protocol-matched log-scale evaluation once zero handling and aggregation are confirmed; retain the existing scientific objective for comparison rather than silently changing it.
+1. **Align the comparison metric first.** Tapestry's [architecture documentation](../architecture.md) says losses are evaluated after inverting transforms, on original-scale values. This report ranks log-scale forecasts. Both evaluations are useful, but they answer different questions. Add a separately labeled, protocol-matched log-scale evaluation once zero handling and aggregation are confirmed; retain the existing scientific objective for comparison rather than silently changing it.
 2. **Use CMU and current Flusion as strong simple baselines.** Compare on identical dates, jurisdictions, targets, horizons and data vintages. Their sources and seasonal versions matter as much as their model names. Retrospective training on revised data should not be presented as a like-for-like prospective comparison.
 3. **Separate historical transfer from contemporaneous predictors.** Older ILI/FluSurv seasons enlarge the training distribution; recent ED activity or test positivity helps locate today's epidemic. Ablate these separately. Treating all auxiliary inputs as interchangeable would hide which problem they solve.
 4. **Compare explicit calendar and spatial structure with learned structure.** Christmas-relative features, distinct seasonal regimes for noncontiguous jurisdictions, and pooled local dynamics provide concrete comparisons. Use only features and normalization information available at each forecast origin.
@@ -123,11 +123,10 @@ These are research priorities inferred from the evidence, not claims that any un
 
 For context, the same supplied table gives UNC_IDD-InfluPaint 0.86 relative WIS, 43.46%/83.93% coverage and 100% submissions. Google's 0.56 is about 35% lower on that reported score, and the hub ensemble's 0.62 about 28% lower. These are descriptive comparisons of operational submissions, not an evaluation of the current Tapestry implementation or proof about diffusion as a model class.
 
-## Assumptions, gaps and research log
+## Assumptions and limitations
 
 - The local DOCX is treated as the source of the requested season ranking; public publication and exact scoring code remain unverified. Its textual inconsistencies are retained as caveats, not silently repaired.
 - Latest metadata and inspected code are descriptions of particular versions. A June 1 repository snapshot is evidence available by season end, not a reconstruction of weekly deployment history.
 - Source names in metadata do not prove every source was used for every target. Public optional code paths do not establish production use.
 - Model labels and source-model names are not accepted as evidence of implementation family when code or method descriptions say otherwise.
 - No statistical significance, causal feature contribution, full reproducibility, or forecast dependence quality is inferred from the aggregate table.
-- September 19, 2026: matched all supplied rows to the local report; recovered UVA's row; established log-scale scoring; inspected eight metadata files, Google inventory and selected code, OHT utilities, CMU season-end production configuration, and UGA production/sampling code. Saved the table and coverage plot without rendering or inspecting document/figure images, following the user's research workflow. No training, scoring jobs, model changes, or submission actions were performed.

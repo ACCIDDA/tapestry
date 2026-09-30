@@ -71,7 +71,7 @@ def main():
     seeds = [42, 43, 44]
     specification = dict(experiment=args.experiment, target_availability='T-0', configurations=len(rows), seeds=seeds, runs=len(rows)*3,
                   folds=len(rows)*6, eval_members=256, rows=rows)
-    out = Path('analysis') / args.experiment / 'design.json'
+    out = Path('data/experiment-designs') / args.experiment / 'design.json'
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(specification, indent=2)+'\n')
     if args.plan:

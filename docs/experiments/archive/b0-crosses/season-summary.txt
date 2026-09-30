@@ -1,0 +1,11 @@
+Top three configurations by the reported combined score (all configurations if fewer than three). Season columns are seed means. Lower is better; 1 is the matched Hub ensemble.
+
+| Model | 2023-2024 | 2024-2025 | 2025-2026 | Combined |
+|---|---:|---:|---:|---:|
+| `anchor__stopping_300_0` | 1.6880 | 0.8320 | 0.8370 | 0.8924 |
+| `conv__decoder_leg` | 1.1450 | 0.8110 | 0.9250 | 0.9069 |
+| `anchor__stopping_100_0` | 1.2290 | 0.8650 | 0.8890 | 0.9150 |
+| Hub ensemble | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| B0 reference | No known result | No known result | No known result | No known result |
+
+Values are copied from the archived ranking and season table. Its combined score uses the archived aggregation and is not the arithmetic mean of these season columns. No known B0 reference on the identical scoring protocol; do not compare this aggregate directly with the current season-first score.

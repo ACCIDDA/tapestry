@@ -36,7 +36,7 @@ with multiple release dates. A `yes` does not necessarily mean every revision
 is available; see the NHSN distinction below.
 
 For the consumer-facing organization and retained measures, see
-[Shared selection](selection.md): 23 acquisitions map to 11 logical groups.
+[Shared selection](methods.md): 23 acquisitions map to 11 logical groups.
 
 ## Source families
 
@@ -139,7 +139,7 @@ Source details:
   `fluview_clinical` and `flusurv` endpoints. FluView rows carry an extra
   `age_group` key column. The public health labs (`fluview_resp_lab_ph`) are
   not acquired (state rows are season totals). Release timing, archive gaps and the New York pool are
-  in [FluView and FluSurv-NET](fluview-flusurv.md).
+  in [FluView and FluSurv-NET](sources.md).
 
 Full reference-date history is not necessarily full historical release coverage.
 Inspect the saved `reference_time_range` and `report_time_range` before selecting
@@ -153,7 +153,7 @@ commit that contains it. It lists the file's commits through the GitHub API and
 downloads each version from raw.githubusercontent.com rather than mirroring the
 10 GB repository. Commits can be backfills, so the earliest report times
 are when a value entered PopHIVE, not when its publisher released it. Details,
-terms and the Kinsa commit history are in [Kinsa (PopHIVE)](kinsa.md).
+terms and the Kinsa commit history are in [Kinsa (PopHIVE)](sources.md).
 
 ### Hubverse
 
@@ -165,4 +165,51 @@ Canonical target files without row release dates are also exported across their
 first-parent Git history. `tapestry.data hub-history DATASET...` adds that history
 to a new acquisition at the previously saved commit without refreshing the branch.
 The canonical selector and explorer expose it as Git commit history, with the
-availability assumptions documented in [Vintages and geography](vintages-and-geography.md).
+availability assumptions documented in [Vintages and geography](methods.md).
+
+## Claims
+
+Inpatient and outpatient claims provide daily trailing-seven-day percentages.
+The panel selects Saturday values for influenza and COVID-19. These are covariates,
+not admission counts. A finite conflicting same-date report establishes source
+availability but cannot supply an unambiguous model value; see
+[conflict handling](methods.md#same-date-conflicts).
+
+## Kinsa
+
+Kinsa is the national PopHIVE ILI series, recovered from pinned Git snapshots.
+Weekly values require all seven daily observations. Episode construction broadcasts
+the national value and reporting mask to every location; it does not create
+state-specific measurements. Commit time is evidence of repository availability,
+not an assumed provider release time. As-of coverage begins with the retained
+archive, even when the final series extends farther back.
+
+## FluView and FluSurv
+
+`delphi_fluview_ilinet`, `delphi_fluview_clinical` and `delphi_flusurv` use Delphi V5
+archives. ILINet provides ILI percentages, clinical laboratories provide influenza
+positivity, and FluSurv provides surveillance hospitalization rates. Geographic
+support and gaps remain source-specific; a region or surveillance catchment must
+not be relabeled as statewide support. Observation history can be much longer
+than usable release history. The scheduled-final protocol assumes a one-week lag
+for these three groups; this is an experimental assumption, not measured archive timing.
+
+## Wastewater
+
+The panel uses `derived_nwss_state_indices`, rebuilt from versioned Delphi NWSS
+concentrations and auxiliary metadata by `python -m tapestry.dataset.build nwss-indices`.
+These WVAL-like indices are derived predictors, not the published CDC WVAL series.
+
+At each report time, use only positive finite samples and auxiliary metadata
+available by that time. Group by sewershed, NWSS source, PCR target and laboratory
+method. For groups with at least 26 distinct weeks and positive log-scale standard
+deviation, compute `exp((log(value) - log_value_p10) / log_value_sd)` and the
+within-group log-value percentile. Average within a Saturday-ending week, take
+medians across groups at each site, then across sites per state and nationally.
+Each state or national week requires at least three sites. Same-release conflicts
+become missing; disappearing state-weeks receive explicit null statements.
+The formulas and release-boundary handling live in `tapestry.dataset.nwss`.
+
+The earliest retained Delphi NWSS archive vintage is February 25, 2026.
+Older observation dates do not establish historical as-of availability.
+Run index construction after changing NWSS inputs and before rebuilding the panel.

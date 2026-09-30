@@ -1,0 +1,100 @@
+{
+  "date": "2026-09-19",
+  "title": "2025\u201326 forward evaluation with a fixed training cutoff",
+  "stage": "forecast",
+  "archived": true,
+  "date_basis": "first recorded publication in git",
+  "source": "docs/legacy-v0/results/Forward-2025/index.md",
+  "figures": [
+    {
+      "path": "ranking.png",
+      "caption": "Forecast ranking",
+      "section": "Forecast fans",
+      "width": 1050
+    },
+    {
+      "path": "targets.png",
+      "caption": "Matched target results",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "coverage.png",
+      "caption": "Coverage",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "recent.png",
+      "caption": "Recent scaled errors",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "heatmap-comparison.png",
+      "caption": "Matched target heatmap",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "fans-us-flu-overview.png",
+      "caption": "US influenza forecast fans",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "heatmap-horizons.png",
+      "caption": "Horizon heatmap",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "heatmap-recent.png",
+      "caption": "Recent-task heatmap",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "fans-flu_prop_ed_visits.png",
+      "caption": "fans flu_prop_ed_visits",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "heatmap-geography.png",
+      "caption": "heatmap geography",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "fans-rsv_hosp.png",
+      "caption": "fans rsv_hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "fans-covid_hosp.png",
+      "caption": "fans covid_hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "fans-covid_prop_ed_visits.png",
+      "caption": "fans covid_prop_ed_visits",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "fans-rsv_prop_ed_visits.png",
+      "caption": "fans rsv_prop_ed_visits",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "fans-flu_hosp.png",
+      "caption": "fans flu_hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    }
+  ]
+}

@@ -10,7 +10,7 @@ from `Scenario()`'s default, in any order:
     >>> Scenario.from_string('width=32') == Scenario(width=32)
     True
 
-Consequences, all intentional (see docs/design/restructure-2026-unified.md §1):
+Consequences, all intentional (see docs/architecture.md):
 - A string only ever needs to name what differs from the default. Two strings
   naming the same non-default fields are equal regardless of token order.
 - Adding a new dataclass field never breaks an existing saved string; the
@@ -71,16 +71,16 @@ MEANING = {
                        '(`model/network.py` `transform_counts`).',
     'ed_transform': 'ED proportions in model space (`model/network.py`); scores stay in native units.',
     'geography': 'Adds log population and a native-US flag per location as features.',
-    'dynamics': 'Recent-dynamics feature block (30 slope/acceleration/age/validity features); see design/b0.1.md.',
+    'dynamics': 'Recent-dynamics feature block (30 slope/acceleration/age/validity features); see architecture.md.',
     'loss_weights': 'Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the '
                     "score's target weights.",
-    'encoder': 'Temporal context encoder; see design/b0.1.md.',
+    'encoder': 'Temporal context encoder; see architecture.md.',
     'spatial': 'Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); '
-               'see design/b0.1.md.',
+               'see architecture.md.',
     'heads': 'State and US output heads shared or separate (`state_us`).',
-    'decoder': 'Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see design/b0.1.md.',
+    'decoder': 'Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see architecture.md.',
     'noise': 'Global latent noise, or global plus a per-location latent (`local`).',
-    'us_error': 'Extra common noise factor (`shared_factor`); see design/b0.1.md and design/b1.md.',
+    'us_error': 'Extra common noise factor (`shared_factor`); see architecture.md.',
     'latent': 'Global latent (noise) dimension.',
     'width': 'Hidden width of the network.',
     'epochs': 'Epoch cap (the fixed number of epochs when patience = 0).',
@@ -89,22 +89,22 @@ MEANING = {
     'batch_size': 'Episodes per optimizer step.',
     'members': 'Sampled members per training episode (fair CRPS loss).',
     'lr': 'Adam learning rate.',
-    'head_sharing': 'Output sharing: shared, three pathogen heads, or six target heads; see design/b0.1.md.',
+    'head_sharing': 'Output sharing: shared, three pathogen heads, or six target heads; see architecture.md.',
     'annual_calendar': 'Annual sine/cosine and Christmas-timing features.',
     'location_embedding': 'Dimension of a learned location-ID embedding (0 = none).',
     'fit_partition': 'One model for all six targets, or separately fitted models per pathogen / target group '
-                     '(each sees all six inputs); see design/b0.1.md.',
+                     '(each sees all six inputs); see architecture.md.',
     'validation_members': 'Members drawn for the early-stopping validation loss.',
     'weight_decay': 'Adam weight decay.',
-    'supplied_final': 'The network receives a known-final flag channel per cell; see design/b1.md.',
+    'supplied_final': 'The network receives a known-final flag channel per cell; see architecture.md.',
     'mask_rate': 'Probability an episode receives an artificial missingness pattern in training (not a fraction '
-                 'of cells); see design/b1.md.',
+                 'of cells); see architecture.md.',
     'mask_recent': 'Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1).',
     'mask_gap': 'Share of masked episodes whose pattern is a local gap in one location history.',
     'mask_outage': 'Share of masked episodes whose pattern is a whole-channel outage.',
     'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age.',
     'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
-                     'workflows/training.md and design/b-2.md.',
+                     'workflow.md and experiments/b-2-t0/index.md#protocol.',
     'input_mode': 'scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context '
                   '(design §3).',
     'asof_weeks': 'Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; '

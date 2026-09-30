@@ -8,7 +8,7 @@ pathogen. The shared selection policy assigns the pathogen (`pathogen_of`). NHSN
 and NSSP each combine their source products into one group, whose summary lists
 the providers present (CDC, Delphi, Forecast Hub); each hub retains its own group
 and target definitions.
-See [Shared selection](../data/selection.md) for the measure and file allowlists.
+See [Shared selection](../data/methods.md) for the measure and file allowlists.
 Searching covers providers, dataset titles, source paths, column names, and
 complete series labels. Search and filters can restrict the available variants.
 Delphi variants are highlighted in the selector and can be selected alongside

@@ -1,6 +1,6 @@
 # Explorer
 
-The explorer consumes the shared [post-intake selection](../data/selection.md):
+The explorer consumes the shared [post-intake selection](../data/methods.md):
 **native state and national observations only**. HHS, county, HSA, catchment,
 and wastewater-site data are excluded before profiling and indexing. A state
 label on a site or county row does not make it a state observation.
@@ -19,7 +19,7 @@ other source.
 
 Kinsa's national cough, cold and flu signal is a normal raw source too:
 `pophive_kinsa_ili`, whose report times are PopHIVE Git commit times (see
-[Kinsa (PopHIVE)](../data/kinsa.md)). Its `archive.csv.gz` has the columns
+[Kinsa (PopHIVE)](../data/sources.md)). Its `archive.csv.gz` has the columns
 `report_time`, `geo_type`, `geo_value`, `reference_time` and
 `kinsa_cough_cold_flu`. It is a national series, filed under acute respiratory
 illness with provider kind `pophive`.
@@ -31,7 +31,7 @@ influenza-like illness; clinical laboratory signals under influenza, keyed
 **FluSurv-NET · Influenza hospitalization rates**. `age_group` and
 `fill_method` are variant facets, so ILINet age strata and Delphi's pooled
 statewide New York stay labelled. FluSurv state series exist only for
-catchment states. Delphi's public health laboratory source is not included. See [FluView and FluSurv-NET](../data/fluview-flusurv.md).
+catchment states. Delphi's public health laboratory source is not included. See [FluView and FluSurv-NET](../data/sources.md).
 
 In the local 2026-09-16 claims snapshots, the selected influenza and COVID-19
 series in both claims products begin their publisher-vintage history on
@@ -53,7 +53,7 @@ The **Git commit history** variants show canonical target-file states saved by
 intake from the pinned branch's first-parent commits. Select an as-of date to
 resolve the latest eligible complete state, including removed observations.
 Native `as_of` variants remain separate. A commit fixes repository contents; its
-committer timestamp dates that state, not the provider release clock; see [the vintage policy](../data/vintages-and-geography.md).
+committer timestamp dates that state, not the provider release clock; see [the vintage policy](../data/methods.md).
 
 ## Commands
 
@@ -61,7 +61,7 @@ Install the Parquet dependency and start the explorer from the repository root:
 
 ```bash
 python -m pip install -e '.[explorer]'
-python scripts/explore_covariates.py --data-root data serve --no-browser
+python -m tapestry.explorer --data-root data serve --no-browser
 ```
 
 The server defaults to `http://127.0.0.1:8765/`. Omit `--no-browser` to open it
@@ -69,23 +69,23 @@ automatically, or pass `--port 8877` for another port.
 
 ```bash
 # Build without starting the server; reuse a current index.
-python scripts/explore_covariates.py --data-root data index
+python -m tapestry.explorer --data-root data index
 
 # Force a rebuild, optionally adjusting buffer and SQLite cache sizes.
-python scripts/explore_covariates.py --data-root data index --force \
+python -m tapestry.explorer --data-root data index --force \
   --batch-rows 100000 --cache-mb 256
 
 # Read saved metadata, source errors, and freshness without rebuilding.
-python scripts/explore_covariates.py --data-root data status
+python -m tapestry.explorer --data-root data status
 
 # Check SQLite integrity and the Parquet footer.
-python scripts/explore_covariates.py --data-root data validate
+python -m tapestry.explorer --data-root data validate
 
 # Refuse builds or reuse with source errors.
-python scripts/explore_covariates.py --data-root data index --strict
+python -m tapestry.explorer --data-root data index --strict
 
 # Serve an existing index without checking the raw inventory.
-python scripts/explore_covariates.py --data-root data serve --no-index --no-browser
+python -m tapestry.explorer --data-root data serve --no-index --no-browser
 ```
 
 The reproducible B2 wastewater path is three explicit steps: acquire the
@@ -100,7 +100,7 @@ CSV or CSV.gz while retaining its path and checksum in the immutable manifest.
 .venv/bin/python -m tapestry.explorer.cli --data-root data index
 ```
 
-Then rebuild the derived indices with `.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data` (`src/tapestry/dataset/nwss.py`, restored 2026-09-22 from the removed `tapestry.model_data build-b2-nwss` step, same policy; see [wastewater](../data/wastewater.md#production-indices-derived_nwss_state_indices)). It registers a new `derived_nwss_state_indices` snapshot, which `tapestry.dataset.build build` and the explorer index read.
+Then rebuild the derived indices with `.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data` (`src/tapestry/dataset/nwss.py`)). It registers a new `derived_nwss_state_indices` snapshot, which `tapestry.dataset.build build` and the explorer index read.
 
 `--batch-rows` bounds the revision buffer; `--cache-mb` sets the SQLite page-cache
 budget. These are not a total process-memory limit. Every format uses the same
@@ -259,13 +259,6 @@ The published banner adds that the online version is not updated (with its expor
 date) and that the local explorer is the ground-truth source. The docs header links
 to it as **Live explorer**.
 
-The previously published September 2026 export used Wednesday-only histories
-and an eight-week claims revision limit. It keeps 6.0 million of 165.5 million ledger rows
-(28 MB: 373 per-series Parquet files, the largest about 5 MB for daily claims,
-plus series metadata). In a sampled check against
-the local server, latest values and Wednesday as-of dates matched exactly for
-non-claims series; claims matched for dates within 8 weeks of the as-of date.
-
 To refresh it after pulling new raw data:
 
 ```bash
@@ -276,14 +269,14 @@ git push
 ```
 
 The script runs `index` (a no-op when raw data is unchanged) and then
-`explore_covariates.py export --out docs/explorer/data`. On push to `main`,
+`python -m tapestry.explorer export --out docs/explorer/data`. On push to `main`,
 the Documentation workflow builds MkDocs, which copies the committed data, adds
 `index.html`, `app.js`, and `style.css` from `src/tapestry/explorer/static/`, and
 deploys the site.
 
-## History policy — 2026-09-20
+## History selection
 
-At the user's request, the explorer retains Wednesday and Saturday historical
+The explorer retains Wednesday and Saturday historical
 views plus final/latest values. This thins only the explorer's own disposable
 index: the raw snapshots under `data/raw/` keep every publisher release, and the
 dataset builder reads those, never the explorer index. Compaction reuses the export's change selection,
@@ -292,7 +285,3 @@ selects complete-snapshot releases as whole states to preserve omissions.
 Repeated contributions within the same observation/release retain their
 unweighted mean and sample count. Source-vintage ranges remain provenance for
 the original reports, not the compact navigation schedule.
-
-The completed local build retained 56,603,122 of 172,822,223 revision rows
-(67.2% fewer); its compact Parquet ledger is 417.7 MB. The focused preservation
-check is `tests/test_explorer_history.py`.

@@ -5,7 +5,7 @@ historical Wednesday issuance, the exact value visible at its cutoff for every
 calendar week (targets, state covariates and national covariates alike), so any
 issuance's inputs can be reconstructed exactly as they were. Episodes (any
 lookback, any `Scenario.asof_weeks`) are cut from it by `dataset.episodes`; see
-docs/design/restructure-2026-unified.md §3 for the layout and every choice below.
+docs/architecture.md for the layout and every choice below.
 
 In memory (`build`, `load`) the as-of arrays are dense and indexed by calendar week:
 `asof_targets[w, t]` is week t as visible at the end of issuance day w, NaN when

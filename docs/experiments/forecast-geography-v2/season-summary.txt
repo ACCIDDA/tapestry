@@ -1,0 +1,11 @@
+Top three configurations by the reported combined score (all configurations if fewer than three). Season columns are seed means. Lower is better; 1 is the matched Hub ensemble.
+
+| Model | 2023-2024 | 2024-2025 | 2025-2026 | Combined |
+|---|---:|---:|---:|---:|
+| C1 | 1.0194 | 0.8784 | 1.2102 | 1.0360 |
+| C2 | 0.9559 | 0.9207 | 1.2710 | 1.0492 |
+| C3 | 0.9890 | 0.8754 | 1.3246 | 1.0630 |
+| Hub ensemble | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| B0 reference | 1.0179 | 0.7485 | 0.9003 | 0.8889 |
+
+C1–C3 refer to the full ranking below. B0 is the reproduced stage09 reference, averaged over these same seasons and its three seeds. B0 uses finalized target histories and a different training recipe and forecast sample count; this is a reference comparison, not a matched intervention or a claim of significance.

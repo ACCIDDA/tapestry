@@ -1,7 +1,7 @@
 site_name: Tapestry
 site_url: https://accidda.github.io/tapestry/
 repo_url: https://github.com/ACCIDDA/tapestry
-site_description: Vintage-aware surveillance data repository and local explorer
+site_description: Probabilistic epidemic nowcasting and forecasting
 docs_dir: docs
 
 extra_css:
@@ -15,6 +15,7 @@ theme:
   features:
     - navigation.indexes
     - navigation.sections
+    - navigation.expand
     - navigation.top
     - content.code.copy
     - toc.follow
@@ -31,6 +32,7 @@ plugins:
             show_source: false
 
 markdown_extensions:
+  - md_in_html
   - admonition
   - attr_list
   - tables
@@ -45,93 +47,30 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
+hooks:
+  - scripts/docs_hooks.py
+
 nav:
-  - Home: index.md
-  - Getting started: getting-started.md
-  - Current workflow: workflows/training.md
-  - Nowcasting and forecasting: design/nowcast-forecast.md
-  - B-2 with T-0 targets: design/b-2.md
-  - Fresh forecasting experiments: design/forecast-covariates.md
-  - Unified model design: design/restructure-2026-unified.md
-  - Architecture: design/architecture.md
-  - Other models: reference/other-models.md
-  - Longleaf setup: longleaf-setup.md
-  - Results:
-      - B-2 T-0 completed sweep: results/b-2-t0/index.md
-      - Geography and covariate conclusions: results/forecast-geography-v2/conclusions.md
-      - Geography full report: results/forecast-geography-v2/index.md
-      - kinsa-finalized-5seeds: results/kinsa-finalized-5seeds/index.md
+  - Intro: index.md
+  - Architecture / reflection: architecture.md
+  - Workflow:
+      - Workflow: workflow.md
+      - Setup: setup.md
+  - Experiments:
+      - Model runs: experiments/index.md
   - Data:
-      - Start here: data/index.md
-      - Availability:
-          - Read the staircase: data/availability/evidence.md
-          - All heatmaps: data/availability/timeline.md
-          - Methods and denominators: data/availability/index.md
-          - Claims conflict diagnosis: data/availability/conflict-audit.md
-      - Sources:
-          - Catalog: data/sources.md
-          - Claims and clinical covariates: data/covariates.md
-          - Kinsa: data/kinsa.md
-          - FluView and FluSurv: data/fluview-flusurv.md
-          - Wastewater: data/wastewater.md
-      - Definitions and provenance:
-          - Selection: data/selection.md
-          - Vintages and geography: data/vintages-and-geography.md
-          - Storage and provenance: data/storage.md
-          - Acquisition: data/acquisition.md
-          - Earlier panel analysis: data/panel.md
-      - General data explorer:
-          - Overview: explorer/overview.md
-          - Filters and interpretation: explorer/filters.md
-          - Local API: explorer/api.md
-          - Hosted explorer: https://accidda.github.io/tapestry/explorer/
+      - Overview: data/index.md
+      - Interactive staircase: data/staircase.md
+      - Sources: data/sources.md
+      - Selection and provenance: data/methods.md
+      - Panel diagnostics: data/panel.md
+      - Explorer: explorer/overview.md
+      - Explorer filters: explorer/filters.md
   - Reference:
-      - Command line: reference/cli.md
+      - Commands: reference/cli.md
       - Scenario fields: reference/scenario.md
       - Python API: reference/python-api.md
-      - FluSight 2025-26 model review: reference/flusight-2025-2026-model-review.md
-  - Development: development.md
-  - Mac and Longleaf: development-longleaf.md
-  - Features and tests: maintenance.md
-  - Legacy (v0):
-      - legacy-v0/index.md
-      - B0:
-          - Definition and implementation: legacy-v0/data/build-b-finalized.md
-          - B0.0 results: legacy-v0/results/b0-crosses/index.md
-          - B0.0 follow-up and adopted objective: legacy-v0/results/b0-crosses/next-steps.md
-          - B0.1 experiment specification: legacy-v0/design/b0.1.md
-          - B0.1 results: legacy-v0/results/b0-1-crosses/index.md
-          - Crosses calibration (pre-scaling-fix): legacy-v0/results/b0-crosses-legacy/index.md
-      - B1:
-          - Masked-vintage model: legacy-v0/design/b1.md
-          - Overview of what was tried: legacy-v0/results/b1-conclusions.md
-          - First good results: legacy-v0/results/first-good-b1.md
-          - Screen and 300-epoch results: legacy-v0/results/b1-overnight/index.md
-          - Reporting regimes and revisions: legacy-v0/results/b1-reporting-regimes/index.md
-          - Historical curve transfer: legacy-v0/design/historical-curve-transfer.md
-          - Reporting availability: legacy-v0/data/reporting-availability.md
-      - Forward 2025-26:
-          - Data: legacy-v0/data/forward-2025.md
-          - Benchmark: legacy-v0/results/Forward-2025/index.md
-          - Analysis: legacy-v0/results/Forward-2025/analysis.md
-          - Analysis tables: legacy-v0/results/Forward-2025/analysis-tables.md
-          - Check: legacy-v0/results/Forward-2025-check/index.md
-      - Workflows (pre-restructure):
-          - Index: legacy-v0/workflows/README.md
-          - B0 pilot training: legacy-v0/workflows/training.md
-          - Named experiments (manager): legacy-v0/workflows/experiment-manager.md
-          - Experiment postprocessing: legacy-v0/workflows/experiment-postprocessing.md
-          - Configuration evaluation: legacy-v0/workflows/configuration-evaluation.md
-          - Hub evaluation: legacy-v0/workflows/hub-evaluation.md
-          - Emily's EpiBench configs: legacy-v0/workflows/emily-configs.md
-          - B1 overnight: legacy-v0/workflows/b1-overnight.md
-          - B1 300 epochs: legacy-v0/workflows/b1-300.md
-          - B1 one seed: legacy-v0/workflows/b1-one-seed.md
-          - B1 seed42 results: legacy-v0/workflows/b1-seed42-results.md
-          - B1 revisions: legacy-v0/workflows/b1-revisions.md
-          - B1 decisive experiment: legacy-v0/workflows/b1-decisive-experiment.md
-          - B1 decisive execution: legacy-v0/workflows/b1-decisive-execution.md
-          - Forward 2025: legacy-v0/workflows/forward-2025.md
-      - Other:
-          - Local measure inventory: legacy-v0/data/local-inventory-2026-09-13.md
-          - Archived architecture candidates: legacy-v0/design/old LLM things/architecture-candidates.md
+      - Other models: reference/other-models.md
+      - FluSight model review: reference/flusight-2025-2026-model-review.md
+      - Explorer API: explorer/api.md
+      - Development: development.md

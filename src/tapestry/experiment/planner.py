@@ -249,10 +249,10 @@ def completed_runs(folder, allow_incomplete=False, seeds=None):
 
 
 def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
-         admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT, make_plots=True):
+         admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT, make_plots=True, configs=None):
     """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot.
 
-    The report page (`docs/results/<experiment>/index.md`) is written only for the
+    The report page (`docs/experiments/<experiment>/index.md`) is written only for the
     complete ranking: every planned run complete and included, default score weights.
     A subset (`--seeds`, `--allow-incomplete` with missing runs) or non-default weights
     still gets its ranking folder and figures, not the report."""
@@ -284,9 +284,11 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
             for row in sorted(done, key=lambda r: r['attempt'])]
     ranking = rank_runs(runs, destination, us_weight, admissions_weight, ed_weight)
     print(ranking.head(20).to_string(index=False), flush=True)
+    from tapestry.evaluation.effects import write_effects
+    write_effects(destination)
     if not make_plots:
         return destination
-    for path in plot_experiment(folder, destination):
+    for path in plot_experiment(folder, destination, configs=configs):
         print(path, flush=True)
     default_weights = (us_weight, admissions_weight, ed_weight) == (US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT)
     if every_run and default_weights:
@@ -337,10 +339,10 @@ def main(argv=None):
                            help='US share of the score (states/DC share the rest equally)')
             p.add_argument('--admissions-weight', type=float, default=ADMISSIONS_WEIGHT)
             p.add_argument('--ed-weight', type=float, default=ED_WEIGHT)
+        if name in ('rank', 'plots'):
+            p.add_argument('--configs', nargs='+', help='Scenario strings for fans/heatmaps; default: top three')
         if name == 'plots':
             p.add_argument('--ranking', help='Ranking folder (default: the most recent ranking-*)')
-            p.add_argument('--configs', nargs='+', help="Scenario strings for fans/heatmaps ('' or default = "
-                                                        'the default scenario), any number; default: the best ranked')
             p.add_argument('--dates', nargs='+', help='Fan reference dates (default: every 4 weeks of each held-out season)')
     args = parser.parse_args(argv)
     if args.command == 'fit':
@@ -382,7 +384,7 @@ def main(argv=None):
                   f'or locally: .venv/bin/python -m tapestry.experiment.planner run -e {args.experiment}{root}')
     elif args.command == 'rank':
         print(rank(folder, args.allow_incomplete, args.seeds, args.us_weight, args.admissions_weight, args.ed_weight,
-                   make_plots=not args.no_plots))
+                   make_plots=not args.no_plots, configs=args.configs))
     elif args.command == 'plots':
         from tapestry.evaluation.plots import plot_experiment
         rankings = sorted(folder.glob('ranking-*'), key=lambda p: p.stat().st_mtime)

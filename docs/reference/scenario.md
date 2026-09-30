@@ -1,6 +1,6 @@
 # Scenario fields
 
-Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapestry.evaluation.plots.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. "Design" = [the unified design](../design/restructure-2026-unified.md); other documents are under `docs/`.
+Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapestry.evaluation.plots.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. "Design" = [the architecture](../architecture.md); execution is described in [Workflow](../workflow.md).
 
 | Field | Type | Default | Allowed values | Meaning |
 |---|---|---|---|---|
@@ -14,14 +14,14 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `ed_transform` | str | `'linear'` | `fourth_root`, `linear`, `logit` | ED proportions in model space (`model/network.py`); scores stay in native units. |
 | `geography` | bool | `1` | `0`, `1` | Adds log population and a native-US flag per location as features. |
 | `coordinates` | bool | `0` | `0`, `1` | Census state internal-point latitude/longitude and non-US indicator. |
-| `dynamics` | bool | `1` | `0`, `1` | Recent-dynamics feature block (30 slope/acceleration/age/validity features); see design/b0.1.md. |
+| `dynamics` | bool | `1` | `0`, `1` | Recent-dynamics feature block (30 slope/acceleration/age/validity features); see architecture.md. |
 | `loss_weights` | str | `'objective'` | `balanced_admissions`, `flu_only`, `influenza_first`, `objective` | Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the score's target weights. |
-| `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv` | Temporal context encoder; see design/b0.1.md. |
-| `spatial` | str | `'none'` | `attention`, `distance`, `gated_pool`, `gravity`, `joint_location_target`, `national_broadcast`, `neighbors`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see design/b0.1.md. |
+| `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv` | Temporal context encoder; see architecture.md. |
+| `spatial` | str | `'none'` | `attention`, `distance`, `gated_pool`, `gravity`, `joint_location_target`, `national_broadcast`, `neighbors`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see architecture.md. |
 | `heads` | str | `'shared'` | `shared`, `state_us` | State and US output heads shared or separate (`state_us`). |
-| `decoder` | str | `'legacy'` | `legacy`, `residual2` | Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see design/b0.1.md. |
+| `decoder` | str | `'legacy'` | `legacy`, `residual2` | Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see architecture.md. |
 | `noise` | str | `'global'` | `global`, `local` | Global latent noise, or global plus a per-location latent (`local`). |
-| `us_error` | str | `'none'` | `none`, `shared_factor` | Extra common noise factor (`shared_factor`); see design/b0.1.md and design/b1.md. |
+| `us_error` | str | `'none'` | `none`, `shared_factor` | Extra common noise factor (`shared_factor`); see architecture.md. |
 | `latent` | int | `16` | any int (checked in `Scenario.__post_init__`) | Global latent (noise) dimension. |
 | `width` | int | `64` | any int (checked in `Scenario.__post_init__`) | Hidden width of the network. |
 | `epochs` | int | `50` | any int (checked in `Scenario.__post_init__`) | Epoch cap (the fixed number of epochs when patience = 0). |
@@ -29,20 +29,20 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `batch_size` | int | `8` | any int (checked in `Scenario.__post_init__`) | Episodes per optimizer step. |
 | `members` | int | `128` | any int (checked in `Scenario.__post_init__`) | Sampled members per training episode (fair CRPS loss). |
 | `lr` | float | `0.001` | any float (checked in `Scenario.__post_init__`) | Adam learning rate. |
-| `head_sharing` | str | `'shared'` | `pathogen`, `shared`, `target` | Output sharing: shared, three pathogen heads, or six target heads; see design/b0.1.md. |
+| `head_sharing` | str | `'shared'` | `pathogen`, `shared`, `target` | Output sharing: shared, three pathogen heads, or six target heads; see architecture.md. |
 | `annual_calendar` | bool | `1` | `0`, `1` | Annual sine/cosine and Christmas-timing features. |
 | `location_embedding` | int | `0` | any int (checked in `Scenario.__post_init__`) | Dimension of a learned location-ID embedding (0 = none). |
-| `fit_partition` | str | `'all'` | `all`, `pathogen`, `target` | One model for all six targets, or separately fitted models per pathogen / target group (each sees all six inputs); see design/b0.1.md. |
+| `fit_partition` | str | `'all'` | `all`, `pathogen`, `target` | One model for all six targets, or separately fitted models per pathogen / target group (each sees all six inputs); see architecture.md. |
 | `validation_members` | int | `256` | any int (checked in `Scenario.__post_init__`) | Members drawn for the early-stopping validation loss. |
 | `weight_decay` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Adam weight decay. |
-| `supplied_final` | bool | `0` | `0`, `1` | The network receives a known-final flag channel per cell; see design/b1.md. |
-| `mask_rate` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability an episode receives an artificial missingness pattern in training (not a fraction of cells); see design/b1.md. |
+| `supplied_final` | bool | `0` | `0`, `1` | The network receives a known-final flag channel per cell; see architecture.md. |
+| `mask_rate` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability an episode receives an artificial missingness pattern in training (not a fraction of cells); see architecture.md. |
 | `mask_recent` | float | `0.5` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1). |
 | `mask_gap` | float | `0.3` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a local gap in one location history. |
 | `mask_outage` | float | `0.2` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a whole-channel outage. |
 | `covariate_encoder` | str | `'raw'` | `raw`, `shared`, `smooth`, `summary` | Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age. |
 | `signal_features` | str | `'none'` | `multiscale`, `none`, `smooth_multiscale` | Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing. |
-| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflows/training.md and design/b-2.md. |
+| `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflow.md and experiments/b-2-t0/index.md#protocol. |
 | `input_mode` | str | `'finalized'` | `finalized`, `finalized_available`, `scheduled_final`, `vintaged` | scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context (design §3). |
 | `training_inputs` | str | `'same'` | `finalized`, `same` | same as forecasting, or complete finalized target and covariate histories during fitting only. |
 | `input_normalization` | str | `'none'` | `b0`, `none` | none, or B0 per-location transformed target scales fitted on training contexts only. |

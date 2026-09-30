@@ -50,9 +50,6 @@ Evaluate these separately. Success from historical transfer does not establish t
 - Historical training sources can be refreshed during weekly refitting without becoming current conditioning variables. Neither metadata nor this table certifies historical release-time availability.
 - See the [detailed model review](flusight-2025-2026-model-review.md) for architectures, papers, performance and further implementation caveats.
 
-## Documentation log
-
-The September 28, 2026 inventory separated historical supervision from current forecast conditioning and identified the MIGHTE version change. This page consolidates that inventory into one navigable comparison, replacing the earlier covariate note and its overlapping tables. No new model-use claims or experimental results were introduced.
 
 [metadata]: https://github.com/cdcepi/FluSight-forecast-hub/tree/fd6cfaabe10c147d0268c2b34087e0aa036df357/model-metadata
 [google]: https://github.com/cdcepi/FluSight-forecast-hub/blob/fd6cfaabe10c147d0268c2b34087e0aa036df357/model-metadata/Google_SAI-FluEns.yml

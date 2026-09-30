@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-22",
+  "title": "Adding national Kinsa to finalized target histories",
+  "stage": "forecast",
+  "figures": [
+    {
+      "path": "figures/09a5ba8880bda2d1.png",
+      "caption": "cv-layout-fixed-epochs",
+      "section": "Season splits",
+      "width": 1200
+    },
+    {
+      "path": "figures/e552aa7dab409249.png",
+      "caption": "fans-US",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/61edd5d2e4f380a9.png",
+      "caption": "fans-NC",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/78f8141a44dded0b.png",
+      "caption": "dotplot",
+      "section": "Score diagnostics",
+      "width": 1601
+    },
+    {
+      "path": "figures/0adff994bff94018.png",
+      "caption": "heatmap-mlp-all-finalized-a4629e4a2a10",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/054cf4aae9f22342.png",
+      "caption": "heatmap-mlp-all-finalized-e3b0c44298fc",
+      "section": "Score diagnostics",
+      "width": 1200
+    }
+  ]
+}

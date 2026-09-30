@@ -8,18 +8,18 @@ checkout scripts shown below are equivalent.
 
 ```bash
 # Print the complete catalog.
-python scripts/pull_covariates.py catalog
+python -m tapestry.data catalog
 
 # Initialize data/catalog.json and repository directories.
-python scripts/pull_covariates.py --data-root data init
+python -m tapestry.data --data-root data init
 
 # Preview or execute groups.
-python scripts/pull_covariates.py --data-root data pull --group core --dry-run
-python scripts/pull_covariates.py --data-root data pull --group all
+python -m tapestry.data --data-root data pull --group core --dry-run
+python -m tapestry.data --data-root data pull --group all
 
 # Inspect and verify immutable snapshots.
-python scripts/pull_covariates.py --data-root data show delphi_nhsn
-python scripts/pull_covariates.py --data-root data verify delphi_nhsn
+python -m tapestry.data --data-root data show delphi_nhsn
+python -m tapestry.data --data-root data verify delphi_nhsn
 ```
 
 Groups are `all`, `core`, `cdc`, `delphi`, `hubverse`, and `pophive`. Dataset keys can be
@@ -28,13 +28,13 @@ given instead of a group.
 ### Delphi selection and resume
 
 ```bash
-python scripts/pull_covariates.py --data-root data pull delphi_nssp \
+python -m tapestry.data --data-root data pull delphi_nssp \
   --mode archive \
   --signal pct_ed_visits_influenza \
   --geo-type state \
   --workers 4
 
-python scripts/pull_covariates.py --data-root data pull delphi_nssp \
+python -m tapestry.data --data-root data pull delphi_nssp \
   --signal pct_ed_visits_influenza --geo-type state \
   --resume-from data/.staging/delphi_nssp/<staging-id>
 ```
@@ -54,7 +54,7 @@ The `delphi` group contains `delphi_nhsn`, `delphi_nssp`, `delphi_nwss`,
 `delphi_fluview_clinical`, and `delphi_flusurv`.
 
 ```bash
-python scripts/pull_covariates.py pull delphi_claims_inpatient \
+python -m tapestry.data pull delphi_claims_inpatient \
   --signal claims_inpatient_adm_pct_claims_flu --geo-type nation \
   --report-time 2026-09-11
 ```
@@ -66,7 +66,7 @@ Staging directories without a query record must be restarted.
 ### Hub historical state
 
 ```bash
-python scripts/pull_covariates.py --data-root data pull hub_flusight_current \
+python -m tapestry.data --data-root data pull hub_flusight_current \
   --hub-as-of 2025-01-15
 ```
 
@@ -76,23 +76,23 @@ Use `--hub-ref` for an explicit branch, tag, or commit.
 
 ```bash
 # Build only; reuse a current index.
-python scripts/explore_covariates.py --data-root data index
+python -m tapestry.explorer --data-root data index
 
 # Force a complete index rebuild.
-python scripts/explore_covariates.py --data-root data index --force
+python -m tapestry.explorer --data-root data index --force
 
 # Ensure the index is current, then serve it.
-python scripts/explore_covariates.py --data-root data serve
+python -m tapestry.explorer --data-root data serve
 
 # Serve the existing index immediately.
-python scripts/explore_covariates.py --data-root data serve --no-index
+python -m tapestry.explorer --data-root data serve --no-index
 
 # Bind another local port without opening a browser.
-python scripts/explore_covariates.py --data-root data serve \
+python -m tapestry.explorer --data-root data serve \
   --port 8877 --no-browser
 
 # Write the thinned static copy published as the live explorer on GitHub Pages.
-python scripts/explore_covariates.py --data-root data export --out docs/explorer/data
+python -m tapestry.explorer --data-root data export --out docs/explorer/data
 
 # Index, export, and optionally preview the published copy in one step.
 scripts/update_published_explorer.sh --preview
@@ -109,9 +109,9 @@ PYTHONPATH=src python -m tapestry.data.selection --data-root data
 tapestry-select --data-root data
 ```
 
-This read-only command reports policy version, the 25-to-15 grouping, the
-53-measure NHSN allowlist size, Delphi/CDC crosswalks, and missing downloads. See
-[Shared selection](../data/selection.md) for the downstream interface.
+This read-only command reports policy version, source grouping, the
+NHSN measure allowlist size, Delphi/CDC crosswalks, and missing downloads. See
+[Shared selection](../data/methods.md) for the downstream interface.
 
 
 ## Nowcasting and forecasting
@@ -119,10 +119,5 @@ This read-only command reports policy version, the 25-to-15 grouping, the
 One manager serves `task=nowcast`, `task=forecast`, and `task=pipeline`:
 `python -m tapestry.experiment.planner`. Use `nowcast.<field>` and
 `forecast.<field>` for stage-specific settings. The current
-[training guide](../design/nowcast-forecast.md#manager-commands) gives plan,
+[training guide](../workflow.md#plan-launch-and-resume) gives plan,
 launch, status and rank commands, including Longleaf.
-
-
-For the fresh standalone forecasting comparison, use
-`bash experiments/forecast-covariates.sh`. See the
-[protocol and launch commands](../design/forecast-covariates.md).

@@ -1,6 +1,6 @@
 """Cut training/scoring episodes of any lookback from the one panel (`dataset.build`).
 
-One builder, one switch (docs/design/restructure-2026-unified.md §3):
+One builder, one switch (docs/architecture.md):
 
 - `input_mode='finalized'`: one episode per Saturday origin t of the calendar, with
   context weeks t-lookback+1..t and target weeks t+1..t+4 from the truth panel.

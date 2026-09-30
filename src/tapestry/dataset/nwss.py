@@ -11,10 +11,6 @@ before `build build`. It is a separate command, not part of `build build`, becau
 it streams the 1.2 GB auxiliary archive (several minutes) while the NWSS inputs
 change only when re-pulled.
 
-This is the builder that produced the 2026-09-21 snapshot
-(`model_data/b2.py:build_nwss_covariates`, deleted in the 2026-09-21 restructure
-and restored here 2026-09-22 unchanged in policy; the two index formulas are the
-ones in `analysis/covariates/indices.py`, which now imports them from here).
 Policy (recorded in each snapshot's `derivation.json`):
 
 - Report times before `ARCHIVE_SERVICE_START` (2026-02-25, the first Delphi

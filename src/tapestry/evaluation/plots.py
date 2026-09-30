@@ -1,7 +1,7 @@
-"""The experiment figures and report page (user requests 2026-09-22); the only plotting code in the project.
+"""Canonical experiment figures and report generation.
 
 Written by `planner rank` into `<ranking>/plots/` and by `planner plots -e NAME
-[--configs A B ...] [--dates D ...]`. Choices (also in docs/design/restructure-2026-unified.md §5):
+[--configs A B ...] [--dates D ...]`. Choices:
 
 Labels. Every configuration gets a short label `C<k>`, k = its position in the ranking
 (`configuration_ranking.csv` sorted by the main score, 1 = best). Figures show the short
@@ -9,7 +9,7 @@ label followed by the full scenario string wrapped at commas (about 40 character
 line); the report appendix maps each label to its full string, run id, seeds and
 non-default fields. `default` stands for the empty scenario string.
 
-Selected configurations (fans and heatmaps): the best-ranked configuration only by
+Selected configurations (fans and heatmaps): the three best-ranked configurations by
 default; `--configs` replaces the selection (any number, in the order given). Fans use
 each configuration's lowest seed (seeds are not pooled); heatmaps average over seeds.
 
@@ -22,7 +22,7 @@ each configuration's lowest seed (seeds are not pooled); heatmaps average over s
 2. `fans-<location>-<hosp|ed>.png` for US and NC (admissions and ED proportions have
    different units, so one file per location x target kind): rows = disease (flu,
    COVID, RSV), columns = hub ensemble, then one column per selected configuration;
-   x = time across the three held-out seasons, each panel with the finalized truth
+   x = time across the configured held-out seasons, each panel with the finalized truth
    (panel.npz) and, per reference date, the 50% and 90% intervals and the median over
    horizons 0-3. Panels in a row share y limits, so ensemble and models compare
    directly. Default reference dates: every 4th score reference date of each held-out
@@ -48,7 +48,7 @@ each configuration's lowest seed (seeds are not pooled); heatmaps average over s
    seasons with support. One log colour scale centred at 1, shared by every panel of
    every heatmap file of the call; grey = no frozen support.
 
-`write_report` writes `docs/results/<experiment>/index.md`: summary line, figures (CV
+`write_report` writes `docs/experiments/<experiment>/index.md`: summary line, figures (CV
 layout, fans, dot plot, heatmaps; base64-embedded; configurations named `C<k>` +
 scenario string, as in the appendix), the preserved write-up, the ranking table (with
 short labels), and "Appendix: scenarios run". An existing page lacking either
@@ -325,7 +325,7 @@ def plot_experiment(folder, ranking, configs=None, dates=None):
         if missing:
             raise ValueError(f'Configurations not in {ranking}: {sorted(missing)}')
     else:
-        configs = list(labels)[:1]
+        configs = list(labels)[:3]
     panel = load_panel(settings['dataset'])
     scenarios = [Scenario.from_string(c) for c in labels]
     seasons = pd.read_csv(ranking / 'season_scores.csv', keep_default_na=False, na_values=[''])
@@ -343,7 +343,7 @@ def write_scenario_key(path):
              '`tapestry.evaluation.plots.write_scenario_key`, rewritten by every report; do not edit by hand. '
              'A scenario string names only the fields that differ from these defaults, as `key=value` tokens '
              'joined by `,`; booleans are written `0`/`1`. "Design" = '
-             '[the unified design](../design/restructure-2026-unified.md); other documents are under `docs/`.', '',
+             '[the architecture](../architecture.md); execution is described in [Workflow](../workflow.md).', '',
              '| Field | Type | Default | Allowed values | Meaning |', '|---|---|---|---|---|']
     for f in fields(Scenario):
         if f.name in ('nowcast', 'forecast'):
@@ -368,7 +368,7 @@ FIGURE_ORDER = (('cv-layout-*.png', 'Cross-validation layout'),
                 ('heatmap-*.png', 'WIS ratio by location, season and target'))
 
 
-def write_report(folder, ranking, root='docs/results'):
+def write_report(folder, ranking, root='docs/experiments'):
     """`<root>/<experiment>/index.md`: figures (base64-embedded, user request 2026-09-22:
     visible in the page itself, not one click away), the hand-written write-up (text
     between the markers survives every regeneration), the ranking table, and the
@@ -378,9 +378,12 @@ def write_report(folder, ranking, root='docs/results'):
     page_dir.mkdir(parents=True, exist_ok=True)
     page = page_dir / 'index.md'
     write_scenario_key(Path(root).parent / 'reference' / 'scenario.md')
+    from tapestry.evaluation.report_layout import organize_report, preserved_protocol, ranking_summary
+    protocol = ''
     writeup = '_Not written yet._'
     if page.exists():
         text = page.read_text()
+        protocol = preserved_protocol(text)
         if WRITEUP_START not in text or WRITEUP_END not in text:
             raise ValueError(f'{page} exists without both write-up markers ({WRITEUP_START!r}, {WRITEUP_END!r}); '
                              'add them around the hand-written text (or move the page away) so it is not overwritten')
@@ -390,7 +393,9 @@ def write_report(folder, ranking, root='docs/results'):
     labels = short_labels(ranking)
     configs = {short: config for config, short in labels.items()}
     seeds = sorted({r['seed'] for r in manifest['runs']})
-    lines = [f'# {folder.name}', '',
+    from tapestry.evaluation.reports import report_metadata, write_index
+    metadata = report_metadata(page_dir, folder.name)
+    lines = [f'# {metadata["date"]} · {metadata["title"]}', '',
              f'{len(manifest["runs"])} runs, {len(ranked)} configurations, seeds {", ".join(map(str, seeds))}. '
              f'Ranking `{ranking.name}`: US weight {manifest["us_weight"]}, admissions {manifest["admissions_weight"]}, '
              f'ED {manifest["ed_weight"]}. '
@@ -403,6 +408,24 @@ def write_report(folder, ranking, root='docs/results'):
             named = f'{suffix}: `{label(configs[suffix])}`' if pattern.startswith('heatmap') else path.stem
             lines += [f'## {heading}' + (f' ({named})' if '*' in pattern else ''), '',
                       f'![{path.stem}](data:image/png;base64,{data})', '']
+    effects_path = ranking / 'matched_effects.csv'
+    if effects_path.exists():
+        effects = pd.read_csv(effects_path, keep_default_na=False)
+        for filename in ('matched_effects.csv', 'matched_pairs.csv'):
+            (page_dir / filename).write_bytes((ranking / filename).read_bytes())
+        lines += ['## Matched comparisons', '',
+                  'Single-field changes with every other scenario field fixed, paired on identical seeds. '
+                  'Positive changes worsen relative WIS. Intervals use seed averages, not contexts as independent replicates; '
+                  'they describe fitting randomness on fixed tasks, not new-season uncertainty. '
+                  'Blank intervals mean fewer than two seeds. [Method](../../workflow.md#analyze-a-run).', '',
+                  '[All effects](matched_effects.csv) · [Seed pairs](matched_pairs.csv)', '',
+                  '| Field | Reference → value | Contexts | Seeds | Mean Δ WIS ratio | 95% seed-only interval | Improved |',
+                  '|---|---|---:|---|---:|---|---:|']
+        for row in effects.itertuples():
+            interval = f'[{row.seed_ci_low:+.4f}, {row.seed_ci_high:+.4f}]' if row.seed_ci_low != '' else ''
+            lines.append(f'| {row.factor} | `{row.reference}` → `{row.value}` | {row.contexts} | {row.seeds} | '
+                         f'{row.mean_delta:+.4f} | {interval} | {row.improved_contexts}/{row.contexts} |')
+        lines.append('')
     lines += ['## Write-up', '', WRITEUP_START, writeup, WRITEUP_END, '', '## Ranking', '']
     targets = [c.removesuffix('_mean') for c in ranked.columns
                if c.endswith('_mean') and c.startswith('wk inc')]
@@ -428,4 +451,7 @@ def write_report(folder, ranking, root='docs/results'):
         run_seeds = sorted(r['seed'] for r in manifest['runs'] if r['config_id'] == config)
         lines.append(f'| {short} | `{label(config)}` | `{scenario.run_id}` | {", ".join(map(str, run_seeds))} | {changed} |')
     page.write_text('\n'.join(lines) + '\n')
+    baseline = Path(root) / 'b0-reference.csv'
+    organize_report(page, ranking_summary(ranking, baseline), protocol=protocol)
+    write_index(Path(root))
     return page

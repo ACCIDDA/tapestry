@@ -14,7 +14,7 @@
 | NWSS | T-0 |
 
 T is the latest completed Saturday in the forecast context. These are human
-assumptions for the [B-2 training protocol](../design/b-2.md), not measured release dates.
+assumptions for the [B-2 training protocol](../experiments/b-2-t0/index.md#protocol), not measured release dates.
 
 Start here for **what is in the dataset, when it was available, and how much it changed**. Coverage of finalized history and evidence of historical availability are different questions; the pages below keep them separate.
 
@@ -22,8 +22,7 @@ Start here for **what is in the dataset, when it was available, and how much it 
 
 | Question | Where to go |
 | --- | --- |
-| What could we see at each forecast deadline? | **[Interactive availability staircase](availability/timeline/evidence.html)** — choose a target/covariate and state, then hover for evidence |
-| Show the graphs together | [All 20 availability heatmaps](availability/timeline.md), with downloadable figures |
+| What could we see at each forecast deadline? | **[Interactive availability staircase](staircase.md)** — choose a target/covariate and state, then hover for evidence |
 | What are the sources, units and geographic definitions? | [Source catalog](sources.md) and the source-specific pages below |
 
 ## Current dataset
@@ -61,7 +60,7 @@ Kinsa here is the raw daily PopHIVE/Kinsa series, before requiring complete seve
 
 A long archive history does not imply continuous coverage. In particular FluSurv has a major gap from November 2020 to November 2025, then to February 2026. First-date summaries cannot establish availability in each intervening season. ILINet's earliest archive entry can also be national rather than state-level.
 
-[All signal dates and raw row counts](availability/raw-archive-starts.csv) · [Raw NWSS dates](availability/raw-nwss-starts.csv) · [Availability evidence](availability/evidence.md).
+[All signal dates and raw row counts](availability/raw-archive-starts.csv) · [Raw NWSS dates](availability/raw-nwss-starts.csv) · [Availability evidence](staircase.md).
 <!-- source-history:end -->
 
 ## Sources and reporting frequency
@@ -69,21 +68,21 @@ A long archive history does not imply continuous coverage. In particular FluSurv
 | Source | Native frequency and model representation | Details |
 | --- | --- | --- |
 | NHSN admissions and NSSP ED | Weekly target histories; six pathogen/outcome combinations | [Sources](sources.md) |
-| Inpatient/outpatient claims | Daily trailing-seven-day percentages, sampled on Saturday | [Claims](covariates.md), [same-date conflict audit](availability/conflict-audit.md) |
-| Kinsa ILI | Daily national signal, averaged over complete seven-day weeks | [Kinsa](kinsa.md) |
-| ILINet ILI, clinical lab positivity, FluSurv | Weekly; geographic coverage differs by source | [FluView and FluSurv](fluview-flusurv.md) |
-| Wastewater | Irregular raw sampling, converted to weekly WVAL-like and percentile indices | [Wastewater](wastewater.md) |
+| Inpatient/outpatient claims | Daily trailing-seven-day percentages, sampled on Saturday | [Claims](sources.md#claims), [same-date conflict audit](methods.md#same-date-conflicts) |
+| Kinsa ILI | Daily national signal, averaged over complete seven-day weeks | [Kinsa](sources.md#kinsa) |
+| ILINet ILI, clinical lab positivity, FluSurv | Weekly; geographic coverage differs by source | [FluView and FluSurv](sources.md#fluview-and-flusurv) |
+| Wastewater | Irregular raw sampling, converted to weekly WVAL-like and percentile indices | [Wastewater](sources.md#wastewater) |
 
 
-**Claims caveat:** conflicting finite values sharing a report date were rejected by the model pipeline. The corrected availability tables count those reports, but revision estimates remain conditional on the unambiguous subset. Dataset expansion did not resolve those conflicts. [Evidence and implications](availability/conflict-audit.md).
+**Claims caveat:** conflicting finite values sharing a report date are rejected by the model pipeline. Availability evidence counts those reports, but revision estimates remain conditional on the unambiguous subset. [Evidence and implications](methods.md#same-date-conflicts).
 
 ## Acquisition, definitions and provenance
 
-- [Source catalog](sources.md) and [shared selection rules](selection.md).
-- [Vintages and geography](vintages-and-geography.md).
-- [Storage and provenance](storage.md) and [acquisition implementation](acquisition.md).
+- [Source catalog](sources.md) and [selection and provenance](methods.md).
+- [Vintages and geography](methods.md#vintages-and-geography).
+- [Storage and acquisition](methods.md#storage-and-provenance).
 - [Deadline audit policy](availability/provenance/deadline-policy.json) and [operational availability assumptions](availability/provenance/operational-policy.json).
-- [Earlier panel analysis](panel.md), explicitly dated to its preceding build.
+- [Panel diagnostics](panel.md), generated from the saved panel with its snapshot date and hash.
 - [General data explorer](../explorer/overview.md), [filters](../explorer/filters.md) and [local API](../explorer/api.md). This is separate from the availability staircase explorer above.
 
-Model comparisons remain under **Results**. Data definitions, coverage, availability and revisions are collected here.
+Model comparisons are collected under [Experiments](../experiments/index.md). Data definitions, coverage, availability and revisions are collected here.

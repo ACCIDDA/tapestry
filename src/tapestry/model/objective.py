@@ -1,6 +1,6 @@
 """Native-unit loss normalization and explicit season/target/location weights.
 
-Unchanged fair-CRPS loss weighting (docs/design/restructure-2026-unified.md §6:
+Unchanged fair-CRPS loss weighting (docs/architecture.md:
 "No change to the fair-CRPS loss ... only where that logic lives").
 """
 import numpy as np

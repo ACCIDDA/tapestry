@@ -1,0 +1,67 @@
+{
+  "date": "2026-09-30",
+  "title": "B2 \u2014 Covariates, spatial sharing and masking with finalized T-0 inputs",
+  "stage": "forecast",
+  "figures": [
+    {
+      "path": "figures/0b207d64770581d2.png",
+      "caption": "cv-layout-es3-16-4",
+      "section": "Season splits",
+      "width": 4000
+    },
+    {
+      "path": "figures/4069052cc8285d9e.png",
+      "caption": "fans-US-hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/a0f4482fa6749403.png",
+      "caption": "fans-US-ed",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/73fd3f1d92330e8f.png",
+      "caption": "fans-NC-hosp",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/462a86660db41800.png",
+      "caption": "fans-NC-ed",
+      "section": "Forecast fans",
+      "width": 1200
+    },
+    {
+      "path": "figures/84626771b90f595e.png",
+      "caption": "dotplot",
+      "section": "Score diagnostics",
+      "width": 1200
+    },
+    {
+      "path": "figures/2d2066fd76668a64.png",
+      "caption": "heatmap-C1",
+      "section": "Score diagnostics",
+      "width": 1182
+    },
+    {
+      "path": "figures/bbe97fbb535b06e3.png",
+      "caption": "heatmap-C2",
+      "section": "Score diagnostics",
+      "width": 1182
+    },
+    {
+      "path": "figures/58bc65dbe92b8950.png",
+      "caption": "heatmap-C3",
+      "section": "Score diagnostics",
+      "width": 1182
+    },
+    {
+      "path": "source-backbone-heatmap.png",
+      "caption": "Matched source and backbone heatmap",
+      "section": "Score diagnostics",
+      "width": 1200
+    }
+  ]
+}

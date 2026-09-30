@@ -1,0 +1,11 @@
+Top three configurations by the reported combined score (all configurations if fewer than three). Season columns are seed means. Lower is better; 1 is the matched Hub ensemble.
+
+| Model | 2025-2026 | Combined |
+|---|---:|---:|
+| B1 B no-mask | 0.9411 | 0.9411 |
+| B1 B gap-only | 0.9487 | 0.9487 |
+| B1 gated 0.20 | 0.9615 | 0.9615 |
+| Hub ensemble | 1.0000 | 1.0000 |
+| B0 reference | No known result | No known result |
+
+The saved matched-Hub score rows cover 2025–26 only, so the combined and season scores coincide. No known B0 reference verified on this exact forward-evaluation support.

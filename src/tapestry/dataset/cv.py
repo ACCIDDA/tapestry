@@ -1,22 +1,16 @@
-"""Leave-one-season-out cross-validation by masking the panel (replaces `dataset/splits.py`).
+"""Leave-one-season-out cross-validation by masking the panel.
 
-Policy (the pre-refactor `models/season_cv.py` one, restored 2026-09-22 after the
-refactor's episode-level split let training episodes carry held-out-season labels
-and kept validation weeks in inputs and labels; see
-docs/design/restructure-2026-unified.md §3 and its decision log):
-
-- A fold copies the panel and makes every week outside the training seasons (including the added 2022–23 season)
+- A fold copies the panel and makes every week outside the training seasons (including 2022–23)
   unavailable -- in targets, covariates and the as-of arrays (by reference week). Training episodes are cut from that masked panel, with origins
   in training weeks only, so held-out weeks are absent from inputs, labels, loss
   scales and covariate standardization.
 - Inner early-stopping fit (`inner=True`, scenarios with `patience > 0`):
   additionally hide `validation_weeks` consecutive weeks of every
   `validation_spacing`, starting at week `validation_offset` of each training
-  season (Scenario fields since 2026-09-22; defaults 3/16/4 = weeks 4-6, 20-22,
+  season (defaults 3/16/4 = weeks 4-6, 20-22,
   36-38). Week positions count from the season's first epiweek (CDC week 31,
   `season_start`), not from the first calendar week, so every season hides the same
-  weeks; 2023-24 starts before the calendar (2023-09-02 is its 5th week), and its
-  positions before the calendar start simply do not exist (fixed 2026-09-22).
+  weeks; positions before the panel calendar start simply do not exist.
   Validation episodes are cut from the training panel (hidden weeks
   visible), with origins selected by the task horizons: four weeks before each hidden
   week for forecasting, or at/after it for recent-week nowcasting. Only hidden
