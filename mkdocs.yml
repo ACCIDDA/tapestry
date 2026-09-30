@@ -57,6 +57,7 @@ nav:
   - Other models: reference/other-models.md
   - Longleaf setup: longleaf-setup.md
   - Results:
+      - B-2 T-0 completed sweep: results/b-2-t0/index.md
       - Geography and covariate conclusions: results/forecast-geography-v2/conclusions.md
       - Geography full report: results/forecast-geography-v2/index.md
       - kinsa-finalized-5seeds: results/kinsa-finalized-5seeds/index.md

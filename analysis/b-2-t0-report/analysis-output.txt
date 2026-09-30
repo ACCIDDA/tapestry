@@ -1,0 +1,62 @@
+COUNTS 309 281 {'2024-2025': 300, '2025-2026': 181}
+BEST label     backbone              sources   spatial  coordinates  mask_rate  combined_mean  combined_sd
+   C1 pathogen-mlp                 none  distance        False        0.2       0.820689     0.032927
+   C2   target-mlp all-minus-outpatient      none        False        0.2       0.823932     0.007993
+   C3   target-mlp                kinsa neighbors        False        0.2       0.826542     0.022479
+   C4 pathogen-mlp               ilinet  distance         True        0.2       0.828661     0.039768
+   C5   target-mlp                kinsa   gravity        False        0.2       0.828824     0.012492
+WORST label          backbone    sources            spatial  mask_rate  combined_mean  combined_sd
+ C305 target-multiscale        all national_broadcast        0.1       1.045334     0.038541
+ C306 target-multiscale outpatient               none        0.2       1.069246     0.048099
+ C307      pathogen-mlp        all national_broadcast        0.1       1.116317     0.047205
+ C308      pathogen-mlp        all national_broadcast        0.0       1.117942     0.012060
+ C309      pathogen-mlp        all national_broadcast        0.2       1.128725     0.036961
+B0 TOP                                                                                                                                                                                                                                                                                 mean_delta   seed_sd  better_seeds        lo        hi
+config_id                                                                                                                                                                                                                                                                                                                             
+ed_transform=logit,spatial=distance,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two                                                       -0.003686  0.032379             2 -0.084120  0.076748
+ed_transform=logit,epochs=300,patience=30,fit_partition=target,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,covariate_set=inpatient+ww_wval_like+kinsa+ilinet+clinical_lab+flusurv,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two   -0.000443  0.032192             1 -0.080413  0.079527
+ed_transform=logit,spatial=neighbors,epochs=300,patience=30,fit_partition=target,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two                                     0.002167  0.042482             1 -0.103364  0.107697
+ed_transform=logit,coordinates=1,spatial=distance,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,covariate_set=ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two                     0.004286  0.014443             2 -0.031592  0.040164
+ed_transform=logit,spatial=gravity,epochs=300,patience=30,fit_partition=target,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two                                       0.004449  0.021981             1 -0.050154  0.059052
+EFFECTS            factor    reference                  value  contexts  mean_delta  seed_ci_low  seed_ci_high  improved_contexts  improved_seeds
+         backbone pathogen-mlp             target-mlp       103   -0.006326    -0.017148      0.004496                 61               3
+         backbone pathogen-mlp      target-multiscale       103    0.048424     0.024074      0.072773                 13               0
+      coordinates        False                   True        24    0.004689    -0.029073      0.038450                  9               1
+covariate_encoder      summary                 smooth        27   -0.004196    -0.054435      0.046042                 13               2
+covariate_encoder      summary                 shared        27    0.000784    -0.022132      0.023699                 13               2
+covariate_encoder      summary                    raw        27    0.080902     0.011277      0.150527                  2               0
+        mask_rate          0.0                    0.1        54    0.007894    -0.024022      0.039810                 20               1
+        mask_rate          0.0                    0.2        54    0.015379    -0.002026      0.032785                 14               0
+  signal_features         none             multiscale        27   -0.013474    -0.050006      0.023059                 16               3
+  signal_features         none      smooth_multiscale        27   -0.007851    -0.072854      0.057153                 17               2
+          sources         none           clinical_lab         3   -0.018576    -0.102521      0.065369                  3               2
+          sources         none                 ilinet        30   -0.012376    -0.061048      0.036295                 18               2
+          sources         none                  kinsa        30   -0.007743    -0.042978      0.027492                 21               2
+          sources         none           ww_wval_like         3    0.003658    -0.070908      0.078224                  2               2
+          sources         none              inpatient         3    0.012025    -0.003113      0.027163                  0               0
+          sources         none                flusurv         3    0.016181    -0.102803      0.135165                  1               1
+          sources         none   all-minus-outpatient         3    0.023226    -0.074219      0.120671                  1               1
+          sources         none      all-minus-flusurv         3    0.035479    -0.011813      0.082771                  0               0
+          sources         none all-minus-clinical_lab         3    0.041640     0.010404      0.072876                  0               0
+          sources         none    all-minus-inpatient         3    0.043551    -0.089424      0.176527                  0               1
+          sources         none                    all        30    0.049905    -0.002561      0.102371                  4               0
+          sources         none       all-minus-ilinet         3    0.057575    -0.034147      0.149296                  0               0
+          sources         none all-minus-ww_wval_like         3    0.078307     0.006952      0.149663                  0               0
+          sources         none        all-minus-kinsa         3    0.079556     0.038138      0.120974                  0               0
+          sources         none             outpatient         3    0.092950     0.039560      0.146339                  0               0
+          spatial         none               distance        24    0.002768    -0.031909      0.037444                 12               1
+          spatial         none                gravity        12    0.007526    -0.035016      0.050068                  5               1
+          spatial         none              neighbors        63    0.008352    -0.015207      0.031910                 21               1
+          spatial         none                 pooled        12    0.035926     0.001485      0.070367                  1               0
+          spatial         none             gated_pool        12    0.047569     0.018745      0.076393                  1               0
+          spatial         none     national_broadcast        63    0.055212     0.017992      0.092432                  5               0
+          spatial         none              attention        12    0.073189     0.017633      0.128745                  1               0
+REMOVAL                     mean       min       max
+source_removed                              
+clinical_lab   -0.025474 -0.143811  0.027221
+flusurv        -0.031634 -0.124799  0.034726
+ilinet         -0.009539 -0.060269  0.040924
+inpatient      -0.023562 -0.054971  0.015522
+kinsa           0.012443 -0.096818  0.053594
+outpatient     -0.043888 -0.143424  0.040535
+ww_wval_like    0.011194 -0.107416  0.105084
