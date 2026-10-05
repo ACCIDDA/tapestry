@@ -1,0 +1,13 @@
+architecture,training_inputs,retrospective_shared_admissions_percent_change,forward_shared_admissions_percent_change,forward_six_target_percent_change
+C1,Finalized early two; actual recent reports,-7.726311449610012,3.5710443750886838,5.30383620470456
+C1,Empirical half-strength admissions in early two; actual recent reports,-12.726092654745637,-3.1070936792168324,3.661768305415447
+C1,"Learned mean + residual, half-strength admissions in early two; actual recent reports",-7.881733391871403,-0.6066891758664816,1.9936545613522536
+C1,Empirical half-strength admissions in all three; ED/covariates finalized,-6.849920359862738,-2.529170562944738,0.4900763986665835
+C2,Finalized early two; actual recent reports,-2.662692998766414,2.2158702772994587,-2.120502536916602
+C2,Empirical half-strength admissions in early two; actual recent reports,-7.468011773524442,8.872937568290219,1.4529087883036862
+C2,"Learned mean + residual, half-strength admissions in early two; actual recent reports",-9.271301119400842,5.485762604257705,-1.711068811006966
+C2,Empirical half-strength admissions in all three; ED/covariates finalized,-2.990605704271465,-1.2028277272738697,-2.715213297338581
+C3,Finalized early two; actual recent reports,-11.95527792948752,0.2397908085875144,-3.2078614611584566
+C3,Empirical half-strength admissions in early two; actual recent reports,-14.982657720283507,-0.1274234564104026,-3.531348140434265
+C3,"Learned mean + residual, half-strength admissions in early two; actual recent reports",-14.142970011572542,-4.01982004614333,-2.8718014977944573
+C3,Empirical half-strength admissions in all three; ED/covariates finalized,-5.567602039147834,-0.7838702696473909,-0.7749766779025391

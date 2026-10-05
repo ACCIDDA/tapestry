@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nowcasts and observed revisions by Wednesday</title>
+<style>
+:root{font:14px system-ui;color:#263445;background:#fff}body{margin:20px}h1{font-size:23px;margin-bottom:8px}p{line-height:1.5}.muted{color:#5a6978;font-size:12px}.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin:16px 0}label{display:grid;gap:5px;font-size:12px}select,input,button{font:inherit;padding:7px;border:1px solid #bdcbd5;border-radius:5px;background:white;color:inherit}button{cursor:pointer}.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;margin:12px 0}.chart{overflow:auto;border:1px solid #dce3e9;border-radius:6px}canvas{display:block}#detail{position:sticky;bottom:0;background:#eff4f7;border-top:2px solid #718496;padding:10px;white-space:pre-line;font-size:12px;min-height:38px}#error{color:#ac2929}
+</style></head><body>
+<h1>Nowcasts and observed revisions by Wednesday</h1>
+<p>Each dated row has its own zero baseline. Lines stay on their observation dates: follow a date vertically to see how its correction develops. The epidemic curve above uses the same horizontal calendar.</p>
+<div class="controls"><label>Target<select id="signal"></select></label><label>Location<select id="location"></select></label><label>First Wednesday<input type="date" id="start"></label><label>Last Wednesday<input type="date" id="end"></label><label>Trailing weeks<select id="weeks"></select></label><label>Percentage denominator<select id="denominator"><option value="report">Wednesday report</option><option value="truth">Final reference</option></select></label><button id="reset">Full season</button><button id="csv">Download points</button><button id="png">Save graph</button></div>
+<div class="legend"><span style="color:#9c4fbc">━━ Actual revision</span><span style="color:#07877b">┄┄ Model's predicted revision</span><span>━━ Final reference curve (upper panel)</span><span style="color:#07877b">● Newest-week nowcast (upper panel)</span></div>
+<p id="summary" class="muted"></p><p id="error"></p><div class="chart"><canvas id="plot" aria-label="Reference epidemic curve and dated rows comparing model corrections with observed revisions"></canvas></div><div id="detail">Hover or click a point for the report, model nowcast, final reference, and their differences.</div>
+<p id="provenance" class="muted"></p>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const m=JSON.parse(document.getElementById('payload').textContent), $=id=>document.getElementById(id);
+const decode=s=>{const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0)),v=new DataView(bytes.buffer);return Float32Array.from({length:bytes.length/4},(_,i)=>v.getFloat32(i*4,true));};
+const cache=new Map(), day=d=>Date.parse(d+'T00:00:00Z'), week=7*86400000;
+const fmt=v=>Number.isFinite(v)?v.toLocaleString(undefined,{maximumSignificantDigits:6}):'unavailable';
+const opt=(id,value,text=value)=>$(id).add(new Option(text,value));
+const pretty=s=>s.replace('nhsn_','').replace('nssp_','').replace('_admissions',' admissions').replace('_proportion',' ED proportion').replaceAll('_',' ');
+m.series.forEach(s=>opt('signal',s.name,pretty(s.name)));m.locations.forEach(l=>opt('location',l));
+for(let a=2;a<=m.ages;a++)opt('weeks',a);$('weeks').value=String(m.ages);$('location').value='US';$('signal').value='nhsn_flu_admissions';
+let hits=[], visiblePoints=[];
+function reset(){$('start').value=m.issues[0];$('end').value=m.default_end;}
+function values(){const name=$('signal').value;if(!cache.has(name)){const raw=m.series.find(s=>s.name===name);cache.set(name,Object.fromEntries(['report','truth','prediction','history'].map(k=>[k,decode(raw[k])])));}return cache.get(name);}
+function revision(value,report,truth){const den=$('denominator').value==='report'?report:truth;if(![value,report,den].every(Number.isFinite))return NaN;if(den===0)return value===0&&report===0?0:NaN;return 100*(value-report)/den;}
+function save(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function draw(){
+ const d=values(),li=m.locations.indexOf($('location').value),n=m.locations.length,span=+$('weeks').value;
+ const rows=m.issues.map((v,w)=>w).filter(w=>m.issues[w]>=$('start').value&&m.issues[w]<=$('end').value).reverse();
+ const left=107,right=80,curveTop=38,curveBottom=190,rowTop=279,rowHeight=56;
+ const width=Math.max(720,$('plot').parentElement.clientWidth),height=rowTop+rows.length*rowHeight+68;
+ const el=$('plot'),ratio=window.devicePixelRatio||1;el.width=width*ratio;el.height=height*ratio;el.style.width=width+'px';el.style.height=height+'px';
+ const c=el.getContext('2d');c.scale(ratio,ratio);c.fillStyle='white';c.fillRect(0,0,width,height);c.font='11px system-ui';hits=[];visiblePoints=[];
+ if(!rows.length){c.fillStyle='#263445';c.fillText('No Wednesdays in this range.',left,40);return;}
+ const lo=Math.max(0,Math.min(...rows.map(w=>m.origins[w]))-span+1),hi=Math.max(...rows.map(w=>m.origins[w]));
+ const xmin=day(m.dates[lo]),xmax=day(m.issues[rows[0]]),x=date=>left+(day(date)-xmin)/(xmax-xmin||week)*(width-left-right);
+ const points=rows.map(w=>Array.from({length:span},(_,j)=>{const age=span-1-j,t=m.origins[w]-age,idx=(w*m.ages+age)*n+li;
+ const report=d.report[idx],truth=d.truth[idx],prediction=d.prediction[idx];return{w,age,t,report,truth,prediction,actual:revision(truth,report,truth),model:revision(prediction,report,truth)};}).filter(v=>v.t>=0));
+ visiblePoints=points.flat();let maximum=5;visiblePoints.forEach(v=>{for(const z of [v.actual,v.model])if(Number.isFinite(z))maximum=Math.max(maximum,Math.abs(z));});
+ const power=10**Math.floor(Math.log10(maximum)),bound=Math.ceil(maximum/power)*power,amplitude=rowHeight*.38;
+ const history=m.dates.map((date,t)=>({date,value:d.history[t*n+li]})).slice(lo,hi+1);
+ let maxValue=0;history.forEach(v=>{if(Number.isFinite(v.value))maxValue=Math.max(maxValue,v.value);});visiblePoints.filter(v=>v.age===0).forEach(v=>{if(Number.isFinite(v.prediction))maxValue=Math.max(maxValue,v.prediction);});maxValue=maxValue*1.08||1;
+ const y=v=>curveBottom-v/maxValue*(curveBottom-curveTop);
+ c.fillStyle='#263445';c.fillText(pretty($('signal').value)+' · '+$('location').value,left,20);
+ for(let j=0;j<=4;j++){const v=maxValue*j/4;c.strokeStyle='#e6ebef';c.beginPath();c.moveTo(left,y(v));c.lineTo(width-right,y(v));c.stroke();c.fillStyle='#5a6978';c.textAlign='right';c.fillText(fmt(v),left-8,y(v)+4);}c.textAlign='left';
+ const tickStep=Math.max(1,Math.ceil((hi-lo+1)/7));
+ for(let t=lo;t<=hi;t+=tickStep){const xx=x(m.dates[t]);c.strokeStyle='#edf0f3';c.beginPath();c.moveTo(xx,curveTop);c.lineTo(xx,height-52);c.stroke();c.fillStyle='#5a6978';c.fillText(m.dates[t],xx-27,curveBottom+21);c.fillText(m.dates[t],xx-27,height-30);}
+ const line=(series,getx,gety,color,dash=[])=>{c.strokeStyle=color;c.lineWidth=1.7;c.setLineDash(dash);c.beginPath();let joined=false;series.forEach(v=>{const xx=getx(v),yy=gety(v);if(!Number.isFinite(yy)){joined=false;return;}if(joined)c.lineTo(xx,yy);else c.moveTo(xx,yy);joined=true;});c.stroke();c.setLineDash([]);};
+ line(history,v=>x(v.date),v=>y(v.value),'#263445');
+ const newest=visiblePoints.filter(v=>v.age===0).sort((a,b)=>a.t-b.t);
+ line(newest,v=>x(m.dates[v.t]),v=>y(v.prediction),'#07877b',[4,3]);
+ newest.forEach(v=>{if(Number.isFinite(v.prediction)){const xx=x(m.dates[v.t]),yy=y(v.prediction);c.fillStyle='#07877b';c.beginPath();c.arc(xx,yy,2.6,0,2*Math.PI);c.fill();hits.push({...v,x:xx,y:yy});}});
+ c.fillStyle='#5a6978';c.fillText('Forecast Wednesday',4,rowTop-32);c.fillText('Each row: 0% baseline · upward = positive revision',left,rowTop-32);
+ c.textAlign='right';c.fillText(`Same scale: ±${fmt(bound)}%`,width-8,rowTop-14);c.textAlign='left';
+ points.forEach((series,i)=>{const baseline=rowTop+i*rowHeight,w=rows[i],end=x(m.issues[w]);
+ c.strokeStyle='#dae2e8';c.lineWidth=.8;c.beginPath();c.moveTo(x(m.dates[series[0].t]),baseline);c.lineTo(end,baseline);c.stroke();c.beginPath();c.moveTo(end,baseline-4);c.lineTo(end,baseline+4);c.stroke();c.fillStyle='#5a6978';c.fillText(m.issues[w],4,baseline+4);
+ for(const [key,color,dash] of [['actual','#9c4fbc',[]],['model','#07877b',[4,3]]]){line(series,v=>x(m.dates[v.t]),v=>baseline-amplitude*v[key]/bound,color,dash);
+ series.forEach(v=>{if(!Number.isFinite(v[key]))return;const xx=x(m.dates[v.t]),yy=baseline-amplitude*v[key]/bound;c.fillStyle=color;c.beginPath();c.arc(xx,yy,2.3,0,2*Math.PI);c.fill();hits.push({...v,x:xx,y:yy});});}
+ if(!series.some(v=>Number.isFinite(v.actual)||Number.isFinite(v.model))){c.fillStyle='#89939d';c.fillText('No comparable reports',x(m.dates[series[0].t])+4,baseline-8);}
+ });
+ c.fillStyle='#5a6978';c.fillText('Observation date (Saturday); each row ends at its forecast Wednesday',left,height-8);
+ const den=$('denominator').value==='report'?'Wednesday report':'final reference';
+ $('summary').textContent=`${rows.length} Wednesday rows · ${span} trailing weeks · both corrections = 100 × (value − report) / ${den}. Identical linear scale for all rows: ±${fmt(bound)}% spans 76% of row spacing. No clipping or per-row normalization. Missing reports and undefined percentages break lines.`;
+ $('provenance').textContent=`Saved best-model run: ${m.experiment} · ${m.fold} development replay · reference snapshot ${m.reference_day}. Eight reconstructed weeks are available. Empty cells have no saved evaluated prediction; a missing report has no defined revision. Prior-season patterns and online updates use available vintages; the final reference is retrospective.`;
+}
+for(const id of ['signal','location','weeks','start','end','denominator'])$(id).onchange=draw;
+$('reset').onclick=()=>{reset();draw();};window.addEventListener('resize',draw);
+for(const event of ['mousemove','click'])$('plot').addEventListener(event,e=>{const b=$('plot').getBoundingClientRect(),xx=e.clientX-b.left,yy=e.clientY-b.top;let best=null,dist=81;for(const h of hits){const v=(h.x-xx)**2+(h.y-yy)**2;if(v<dist){dist=v;best=h;}}if(best){const v=best;$('detail').textContent=`Wednesday ${m.issues[v.w]} · observation ${m.dates[v.t]} · T−${v.age}\nReport ${fmt(v.report)} → model ${fmt(v.prediction)} · reference ${fmt(v.truth)}\nModel correction ${fmt(v.model)}% · actual revision ${fmt(v.actual)}% · model − reference ${fmt(v.prediction-v.truth)} (raw units)`;}});
+$('csv').onclick=()=>{const rows=[['signal','location','issuance','observation','age','report','prediction','reference','predicted_revision_pct','actual_revision_pct','denominator']];visiblePoints.forEach(v=>rows.push([$('signal').value,$('location').value,m.issues[v.w],m.dates[v.t],v.age,...[v.report,v.prediction,v.truth,v.model,v.actual].map(x=>Number.isFinite(x)?x:''),$('denominator').value]));save(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}),'nowcast-revisions.csv');};
+$('png').onclick=()=>$('plot').toBlob(blob=>{if(blob)save(blob,'nowcast-revisions.png');});reset();draw();
+</script></body></html>

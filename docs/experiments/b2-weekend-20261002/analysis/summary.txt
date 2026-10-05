@@ -1,0 +1,60 @@
+COMPLETE_EFFECTIVE_CONFIGURATIONS 156
+BEST_BY_FAMILY
+                             effective_id  architecture source_b2_label    family                                                                actual_treatment                                          model  combined  baseline  paired_change_pct  seasons
+mlp-pathogen-scheduled_final-e1d8e595df0b            42             C21 two_stage                              Nowcaster phase_local; ridge 100.0; correction 1.0 pathogen mlp; none spatial; covariates: ilinet  0.882542  0.932318          -5.138166        2
+mlp-pathogen-scheduled_final-4d509cfe3355            42             C21    direct                                                    synchronous_log strength 1.0 pathogen mlp; none spatial; covariates: ilinet  0.887092  0.932318          -4.865031        2
+mlp-pathogen-scheduled_final-8ab90457afe3            42             C21     joint Joint recent reconstruction and forecast; local half; pooled eight-horizon loss pathogen mlp; none spatial; covariates: ilinet  0.890773  0.932318          -4.576059        2
+BEST_FINALIZED_TRAINING
+                             effective_id  architecture source_b2_label family                    actual_treatment                                          model  combined  baseline  paired_change_pct  seasons
+mlp-pathogen-scheduled_final-ee6294dc9974            42             C21 direct Unchanged finalized training inputs pathogen mlp; none spatial; covariates: ilinet  0.932318  0.932318                0.0        2
+TOP10
+                             effective_id  architecture source_b2_label    family                                                                  actual_treatment                                                                                                            model  combined  baseline  paired_change_pct  seasons
+mlp-pathogen-scheduled_final-e1d8e595df0b            42             C21 two_stage                                Nowcaster phase_local; ridge 100.0; correction 1.0                                                                   pathogen mlp; none spatial; covariates: ilinet  0.882542  0.932318          -5.138166        2
+mlp-pathogen-scheduled_final-4d509cfe3355            42             C21    direct                                                      synchronous_log strength 1.0                                                                   pathogen mlp; none spatial; covariates: ilinet  0.887092  0.932318          -4.865031        2
+mlp-pathogen-scheduled_final-8ab90457afe3            42             C21     joint   Joint recent reconstruction and forecast; local half; pooled eight-horizon loss                                                                   pathogen mlp; none spatial; covariates: ilinet  0.890773  0.932318          -4.576059        2
+mlp-pathogen-scheduled_final-d676d5e50383            46             C25 two_stage                                 Nowcaster phase_local; ridge 10.0; correction 1.0                                                               pathogen mlp; neighbors spatial; covariates: kinsa  0.891449  1.004288         -10.755020        2
+mlp-pathogen-scheduled_final-a9d547d2c097            42             C21 two_stage                                 Nowcaster phase_local; ridge 10.0; correction 1.0                                                                   pathogen mlp; none spatial; covariates: ilinet  0.902370  0.932318          -3.164401        2
+mlp-pathogen-scheduled_final-d3cd10988fcc            42             C21 two_stage                                         Nowcaster age; ridge 10.0; correction 1.0                                                                   pathogen mlp; none spatial; covariates: ilinet  0.903613  0.932318          -2.963965        2
+mlp-pathogen-scheduled_final-50d54f63a6bb            46             C25     joint Joint recent reconstruction and forecast; local random; pooled eight-horizon loss                                                               pathogen mlp; neighbors spatial; covariates: kinsa  0.905008  1.004288          -9.432841        2
+mlp-pathogen-scheduled_final-e6ba268f0fb4            43             C22    direct                                                      synchronous_log strength 0.5      pathogen mlp; none spatial; covariates: inpatient+outpatient+ww_wval_like+kinsa+ilinet+clinical_lab+flusurv  0.905397  0.943032          -3.721526        2
+mlp-pathogen-scheduled_final-52eae59caaa9            42             C21    direct                                                         calendar_log strength 0.5                                                                   pathogen mlp; none spatial; covariates: ilinet  0.907529  0.932318          -2.416498        2
+mlp-pathogen-scheduled_final-6fc6aceaba32            47             C26     joint Joint recent reconstruction and forecast; local random; pooled eight-horizon loss pathogen mlp; neighbors spatial; covariates: inpatient+outpatient+ww_wval_like+kinsa+ilinet+clinical_lab+flusurv  0.909258  0.970579          -6.205203        2
+TREATMENT_PAIRED_CHANGES
+season                                                                                 2024-2025  2025-2026
+actual_treatment
+Half clean episodes; local log errors strength 0.5                                         -3.86      -1.98
+Half clean episodes; local log errors strength 1.0                                         -4.89      -0.79
+Joint recent reconstruction and forecast; local full; pooled eight-horizon loss            -9.56      11.22
+Joint recent reconstruction and forecast; local half; pooled eight-horizon loss            -7.73       2.30
+Joint recent reconstruction and forecast; local random; pooled eight-horizon loss          -2.63       4.36
+Joint recent reconstruction and forecast; synchronous full; pooled eight-horizon loss      -4.61      12.58
+Local log errors random strength zero to one                                               -2.95       1.13
+Local phase matching without calendar                                                      -8.55       6.42
+Local seasonal log errors strength 0.25                                                     3.27      -0.08
+Local seasonal log errors strength 0.5                                                     -4.73       0.17
+Local seasonal log errors strength 1.0                                                     -9.53       6.73
+Nowcaster age; ridge 10.0; correction 1.0                                                 -10.29       8.81
+Nowcaster phase; ridge 1.0; correction 1.0                                                 -9.86       6.39
+Nowcaster phase; ridge 10.0; correction 0.25                                               -8.49       5.77
+Nowcaster phase; ridge 10.0; correction 0.5                                                -7.75       5.88
+Nowcaster phase; ridge 10.0; correction 1.0                                                -7.87       5.11
+Nowcaster phase; ridge 100.0; correction 1.0                                               -8.92       5.45
+Nowcaster phase; synchronous errors; half correction                                      -10.43       1.81
+Nowcaster phase_local; ridge 1.0; correction 1.0                                           -9.33       5.01
+Nowcaster phase_local; ridge 10.0; correction 1.0                                         -10.71       3.47
+Nowcaster phase_local; ridge 100.0; correction 1.0                                        -10.36       3.23
+Unchanged finalized training inputs                                                         0.00       0.00
+calendar_log strength 0.5                                                                  -5.53      -0.04
+calendar_log strength 1.0                                                                  -6.95       8.88
+synchronous_log strength 0.5                                                               -5.33      -0.25
+synchronous_log strength 1.0                                                               -9.91       5.31
+BEST_FAMILY_SEASON_SCORES
+ architecture source_b2_label    family                                                                actual_treatment    season      wis  baseline  paired_change_pct
+           42             C21    direct                                                    synchronous_log strength 1.0 2024-2025 0.800274  0.909723         -11.849833
+           42             C21    direct                                                    synchronous_log strength 1.0 2025-2026 0.973911  0.954913           2.119772
+           42             C21     joint Joint recent reconstruction and forecast; local half; pooled eight-horizon loss 2024-2025 0.821803  0.909723          -9.561144
+           42             C21     joint Joint recent reconstruction and forecast; local half; pooled eight-horizon loss 2025-2026 0.959744  0.954913           0.409026
+           42             C21 two_stage                              Nowcaster phase_local; ridge 100.0; correction 1.0 2024-2025 0.811810  0.909723         -10.570176
+           42             C21 two_stage                              Nowcaster phase_local; ridge 100.0; correction 1.0 2025-2026 0.953275  0.954913           0.293844
+           42             C21    direct                                             Unchanged finalized training inputs 2024-2025 0.909723  0.909723           0.000000
+           42             C21    direct                                             Unchanged finalized training inputs 2025-2026 0.954913  0.954913           0.000000

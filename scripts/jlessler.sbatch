@@ -29,7 +29,7 @@ if (( SLURM_CPUS_PER_TASK < threads * lanes )); then
     echo 'Allocate at least lanes * threads CPUs with --cpus-per-task.' >&2
     exit 1
 fi
-export OMP_NUM_THREADS="$threads" MKL_NUM_THREADS="$threads" TAPESTRY_TORCH_THREADS="$threads" PYTHONUNBUFFERED=1
+export OPENBLAS_NUM_THREADS="$threads" OMP_NUM_THREADS="$threads" MKL_NUM_THREADS="$threads" TAPESTRY_TORCH_THREADS="$threads" PYTHONUNBUFFERED=1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$PWD/data/experiments/$experiment/code/src${PYTHONPATH:+:$PYTHONPATH}"
 test -s "data/experiments/$experiment/code/src/tapestry/experiment/planner.py"

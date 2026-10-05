@@ -1,0 +1,97 @@
+architecture,forecaster_mask_rate,treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2024-2025,US,3,0.9854929545134468,-10.377531592777187,0.9854929545134467
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2024-2025,all,3,0.8955648970213129,-5.575502200402049,0.8955648970213129
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2024-2025,states_dc,3,0.8730828826482794,-4.135719038775442,0.8730828826482794
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2025-2026,US,3,0.8556880078294261,-2.420168299198929,0.8227316285811369
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2025-2026,all,3,0.9265740680874971,-0.6666039615487803,0.9223348475247426
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 0.5,2025-2026,states_dc,3,0.9442955831520147,-0.25327640234122556,0.9472356522606438
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2024-2025,US,3,0.8980924290522431,-18.275693760930576,0.8980924290522431
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2024-2025,all,3,0.8600022801498556,-9.315759519135721,0.8600022801498556
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2024-2025,states_dc,3,0.8504797429242587,-6.615657207464118,0.8504797429242587
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2025-2026,US,3,0.8525688389354685,-2.7154798403320837,0.8387103916078673
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2025-2026,all,3,0.9326833648768686,-0.00779853216880122,0.9382712201074735
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; include zero-error fallback cells; correction strength 1,2025-2026,states_dc,3,0.9527119963622184,0.635661451540459,0.9631614272323751
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2024-2025,US,3,0.9784328015148777,-11.042813267244597,0.9784328015148777
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2024-2025,all,3,0.8934649384995712,-5.799223718631855,0.8934649384995712
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2024-2025,states_dc,3,0.8722229727457446,-4.2304344381253856,0.8722229727457446
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2025-2026,US,3,0.8614947738454687,-1.7261076264811843,0.8189488378426731
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2025-2026,all,3,0.9325077008317509,-0.028478739937043418,0.9231362071367867
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 0.5,2025-2026,states_dc,3,0.9502609325783214,0.3766167261703017,0.9491830494603151
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2024-2025,US,3,0.889999309787993,-19.042285696160544,0.889999309787993
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2024-2025,all,3,0.8594252600838512,-9.38040118562438,0.8594252600838512
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2024-2025,states_dc,3,0.8517817476578157,-6.473402569246789,0.8517817476578159
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2025-2026,US,3,0.877655729944109,0.2187962355868748,0.844696229938077
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2025-2026,all,3,0.957600381288669,2.6679770579523567,0.9460363099471808
+C1,0.0,Existing clean-input C1; nonlinear nowcaster refitted per seed; observed donor pairs only; correction strength 1,2025-2026,states_dc,3,0.9775865441248088,3.2626306381660015,0.9713713299494566
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,US,1,0.8789335113652057,-16.60467302769797,0.8789335113652057
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,all,1,0.8622765001255386,-7.607123505632185,0.8622765001255386
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,states_dc,1,0.8581122473156217,-4.982058398227041,0.8581122473156217
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,US,1,0.8714194950476747,-5.235978026571775,0.8296942006054728
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,all,1,0.9231602745289448,-1.8285823108105226,0.9126063937337945
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,states_dc,1,0.9360954693992622,-1.0001428196244389,0.9333344420158748
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,US,1,0.9532853137410172,-9.549995068634033,0.9532853137410171
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,all,1,0.8894269916318975,-4.697949930632528,0.8894269916318975
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,states_dc,1,0.8734624111046175,-3.282349565212339,0.8734624111046176
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,US,1,0.8874275183666168,-3.495157810626992,0.8228731935715418
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,all,1,0.9258767215356416,-1.539707820559022,0.9074933583629184
+C1,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,states_dc,1,0.9354890223278978,-1.0642796255541431,0.9286483995607624
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,US,1,0.846237580002871,-19.7069416878047,0.846237580002871
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,all,1,0.8430568268487495,-9.666510371754534,0.8430568268487495
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,states_dc,1,0.8422616385602191,-6.737181019754479,0.8422616385602191
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,US,1,0.8804382710323053,-4.255215614853858,0.8927464434288859
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,all,1,0.9331646948311436,-0.7646845767723787,0.9391543694037752
+C1,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,states_dc,1,0.9463463007808532,0.08396758997821774,0.9507563508974973
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,US,3,1.0993312659121015,0.0,1.0993312659121015
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,all,3,0.948477452375985,0.0,0.948477452375985
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,states_dc,3,0.9107639989919557,0.0,0.9107639989919557
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,US,3,0.8773744711285588,0.0,0.8333757377696726
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,all,3,0.9328278252460381,0.0,0.9256379017954771
+C1,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,states_dc,3,0.9466911637754079,0.0,0.9487034428019284
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,US,1,0.8699360904805957,-12.055816128942832,0.8699360904805958
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,all,1,0.8647030372003387,-7.887478877245158,0.8647030372003386
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,states_dc,1,0.8633947738802741,-6.774444318606088,0.8633947738802741
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,US,1,0.9129050042105772,0.24011856932446562,0.8560335726339784
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,all,1,1.0023842111152694,1.9110684971994196,1.0284779002620072
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,states_dc,1,1.0247540128414427,2.2908243812267637,1.0715889821690143
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,US,1,0.9158111964975406,-7.418178027930599,0.9158111964975406
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,all,1,0.8925239723989531,-4.923852787259031,0.892523972398953
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,states_dc,1,0.886702166374306,-4.257814982323149,0.8867021663743059
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,US,1,0.904183283583546,-0.7175564414923841,0.7991452469202134
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,all,1,0.987065569824258,0.3536426273771598,0.9793103323672452
+C2,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,states_dc,1,1.0077861413844358,0.5970934588961585,1.0243516037290028
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,US,1,0.8199698211294755,-17.107040957123132,0.8199698211294755
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,all,1,0.8436224608441873,-10.13308800702546,0.8436224608441873
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,states_dc,1,0.8495356207728653,-8.270894481148849,0.8495356207728653
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,US,1,0.9121845661242188,0.16101198225864088,0.9230245213897159
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,all,1,1.0035383203431807,2.0284052461971402,1.0427908735165072
+C2,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,states_dc,1,1.026376758897921,2.4528067006892362,1.0727324615482052
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,US,1,0.9891911576052452,0.0,0.989191157605245
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,all,1,0.938746466452679,0.0,0.938746466452679
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,states_dc,1,0.9261352936645372,0.0,0.9261352936645374
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,US,1,0.9107182006964872,0.0,0.7704913486006881
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,all,1,0.9835871862562364,0.0,0.9510850999613516
+C2,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,states_dc,1,1.0018044326461737,0.0,0.9962335378015174
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,US,1,0.7941778220670135,-22.231446756027438,0.7941778220670135
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,all,1,0.8162768202058499,-11.500681450387852,0.8162768202058499
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2024-2025,states_dc,1,0.821801569740559,-8.448699275107796,0.821801569740559
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,US,1,0.928389235536749,-4.059333981887181,0.81556610587817
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,all,1,0.9390808654490298,-1.3716011152429375,0.8941009523352288
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; full correction,2025-2026,states_dc,1,0.9417537729270998,-0.6859124569128516,0.9137346639494934
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,US,1,0.8955054136129454,-12.309109491919878,0.8955054136129454
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,all,1,0.8606211496186474,-6.692946087300566,0.8606211496186476
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2024-2025,states_dc,1,0.8519000836200729,-5.095629389361966,0.8519000836200729
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,US,1,0.9402315735839047,-2.8355350019271364,0.7842442967943681
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,all,1,0.9396411472375902,-1.3127566666303325,0.8823573058965339
+C3,0.0,Existing clean-input forecaster; evaluation-only nonlinear eight-week trajectory nowcaster; half correction,2025-2026,states_dc,1,0.9394935406510112,-0.924268715829113,0.9068855581720752
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,US,1,0.7792578707958526,-23.692458374066362,0.7792578707958526
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,all,1,0.8122962658361071,-11.932246258369384,0.8122962658361071
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2024-2025,states_dc,1,0.8205558645961707,-8.587474778206971,0.8205558645961707
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,US,1,0.923650347573572,-4.549055372408861,0.8824863384078987
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,all,1,0.9432771409304036,-0.9308808884397113,0.9167831435136035
+C3,0.0,Existing clean-input forecaster; evaluation-only phase/location ridge nowcaster; full correction,2025-2026,states_dc,1,0.9481838392696116,-0.007819955448029603,0.9253573447900296
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,US,1,1.0212068875391689,0.0,1.0212068875391689
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,all,1,0.9223537916263732,0.0,0.9223537916263731
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2024-2025,states_dc,1,0.8976405176481741,0.0,0.8976405176481741
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,US,1,0.9676702008317064,0.0,0.7772659531792745
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,all,1,0.9521404342640748,0.0,0.8876377912308575
+C3,0.0,Existing clean-input forecaster; raw archived evaluation inputs; CPU replay control,2025-2026,states_dc,1,0.948257992622167,0.0,0.9152307507437534

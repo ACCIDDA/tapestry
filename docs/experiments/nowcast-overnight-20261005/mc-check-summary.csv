@@ -1,0 +1,25 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2024-2025,US,3,0.9661113163579228,-11.62666589017609,0.966111316357923
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2024-2025,all,3,0.8868989573251614,-6.062789509902836,0.8868989573251614
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2024-2025,states_dc,3,0.8670958675669711,-4.3881697757593985,0.8670958675669711
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2025-2026,US,3,0.8455255097607406,-2.938342290053834,0.8107617327295781
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2025-2026,all,3,0.9202889125279735,-0.9663396251503475,0.9145889909178
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features; 2048 predictive draws,2025-2026,states_dc,3,0.9389797632197817,-0.503419363443447,0.9405458054648553
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2024-2025,US,3,0.9661154525043755,-11.63088163218491,0.9661154525043755
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2024-2025,all,3,0.886600367637106,-6.094352322546037,0.886600367637106
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2024-2025,states_dc,3,0.8667215964202887,-4.429223947929639,0.8667215964202885
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2025-2026,US,3,0.845299460464402,-2.964645634409287,0.8116115057297852
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2025-2026,all,3,0.9208068041530755,-0.9106153454912244,0.9156570424680979
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; 2048 predictive draws,2025-2026,states_dc,3,0.9396836400752436,-0.4287368548713884,0.9416684266526758
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2024-2025,US,3,0.9728309610153708,-11.009515907849277,0.9728309610153708
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2024-2025,all,3,0.888884223016813,-5.85087759100135,0.888884223016813
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2024-2025,states_dc,3,0.8678975385171733,-4.298983673383987,0.8678975385171733
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2025-2026,US,3,0.8439676701557337,-3.1019563622568818,0.8170843661991486
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2025-2026,all,3,0.9192199995514713,-1.0806206976334127,0.9188794324305415
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw; 2048 predictive draws",2025-2026,states_dc,3,0.9380330819004055,-0.6045049205536057,0.9443281989883895
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2024-2025,US,3,1.0934696831904127,0.0,1.0934696831904127
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2024-2025,all,3,0.9442249760619283,0.0,0.9442249760619283
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2024-2025,states_dc,3,0.9069137992798071,0.0,0.9069137992798071
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2025-2026,US,3,0.8715978955565048,0.0,0.8295977775223994
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2025-2026,all,3,0.9293121739469882,0.0,0.9224241936725637
+Raw archived input histories; identical history-bank CPU control; 2048 predictive draws,2025-2026,states_dc,3,0.9437407435446089,0.0,0.9456307977101046

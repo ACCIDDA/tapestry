@@ -1,0 +1,9 @@
+{
+  "ranking_sources": {
+    "vintage-overnight-round1-20261005": "data/experiments/vintage-overnight-round1-20261005/ranking-7f5d83358dd0",
+    "vintage-overnight-admissions-focused-20261005": "data/experiments/vintage-overnight-admissions-focused-20261005/ranking-81583d4024d7",
+    "vintage-overnight-c1-diluted-20261005": "data/experiments/vintage-overnight-c1-diluted-20261005/ranking-384f4c5a57cf"
+  },
+  "complete_three_seed_comparisons": 37,
+  "planned_comparisons": 43
+}

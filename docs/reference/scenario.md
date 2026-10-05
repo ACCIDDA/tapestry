@@ -4,7 +4,23 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 
 | Field | Type | Default | Allowed values | Meaning |
 |---|---|---|---|---|
-| `task` | str | `'forecast'` | `forecast`, `nowcast`, `pipeline` | forecast, nowcast, or an independently fitted nowcast-to-forecast pipeline. |
+| `task` | str | `'forecast'` | `finalize`, `forecast`, `nowcast`, `pipeline` | forecast, nowcast, an independently fitted nowcast-to-forecast pipeline, or per-signal boundary-week finalization. |
+| `reporting_augmentation` | str | `'none'` | `none`, `vintage`, `nowcast` | Stochastic joint training-season reporting-error windows, raw or after causal nowcasting; real-vintage scoring. Requires scheduled-final forecasting without a finality channel. |
+| `reporting_missingness` | bool | `True` | `0`, `1` | Transport donor missingness with reporting augmentation; false retains native input availability while transporting numerical errors. |
+| `replay_from` | str | `''` | any str (checked in `Scenario.__post_init__`) | Completed experiment supplying fixed CV checkpoints for inference-only input replay. |
+| `replay_inputs` | str | `'none'` | `finalized`, `none`, `nowcast`, `vintage` | Fixed-checkpoint replay: finalized B2 inputs, full vintage history, or vintage plus eight-week seasonal target nowcasts. |
+| `replay_flags` | str | `'native'` | `available`, `native`, `off` | Diagnostic finality encoding: native semantics, available to reproduce B2 training encoding, or off. Available does not claim that revisions are final. |
+| `finalization_cv` | str | `'rolling'` | `rolling`, `season` | finalize only: three recent four-Wednesday rolling holdouts, or forward season holdouts. |
+| `finalization_loss` | str | `'mae'` | `mae` | finalize only: triangle calibration minimizes normalized native-unit MAE, equally weighted by location. |
+| `finalization_model` | str | `'triangle'` | `adaptive`, `adaptive_chain`, `seasonal`, `triangle` | Reported-value curve: robust triangle, seasonal direct, adaptive direct, or adaptive weekly chain. |
+| `finalization_gap` | str | `'ridge'` | `proxy`, `ridge`, `seasonal`, `trend` | Missing targets: ridge, historical seasonal growth, damped trend, or observable national proxy growth. |
+| `finalization_scope` | str | `'all'` | `all`, `targets` | Fit all supported signals or only the six NHSN/NSSP targets. |
+| `finalization_halflife` | float | `8.0` | any float (checked in `Scenario.__post_init__`) | Adaptive curve recent-pair half-life in weeks. |
+| `finalization_pool` | float | `4.0` | any float (checked in `Scenario.__post_init__`) | Adaptive/seasonal local state pooling strength in effective weeks. |
+| `finalization_statistic` | str | `'mean'` | `mean`, `median` | Mean ratio of weighted totals or exposure-weighted median development ratio. |
+| `finalization_quantize` | bool | `0` | `0`, `1` | Round NSSP point predictions and point comparators to the archived 0.0001 proportion grid. |
+| `finalization_maturity` | int | `4` | any int (checked in `Scenario.__post_init__`) | finalize only: minimum reference age and training-label gap, in weeks; not a guarantee of finality. |
+| `finalization_weeks` | int | `1` | any int (checked in `Scenario.__post_init__`) | finalize only: reconstruct this many completed weeks ending at each signal's T-X boundary. |
 | `nowcast_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Completed weeks reconstructed, ending at the context Saturday. |
 | `nowcast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as nowcast.<field>=value; unprefixed fields supply defaults. |
 | `forecast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as forecast.<field>=value; unprefixed fields supply defaults. |
@@ -52,3 +68,36 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `validation_weeks` | int | `3` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: consecutive early-stopping weeks hidden per block (design §4). |
 | `validation_spacing` | int | `16` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: one validation block every this many weeks of a training season. |
 | `validation_offset` | int | `4` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: week of each training season where the first block starts (0-based, counted from the season's first epiweek, CDC week 31). |
+
+### Historical reporting-error training
+
+`reporting_augmentation=nowcast,reporting_missingness=0` perturbs finalized
+training inputs with historical nowcast errors while retaining native input
+availability and finalized future labels. `reporting_method` selects
+`local_log` (default), `calendar_log`, or `local_additive`.
+`reporting_strength` in (0, 1] scales the signed error before transport.
+Local matching uses the same location's seasonal timing, recent levels and
+changes; calendar matching uses timing alone. Each location draws its own
+joint age/signal window. [Exact assumptions and two-season C1 protocol](../experiments/c1-local-errors-20261002/index.md).
+
+### Context nowcaster extensions
+
+`finalization_model=conditional_chain` (or `conditional`) conditions the seasonal
+fit on growth/holiday context; `finalization_growth` controls its bandwidth.
+`finalization_model=context_residual` trains a causal trajectory residual with
+`finalization_penalty` ridge shrinkage and requires at least four output weeks.
+Replay supports `replay_nowcaster`, `replay_growth`, `replay_penalty`, and
+`replay_schedule=1` for the documented availability hypothesis with explicit
+frozen-final proxies. [Protocol and assumptions](../experiments/context-nowcast-20261001/index.md).
+
+`finalization_features=age` gives growth, holiday and local effects separate
+smooth level/slope age profiles; `momentum` adds observable vintage-to-vintage
+changes, and `age_momentum` combines them. `finalization_gate=admissions` retains
+the seasonal ED estimates; `causal` selects residual strength using previously
+matured trajectory errors. Matching `replay_features` and `replay_gate` options
+replay these exact nowcasts. `replay_uncertainty` adds causal joint-history
+bootstrap uncertainty (0 = deterministic; experimental strengths 0.5 and 1).
+Residual calibration currently requires `finalization_scope=targets`; its count
+and ED-fraction conventions have not been extended to ancillary source units.
+`finalization_strength` (and `replay_strength`) scales the additional residual
+between zero and one before output rounding. The seasonal base remains intact.

@@ -1,0 +1,25 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2024-2025,US,3,0.9771215712404172,-11.089976649503058,0.9771215712404171
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2024-2025,all,3,0.8924041777527497,-5.902069628449406,0.8924041777527498
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2024-2025,states_dc,3,0.8712248293808328,-4.338520047930083,0.8712248293808328
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2025-2026,US,3,0.8492857860958575,-3.130023737224415,0.8206720312341002
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2025-2026,all,3,0.9226109421319922,-1.0904661718092605,0.9220089718942249
+"Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw; correct admissions histories only, keep ED raw",2025-2026,states_dc,3,0.9409422311410256,-0.6078572158410234,0.9473432070592561
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2024-2025,US,3,0.9915988550995914,-9.808034677989609,0.9915988550995914
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2024-2025,all,3,0.8894505405165479,-6.215381200116055,0.889450540516548
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2024-2025,states_dc,3,0.863913461870787,-5.140041375547174,0.863913461870787
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2025-2026,US,3,0.8525188682794916,-2.7548264606717776,0.8296036254882203
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2025-2026,all,3,0.9240594695200562,-0.934194723867284,0.9276118803834149
+"Half point + cross-fitted residual noise strength 0.5; correct admissions histories only, keep ED raw",2025-2026,states_dc,3,0.9419446198301973,-0.5020575758405088,0.9521139441072136
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2024-2025,US,3,0.9905141920776283,-9.911717609613673,0.9905141920776283
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2024-2025,all,3,0.8973233596445046,-5.388022773481745,0.8973233596445045
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2024-2025,states_dc,3,0.8740256515362236,-4.031509467368925,0.8740256515362236
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2025-2026,US,3,0.8551731877959355,-2.4655957556800576,0.8299588352011819
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2025-2026,all,3,0.9251353352444952,-0.8198157410664245,0.9264826785007697
+"Point nonlinear correction; log strength 0.5; correct admissions histories only, keep ED raw",2025-2026,states_dc,3,0.942625872106635,-0.43007200191148937,0.9506136393256663
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2024-2025,US,3,1.0993312659121015,0.0,1.0993312659121015
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2024-2025,all,3,0.9484774526252254,0.0,0.9484774526252254
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2024-2025,states_dc,3,0.9107639993035064,0.0,0.9107639993035064
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2025-2026,US,3,0.8773744713556044,0.0,0.8333757377696726
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2025-2026,all,3,0.93282782529419,0.0,0.9256379017954771
+"Raw archived input histories; identical history-bank CPU control; correct admissions histories only, keep ED raw",2025-2026,states_dc,3,0.9466911637788362,0.0,0.9487034428019284

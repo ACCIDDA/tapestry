@@ -1,0 +1,13 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2024-2025,US,3,0.972906180227461,-11.000871076698056,0.9729061802274611
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2024-2025,all,3,0.8891008794907554,-5.827936495126529,0.8891008794907554
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2024-2025,states_dc,3,0.868149554306579,-4.271264347026123,0.868149554306579
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2025-2026,US,3,0.8439537784722182,-3.104252837541932,0.816824732811921
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2025-2026,all,3,0.9189123344031129,-1.1139048380252148,0.9183235219541895
+"Coherent raw/full correction mixture; no nowcaster covariates; correct admissions histories only, keep ED raw;2048draws",2025-2026,states_dc,3,0.9376519733858366,-0.6449549449731787,0.9436982192397565
+Raw archived input histories; identical history-bank CPU control;2048draws,2024-2025,US,3,1.0934696831904127,0.0,1.0934696831904127
+Raw archived input histories; identical history-bank CPU control;2048draws,2024-2025,all,3,0.9442249760619283,0.0,0.9442249760619283
+Raw archived input histories; identical history-bank CPU control;2048draws,2024-2025,states_dc,3,0.9069137992798071,0.0,0.9069137992798071
+Raw archived input histories; identical history-bank CPU control;2048draws,2025-2026,US,3,0.8715978955565048,0.0,0.8295977775223994
+Raw archived input histories; identical history-bank CPU control;2048draws,2025-2026,all,3,0.9293121739469882,0.0,0.9224241936725637
+Raw archived input histories; identical history-bank CPU control;2048draws,2025-2026,states_dc,3,0.9437407435446089,0.0,0.9456307977101046

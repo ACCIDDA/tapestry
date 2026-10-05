@@ -1,0 +1,40 @@
+{
+  "experiment": "b2-weekend-20261002",
+  "remote_directory": "/proj/jlessler/projects/tapestry-all/tapestry-weekend-20261002",
+  "configurations": 1440,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "outer_fits": 8640,
+  "arrays": {
+    "L40": 3477740,
+    "H100": 3477741
+  },
+  "report_job": 3477948,
+  "notification_jobs": [
+    3477759,
+    3477760
+  ],
+  "smoke_job": 3476930,
+  "smoke_completed_seed_runs": 9,
+  "smoke_completed_folds": 18,
+  "scientific_checks_passed": 9,
+  "launch_state": "Weekend continuation stopped to release nodes for user-requested focused overnight experiments",
+  "concurrent_fits": 28,
+  "initial_arrays": [
+    3477564,
+    3477565
+  ],
+  "initial_report_cancelled": 3477646,
+  "restart_reason": "43 CUDA out-of-memory errors at 56-process concurrency; retry same pinned design with 28 processes",
+  "continuation_arrays": [
+    3477933,
+    3477934
+  ],
+  "report_state": "Cancelled before execution; replaced by partial ranking3800082",
+  "completed_seed_runs_at_stop": 1730,
+  "stopped_on": "2026-10-05",
+  "joint_loss_erratum": "joint_weight unused by fitting loop; weight0.25 and1 represent identical pooled-loss objectives"
+}

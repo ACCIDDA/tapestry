@@ -1,0 +1,27 @@
+{
+  "checked_utc": "2026-10-05T11:36:25.790824+00:00",
+  "gpu_node": "g1803jles01",
+  "experiments": {
+    "vintage-overnight-round1-20261005": {
+      "seed_status_counts": {
+        "complete": 78
+      },
+      "active": 0
+    },
+    "vintage-overnight-admissions-focused-20261005": {
+      "seed_status_counts": {
+        "complete": 36
+      },
+      "active": 0
+    },
+    "vintage-overnight-c1-diluted-20261005": {
+      "seed_status_counts": {
+        "complete": 3
+      },
+      "active": 0
+    }
+  },
+  "squeue_primary_arrays": "               JOBID        STATE         TIME    TIME_LEFT NODELIST\n",
+  "sacct_primary_arrays": "JobID|State|Elapsed|Timelimit|NodeList\n3800158_0|COMPLETED|03:58:59|06:00:00|g1803jles01\n3800158_1|CANCELLED by 357327|03:58:27|06:00:00|g1803jles01\n3800158_2|CANCELLED by 357327|03:50:38|06:00:00|g1803jles01\n3800158_3|CANCELLED by 357327|03:55:13|06:00:00|g1803jles01\n3804709_0|CANCELLED by 357327|01:46:25|02:15:00|g1803jles01\n3804709_1|CANCELLED by 357327|01:49:17|02:15:00|g1803jles01\n3804709_2|COMPLETED|01:57:07|02:30:00|g1803jles01\n3804709_3|CANCELLED by 357327|01:51:30|02:30:00|g1803jles01\n3818337_0|COMPLETED|00:26:34|00:45:00|g1803jles01\n",
+  "allocation_cleanup": "Some idle array owners were cancelled only after all their fits completed; successful seed totals are authoritative. One active eight-minute fit was intentionally restarted to a later-ending allocation and completed on attempt002."
+}

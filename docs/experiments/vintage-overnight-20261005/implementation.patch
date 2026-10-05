@@ -1,0 +1,1143 @@
+diff --git a/src/tapestry/model/scenario.py b/src/tapestry/model/scenario.py
+--- a/src/tapestry/model/scenario.py
++++ b/src/tapestry/model/scenario.py
+@@ -29,6 +29,9 @@
+ # Enum-like string fields: a fixed set of legal values, so a typo raises instead
+ # of silently becoming a new field the way an unconstrained string would.
+ CODES = {
++    'vintage_signals': {'all', 'admissions'},
++    'vintage_scope': {'all', 'early_clean', 'early_actual'},
++    'vintage_generator': {'empirical', 'ridge'},
+     'reporting_method': {'local_log', 'calendar_log', 'local_additive', 'synchronous_log', 'phase_log'},
+     'weekend_family': {'none', 'direct', 'two_stage', 'joint'},
+     'reporting_augmentation': {'none', 'vintage', 'nowcast'},
+@@ -196,6 +199,11 @@
+ class Scenario:
+     # Network shape and training budget (formerly TrainingScenario).
+     task: str = 'forecast'
++    vintage_signals: str = 'all'
++    vintage_scope: str = 'all'
++    vintage_generator: str = 'empirical'
++    vintage_residual: float = 1.
++    vintage_penalty: float = 20.
+     weekend_family: str = 'none'
+     reporting_probability: float = 1.
+     reporting_random_strength: bool = False
+diff --git a/src/tapestry/experiment/weekend.py b/src/tapestry/experiment/weekend.py
+--- a/src/tapestry/experiment/weekend.py
++++ b/src/tapestry/experiment/weekend.py
+@@ -7,7 +7,7 @@
+ from tapestry.dataset import cv
+ from tapestry.dataset.build import load, covariate_names_for
+ from tapestry.dataset.episodes import select_covariates
+-from tapestry.dataset.reporting_error import ReportingErrors
++from tapestry.dataset.vintage_overnight import VintageOvernight as ReportingErrors
+ from tapestry.model.network import checkpoint
+ from tapestry.model.revision_regression import RevisionRegression
+ from . import training
+diff --git a/src/tapestry/dataset/vintage_overnight.py b/src/tapestry/dataset/vintage_overnight.py
+new file mode 100644
+--- /dev/null
++++ b/src/tapestry/dataset/vintage_overnight.py
+@@ -0,0 +1,133 @@
++"""Training-only conditional revision generation, dated overnight research protocol."""
++import numpy as np
++from . import cv
++from .episodes import episodes
++from .reporting_error import ReportingErrors, transport
++
++
++class VintageOvernight(ReportingErrors):
++    def __init__(self, panel, scenario, held_out, keep, corrections=None):
++        super().__init__(panel, scenario, held_out, keep, corrections)
++        self.signals = scenario.vintage_signals
++        self.scope = scenario.vintage_scope
++        self.generator = scenario.vintage_generator
++        self.residual_scale = scenario.vintage_residual
++        self.generator_probability = scenario.reporting_probability
++        if self.generator == "ridge":
++            self.probability = 1. # Gate the complete mean-plus-residual perturbation below.
++        self.panel = cv.masked(panel, keep)
++        self.actual_panel = panel
++        self.actual = {}
++        self.models = {}
++        self.means = {}
++        finals = {e['context_dates'][-1]: e for e in episodes(self.panel, scenario.lookback, 'scheduled_final', self.names)}
++        if self.generator == 'ridge':
++            donor = [finals[d] for d in self.donors]
++            for kind in ['target'] + (['covariate'] if self.names else []):
++                arr = self.errors if kind == 'target' else self.cov_errors
++                support = (self.support & self.visible) if kind == 'target' else (self.cov_support & self.cov_visible)
++                xs = np.stack([self.features_for(e, kind) for e in donor])
++                # X: origin, age, signal, location, feature. Fit each signal/age
++                # with a location effect shrunk toward the shared phase/calendar fit.
++                beta = np.zeros((*arr.shape[1:3], xs.shape[-1]))
++                predicted = np.zeros_like(arr)
++                for age in range(arr.shape[1]):
++                    for channel in range(arr.shape[2]):
++                        x = xs[:,age,channel].reshape(-1,xs.shape[-1])
++                        y = arr[:,age,channel].ravel()
++                        ok = support[:,age,channel].ravel()
++                        if ok.sum() < 30:
++                            continue
++                        xx, yy = x[ok], y[ok]
++                        penalty = np.eye(x.shape[-1]) * scenario.vintage_penalty
++                        penalty[0,0] = 1e-4
++                        b = np.linalg.solve(xx.T @ xx + penalty, xx.T @ yy)
++                        beta[age,channel] = b
++                        predicted[:,age,channel] = (x @ b).reshape(arr.shape[0],arr.shape[-1])
++                self.models[kind] = beta
++                # Center real donor windows; preserve their age/signal dependence.
++                residual = np.where(support, arr-predicted, 0)
++                if kind == 'target': self.errors = residual * self.residual_scale
++                else: self.cov_errors = residual * self.residual_scale
++        self.metadata.update(
++            target_final_truth_support_fraction=float(self.support.mean()),
++            target_archived_pair_support_fraction=float((self.support & self.visible).mean()),
++            target_archived_pair_fraction_given_final_truth=float((self.support & self.visible).sum()/self.support.sum()),
++            legacy_target_evidence_fraction='Alias for final-truth support; not archived-pair support',
++            support_denominator='All donor-origin, context-age, signal and location cells; archive pairs require both permitted final truth and observed reports',
++            unsupported_cells=('Empirical residuals are zero where archive pairs are absent, but the learned conditional mean can extrapolate into those cells; final-truth availability is never invented' if self.generator == 'ridge' else 'Empirical perturbations are zero where archive pairs are absent; final-truth availability is never invented'))
++        if self.names:
++            self.metadata.update(covariate_final_truth_support_fraction=float(self.cov_support.mean()),
++                covariate_archived_pair_support_fraction=float((self.cov_support & self.cov_visible).mean()))
++        self.metadata.update(generator=self.generator, augmentation_scope=self.scope, synthetic_signals=self.signals,
++            conditional_model=('Separate ridge per age and signal; finalized normalized level, preceding-week growth, origin growth, circular calendar, holiday proximity, shrunk location effects' if self.generator == 'ridge' else None),
++            ridge_penalty=scenario.vintage_penalty if self.generator == 'ridge' else None,
++            residual_scale=self.residual_scale if self.generator == 'ridge' else None,
++            residuals=('In-sample centered empirical joint windows; shrinkage retained; variance can be conservative' if self.generator == 'ridge' else 'Raw empirical joint error windows; no learned mean fitted or subtracted'),
++            recent_donor_inputs='Real Wednesday values on source schedule, absent-archive final proxies' if self.scope == 'early_actual' else 'Unchanged finalized inputs' if self.scope == 'early_clean' or scenario.reporting_probability == 0 else 'Synthetic inputs',
++            synthetic_seasons=[] if scenario.reporting_probability == 0 else ['2022-2023','2023-2024'] if self.scope != 'all' else sorted(self.peaks),
++            version='vintage_overnight_conditional_v2')
++
++    def features_for(self, e, kind):
++        label = cv.season(e['context_dates'][-1])
++        if kind == 'target':
++            v, valid, peak = e['values'], e['available'], self.peaks[label][0]
++        else:
++            v, valid, peak = e['covariates'][...,0,:], e['covariates'][...,1,:].astype(bool), self.cov_peak(label)
++        z = np.log(np.maximum(v,0)/np.maximum(peak[None],1e-8)+.05)
++        z = np.where(valid,z,np.log(.05))
++        growth = np.concatenate((np.zeros_like(z[:1]), np.diff(z,axis=0)),axis=0)
++        pairs = np.concatenate((np.zeros_like(valid[:1]), valid[1:] & valid[:-1]),axis=0)
++        growth = np.where(pairs,np.clip(growth,-3,3),0)
++        recent = np.broadcast_to(growth[-2:].mean(axis=0)[None],z.shape)
++        from .reporting_error import season_position
++        position = season_position(e['context_dates'][-1])
++        day = np.datetime64(e['context_dates'][-1])
++        year = int(str(day)[:4])
++        delta = min(abs(int((day-np.datetime64(f'{yr}-12-25')).astype(int))) for yr in (year-1,year,year+1))
++        constant = lambda a: np.full_like(z,a)
++        x = np.stack((constant(1),np.clip(z,-3,3),growth,recent,constant(np.sin(2*np.pi*position)),constant(np.cos(2*np.pi*position)),constant(np.exp(-.5*(delta/14)**2))),axis=-1)
++        identity = np.broadcast_to(np.eye(z.shape[-1]), (*z.shape,z.shape[-1]))
++        return np.concatenate((x,identity),axis=-1)
++
++    def draw(self, episode, rng):
++        season = cv.season(episode['context_dates'][-1])
++        if self.scope != 'all' and season not in ('2022-2023','2023-2024'):
++            if self.scope == 'early_actual':
++                from tapestry.experiment.weekend import scheduled_reports
++                key = (episode['context_dates'][-1], episode['available'].tobytes())
++                if key not in self.actual:
++                    self.actual[key] = scheduled_reports(episode, self.actual_panel, self.names)[0]
++                return dict(episode, **{k:self.actual[key][k] for k in ('values','available','known_final','covariates') if k in self.actual[key]})
++            return episode
++        if self.generator == "ridge" and self.generator_probability < 1 and rng.random() >= self.generator_probability:
++            return episode
++        out = super().draw(episode,rng)
++        if self.generator != 'ridge': return self.restrict(out,episode)
++        for kind,beta in self.models.items():
++            key = (kind,episode['context_dates'][-1],episode['available'].tobytes(),episode['covariates'][...,1,:].tobytes() if 'covariates' in episode else b'')
++            if key not in self.means:
++                self.means[key] = np.einsum('aslf,asf->asl',self.features_for(episode,kind),beta)
++            error = self.means[key].copy()
++            if self.recent: error[:-self.recent] = 0
++            error = np.clip(error,-np.log(4),np.log(4)) * self.strength
++            if kind == 'target':
++                v = transport(out['values'],error,self.target_floor(episode))
++                v[:,3:] = np.minimum(v[:,3:],1)
++                out['values'] = np.where(out['available'],v,0).astype(np.float32)
++            else:
++                for k,name in enumerate(self.names):
++                    if name in self.national_names and name not in self.state_names:
++                        error[:,k] = error[:,k,episode['locations'].index('US')][:,None]
++                cov = out['covariates'].copy()
++                v = transport(cov[...,0,:],error,np.maximum(.05*self.cov_peak(season)[None],1e-8))
++                cov[...,0,:] = np.where(cov[...,1,:],v,0)
++                out['covariates'] = cov
++        return self.restrict(out,episode)
++
++    def restrict(self,out,episode):
++        if self.signals == 'admissions':
++            out['values'][:,3:] = episode['values'][:,3:]
++            if 'covariates' in episode:
++                out['covariates'] = episode['covariates']
++        return out
+diff --git a/scripts/plan_vintage_overnight.py b/scripts/plan_vintage_overnight.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/plan_vintage_overnight.py
+@@ -0,0 +1,54 @@
++"""Focused C1/C2/C3 synthetic reporting comparison, through common planner."""
++import argparse
++from dataclasses import replace
++import json
++from pathlib import Path
++import subprocess
++import sys
++import pandas as pd
++from tapestry.model.scenario import Scenario
++
++p=argparse.ArgumentParser()
++p.add_argument('-e','--experiment',required=True)
++p.add_argument('--smoke',action='store_true')
++p.add_argument('--admissions',action='store_true')
++p.add_argument('--diluted',action='store_true',help='One C1 half-clean, half-strength empirical comparison')
++a=p.parse_args()
++base=pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').head(3)
++arms=[('Finalized training inputs',dict(reporting_probability=0.)),
++      ('Empirical half-strength, all three training seasons',dict(reporting_strength=.5)),
++      ('Empirical full-strength, all three training seasons',dict()),
++      ('Empirical half-strength early two; recent finalized',dict(vintage_scope='early_clean',reporting_strength=.5)),
++      ('Empirical full-strength early two; recent finalized',dict(vintage_scope='early_clean')),
++      ('Empirical half-strength early two; recent actual reports',dict(vintage_scope='early_actual',reporting_strength=.5)),
++      ('Empirical full-strength early two; recent actual reports',dict(vintage_scope='early_actual')),
++      ('Learned conditional mean and residual early two; recent actual reports',dict(vintage_scope='early_actual',vintage_generator='ridge')),
++      ('Learned conditional mean only early two; recent actual reports',dict(vintage_scope='early_actual',vintage_generator='ridge',vintage_residual=0.)),
++      ('Learned conditional mean and residual all three',dict(vintage_generator='ridge'))]
++if a.admissions:
++    arms=[('Finalized early two; actual recent reports',dict(vintage_scope='early_actual',reporting_probability=0.)),
++          ('Empirical half-strength admissions early two; actual recent reports',dict(vintage_scope='early_actual',vintage_signals='admissions',reporting_strength=.5)),
++          ('Learned half-strength admissions early two; actual recent reports',dict(vintage_scope='early_actual',vintage_signals='admissions',vintage_generator='ridge',reporting_strength=.5)),
++          ('Empirical half-strength admissions all three; ED and covariates finalized',dict(vintage_signals='admissions',reporting_strength=.5))]
++if a.diluted:
++    base=base.head(1)
++    arms=[('Half-clean episodes; half-strength empirical errors all three',dict(reporting_probability=.5,reporting_strength=.5))]
++rows=[]
++for row in base.itertuples():
++    original=Scenario.from_string(row.config_id)
++    for label,kw in arms:
++        scenario=replace(original,supplied_final=False,mask_rate=0.,reporting_missingness=False,
++                         reporting_augmentation='vintage',weekend_family='direct',**kw)
++        if a.smoke:
++            if row.label != 'C1' or scenario.vintage_generator != 'ridge': continue
++            scenario=replace(scenario,epochs=2,patience=0,members=8,validation_members=16)
++        rows.append(dict(architecture=row.label,treatment=label,run_id=scenario.run_id,scenario=scenario.scenario_string))
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++cmd=[sys.executable,'-m','tapestry.experiment.planner','plan','-e',a.experiment,'-s',*[r['scenario'] for r in rows],
++     '--seeds',*(['42'] if a.smoke else ['42','43','44']),'--device','cuda','--eval-members','256',
++     '--dataset',settings['dataset'],'--frozen',settings['frozen']]
++subprocess.run(cmd,check=True)
++folder=Path('data/experiments')/a.experiment
++pd.DataFrame(rows).to_csv(folder/'design.csv',index=False)
++(folder/'manager-plan.txt').write_text(' '.join(cmd)+'\n')
++print(f'{len(rows)} configurations planned')
+diff --git a/scripts/vintage_overnight_archive_support.py b/scripts/vintage_overnight_archive_support.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_archive_support.py
+@@ -0,0 +1,21 @@
++import json
++from pathlib import Path
++import numpy as np
++import pandas as pd
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++s=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++p=load(s['dataset'])
++rows=[]
++for ti,d in enumerate(p['dates']):
++ if cv.season(d) not in ('2024-2025','2025-2026'): continue
++ issuance=np.datetime64(d)+np.timedelta64(4,'D')
++ wi=np.searchsorted(p['issuance_dates'],issuance)
++ if wi>=len(p['issuance_dates']) or p['issuance_dates'][wi]!=issuance: continue
++ for k,name in enumerate(p['target_names']):
++  row=dict(date=str(d),season=cv.season(d),signal=name)
++  for age in (0,1,3): row[f'age{age}_locations']=int(np.isfinite(p['asof_targets'][wi,max(ti-age,0),:,k]).sum())
++  rows.append(row)
++out=Path('docs/experiments/vintage-overnight-20261005')
++pd.DataFrame(rows).to_csv(out/'archive-support-by-origin.csv',index=False)
++print(pd.DataFrame(rows).groupby(['season','signal']).agg({'age0_locations':['sum','count'],'age1_locations':'sum','age3_locations':'sum'}).to_string())
+diff --git a/scripts/vintage_overnight_attribution.py b/scripts/vintage_overnight_attribution.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_attribution.py
+@@ -0,0 +1,64 @@
++"""Separate real recent-season inputs from artificial early-season errors."""
++from pathlib import Path
++import pandas as pd
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++root=Path('docs/experiments/vintage-overnight-20261005')
++summary=pd.read_csv(root/'principal-three-seed-comparisons.csv')
++frames=[]
++for folder in root.glob('vintage-overnight-*'):
++ path=folder/'seed-season-results.csv'
++ if path.exists():frames.append(pd.read_csv(path))
++f=pd.concat(frames,ignore_index=True).drop_duplicates(['config_id','seed','season'])
++reference='Finalized early two; actual recent reports'
++selected=summary[(summary.actual_recent_attribution_eligible)&(summary.forward_actual_recent_reference_seeds==3)].copy()
++selected.to_csv(root/'actual-recent-attribution.csv',index=False)
++lines=['# Contribution of artificial errors after recent-season actual inputs', '',
++'Every row retrains the named model with unchanged finalized t+1 through t+4 labels. Forward evaluation uses 2025–26 Wednesday reports after training on 2022–23/2023–24/2024–25. The reference uses finalized 2022–23/2023–24 inputs and actual 2024–25 reports. Treatments add artificial errors to those first two seasons, learned or sampled only from 2024–25. Retrospective evaluation swaps 2024–25 and 2025–26 in these roles. All use identical B2 source delays and frozen-final proxies where archives are absent. Forward scores cover six targets; retrospective scores cover flu/COVID admissions only. Lower relative WIS is better.', '',
++'C1: pathogen MLP, distance sharing, no covariates. C2: target MLP, no spatial sharing, inpatient/wastewater/Kinsa/ILINet/clinical-lab/FluSurv covariates. C3: target MLP, neighbor sharing, Kinsa.', '',
++'Only comparisons with all three treatment and reference seeds are shown. Percent changes are changes of three-seed means. The CSV also gives paired differences and seed variation.', '',
++'| Model | Additional training-input treatment in 2022–23/2023–24 | Forward change vs actual-recent-only | Improving seeds | Retrospective change vs actual-recent-only |',
++'| --- | --- | ---: | ---: | ---: |']
++for r in selected.itertuples():
++ if r.treatment==reference:continue
++ lines.append(f'| {r.architecture} | {r.treatment} | {r.forward_versus_actual_recent_percent_change_of_means:+.2f}% | {int(r.forward_versus_actual_recent_improving_seeds)}/3 | {r.retrospective_versus_actual_recent_percent_change_of_means:+.2f}% |')
++(root/'actual-recent-attribution.md').write_text('\n'.join(lines)+'\n')
++if selected.empty:
++ print('No three-seed actual-recent reference complete yet; attribution table withheld.')
++ raise SystemExit
++names={
++ 'Finalized training inputs':'Finalized inputs\nall three seasons',
++ reference:'Finalized early two;\nactual recent',
++ 'Empirical half-strength early two; recent actual reports':'Early two: empirical\nhalf, all signals',
++ 'Learned conditional mean only early two; recent actual reports':'Early two: learned\nmean, all signals',
++ 'Empirical half-strength admissions early two; actual recent reports':'Early two: empirical\nhalf, admissions',
++ 'Learned half-strength admissions early two; actual recent reports':'Early two: learned mean\n+ residual, half, admissions',
++}
++# Select treatment names from the design verbatim; missing arms are omitted.
++fig,axes=plt.subplots(1,3,figsize=(17,7),sharey=True)
++models={'C1':'Pathogen MLP; distance; no covariates','C2':'Target MLP; no spatial; six covariate groups','C3':'Target MLP; neighbors; Kinsa'}
++for ax,arch in zip(axes,['C1','C2','C3']):
++ rows=summary[(summary.architecture==arch)&summary.treatment.isin(names)]
++ if arch not in set(selected.architecture):
++  ax.text(.5,.5,'Three-seed actual-recent\nreference pending',ha='center',va='center',transform=ax.transAxes)
++  ax.set_title(arch+'\n'+models[arch],fontsize=10);continue
++ rows=rows.assign(order=rows.treatment.map({name:i for i,name in enumerate(names)})).sort_values('order')
++ for seed in [42,43,44]:
++  y=[]
++  for row in rows.itertuples():
++   values=f[(f.config_id==row.scenario)&(f.seed==seed)&(f.season=='2025-2026')]
++   y.append(float(values.iloc[0]['combined']))
++  ax.plot(range(len(rows)),y,marker='o',alpha=.45,lw=1,label=f'Seed {seed}')
++ ax.plot(range(len(rows)),rows.forward_mean.to_numpy(),color='black',marker='D',lw=2,label='Three-seed mean')
++ ax.set_xticks(range(len(rows)),[names[t] for t in rows.treatment],rotation=35,ha='right',fontsize=8)
++ ax.set_title(arch+'\n'+models[arch],fontsize=10)
++ ax.axhline(1,color='gray',ls=':',lw=1);ax.grid(axis='y',alpha=.2)
++axes[0].set_ylabel('2025–26 six-target relative WIS; lower is better')
++next(ax for ax in axes if ax.lines).legend(fontsize=8)
++fig.suptitle('Does artificial vintaging improve on using actual recent-season training reports?',fontsize=14)
++fig.text(.02,.035,'Each point retrains the model on 2022–23/2023–24/2024–25; finalized future labels unchanged. Artificial errors use only 2024–25 archived/final pairs.\nEvaluation: 2025–26 Wednesday reports, B2 source lags, frozen-final proxies where archives are absent. Same three seeds on L40; development comparison.\nC2 covariates: inpatient, wastewater, Kinsa, ILINet, clinical labs and FluSurv. Admission targets have twice ED weight; US20%, states/DC80%.',fontsize=10)
++fig.subplots_adjust(bottom=.34,top=.85,wspace=.12)
++fig.savefig(root/'actual-recent-attribution.png',dpi=170)
++fig.savefig(root/'actual-recent-attribution.pdf')
++print(f'Exported {len(selected)} complete attribution comparisons.')
+diff --git a/scripts/vintage_overnight_diagnostics.py b/scripts/vintage_overnight_diagnostics.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_diagnostics.py
+@@ -0,0 +1,66 @@
++"""Describe and temporally cross-validate permitted donor reporting-error models."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from tapestry.model.scenario import Scenario
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++from tapestry.dataset.vintage_overnight import VintageOvernight
++from tapestry.dataset.episodes import episodes
++
++out=Path('docs/experiments/vintage-overnight-20261005'); out.mkdir(parents=True,exist_ok=True)
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++panel=load(settings['dataset'])
++base=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[0].config_id)
++s=replace(base,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage')
++rows=[]
++for heldout in s.scored_seasons:
++ keep=np.isin(cv.week_roles(panel['dates'],s,heldout),['fit','validation'])
++ bank=VintageOvernight(panel,s,heldout,keep)
++ es={e['context_dates'][-1]:e for e in episodes(cv.masked(panel,keep),s.lookback,'scheduled_final',[])}
++ xs=np.stack([bank.features_for(es[d],'target') for d in bank.donors])
++ assignment=np.minimum(np.arange(len(bank.donors))*4//len(bank.donors),3)
++ for age in (0,1,2,3,5,7,11):
++  j=s.lookback-1-age
++  for channel,name in enumerate(panel['target_names']):
++   y=bank.errors[:,j,channel]
++   valid=bank.support[:,j,channel]&bank.visible[:,j,channel]
++   x=xs[:,j,channel]
++   predicted=np.zeros_like(y); global_pred=np.zeros_like(y)
++   for block in range(4):
++    train=valid&(assignment!=block)[:,None]
++    xx,yy=x[train],y[train]
++    penalty=np.eye(x.shape[-1])*20; penalty[0,0]=1e-4
++    b=np.linalg.solve(xx.T@xx+penalty,xx.T@yy)
++    test=assignment==block
++    predicted[test]=x[test]@b
++    global_pred[test]=yy.mean() if len(yy) else 0
++   rows.append(dict(heldout_forecast_season=heldout,reporting_error_training_season=bank.donor_season,
++    signal=name,report_age_weeks=age,n=int(valid.sum()),mean_log_error=float(y[valid].mean()),
++    rms_log_error=float(np.sqrt(np.mean(y[valid]**2))),
++    blocked_cv_global_mean_rmse=float(np.sqrt(np.mean((y-global_pred)[valid]**2))),
++    blocked_cv_conditional_rmse=float(np.sqrt(np.mean((y-predicted)[valid]**2))),
++    available_pairs_fraction=float(valid.mean())))
++frame=pd.DataFrame(rows)
++frame.to_csv(out/'reporting-generator-blocked-validation.csv',index=False)
++print(frame.to_string(index=False))
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++fig,axes=plt.subplots(2,3,figsize=(13,7),sharex=True,sharey=True)
++for ax,(signal,part) in zip(axes.flat,frame.groupby('signal',sort=False)):
++ for season,g in part.groupby('reporting_error_training_season'):
++  ax.plot(g.report_age_weeks,g.blocked_cv_conditional_rmse/g.blocked_cv_global_mean_rmse,'o-',label=f'Reporting pairs from {season}')
++ ax.axhline(1,color='gray',linestyle='--',linewidth=1)
++ ax.set_title(signal.replace('nhsn_','').replace('nssp_','').replace('_',' '))
++ ax.set_xlabel('Report age (weeks)')
++ ax.grid(alpha=.2)
++axes[0,0].set_ylabel('Conditional / shared-mean log-error RMSE\n(lower is better)')
++axes[1,0].set_ylabel('Conditional / shared-mean log-error RMSE\n(lower is better)')
++axes[0,0].legend(fontsize=8)
++fig.suptitle('Learned reporting generator: four contiguous-origin validation blocks\nTrain on three blocks of the named donor season; predict archived/final log error in its remaining block',fontsize=12)
++fig.tight_layout()
++fig.savefig(out/'reporting-generator-blocked-validation.png',dpi=180)
++fig.savefig(out/'reporting-generator-blocked-validation.pdf')
+diff --git a/scripts/vintage_overnight_export.py b/scripts/vintage_overnight_export.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_export.py
+@@ -0,0 +1,72 @@
++"""Compact scientifically explicit, three-seed cross-batch export."""
++import json
++from pathlib import Path
++import numpy as np
++import pandas as pd
++from tapestry.model.scenario import Scenario
++names=['vintage-overnight-round1-20261005','vintage-overnight-admissions-focused-20261005','vintage-overnight-c1-diluted-20261005']
++designs=[];scores=[];sources={}
++for name in names:
++ folder=Path('data/experiments')/name
++ if not (folder/'design.csv').exists():continue
++ d=pd.read_csv(folder/'design.csv');d['experiment']=name;designs.append(d)
++ rankings=list(folder.glob('ranking-*'))
++ if not rankings:continue
++ rank=max(rankings,key=lambda p:p.stat().st_mtime);sources[name]=str(rank)
++ f=pd.read_csv(rank/'season_composite_scores.csv');f=f[f.geography=='all']
++ scores.append(f[['config_id','seed','season','combined']])
++design=pd.concat(designs,ignore_index=True).drop_duplicates('scenario')
++f=pd.concat(scores,ignore_index=True)
++keys=['config_id','seed','season']
++if not f.groupby(keys).combined.nunique().le(1).all():raise ValueError('Same forecast has conflicting score across sources')
++f=f.drop_duplicates(keys)
++clean=design[design.treatment=='Finalized training inputs'].set_index('architecture')
++actual=design[design.treatment=='Finalized early two; actual recent reports'].set_index('architecture')
++rows=[]
++def values(config,season):
++ return f[(f.config_id==config)&(f.season==season)].set_index('seed').combined.sort_index()
++def contrast(a,b):
++ if set(a.index)!={42,43,44} or set(b.index)!={42,43,44}:return {}
++ delta=a-b
++ return dict(paired_mean_change=delta.mean(),paired_sd_change=delta.std(),percent_change_of_means=100*(a.mean()/b.mean()-1),paired_mean_percent_change=(100*(a/b-1)).mean(),improving_seeds=int((delta<0).sum()))
++for r in design.itertuples():
++ s=Scenario.from_string(r.scenario)
++ cr=clean.loc[r.architecture];ar=actual.loc[r.architecture]
++ row=dict(experiment=r.experiment,architecture=r.architecture,model=f'{s.fit_partition} MLP; spatial={s.spatial}; covariates={s.covariate_set or "none"}',treatment=r.treatment,run_id=r.run_id,scenario=r.scenario,
++  hardware='NVIDIA L40; g1803jles01; no H100 scores pooled',
++  forward_training_seasons='2022-23; 2023-24; 2024-25',forward_error_donor_season='2024-25',forward_evaluation_season='2025-26',forward_score_targets='Flu/COVID/RSV hospital admissions and ED proportions; admission weight 1, ED weight 0.5',
++  retrospective_training_seasons='2022-23; 2023-24; 2025-26',retrospective_error_donor_season='2025-26',retrospective_evaluation_season='2024-25',retrospective_score_targets='Flu and COVID admissions only; equal target weight',
++  training_input_scope='All three permitted seasons' if s.vintage_scope=='all' else '2022-23 and 2023-24 receive artificial errors; recent season receives '+('actual reports' if s.vintage_scope=='early_actual' else 'finalized inputs'),
++  synthetic_signals=s.vintage_signals,synthetic_strength=s.reporting_strength,synthetic_episode_probability=s.reporting_probability,learned_residual_scale=s.vintage_residual if s.vintage_generator=='ridge' else np.nan,
++  prediction_labels='Unchanged finalized t+1 through t+4; historical truth support unchanged',
++  evaluation_inputs='Wednesday archived numerical values; B2 source lags and availability; frozen-final proxies for absent archives',
++  score_definition='Location-relative WIS to hub ensemble; states/DC equally share 80%, US 20%; lower better',
++  finalized_training_reference_experiment=cr.experiment,finalized_training_reference_run_id=cr.run_id,finalized_training_reference_scenario=cr.scenario,
++  finalized_training_reference_inputs='Finalized inputs in all three permitted training seasons; same finalized labels and evaluation inputs',
++  actual_recent_reference_experiment=ar.experiment,actual_recent_reference_run_id=ar.run_id,actual_recent_reference_scenario=ar.scenario,
++  actual_recent_reference_inputs='Finalized 2022-23/2023-24; actual permitted donor-season reports with identical source schedules/final proxies; labels unchanged',
++  actual_recent_attribution_eligible=s.vintage_scope=='early_actual')
++ if s.reporting_probability==0:
++  row['training_input_scope']='Finalized inputs in all three permitted seasons' if s.vintage_scope=='all' else 'Finalized 2022-23/2023-24; actual permitted donor-season reports'
++ for prefix,season in [('forward','2025-2026'),('retrospective','2024-2025')]:
++  v=values(r.scenario,season);c=values(cr.scenario,season);a=values(ar.scenario,season)
++  row.update({prefix+'_seeds':len(v),prefix+'_mean':v.mean(),prefix+'_sd':v.std(),prefix+'_finalized_reference_mean':c.mean(),prefix+'_finalized_reference_seeds':len(c),prefix+'_actual_recent_reference_mean':a.mean() if len(a)==3 else np.nan,prefix+'_actual_recent_reference_seeds':len(a)})
++  for label,ref in [('versus_finalized',c),('versus_actual_recent',a)]:
++   if label=='versus_actual_recent' and s.vintage_scope!='early_actual':continue
++   row.update({prefix+'_'+label+'_'+k:value for k,value in contrast(v,ref).items()})
++ rows.append(row)
++all_results=pd.DataFrame(rows)
++complete=all_results[(all_results.forward_seeds==3)&(all_results.retrospective_seeds==3)].copy()
++out=Path('docs/experiments/vintage-overnight-20261005');out.mkdir(parents=True,exist_ok=True)
++all_results.to_csv(out/'comparison-status.csv',index=False)
++complete.to_csv(out/'principal-three-seed-comparisons.csv',index=False)
++(out/'principal-export-sources.json').write_text(json.dumps(dict(ranking_sources=sources,complete_three_seed_comparisons=len(complete),planned_comparisons=len(all_results)),indent=2)+'\n')
++lines=['# Principal three-seed comparisons on node1 L40','',
++'Every row retrains the named model and learns unchanged finalized future labels. Forward evaluation uses 2025–26 Wednesday reports after training on 2022–23/2023–24/2024–25; artificial errors come only from 2024–25. Retrospective evaluation uses 2024–25 after training on 2022–23/2023–24/2025–26; errors come only from 2025–26. Source delays and frozen-final proxies for absent archives are identical across evaluations.',
++'', 'Forward scores cover six targets; retrospective scores cover flu/COVID admissions only. Lower relative WIS is better. Admission weight is twice ED; US receives 20%, states/DC share 80%. C1 is a pathogen MLP with distance sharing and no covariates. C2 is a target MLP without spatial sharing using inpatient, wastewater, Kinsa, ILINet, clinical labs and FluSurv. C3 is a target MLP with neighbor sharing and Kinsa.',
++'', 'Early two means 2022–23/2023–24; recent means the permitted error-donor season above. Percent changes compare with the same architecture trained on finalized inputs in all three seasons. CSV contains SDs, paired differences, seed counts, full definitions and exact clean/actual-recent reference IDs. Actual-recent attribution is withheld until its three seeds complete.',
++'', '| Model | Training-input treatment | Forward mean | Change vs finalized training | Retrospective mean | Change vs finalized training |', '| --- | --- | ---: | ---: | ---: | ---: |']
++for r in complete.itertuples():
++ lines.append(f'| {r.architecture} | {r.treatment} | {r.forward_mean:.5f} | {r.forward_versus_finalized_percent_change_of_means:+.2f}% | {r.retrospective_mean:.5f} | {r.retrospective_versus_finalized_percent_change_of_means:+.2f}% |')
++(out/'principal-three-seed-comparisons.md').write_text('\n'.join(lines)+'\n')
++print(f'Exported {len(complete)} fully replicated comparisons; {len(all_results)} total planned.')
+diff --git a/scripts/vintage_overnight_location_support.py b/scripts/vintage_overnight_location_support.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_location_support.py
+@@ -0,0 +1,20 @@
++import json
++from pathlib import Path
++import numpy as np
++import pandas as pd
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++s=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++p=load(s['dataset']);rows=[]
++for season in ('2024-2025','2025-2026'):
++ count=np.zeros((len(p['locations']),len(p['target_names'])),int);n=0
++ for ti,d in enumerate(p['dates']):
++  if cv.season(d)!=season:continue
++  issuance=np.datetime64(d)+np.timedelta64(4,'D');wi=np.searchsorted(p['issuance_dates'],issuance)
++  if wi>=len(p['issuance_dates']) or p['issuance_dates'][wi]!=issuance:continue
++  count+=np.isfinite(p['asof_targets'][wi,ti]);n+=1
++ for i,location in enumerate(p['locations']):
++  for k,signal in enumerate(p['target_names']):rows.append(dict(season=season,location=location,signal=signal,current_week_archived_origins=int(count[i,k]),origins=n))
++x=pd.DataFrame(rows);x.to_csv('docs/experiments/vintage-overnight-20261005/archive-support-by-location.csv',index=False)
++print(x[x.location=='US'].to_string(index=False))
++print(x[x.current_week_archived_origins==0].to_string(index=False))
+diff --git a/scripts/vintage_overnight_metadata.py b/scripts/vintage_overnight_metadata.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_metadata.py
+@@ -0,0 +1,34 @@
++"""Clarify inherited support labels without modifying completed pinned artifacts."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++from tapestry.dataset.vintage_overnight import VintageOvernight
++from tapestry.model.scenario import Scenario
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++panel=load(settings['dataset'])
++s=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[1].config_id)
++s=replace(s,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage')
++result=dict(applies_to='Pinned first-round v1 and admissions/dilution v2 generators; descriptive correction only, no fitted data or scores changed',
++ conditional_description_fields='Legacy conditional_model, ridge_penalty, residual_scale and centered-residual descriptions apply only when generator=ridge. Empirical generators use raw joint error windows with no fitted/subtracted conditional mean. Probability-zero controls apply no artificial errors.',
++ legacy_target_evidence_fraction='Final-truth support, NOT observed archived/final-pair support',
++ probability_zero_controls='Probability zero means no synthetic perturbation, regardless of legacy synthetic_seasons or recent_donor_inputs descriptions; early_actual still supplies real recent-season reports',
++ empirical_unsupported_cells='Zero empirical perturbation when donor archived/final pair is absent',
++ learned_unsupported_cells='Empirical residual zero when pair absent; conditional mean can extrapolate into those cells, so inherited unsupported_cells=unchanged is not valid for the learned generator',
++ truth_support='Final-truth availability is never invented. RSV admission inputs are absent in 2022-23.',
++ covariate_scope='C2 six-group covariate set; target support is shared by C1/C2/C3. C3 uses its Kinsa subset; C1 has no covariates.',
++ support_denominator='Donor origins x context ages x locations, within each signal; eligible reference weeks must belong to the permitted donor season',folds=[])
++for heldout in s.scored_seasons:
++ keep=np.isin(cv.week_roles(panel['dates'],s,heldout),['fit','validation'])
++ b=VintageOvernight(panel,s,heldout,keep)
++ fold=dict(forecast_evaluation_season=heldout,reporting_error_training_season=b.donor_season,donor_origins=len(b.donors),signals=[])
++ for kind,names,support,visible in [('target',panel['target_names'],b.support,b.visible),('covariate',b.names,b.cov_support,b.cov_visible)]:
++  for channel,name in enumerate(names):
++   a=support[:,:,channel];observed=a & visible[:,:,channel]
++   fold['signals'].append(dict(kind=kind,signal=name,final_truth_support_fraction=float(a.mean()),archived_pair_support_fraction=float(observed.mean()),archived_pair_fraction_given_final_truth=float(observed.sum()/a.sum()) if a.sum() else None))
++ result['folds'].append(fold)
++out=Path('docs/experiments/vintage-overnight-20261005/reporting-metadata-clarification.json')
++out.write_text(json.dumps(result,indent=2)+'\n');print(out)
+diff --git a/scripts/vintage_overnight_narrow.py b/scripts/vintage_overnight_narrow.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_narrow.py
+@@ -0,0 +1,42 @@
++"""Keep seed-42 pilots for two weak full-strength arms; retain all other seeds.
++
++Run after the first-round manager plan and before launching, or while only the
++removed seeds are still unstarted. The common manager then resumes the narrowed
++78-run plan without restoring those replications.
++"""
++import argparse
++import json
++from pathlib import Path
++import pandas as pd
++from tapestry.experiment.dispatch import queue_lock
++from tapestry.experiment.planner import read_jobs, write_jobs
++from tapestry.experiment.provenance import save
++p=argparse.ArgumentParser();p.add_argument('-e','--experiment',required=True)
++a=p.parse_args();f=Path('data/experiments')/a.experiment
++select={'Empirical full-strength, all three training seasons','Empirical full-strength early two; recent finalized'}
++design=pd.read_csv(f/'design.csv')
++scenarios=set(design.loc[design.treatment.isin(select),'scenario'])
++if len(scenarios)!=6: raise ValueError('Expected these two treatments on C1/C2/C3')
++removed=[]
++with queue_lock(f):
++ state=json.loads((f/'dispatch.json').read_text()) if (f/'dispatch.json').exists() else None
++ jobs=read_jobs(f)
++ for job in jobs:
++  if job['scenario'] not in scenarios: continue
++  for seed in list(job['seeds']):
++   if seed==42: continue
++   entry=state['tasks'][str(job['task'])] if state else None
++   if entry and (str(seed) in entry['active'] or entry['seeds'].get(str(seed)) in ('running','complete')):
++    raise ValueError(f'Cannot remove started task {job["task"]} seed {seed}')
++   removed.append(dict(task=job['task'],seed=seed,scenario=job['scenario']))
++   job['seeds'].remove(seed)
++   if entry: entry['seeds'].pop(str(seed),None)
++ write_jobs(f,jobs)
++ if state: save(f/'dispatch.json',state)
++design['planned_seeds']=design.scenario.map({j['scenario']:' '.join(map(str,j['seeds'])) for j in jobs})
++design.to_csv(f/'design.csv',index=False)
++if removed or not (f/'narrowed-plan.json').exists():
++ save(f/'narrowed-plan.json',dict(seed_runs=sum(len(j['seeds']) for j in jobs),removed=removed,
++ reason='Prior weekend evidence and initial L40 pilots show forward harm from blanket full-strength errors; reserve time for admissions-specific follow-up.',
++ resume='Ordinary common-manager status/resubmission now preserves this narrowed jobs.csv. No started fits removed.'))
++print(f'Narrowed plan: {sum(len(j["seeds"]) for j in jobs)} seed runs; removed {len(removed)} unstarted replications.')
+diff --git a/scripts/vintage_overnight_nonlinear_diagnostics.py b/scripts/vintage_overnight_nonlinear_diagnostics.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_nonlinear_diagnostics.py
+@@ -0,0 +1,74 @@
++"""Describe and temporally cross-validate permitted donor reporting-error models."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from sklearn.ensemble import HistGradientBoostingRegressor
++from tapestry.model.scenario import Scenario
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++from tapestry.dataset.vintage_overnight import VintageOvernight
++from tapestry.dataset.episodes import episodes
++
++out=Path('docs/experiments/vintage-overnight-20261005'); out.mkdir(parents=True,exist_ok=True)
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++panel=load(settings['dataset'])
++base=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[0].config_id)
++s=replace(base,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage')
++rows=[]
++for heldout in s.scored_seasons:
++ keep=np.isin(cv.week_roles(panel['dates'],s,heldout),['fit','validation'])
++ bank=VintageOvernight(panel,s,heldout,keep)
++ es={e['context_dates'][-1]:e for e in episodes(cv.masked(panel,keep),s.lookback,'scheduled_final',[])}
++ xs=np.stack([bank.features_for(es[d],'target') for d in bank.donors])
++ assignment=np.minimum(np.arange(len(bank.donors))*4//len(bank.donors),3)
++ for age in (0,3):
++  j=s.lookback-1-age
++  for channel,name in enumerate(panel['target_names']):
++   y=bank.errors[:,j,channel]
++   valid=bank.support[:,j,channel]&bank.visible[:,j,channel]
++   x=xs[:,j,channel]
++   predicted=np.zeros_like(y); global_pred=np.zeros_like(y); nonlinear=np.zeros_like(y); boosted_ridge=np.zeros_like(y)
++   for block in range(4):
++    train=valid&(assignment!=block)[:,None]
++    xx,yy=x[train],y[train]
++    penalty=np.eye(x.shape[-1])*20; penalty[0,0]=1e-4
++    b=np.linalg.solve(xx.T@xx+penalty,xx.T@yy)
++    test=assignment==block
++    predicted[test]=x[test]@b
++    boosted_ridge[test]=predicted[test]
++    global_pred[test]=yy.mean() if len(yy) else 0
++    if len(yy)>=100:
++     model=HistGradientBoostingRegressor(max_iter=80,max_leaf_nodes=8,min_samples_leaf=50,l2_regularization=20,learning_rate=.05,random_state=42)
++     model.fit(xx[:,1:7],yy)
++     nonlinear[test]=model.predict(x[test,...,1:7].reshape(-1,6)).reshape(y[test].shape)
++     model.fit(xx[:,1:7],yy-xx@b)
++     boosted_ridge[test]+=model.predict(x[test,...,1:7].reshape(-1,6)).reshape(y[test].shape)
++   rows.append(dict(heldout_forecast_season=heldout,reporting_error_training_season=bank.donor_season,
++    signal=name,report_age_weeks=age,n=int(valid.sum()),mean_log_error=float(y[valid].mean()),
++    rms_log_error=float(np.sqrt(np.mean(y[valid]**2))),
++    blocked_cv_global_mean_rmse=float(np.sqrt(np.mean((y-global_pred)[valid]**2))),
++    blocked_cv_conditional_rmse=float(np.sqrt(np.mean((y-predicted)[valid]**2))),
++    blocked_cv_nonlinear_rmse=float(np.sqrt(np.mean((y-nonlinear)[valid]**2))),
++    blocked_cv_ridge_plus_boosted_rmse=float(np.sqrt(np.mean((y-boosted_ridge)[valid]**2))),
++    available_pairs_fraction=float(valid.mean())))
++frame=pd.DataFrame(rows)
++frame.to_csv(out/'nonlinear-reporting-blocked-validation.csv',index=False)
++print(frame.to_string(index=False))
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++fig,axes=plt.subplots(1,2,figsize=(10,4.5),sharey=True)
++for ax,(season,g) in zip(axes,frame[(frame.report_age_weeks==0)&frame.signal.str.startswith('nhsn')].groupby('reporting_error_training_season')):
++ x=np.arange(len(g))
++ ax.plot(x,g.blocked_cv_nonlinear_rmse/g.blocked_cv_conditional_rmse,'o-',label='Standalone boosting / ridge')
++ ax.plot(x,g.blocked_cv_ridge_plus_boosted_rmse/g.blocked_cv_conditional_rmse,'s-',label='Ridge + boosted residual / ridge')
++ ax.axhline(1,color='gray',linestyle='--');ax.set_xticks(x,[n.replace('nhsn_','').replace('_admissions','') for n in g.signal])
++ ax.set_title('Archived reporting pairs from '+season);ax.grid(alpha=.2)
++axes[0].set_ylabel('Current-week admission log-error RMSE ratio\nBelow one improves on ridge')
++axes[0].legend(fontsize=8)
++fig.suptitle('Nonlinear final-to-report error generation: four contiguous-origin blocks\nTrain on three donor-season blocks, predict the fourth; no forecast retraining',fontsize=11)
++fig.tight_layout()
++fig.savefig(out/'nonlinear-reporting-blocked-validation.png',dpi=180)
++fig.savefig(out/'nonlinear-reporting-blocked-validation.pdf')
+diff --git a/scripts/vintage_overnight_paired_plot.py b/scripts/vintage_overnight_paired_plot.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_paired_plot.py
+@@ -0,0 +1,26 @@
++"""Show fixed first-round forward contrasts and training-seed variability."""
++from pathlib import Path
++import pandas as pd
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++p=Path('docs/experiments/vintage-overnight-20261005/vintage-overnight-round1-20261005')
++f=pd.read_csv(p/'seed-season-results.csv')
++f=f[f.season=='2025-2026']
++arms=['Finalized training inputs','Empirical half-strength early two; recent finalized','Learned conditional mean only early two; recent actual reports','Empirical full-strength early two; recent actual reports']
++labels=['All three\nfinalized','Early two: half\nempirical errors;\nrecent finalized','Early two: learned\nmean only;\nrecent actual','Early two: full\nempirical errors;\nrecent actual']
++fig,axes=plt.subplots(1,3,figsize=(15,6),sharey=True)
++for ax,arch in zip(axes,['C1','C2','C3']):
++ part=f[(f.architecture==arch)&f.treatment.isin(arms)]
++ for seed,g in part.groupby('seed'):
++  values=g.set_index('treatment').combined.reindex(arms)
++  ax.plot(range(4),values,'o-',alpha=.65,linewidth=1,label=f'Seed {seed}')
++ ax.plot(range(4),part.groupby('treatment').combined.mean().reindex(arms),'kD--',linewidth=2,label='Three-seed mean')
++ ax.set_xticks(range(4),labels,fontsize=8);ax.set_title(arch);ax.grid(axis='y',alpha=.2)
++axes[0].set_ylabel('Forward 2025–26 relative WIS; lower is better')
++axes[0].legend(fontsize=8)
++fig.suptitle('Retrained models: finalized future labels; training seasons 2022–23, 2023–24, 2024–25\nArtificial errors learned only from 2024–25; same 2025–26 Wednesday reports, source lags and absent-archive final proxies',fontsize=11)
++fig.text(.04,.015,'Early two = 2022–23/2023–24; recent = 2024–25. C1: pathogen MLP, distance sharing, no covariates. C2: target MLP, no spatial sharing; inpatient, wastewater, Kinsa, ILINet, labs, FluSurv.\nC3: target MLP, neighbor sharing, Kinsa. US weight 20%; states/DC 80%; admissions weight twice ED. Fixed development contrasts, not prospective validation.',fontsize=8)
++fig.tight_layout(rect=[0,.09,1,1])
++fig.savefig(p/'seed-paired-forward.png',dpi=180)
++fig.savefig(p/'seed-paired-forward.pdf')
+diff --git a/scripts/vintage_overnight_prioritize_controls.py b/scripts/vintage_overnight_prioritize_controls.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_prioritize_controls.py
+@@ -0,0 +1,34 @@
++"""Temporarily prioritize unstarted matched controls, then restore all other work."""
++import json
++import time
++from pathlib import Path
++from tapestry.experiment.dispatch import queue_lock
++from tapestry.experiment.provenance import save
++f=Path('data/experiments/vintage-overnight-round1-20261005')
++controls={'0','10','20'}
++with queue_lock(f):
++ s=json.loads((f/'dispatch.json').read_text())
++ held=[]
++ for task,e in s['tasks'].items():
++  if task in controls: continue
++  for seed,status in e['seeds'].items():
++   if status=='pending':
++    e['seeds'][seed]='waiting_for_control_claims'
++    held.append((task,seed))
++ save(f/'dispatch.json',s)
++ save(f/'control-priority.json',dict(held=held,status='waiting for control claims',planned_seeds_unchanged=True))
++print(f'Temporarily holding {len(held)} unstarted noncontrol fits.',flush=True)
++while True:
++ with queue_lock(f):
++  s=json.loads((f/'dispatch.json').read_text())
++  pending=[(task,seed) for task in controls for seed,status in s['tasks'][task]['seeds'].items() if status=='pending']
++  if not pending:
++   restored=0
++   for task,seed in held:
++    if s['tasks'][task]['seeds'].get(seed)=='waiting_for_control_claims':
++     s['tasks'][task]['seeds'][seed]='pending';restored+=1
++   save(f/'dispatch.json',s)
++   save(f/'control-priority.json',dict(held=held,status='released after all controls claimed',restored=restored,planned_seeds_unchanged=True))
++   print(f'Controls claimed; restored {restored} pending fits.',flush=True)
++   break
++ time.sleep(10)
+diff --git a/scripts/vintage_overnight_proxy_audit.py b/scripts/vintage_overnight_proxy_audit.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_proxy_audit.py
+@@ -0,0 +1,57 @@
++"""Count numerical proxies in scheduled real-report inputs; no forecasts fitted."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from tapestry.model.scenario import Scenario
++from tapestry.dataset import cv
++from tapestry.dataset.build import load,covariate_names_for
++from tapestry.dataset.episodes import select_covariates
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++panel=load(settings['dataset'])
++s=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[1].config_id)
++s=replace(s,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage')
++names=list(covariate_names_for(s.covariate_set));rows=[]
++for heldout in s.scored_seasons:
++ fold=cv.fold(panel,s,heldout)
++ donor=max(cv.season(e['context_dates'][-1]) for e in fold.train)
++ for role,episodes in [('Recent training season actual inputs',[e for e in fold.train if cv.season(e['context_dates'][-1])==donor]),('Evaluation actual inputs',fold.score)]:
++  counts={}
++  for e in episodes:
++   issue=str(np.datetime64(e['context_dates'][-1])+np.timedelta64(4,'D'))
++   wi=np.searchsorted(panel['issuance_dates'].astype(str),issue)
++   assert str(panel['issuance_dates'][wi])==issue
++   ti=np.searchsorted(panel['dates'].astype(str),e['context_dates'])
++   raw=np.moveaxis(panel['asof_targets'][wi,ti],-1,-2)
++   _,cov_observed=select_covariates(panel['asof_covariates'][wi,ti],panel['asof_covariates_national'][wi,ti],panel['covariate_names'],panel['covariate_national_names'],panel['locations'],names)
++   for kind,signals,available,observed in [('target',panel['target_names'],e['available'],np.isfinite(raw)),('covariate',names,e['covariates'][...,1,:].astype(bool),cov_observed)]:
++    for channel,name in enumerate(signals):
++     for age in range(s.lookback):
++      a=available[-1-age,channel];v=observed[-1-age,channel]
++      key=(kind,name,age)
++      counts.setdefault(key,np.zeros(3,dtype=int))
++      counts[key]+=np.array([len(a),a.sum(),(a&v).sum()])
++  for (kind,name,age),(total,available,archived) in counts.items():
++   rows.append(dict(forecast_evaluation_season=heldout,reporting_error_donor_season=donor,input_role=role,input_season=donor if role.startswith('Recent') else heldout,kind=kind,signal=name,report_age_weeks=age,origins=len(episodes),all_cells=int(total),scheduled_available_cells=int(available),archived_numerical_cells=int(archived),frozen_final_proxy_cells=int(available-archived),proxy_fraction_of_available=(available-archived)/available if available else np.nan))
++f=pd.DataFrame(rows)
++out=Path('docs/experiments/vintage-overnight-20261005')
++f.to_csv(out/'scheduled-input-proxy-audit.csv',index=False)
++print(f[(f.kind=='target')&(f.report_age_weeks==0)][['forecast_evaluation_season','input_role','signal','origins','proxy_fraction_of_available']].to_string(index=False))
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++fig,axes=plt.subplots(1,2,figsize=(12,5),sharey=True)
++order=list(panel['target_names'])
++for ax,(season,g) in zip(axes,f[(f.kind=='target')&(f.input_role=='Evaluation actual inputs')].groupby('input_season')):
++ values=g.pivot(index='signal',columns='report_age_weeks',values='proxy_fraction_of_available').reindex(order)
++ im=ax.imshow(100*values.to_numpy(),aspect='auto',vmin=0,vmax=100,cmap='YlOrRd')
++ ax.set_xticks(range(s.lookback));ax.set_xlabel('Report age (weeks)')
++ ax.set_yticks(range(len(order)),[str(n).replace('nhsn_','').replace('nssp_','').replace('_',' ') for n in order])
++ ax.set_title('Scheduled inputs in '+season)
++fig.colorbar(im,ax=axes.ravel().tolist(),label='Frozen-final proxy cells / available input cells (%)',shrink=.8)
++fig.suptitle('Archived numerical gaps remain substantial under assumed full source availability')
++fig.text(.02,.025,'Wednesday issuance; original B2 source schedules. Denominator excludes unavailable historical truth.\nThe same source-season mixture is used in actual-recent training inputs and evaluation inputs; future labels remain finalized.',fontsize=9)
++fig.subplots_adjust(left=.16,right=.8,bottom=.21,top=.83,wspace=.15)
++fig.savefig(out/'scheduled-input-proxy-audit.png',dpi=170)
++fig.savefig(out/'scheduled-input-proxy-audit.pdf')
+diff --git a/scripts/vintage_overnight_report.py b/scripts/vintage_overnight_report.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_report.py
+@@ -0,0 +1,119 @@
++"""Readable matched-season results from the common manager ranking tables."""
++import argparse
++from pathlib import Path
++import numpy as np
++import pandas as pd
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++from tapestry.model.scenario import Scenario
++p=argparse.ArgumentParser(); p.add_argument('-e','--experiment',required=True)
++p.add_argument('--reference-experiment',help='Include matching finalized-input training controls from another experiment on the same hardware')
++a=p.parse_args(); folder=Path('data/experiments')/a.experiment
++ranking=max(folder.glob('ranking-*'),key=lambda x:x.stat().st_mtime)
++design=pd.read_csv(folder/'design.csv')
++scores=pd.read_csv(ranking/'season_composite_scores.csv')
++reference_ranking=None
++if a.reference_experiment:
++ reference_folder=Path('data/experiments')/a.reference_experiment
++ reference_ranking=max(reference_folder.glob('ranking-*'),key=lambda x:x.stat().st_mtime)
++ reference_design=pd.read_csv(reference_folder/'design.csv')
++ reference_design=reference_design[(reference_design.treatment=='Finalized training inputs') & reference_design.architecture.isin(design.architecture)]
++ reference_scores=pd.read_csv(reference_ranking/'season_composite_scores.csv')
++ reference_scores=reference_scores[reference_scores.config_id.isin(reference_design.scenario)]
++ scores=pd.concat([scores,reference_scores],ignore_index=True)
++ design=pd.concat([design,reference_design],ignore_index=True).drop_duplicates('scenario')
++scores=scores[scores.geography=='all'].merge(design,left_on='config_id',right_on='scenario',validate='many_to_one')
++rows=[]
++for (architecture,treatment,season),part in scores.groupby(['architecture','treatment','season'],sort=False):
++ s=Scenario.from_string(part.config_id.iloc[0])
++ rows.append(dict(architecture=architecture,model=f'{s.fit_partition} {s.encoder}; spatial={s.spatial}; covariates={s.covariate_set or "none"}',
++   treatment=treatment,training_seasons='2022-23; 2023-24; '+('2025-26' if season=='2024-2025' else '2024-25'),
++   reporting_error_training_season='2025-26' if season=='2024-2025' else '2024-25',evaluation_season=season,
++   prediction_labels='Unchanged finalized t+1 through t+4',evaluation_inputs='Wednesday archived values; B2 source lags; absent-archive frozen-final proxies',
++   seeds=part.seed.nunique(),mean_relative_wis=part.combined.mean(),sd_relative_wis=part.combined.std(),scenario=s.scenario_string))
++summary=pd.DataFrame(rows)
++control = 'Finalized training inputs' if 'Finalized training inputs' in design.treatment.values else 'Finalized early two; actual recent reports'
++controls=summary[summary.treatment==control][['architecture','evaluation_season','mean_relative_wis','seeds']].rename(columns={'mean_relative_wis':'matched_control_relative_wis','seeds':'matched_control_seeds'})
++summary=summary.merge(controls,on=['architecture','evaluation_season'],how='left')
++summary['control_training_treatment']=control
++summary['reference_experiment']=a.reference_experiment or a.experiment
++
++matched=scores.merge(scores[scores.treatment==control][['architecture','season','seed','combined']].rename(columns={'combined':'control_score'}),on=['architecture','season','seed'],how='inner')
++matched['paired_difference']=matched.combined-matched.control_score
++paired=matched.groupby(['architecture','treatment','season']).agg(paired_seeds=('seed','nunique'),paired_mean_difference=('paired_difference','mean'),paired_sd_difference=('paired_difference','std'),improved_seed_count=('paired_difference',lambda v:int((v<0).sum()))).reset_index().rename(columns={'season':'evaluation_season'})
++summary=summary.merge(paired,on=['architecture','treatment','evaluation_season'],how='left')
++for col in ['paired_mean_difference','paired_sd_difference','improved_seed_count']:
++ summary.loc[summary.paired_seeds!=3,col]=np.nan
++
++summary['percent_difference_from_matched_control']=np.where((summary.seeds==3)&(summary.matched_control_seeds==3),100*(summary.mean_relative_wis/summary.matched_control_relative_wis-1),np.nan)
++
++if 'Finalized early two; actual recent reports' in summary.treatment.values:
++ recent=summary[summary.treatment=='Finalized early two; actual recent reports'][['architecture','evaluation_season','mean_relative_wis','seeds']].rename(columns={'mean_relative_wis':'recent_actual_only_relative_wis','seeds':'recent_actual_only_seeds'})
++ summary=summary.merge(recent,on=['architecture','evaluation_season'],how='left')
++ # This attribution contrast applies only to arms retaining actual recent inputs.
++ eligible=summary.treatment.str.contains('early two')&(summary.seeds==3)&(summary.recent_actual_only_seeds==3)
++ summary['percent_difference_from_recent_actual_only']=np.where(eligible,100*(summary.mean_relative_wis/summary.recent_actual_only_relative_wis-1),np.nan)
++
++out=Path('docs/experiments/vintage-overnight-20261005')/a.experiment; out.mkdir(parents=True,exist_ok=True)
++summary.to_csv(out/'season-results.csv',index=False)
++scores.to_csv(out/'seed-season-results.csv',index=False)
++targets=pd.read_csv(ranking/'season_scores.csv')
++if reference_ranking is not None:
++ reference_targets=pd.read_csv(reference_ranking/'season_scores.csv')
++ targets=pd.concat([targets,reference_targets[reference_targets.config_id.isin(reference_design.scenario)]],ignore_index=True)
++common=targets[(targets.geography=='all') & targets.target.isin(['wk inc flu hosp','wk inc covid hosp'])]
++keys=['config_id','seed','season']
++if not common.groupby(keys).size().eq(2).all(): raise ValueError('Common-admission diagnostic requires both targets')
++common=common.groupby(keys).wis_ratio.mean().reset_index().rename(columns={'wis_ratio':'common_admission_relative_wis'})
++common=common.merge(design,left_on='config_id',right_on='scenario',validate='many_to_one')
++common['score_targets']='Secondary diagnostic: flu and COVID admissions only; equal target weights'
++common['prediction_labels']='Same six-target finalized future labels as main forecast fits; no retraining'
++common.to_csv(out/'common-admission-seed-season-results.csv',index=False)
++
++# The common-target diagnostic changes only scoring support, never fitted models.
++common_summary=common.groupby(['architecture','treatment','season'],sort=False).agg(
++ seeds=('seed','nunique'),mean_relative_wis=('common_admission_relative_wis','mean'),
++ sd_relative_wis=('common_admission_relative_wis','std')).reset_index()
++common_control=common_summary[common_summary.treatment==control][['architecture','season','mean_relative_wis','seeds']].rename(columns={'mean_relative_wis':'matched_control_relative_wis','seeds':'matched_control_seeds'})
++common_summary=common_summary.merge(common_control,on=['architecture','season'],how='left')
++common_summary['percent_difference_from_matched_control']=np.where((common_summary.seeds==3)&(common_summary.matched_control_seeds==3),100*(common_summary.mean_relative_wis/common_summary.matched_control_relative_wis-1),np.nan)
++common_summary['score_targets']='Secondary diagnostic: flu and COVID admissions only; equal target weights'
++common_summary['training_seasons']=common_summary.season.map({'2024-2025':'2022-23; 2023-24; 2025-26','2025-2026':'2022-23; 2023-24; 2024-25'})
++common_summary['reporting_error_training_season']=common_summary.season.map({'2024-2025':'2025-26','2025-2026':'2024-25'})
++common_summary['prediction_labels']='Unchanged finalized t+1 through t+4; same fitted models as main score'
++common_summary['evaluation_inputs']='Wednesday archived values; B2 source lags; absent-archive frozen-final proxies'
++common_summary.to_csv(out/'common-admission-season-results.csv',index=False)
++per_target=targets[targets.geography=='all'].merge(design,left_on='config_id',right_on='scenario',validate='many_to_one')
++per_target.to_csv(out/'target-seed-season-results.csv',index=False)
++
++
++complete=summary[summary.seeds==3]
++if len(complete) and complete.loc[complete.treatment!=control,'percent_difference_from_matched_control'].notna().any():
++ treatments=list(design.treatment.drop_duplicates())
++ architectures=list(design.architecture.drop_duplicates())
++ fig,axes=plt.subplots(1,2,figsize=(14,max(6,len(treatments)*.47)),sharey=True)
++ for ax,season in zip(axes,['2024-2025','2025-2026']):
++  part=complete[complete.evaluation_season==season]
++  grid=part.pivot(index='treatment',columns='architecture',values='percent_difference_from_matched_control').reindex(index=treatments,columns=architectures)
++  img=ax.imshow(grid.to_numpy(),vmin=-15,vmax=15,cmap='RdBu_r',aspect='auto')
++  for i in range(len(treatments)):
++   for j in range(len(architectures)):
++    val=grid.iloc[i,j]
++    if np.isfinite(val): ax.text(j,i,f'{val:+.1f}%',ha='center',va='center',fontsize=9)
++  ax.set_xticks(range(len(architectures)),architectures)
++  ax.set_yticks(range(len(treatments)),treatments,fontsize=8)
++  donor='2025–26' if season=='2024-2025' else '2024–25'
++  scored = 'flu + COVID admissions only' if season=='2024-2025' else 'all six targets'
++  ax.set_title(f'Evaluate {season} Wednesday reports: {scored}\nTrain on 2022–23, 2023–24, {donor}; errors from {donor}',fontsize=10)
++ fig.suptitle(f'Change in relative WIS versus the same architecture: {control}\nThree seeds per cell and control; negative is better. All labels finalized; source lags and final-value archive proxies retained.',fontsize=11)
++ fig.subplots_adjust(left=.43,wspace=.15,right=.9,top=.80,bottom=.15)
++ fig.text(.43,.025,'Early two = 2022–23 and 2023–24; recent = permitted donor season shown above.\nC1: pathogen MLP, distance sharing, no covariates. C2: target MLP, no spatial sharing; inpatient, wastewater, Kinsa, ILINet, clinical labs, FluSurv.\nC3: target MLP, neighbor sharing, Kinsa. All learn finalized t+1..t+4 labels.',fontsize=8)
++ cax=fig.add_axes([.92,.2,.015,.55]); fig.colorbar(img,cax=cax,label='Percent change (lower is better)')
++ fig.savefig(out/'matched-season-comparison.png',dpi=180,bbox_inches='tight')
++ fig.savefig(out/'matched-season-comparison.pdf',bbox_inches='tight')
++else:
++ for name in ('matched-season-comparison.png','matched-season-comparison.pdf'):
++  (out/name).unlink(missing_ok=True)
++print(summary[['architecture','treatment','evaluation_season','seeds','mean_relative_wis','percent_difference_from_matched_control']].to_string(index=False))
++print(out)
+diff --git a/scripts/vintage_overnight_reroute.py b/scripts/vintage_overnight_reroute.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_reroute.py
+@@ -0,0 +1,56 @@
++"""One dated, guarded handoff to avoid an allocation timeout; not a general launcher."""
++import json,subprocess,time
++from pathlib import Path
++from tapestry.experiment.dispatch import queue_lock
++from tapestry.experiment.provenance import save
++folder=Path('data/experiments/vintage-overnight-admissions-focused-20261005')
++node='g1803jles01';child=293756;parents=[291089,291341]
++def signal(kind,pids):subprocess.run(['ssh',node,'kill',kind,*map(str,pids)],check=True)
++command=subprocess.check_output(['ssh',node,'ps','-p',str(child),'-o','args='],text=True)
++assert 'mlp-target-scheduled_final-bf59e0a4e9c9/s44/attempt-001' in command,command
++with queue_lock(folder):
++ state=json.loads((folder/'dispatch.json').read_text())
++ assert state['tasks']['10']['active']['44']['owner']=='3804709_0'
++record=dict(task='10',seed=44,old_owner='3804709_0',old_process=child,reason='Started06:37 on allocation ending07:35; matching seed took63.5minutes; reroute to owners ending07:58',started=time.time())
++save(folder/'reroute-record.json',record)
++signal('-TERM',[child])
++print('Stopped only the newly started C3 learned-admissions seed44 fit.',flush=True)
++stop=time.time()+60
++while time.time()<stop:
++ with queue_lock(folder):state=json.loads((folder/'dispatch.json').read_text())
++ if state['tasks']['10']['seeds']['44']=='failed' and sum(a['owner']=='3804709_0' for t in state['tasks'].values() for a in t['active'].values())==4:break
++ time.sleep(1)
++else:raise RuntimeError('Dispatcher did not finish the stopped fit and claim replacement work')
++paused=[];held=[]
++try:
++ for pid in parents:
++  signal('-STOP',[pid]);paused.append(pid)
++ # Only queue managers pause. Their independent training children keep running.
++ with queue_lock(folder):
++  state=json.loads((folder/'dispatch.json').read_text())
++  for task,entry in state['tasks'].items():
++   for seed,status in entry['seeds'].items():
++    if status=='pending':entry['seeds'][seed]='held_for_reroute';held.append((task,seed))
++  state['tasks']['10']['seeds']['44']='pending'
++  save(folder/'dispatch.json',state)
++ print('Earlier-ending queue managers paused; existing training children continue.',flush=True)
++ until=time.time()+8*60
++ while time.time()<until:
++  with queue_lock(folder):state=json.loads((folder/'dispatch.json').read_text())
++  active=state['tasks']['10']['active'].get('44')
++  if active:
++   assert active['owner'] in ['3804709_2','3804709_3'],active
++   record.update(new_owner=active['owner'],restarted=time.time(),status='rerouted')
++   print('Restarted seed44 on',active['owner'],flush=True)
++   break
++  time.sleep(3)
++ else:raise RuntimeError('No later-ending allocation claimed the fit within eight minutes')
++finally:
++ with queue_lock(folder):
++  state=json.loads((folder/'dispatch.json').read_text())
++  for task,seed in held:
++   if state['tasks'][task]['seeds'].get(seed)=='held_for_reroute':state['tasks'][task]['seeds'][seed]='pending'
++  save(folder/'dispatch.json',state)
++ for pid in paused:signal('-CONT',[pid])
++ record['managers_resumed']=time.time();save(folder/'reroute-record.json',record)
++ print('Queue managers resumed; unchanged pending work restored.',flush=True)
+diff --git a/scripts/vintage_overnight_scientific_checks.py b/scripts/vintage_overnight_scientific_checks.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_scientific_checks.py
+@@ -0,0 +1,33 @@
++"""Focused checks for label contamination, input scope and archive donor leakage."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from tapestry.model.scenario import Scenario
++from tapestry.dataset.build import load, covariate_names_for
++from tapestry.dataset import cv
++from tapestry.dataset.vintage_overnight import VintageOvernight
++from tapestry.dataset.episodes import episodes
++panel=load(json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())['dataset'])
++base=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[1].config_id)
++base=replace(base,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage',vintage_scope='early_actual',vintage_signals='admissions',reporting_strength=.5)
++for heldout in base.scored_seasons:
++ keep=np.isin(cv.week_roles(panel['dates'],base,heldout),['fit','validation'])
++ es=episodes(cv.masked(panel,keep),base.lookback,'scheduled_final',list(covariate_names_for(base.covariate_set)))
++ for generator in ['empirical','ridge']:
++  bank=VintageOvernight(panel,replace(base,vintage_generator=generator),heldout,keep)
++  assert bank.donor_season==('2025-2026' if heldout=='2024-2025' else '2024-2025')
++  assert all(cv.season(d)==bank.donor_season for d in bank.donors)
++  for season in ['2022-2023','2023-2024',bank.donor_season]:
++   e=next(e for e in es if cv.season(e['context_dates'][-1])==season and e['available'][-1].any())
++   before={k:v.copy() for k,v in e.items() if isinstance(v,np.ndarray)}
++   out=bank.draw(e,np.random.default_rng(42))
++   for key in ['target_values','target_available','Y']:
++    np.testing.assert_array_equal(out[key],before[key])
++   for key,arr in before.items():np.testing.assert_array_equal(e[key],arr)
++   if season in ['2022-2023','2023-2024']:
++    np.testing.assert_array_equal(out['values'][:,3:],before['values'][:,3:])
++    np.testing.assert_array_equal(out['covariates'],before['covariates'])
++   assert np.all(np.isfinite(out['values'])) and np.all(out['values']>=0)
++  print('PASS',heldout,generator,flush=True)
+diff --git a/scripts/vintage_overnight_shared_targets.py b/scripts/vintage_overnight_shared_targets.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_shared_targets.py
+@@ -0,0 +1,46 @@
++"""Display the effect of scoring support using the same completed forecasts."""
++from pathlib import Path
++import numpy as np
++import pandas as pd
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++root=Path('docs/experiments/vintage-overnight-20261005')
++folder=root/'vintage-overnight-admissions-focused-20261005'
++main=pd.read_csv(folder/'season-results.csv')
++shared=pd.read_csv(folder/'common-admission-season-results.csv')
++main=main[main.seeds==3];shared=shared[shared.seeds==3]
++treatments={
++ 'Finalized early two; actual recent reports':'Finalized early two; actual recent reports',
++ 'Empirical half-strength admissions early two; actual recent reports':'Empirical half-strength admissions in early two; actual recent reports',
++ 'Learned half-strength admissions early two; actual recent reports':'Learned mean + residual, half-strength admissions in early two; actual recent reports',
++ 'Empirical half-strength admissions all three; ED and covariates finalized':'Empirical half-strength admissions in all three; ED/covariates finalized',
++}
++rows=[]
++for arch in ['C1','C2','C3']:
++ for treatment,label in treatments.items():
++  a=main[(main.architecture==arch)&(main.treatment==treatment)&(main.evaluation_season=='2025-2026')]
++  b=shared[(shared.architecture==arch)&(shared.treatment==treatment)&(shared.season=='2025-2026')]
++  c=shared[(shared.architecture==arch)&(shared.treatment==treatment)&(shared.season=='2024-2025')]
++  if min(len(a),len(b),len(c))!=1:continue
++  rows.append(dict(architecture=arch,training_inputs=label,
++   retrospective_shared_admissions_percent_change=float(c.iloc[0].percent_difference_from_matched_control),
++   forward_shared_admissions_percent_change=float(b.iloc[0].percent_difference_from_matched_control),
++   forward_six_target_percent_change=float(a.iloc[0].percent_difference_from_matched_control)))
++f=pd.DataFrame(rows)
++f.to_csv(root/'shared-target-season-comparison.csv',index=False)
++fig,ax=plt.subplots(figsize=(13,8))
++columns=list(f.columns[2:]);values=f[columns].to_numpy()
++im=ax.imshow(values,cmap='RdBu_r',vmin=-15,vmax=15,aspect='auto')
++ax.set_yticks(range(len(f)),[r.architecture+': '+r.training_inputs for r in f.itertuples()],fontsize=9)
++ax.set_xticks(range(3),['Evaluate 2024–25\nFlu/COVID admissions\n(retrospective)','Evaluate 2025–26\nFlu/COVID admissions\n(secondary)','Evaluate 2025–26\nSix targets\n(primary)'],fontsize=10)
++for i in range(len(f)):
++ for j in range(3):ax.text(j,i,f'{values[i,j]:+.1f}%',ha='center',va='center',fontsize=10)
++for boundary in [3.5,7.5]:ax.axhline(boundary,color='white',lw=2)
++fig.suptitle('Training-input effects differ by season even on shared admission targets\nPercent change versus the same architecture trained on finalized inputs in all three seasons; three seeds; lower is better',fontsize=12)
++fig.text(.02,.025,'Each arm retrains on 2022–23/2023–24 plus 2025–26 for retrospective evaluation, or plus 2024–25 for forward evaluation.\nErrors use only that added season; early two means 2022–23/2023–24. Finalized future labels unchanged. Wednesday archived inputs, B2 lags and final proxies.\nC1: pathogen MLP, distance, no covariates. C3: target MLP, neighbors, Kinsa.\nC2: target MLP, no spatial; inpatient, wastewater, Kinsa, ILINet, clinical labs and FluSurv.\nThe two forward columns score the same forecasts: shared admissions receive equal weight; primary admissions have twice ED weight; US20%, states/DC80%.',fontsize=9)
++fig.subplots_adjust(left=.57,right=.89,bottom=.27,top=.86)
++cax=fig.add_axes([.91,.29,.015,.48]);fig.colorbar(im,cax=cax,label='Change versus finalized-input training (%)')
++fig.savefig(root/'shared-target-season-comparison.png',dpi=170,bbox_inches='tight')
++fig.savefig(root/'shared-target-season-comparison.pdf',bbox_inches='tight')
++print(f.to_string(index=False))
+diff --git a/scripts/vintage_overnight_transport_diagnostic.py b/scripts/vintage_overnight_transport_diagnostic.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/vintage_overnight_transport_diagnostic.py
+@@ -0,0 +1,65 @@
++"""Compare effective input perturbations to observed donor error magnitudes."""
++import json
++from pathlib import Path
++from dataclasses import replace
++import numpy as np
++import pandas as pd
++from tapestry.model.scenario import Scenario
++from tapestry.dataset.build import load
++from tapestry.dataset import cv
++from tapestry.dataset.vintage_overnight import VintageOvernight
++from tapestry.dataset.episodes import episodes
++settings=json.loads(Path('data/experiments/b-2-t0/experiment.json').read_text())
++panel=load(settings['dataset'])
++base=Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[0].config_id)
++base=replace(base,weekend_family='direct',supplied_final=False,mask_rate=0,reporting_missingness=False,reporting_augmentation='vintage',vintage_scope='all')
++rows=[]
++def record(values,source,heldout,season,signal,age):
++ x=np.asarray(values)
++ rows.append(dict(heldout_forecast_season=heldout,reporting_error_training_season='2025-2026' if heldout=='2024-2025' else '2024-2025',input_season=season,source=source,signal=signal,report_age_weeks=age,cells=len(x),mean_log_error=x.mean(),rms_log_error=np.sqrt(np.mean(x*x)),zero_fraction=np.mean(np.abs(x)<1e-7),p05=np.quantile(x,.05),p95=np.quantile(x,.95)))
++for heldout in base.scored_seasons:
++ keep=np.isin(cv.week_roles(panel['dates'],base,heldout),['fit','validation'])
++ es=list(episodes(cv.masked(panel,keep),base.lookback,'scheduled_final',[]))
++ for gen,strength in [('empirical',1.),('empirical',.5),('ridge',1.),('ridge',.5)]:
++  bank=VintageOvernight(panel,replace(base,vintage_generator=gen,reporting_strength=strength),heldout,keep)
++  if gen=='empirical' and strength==1:
++   for age in [0,3]:
++    j=base.lookback-1-age
++    for c,signal in enumerate(panel['target_names']):
++     ok=bank.support[:,j,c]&bank.visible[:,j,c]
++     record(bank.errors[:,j,c][ok],'Observed archived/final pairs',heldout,bank.donor_season,signal,age)
++  rng=np.random.default_rng(20261005)
++  samples={}
++  for e in es:
++   season=cv.season(e['context_dates'][-1])
++   if season not in bank.peaks:continue
++   for replicate in range(5):
++    changed=bank.draw(e,rng)
++    floor=bank.target_floor(e)
++    error=np.log((changed['values']+floor)/(e['values']+floor))
++    for age in [0,3]:
++     j=base.lookback-1-age
++     for c,signal in enumerate(panel['target_names']):
++      ok=e['available'][j,c]
++      samples.setdefault((season,signal,age),[]).extend(error[j,c,ok])
++  for (season,signal,age),values in samples.items():
++   if values:record(values,f'{gen} strength {strength:g}',heldout,season,signal,age)
++out=Path('docs/experiments/vintage-overnight-20261005/transport-error-magnitudes.csv')
++pd.DataFrame(rows).to_csv(out,index=False)
++print(out)
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++frame=pd.DataFrame(rows)
++part=frame[(frame.heldout_forecast_season=='2025-2026')&(frame.input_season=='2022-2023')&(frame.report_age_weeks==0)&frame.source.isin(['empirical strength 1','ridge strength 1'])]
++fig,axes=plt.subplots(1,2,figsize=(12,5))
++for ax,value,title in zip(axes,['rms_log_error','zero_fraction'],['RMS effective log perturbation','Fraction of available values unchanged']):
++ grid=part.pivot(index='signal',columns='source',values=value)
++ grid.index=[x.replace('nhsn_','').replace('nssp_','').replace('_',' ') for x in grid.index]
++ grid.rename(columns={'empirical strength 1':'Empirical donor windows','ridge strength 1':'Learned mean + donor residuals'}).plot.bar(ax=ax,rot=30)
++ ax.set_title(title);ax.set_xlabel('');ax.grid(axis='y',alpha=.2)
++fig.suptitle('Artificial reporting errors applied to finalized 2022–23 training inputs\nBoth generators learned only from 2024–25; current-week values, five draws per origin; first-round pinned code',fontsize=11)
++fig.text(.02,.01,'Input diagnostic only: no forecast retraining or scoring. Unchanged future labels. RSV admissions absent in 2022–23 and therefore omitted.',fontsize=8)
++fig.tight_layout(rect=[0,.04,1,1])
++fig.savefig(out.with_suffix('.png'),dpi=180)
++fig.savefig(out.with_suffix('.pdf'))

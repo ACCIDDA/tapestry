@@ -94,19 +94,40 @@ def training_samples(model, episodes_, ids, values, available, known_final, cal,
     return forecast_histories(model, histories, cal, covariate_history(batch, cov, model.config['covariate_names']))
 
 
-def fit_component(train, validation, channels, component, options, scenario, seed, device, epochs=None):
+def objective_weights(batch, scenario, channels):
+    if scenario.weekend_family != 'joint':
+        return loss_cell_weights(batch, LOSS_WEIGHTS[scenario.loss_weights])[:, :, channels]
+    # Normalize the two objectives separately, so adding reconstruction ages does
+    # not silently reduce the forecast objective or change its season weights.
+    result = np.zeros_like(np.stack([e['target_values'] for e in batch]))
+    h = np.asarray(scenario.horizons)
+    for use, factor in ((h > 0, 1.), (h <= 0, scenario.joint_weight)):
+        subset = [dict(e, Y=e['Y'][use], target_dates=tuple(np.asarray(e['target_dates'])[use])) for e in batch]
+        result[:, use] = factor * loss_cell_weights(subset, LOSS_WEIGHTS[scenario.loss_weights])
+    return result[:, :, channels]
+
+
+def fit_component(train, validation, channels, component, options, scenario, seed, device, epochs=None, augmenter=None):
     seed = seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
+    augmentation_rng = np.random.default_rng(seed + 700000)
     selecting = validation is not None
     budget = scenario.epochs if epochs is None else epochs
+    if augmenter is not None and augmenter.transport_missingness and 'covariate_trained' in options:
+        options = dict(options)
+        possible = (~augmenter.cov_support | augmenter.cov_visible).any(axis=(0, 1))
+        options['covariate_trained'] = (np.asarray(options['covariate_trained']) & possible).tolist()
     model = Model(horizons=scenario.horizons, scale=loss_scales(unique_truth(train)), **options).to(device)
     weights_by_channel = LOSS_WEIGHTS[scenario.loss_weights]
     values, available, known_final, y, y_mask, cal, cov = to_tensors(train, device)
-    weights = torch.as_tensor(loss_cell_weights(train, weights_by_channel), device=device)[:, :, channels]
+    weights = torch.as_tensor(objective_weights(train, scenario, channels), device=device)
     if selecting:
         vvalues, vavailable, vknown_final, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
-        vweights = torch.as_tensor(loss_cell_weights(validation, weights_by_channel), device=device)[:, :, channels]
+        vweights = torch.as_tensor(objective_weights(validation, scenario, channels), device=device)
+        if scenario.weekend_family == 'joint':
+            # Select epochs on finalized future labels; reconstruction is auxiliary.
+            vweights[:, np.asarray(scenario.horizons) <= 0] = 0
         if not float(vweights.sum()) > 0:
             raise ValueError(f'Component {component} (channels {channels}) has no weighted validation labels; '
                              'early stopping cannot select an epoch')
@@ -140,9 +161,18 @@ def fit_component(train, validation, channels, component, options, scenario, see
         total = 0.
         for ids in torch.randperm(len(train), device=device).split(scenario.batch_size):
             optimizer.zero_grad()
-            visible = available[ids] if dropout is None else available[ids] & ~dropout[ids]
-            samples = training_samples(model, train, ids, values[ids], visible, known_final[ids], cal[ids],
-                                       None if epoch_cov is None else epoch_cov[ids], scenario.members,
+            batch_values, batch_available, batch_final = values[ids], available[ids], known_final[ids]
+            batch_cov = None if epoch_cov is None else epoch_cov[ids]
+            if augmenter is not None:
+                batch = augmenter.batch([train[i] for i in ids.tolist()], augmentation_rng)
+                batch_values, batch_available, batch_final, _, _, _, batch_cov = to_tensors(batch, device)
+                if batch_cov is not None and epoch_cov is not None:
+                    cov_visible = batch_cov[..., 1, :].bool() & epoch_cov[ids][..., 1, :].bool()
+                    batch_cov[..., 0, :] *= cov_visible
+                    batch_cov[..., 1, :] = cov_visible
+            visible = batch_available if dropout is None else batch_available & ~dropout[ids]
+            samples = training_samples(model, train, ids, batch_values, visible, batch_final, cal[ids],
+                                       batch_cov, scenario.members,
                                        scenario.input_mode == 'vintaged')
             score = fair_crps_cells(samples[:, :, :, channels], y[ids][:, :, channels], y_mask[ids][:, :, channels])
             loss = (weights[ids] * score / model.scale[channels]).sum() * len(train) / len(ids)
@@ -208,7 +238,7 @@ def unique_truth(episodes_):
     return panel
 
 
-def fit_models(train, validation, full_train, scenario, seed, device, pop):
+def fit_models(train, validation, full_train, scenario, seed, device, pop, augmenter=None, selection_augmenter=None):
     """Select epochs if requested, then fit independent channel groups on full_train."""
     groups = GROUPS[scenario.fit_partition]
     models, records = [], []
@@ -216,20 +246,20 @@ def fit_models(train, validation, full_train, scenario, seed, device, pop):
         selected = scenario.epochs
         if validation is not None:
             _, record = fit_component(train, validation, channels, i,
-                                      model_options(train, scenario, pop), scenario, seed, device)
+                                      model_options(train, scenario, pop), scenario, seed, device, augmenter=selection_augmenter)
             records.append(record)
             selected = record['selected_epoch']
         if selected < 1:
             raise ValueError(f'Selected {selected} epochs for component {i}; refusing to refit with no training')
         model, record = fit_component(full_train, None, channels, i, model_options(full_train, scenario, pop),
-                                      scenario, seed, device, epochs=selected)
+                                      scenario, seed, device, epochs=selected, augmenter=augmenter)
         models.append(model)
         records.append(record)
     model = models[0] if scenario.fit_partition == 'all' else IndependentBundle(models, groups)
     return model, records
 
 
-def evaluate(model, eps, eval_members, device, output):
+def evaluate(model, eps, eval_members, device, output, panel=None):
     """Held-out quantiles from `eval_members` draws (in chunks of EVAL_CHUNK) per episode.
 
     Admission quantiles (channels 0-2) are rounded to integers (counts); ED proportions
@@ -248,7 +278,25 @@ def evaluate(model, eps, eval_members, device, output):
             metadata = dict(context_dates=(e['context_dates'],), issuances=(e['issuance'],))
             cov = covariate_history([e], cov, model.config['covariate_names'])
         with torch.no_grad():
-            samples = torch.cat([model(values=values, available=available, calendar=cal,
+            if 'history_samples' in e:
+                # One conditional future per intact history. Keep the normal
+                # member/episode latent ordering and the episode's input encoding.
+                bank=e['history_samples']
+                if len(bank)!=eval_members:
+                    raise ValueError('Evaluation history bank must match eval_members')
+                estimated=torch.as_tensor(e.get('estimated',np.zeros_like(e['available']))[None],device=device)
+                chunks=[]
+                for j in range(0,eval_members,EVAL_CHUNK):
+                    history=torch.as_tensor(bank[j:j+EVAL_CHUNK],device=device)
+                    m=len(history)
+                    repeat=lambda x: None if x is None else x.expand(m,*x.shape[1:])
+                    chunks.append(model(values=history,available=repeat(available),calendar=repeat(cal),
+                        members=1,known_final=repeat(known_final),covariates=repeat(cov),
+                        estimated=repeat(estimated),
+                        locations=list(e['locations']),vintaged=True)[0].cpu())
+                samples=torch.cat(chunks).numpy()
+            else:
+                samples = torch.cat([model(values=values, available=available, calendar=cal,
                                        members=min(EVAL_CHUNK, eval_members - j), known_final=known_final,
                                        covariates=cov, locations=list(e['locations']), vintaged=True, **metadata).cpu()
                                  for j in range(0, eval_members, EVAL_CHUNK)], dim=0).numpy()[:, 0]
@@ -269,6 +317,9 @@ def evaluate(model, eps, eval_members, device, output):
         scales = (model.models[0].scale if isinstance(model, IndependentBundle) else model.scale).detach().cpu().numpy()
         score = float((np.stack(crps) * loss_cell_weights(eps) / scales).sum())
         save(output / 'nowcast_scores.json', dict(normalized_crps=score, definition=LOSS_DEFINITION))
+        if panel is not None:
+            from .nowcast_baseline import evaluate as evaluate_baseline
+            evaluate_baseline(panel, eps, scales, output)
     return [dict(context_end=e['context_dates'][-1]) for e in eps]
 
 

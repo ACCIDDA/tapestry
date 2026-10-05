@@ -1,0 +1,11 @@
+operation,correction_strength,season,seeds,wis_ratio,paired_change_percent
+Retrained C1 on corrected synthetic histories,0.5,2024-2025,3,0.8399195315059164,-10.760013257022228
+Retrained C1 on corrected synthetic histories,0.5,2025-2026,3,0.9667518436613923,3.7589116456081832
+Retrained C1 on corrected synthetic histories,1.0,2024-2025,3,0.8601463181901466,-9.07035002226974
+Retrained C1 on corrected synthetic histories,1.0,2025-2026,3,0.9486519761949559,1.8052606486957872
+Saved C1; corrected archived histories,0.5,2024-2025,3,0.8920999845420609,-5.542636399031612
+Saved C1; corrected archived histories,0.5,2025-2026,3,0.9249292220971358,-0.7427780613394627
+Saved C1; corrected archived histories,1.0,2024-2025,3,0.8567968239987079,-9.273571821763023
+Saved C1; corrected archived histories,1.0,2025-2026,3,0.9297501204407248,-0.2180965508858268
+Saved C1; raw archived histories,0.0,2024-2025,3,0.9444625669751203,0.0
+Saved C1; raw archived histories,0.0,2025-2026,3,0.9319114956187944,0.0

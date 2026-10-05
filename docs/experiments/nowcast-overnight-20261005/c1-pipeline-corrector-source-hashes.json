@@ -1,0 +1,122 @@
+[
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s42/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "b2086ed6f2680173a67a7858d4694841cf733b3385d46584aabe63555b913823",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s42/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "570f01a95a9d440189367eb5e9a63e3f9b06d220ab2b75dc010f6850282cea12",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s43/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "0301604293ea3c31917770b735d22dd55b45ddc613a460876509cf78137899fe",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s43/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "40e8725ea91ab14feea4e3d44009f0cb3906d0566bcd1cc1527c02f6463a21af",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s44/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "292888f1b05586295a1544481b999125302de34bb9d0c71ea669070685000a0f",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-930150d4b3dc/s44/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "7e7fc2f9ba30ac2d108e5ff0c9659dc844fcb59fea120d280ddac3d829db9256",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 0.5
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s42/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "8ccbe5778afe89bbf97b05301245709e2851fb45d940506190e158d18b27ce6f",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 1.0
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s42/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "6f01409e4697e8072ab51d51bc7f2d64a6e679eb6d912d7df1a29a1a76fa4444",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 1.0
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s43/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "8317541bd3c7a3f4732d94454efd73daf436323d1032fa67f9b7c67b1eae3e65",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 1.0
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s43/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "72db712fb947c02a4c79f345fc4db2a9d179cb6883c5469d5f46b3d1e2d83de2",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 1.0
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s44/attempt-001/eval_2024-2025/nowcast_correctors.pt",
+    "sha256": "042561a665dc2c122897955dbfff873103cfc99eee9f687a391f955bec25b14c",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2025-2026"
+    ],
+    "strength": 1.0
+  },
+  {
+    "path": "data/experiments/nowcast-overnight-c1-pipeline-20261005/mlp-pathogen-scheduled_final-f1232e818b22/s44/attempt-001/eval_2025-2026/nowcast_correctors.pt",
+    "sha256": "45bc08420a643193de5eaf2835302bb7d6804ce8f4a658ce71b4c7ebe202022a",
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025"
+    ],
+    "strength": 1.0
+  }
+]

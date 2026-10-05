@@ -29,6 +29,12 @@ import hashlib
 # Enum-like string fields: a fixed set of legal values, so a typo raises instead
 # of silently becoming a new field the way an unconstrained string would.
 CODES = {
+    'reporting_method': {'local_log', 'calendar_log', 'local_additive', 'synchronous_log', 'phase_log'},
+    'weekend_family': {'none', 'direct', 'two_stage', 'joint'},
+    'reporting_augmentation': {'none', 'vintage', 'nowcast'},
+    'replay_inputs': {'none', 'finalized', 'vintage', 'nowcast'},
+    'replay_flags': {'native', 'available', 'off'},
+    'replay_nowcaster': {'selected', 'conditional_chain', 'conditional', 'context_residual'},
     'training_inputs': {'same', 'finalized'},
     'input_normalization': {'none', 'b0'},
     'validation_calendar': {'season', 'b0'},
@@ -47,7 +53,17 @@ CODES = {
     'head_sharing': {'shared', 'pathogen', 'target'},
     'fit_partition': {'all', 'pathogen', 'target'},
     'input_mode': {'finalized', 'finalized_available', 'scheduled_final', 'vintaged'},
-    'task': {'forecast', 'nowcast', 'pipeline'},
+    'task': {'forecast', 'nowcast', 'pipeline', 'finalize'},
+    'finalization_cv': {'rolling', 'season'},
+    'finalization_loss': {'mae'},
+    'finalization_model': {'triangle', 'seasonal', 'adaptive', 'adaptive_chain', 'conditional', 'conditional_chain', 'context_residual'},
+    'finalization_gap': {'ridge', 'seasonal', 'trend', 'proxy'},
+    'finalization_scope': {'all', 'targets'},
+    'finalization_statistic': {'mean', 'median'},
+    'finalization_features': {'basic', 'momentum', 'age', 'age_momentum'},
+    'finalization_gate': {'none', 'causal', 'admissions'},
+    'replay_features': {'basic', 'momentum', 'age', 'age_momentum'},
+    'replay_gate': {'none', 'causal', 'admissions'},
 }
 
 
@@ -55,13 +71,46 @@ CODES = {
 # taken from the existing design docs and code; where the meaning is longer than a
 # line the entry points to the document that defines it.
 MEANING = {
+    'reporting_missingness': 'Transfer donor reporting masks with reporting augmentation; false transports numerical errors only and retains native input availability.',
+    'reporting_augmentation': 'Stochastic training-season joint revision windows; vintage errors or causal nowcast residuals; real-vintage scoring.',
+    'replay_from': 'Completed experiment supplying fixed CV checkpoints for inference-only input replay.',
+    'replay_inputs': 'Fixed-checkpoint replay: finalized B2 inputs, full vintage history, or vintage plus eight-week seasonal target nowcasts.',
+    'replay_flags': 'Diagnostic finality encoding: native semantics, available to reproduce B2 training encoding, or off. Available does not claim that revisions are final.',
+    'finalization_model': 'Reported-value curve: triangle, seasonal/adaptive, growth-conditioned, or trajectory-trained residual calibration.',
+    'finalization_growth': 'Conditional curve log-growth kernel bandwidth per week.',
+    'finalization_penalty': 'Ridge penalty for online trajectory residual calibration.',
+    'finalization_growth_weight': 'Relative weight of growth in residual training; evaluation is unchanged.',
+    'finalization_residual_halflife': 'Residual-training example recency half-life in weeks.',
+    'replay_growth_weight': 'Residual nowcaster training growth weight for replay.',
+    'replay_residual_halflife': 'Residual nowcaster training recency for replay.',
+    'replay_nowcaster': 'Fixed-checkpoint replay target nowcaster.',
+    'replay_growth': 'Conditional replay growth bandwidth.',
+    'replay_penalty': 'Residual replay ridge penalty.',
+    'replay_schedule': 'Apply documented source schedule; absent target reports use explicit frozen-final proxies.',
+    'replay_uncertainty': 'Scale of causal joint revision-error bootstrap in fixed-checkpoint nowcast replay; zero is deterministic.',
+    'finalization_strength': 'Residual correction multiplier before native-unit rounding; 1 is full strength.',
+    'replay_strength': 'Residual correction multiplier for matched forecast replay.',
+    'finalization_features': 'Basic context/local effects, revision momentum, smooth age-dependent effects, or their combination.',
+    'finalization_gate': 'Apply residual to every target, admissions only, or causally selected strength from mature past trajectory errors.',
+    'replay_features': 'Residual feature family for exact nowcaster replay.',
+    'replay_gate': 'Residual application rule for exact nowcaster replay.',
+    'finalization_gap': 'Missing targets: ridge, historical seasonal growth, damped trend, or observable national proxy growth.',
+    'finalization_scope': 'Fit all supported signals or only the six NHSN/NSSP targets.',
+    'finalization_halflife': 'Adaptive curve recent-pair half-life in weeks.',
+    'finalization_pool': 'Adaptive/seasonal local state pooling strength in effective weeks.',
+    'finalization_statistic': 'Mean ratio of weighted totals or exposure-weighted median development ratio.',
+    'finalization_quantize': 'Round NSSP point predictions and point comparators to the archived 0.0001 proportion grid.',
+    'finalization_cv': 'finalize only: three recent four-Wednesday rolling holdouts, or forward season holdouts.',
+    'finalization_loss': 'finalize only: triangle calibration minimizes normalized native-unit MAE, equally weighted by location.',
+    'finalization_maturity': 'finalize only: minimum reference age and training-label gap, in weeks; not a guarantee of finality.',
+    'finalization_weeks': 'finalize only: reconstruct this many completed weeks ending at each signal\'s T-X boundary.',
     'signal_features': 'Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing.',
     'coordinates': 'Census state internal-point latitude/longitude and non-US indicator.',
     'evaluation_seasons': 'all three held-out seasons, or recent_two (2025-26 and 2024-25).',
     'training_inputs': 'same as forecasting, or complete finalized target and covariate histories during fitting only.',
     'input_normalization': 'none, or B0 per-location transformed target scales fitted on training contexts only.',
     'validation_calendar': 'season-relative blocks, or B0 blocks counted from the first stored week of each season.',
-    'task': 'forecast, nowcast, or an independently fitted nowcast-to-forecast pipeline.',
+    'task': 'forecast, nowcast, an independently fitted nowcast-to-forecast pipeline, or per-signal boundary-week finalization.',
     'nowcast_weeks': 'Completed weeks reconstructed, ending at the context Saturday.',
     'nowcast': 'Pipeline stage overrides written as nowcast.<field>=value; unprefixed fields supply defaults.',
     'forecast': 'Pipeline stage overrides written as forecast.<field>=value; unprefixed fields supply defaults.',
@@ -147,6 +196,49 @@ def _decode(name, raw, field_type):
 class Scenario:
     # Network shape and training budget (formerly TrainingScenario).
     task: str = 'forecast'
+    weekend_family: str = 'none'
+    reporting_probability: float = 1.
+    reporting_random_strength: bool = False
+    reporting_recent: int = 0
+    joint_weight: float = 1.
+    correction_penalty: float = 10.
+    correction_strength: float = 1.
+    correction_features: str = 'phase'
+    reporting_augmentation: str = 'none'
+    reporting_missingness: bool = True
+    reporting_method: str = 'local_log'
+    reporting_strength: float = 1.
+    replay_from: str = ''
+    replay_inputs: str = 'none'
+    replay_flags: str = 'native'
+    replay_nowcaster: str = 'selected'
+    replay_features: str = 'basic'
+    replay_gate: str = 'none'
+    replay_growth_weight: float = 1.
+    replay_residual_halflife: float = 26.
+    replay_penalty: float = 10.
+    replay_growth: float = .2
+    replay_schedule: bool = False
+    replay_uncertainty: float = 0.
+    replay_strength: float = 1.
+    finalization_cv: str = 'rolling'
+    finalization_loss: str = 'mae'
+    finalization_model: str = 'triangle'
+    finalization_gap: str = 'ridge'
+    finalization_scope: str = 'all'
+    finalization_features: str = 'basic'
+    finalization_gate: str = 'none'
+    finalization_strength: float = 1.
+    finalization_growth_weight: float = 1.
+    finalization_residual_halflife: float = 26.
+    finalization_penalty: float = 10.
+    finalization_growth: float = .2
+    finalization_halflife: float = 8.
+    finalization_pool: float = 4.
+    finalization_statistic: str = 'mean'
+    finalization_quantize: bool = False
+    finalization_maturity: int = 4
+    finalization_weeks: int = 1
     nowcast_weeks: int = 2
     nowcast: tuple = ()
     forecast: tuple = ()
@@ -212,17 +304,53 @@ class Scenario:
     validation_offset: int = 4
 
     def __post_init__(self):
+        if self.weekend_family != 'none' and (self.task != 'forecast' or self.input_mode != 'scheduled_final' or self.supplied_final or self.reporting_missingness or self.mask_rate):
+            raise ValueError('Weekend experiments require scheduled-final forecast, no final flag, no added missingness or masking')
+        if not 0 <= self.reporting_probability <= 1 or self.reporting_recent < 0 or self.joint_weight <= 0:
+            raise ValueError('Invalid revision probability, recent window, or joint loss weight')
+        if self.correction_penalty <= 0 or not 0 <= self.correction_strength <= 1 or self.correction_features not in ('age', 'phase', 'phase_local'):
+            raise ValueError('Invalid nowcaster settings')
+        if not 0 < self.reporting_strength <= 1:
+            raise ValueError('reporting_strength must be in (0, 1]')
         for key in CODES:
             if getattr(self, key) not in CODES[key]:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)!r}')
+        if self.reporting_augmentation != 'none' and (self.task != 'forecast' or self.input_mode != 'scheduled_final' or self.supplied_final or self.replay_from):
+            raise ValueError('Reporting augmentation requires scheduled-final forecast training, no finality channel and no replay')
+        if bool(self.replay_from) != (self.replay_inputs != 'none'):
+            raise ValueError('Replay requires both replay_from and replay_inputs')
+        if self.replay_uncertainty < 0 or (self.replay_uncertainty and self.replay_inputs != 'nowcast'):
+            raise ValueError('Nonnegative uncertainty requires nowcast replay')
+        if not 0 <= self.finalization_strength <= 1 or not 0 <= self.replay_strength <= 1:
+            raise ValueError('Residual strength must be between zero and one')
+        if min(self.replay_growth_weight, self.replay_residual_halflife, self.replay_growth, self.replay_penalty) <= 0:
+            raise ValueError('replay_growth must be positive')
+        if (self.replay_nowcaster != 'selected' or self.replay_schedule) and not self.replay_from:
+            raise ValueError('Replay context options require replay_from')
+        if self.replay_flags != 'native' and not self.replay_from:
+            raise ValueError('Finality encoding controls require checkpoint replay')
+        if self.replay_from and (self.task != 'forecast' or self.input_mode != 'scheduled_final'):
+            raise ValueError('Input replay currently uses scheduled-final standalone forecast checkpoints')
         if self.training_inputs != 'same' and (self.task != 'forecast' or self.input_mode != 'vintaged'):
             raise ValueError('Complete target training requires standalone forecast with dated vintage evaluation')
         if self.validation_calendar == 'b0' and not self.patience:
             raise ValueError('B0 validation calendar requires early stopping')
         if min(self.lookback, self.latent, self.width, self.epochs, self.batch_size) < 1 or self.members < 2:
             raise ValueError('Positive dimensions/epochs required; training members >= 2')
-        if self.lookback < 2:
+        if self.lookback < 2 and self.task != 'finalize':
             raise ValueError('lookback must be at least two weeks')
+        if self.finalization_maturity < 0:
+            raise ValueError('finalization_maturity must be nonnegative')
+        if self.finalization_model == 'context_residual' and self.finalization_weeks < 4:
+            raise ValueError('Trajectory residual calibration needs at least four reconstructed weeks')
+        if self.task=='finalize' and self.finalization_model=='context_residual' and self.finalization_scope!='targets':
+            raise ValueError('Context residual calibration currently supports the six targets; use finalization_scope=targets')
+        if self.finalization_weeks < 1:
+            raise ValueError('finalization_weeks must be positive')
+        if min(self.finalization_growth_weight, self.finalization_residual_halflife) <= 0 or self.finalization_penalty <= 0 or self.finalization_growth <= 0 or self.finalization_halflife <= 0 or self.finalization_pool < 0:
+            raise ValueError('Finalization half-life must be positive and pooling nonnegative')
+        if self.task == 'finalize' and self.patience:
+            raise ValueError('Finalization uses fixed epochs; compare epoch budgets in separate scenarios')
         if self.validation_members < 2 or self.location_embedding < 0 or self.weight_decay < 0:
             raise ValueError('Validation members >=2, nonnegative embedding and weight decay required')
         if self.patience < 0 or (self.patience and self.patience >= self.epochs):
@@ -305,10 +433,14 @@ class Scenario:
 
     @property
     def scored_seasons(self):
+        if self.task == 'finalize' and self.finalization_cv == 'rolling':
+            return ('rolling_1', 'rolling_2', 'rolling_3')
         return ('2025-2026', '2024-2025') if self.evaluation_seasons == 'recent_two' else ('2023-2024', '2024-2025', '2025-2026')
 
     @property
     def horizons(self):
+        if self.weekend_family == 'joint':
+            return tuple(range(1 - self.nowcast_weeks, 5))
         return tuple(range(1 - self.nowcast_weeks, 1)) if self.task == 'nowcast' else (1, 2, 3, 4)
 
     @property

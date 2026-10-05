@@ -37,3 +37,8 @@ site/
 /references/text/
 /references/local-data-coverage-*.json
 /references/selection-audit-*.json
+
+# Regenerable weekend ranking exports; retained locally and on Longleaf.
+# Commit report summaries, figures, and the analysis script instead.
+/docs/experiments/b2-weekend-20261002/analysis/ranking/
+/docs/experiments/b2-weekend-20261002/analysis/all-available-seed-scores.csv

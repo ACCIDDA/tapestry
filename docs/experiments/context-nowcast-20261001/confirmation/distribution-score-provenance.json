@@ -1,0 +1,39 @@
+{
+  "experiment": "context-replay-confirm-20261002",
+  "model_sha256": "3fc4e15a166c0690cf7d8952e364cf43f4ce5f65e664e256f04767f69a6b708e",
+  "scorer_sha256": "b4ca00dc915e86c2dd2c2117fbb90a138c33b463cd261787b5cbfeccc03d0244",
+  "sources": [
+    {
+      "diagnostics": "data/experiments/context-replay-confirm-20261002/mlp-pathogen-scheduled_final-2a1e5865de25/s42/attempt-001/eval_2024-2025/trajectory-distributions.csv.gz",
+      "diagnostics_sha256": "ec77a6383ed0db7c02dda6e0f0e513a09337e6694227f63a09a94db82994be4d",
+      "cache": "data/experiments/context-replay-confirm-20261002/replay-nowcasts.npz",
+      "cache_sha256": "ee39da83da7bfd8e0c8934c05ef1dc443955c940c70d9a729b936cf046e9b138",
+      "members": 2048
+    },
+    {
+      "diagnostics": "data/experiments/context-replay-confirm-20261002/mlp-pathogen-scheduled_final-2a1e5865de25/s42/attempt-001/eval_2025-2026/trajectory-distributions.csv.gz",
+      "diagnostics_sha256": "c270797969bef5290b309dee0a6bd143a7358d630770d6999005649531eed3dc",
+      "cache": "data/experiments/context-replay-confirm-20261002/replay-nowcasts.npz",
+      "cache_sha256": "ee39da83da7bfd8e0c8934c05ef1dc443955c940c70d9a729b936cf046e9b138",
+      "members": 2048
+    },
+    {
+      "diagnostics": "data/experiments/context-replay-confirm-20261002/mlp-pathogen-scheduled_final-58c8e55e7cab/s42/attempt-001/eval_2024-2025/trajectory-distributions.csv.gz",
+      "diagnostics_sha256": "49fd12489cc651c4bd2d38ea57642d8b004d444e8dad4b96ed16599b3285a14a",
+      "cache": "data/experiments/context-replay-confirm-20261002/replay-nowcasts-context_residual-g0.2-p1000-w1-h26-age-admissions-s0.25.npz",
+      "cache_sha256": "6ed82c12c084e5a81e3e9c08a449977e39c36e03da5916ef3821380b541c6d0e",
+      "members": 2048
+    },
+    {
+      "diagnostics": "data/experiments/context-replay-confirm-20261002/mlp-pathogen-scheduled_final-58c8e55e7cab/s42/attempt-001/eval_2025-2026/trajectory-distributions.csv.gz",
+      "diagnostics_sha256": "8f898448cabaf651e5c48957d1365c86513fd44197c561ac51e4b47b7b53dabc",
+      "cache": "data/experiments/context-replay-confirm-20261002/replay-nowcasts-context_residual-g0.2-p1000-w1-h26-age-admissions-s0.25.npz",
+      "cache_sha256": "6ed82c12c084e5a81e3e9c08a449977e39c36e03da5916ef3821380b541c6d0e",
+      "members": 2048
+    }
+  ],
+  "normalization": "causal donor-maturity Q95; raw observed-history Q95 fallback; native resolution floor",
+  "cells_path": "data/experiments/context-replay-confirm-20261002/history-diagnostics/distribution-cells.csv.gz",
+  "candidate_independent_scale": true,
+  "forecast_artifacts_unchanged": true
+}

@@ -36,7 +36,7 @@ availability. This is a shared national signal, not a state-level measurement.
 from datetime import date, timedelta
 import numpy as np
 
-from .build import context_end
+from .build import context_end, LAG_ONE_COVARIATES
 
 HORIZONS = (1, 2, 3, 4)
 
@@ -136,7 +136,7 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
             if input_mode == 'scheduled_final':
                 cov_values, cov_available = cov_values.copy(), cov_available.copy()
                 for k, name in enumerate(covariate_names):
-                    if name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'):
+                    if name in LAG_ONE_COVARIATES:
                         cov_available[-1, k] = False
                     if name in ('inpatient_flu', 'inpatient_covid') and 'VT' in locations:
                         cov_available[:, k, locations.index('VT')] = False

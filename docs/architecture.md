@@ -97,6 +97,12 @@ cells are marked estimated, not known-final. Each stage uses its own trailing
 history window and its own covariate selection. The saved reference truth supplies
 labels only. See [the complete interface](workflow.md#explicit-handoff).
 
+## Wednesday finalization model
+
+`task=finalize` reconstructs recent target/covariate reference values ending at each source's T-X boundary. The selected six-target statistical nowcaster uses seasonally weighted, partially pooled median development factors, updated causally each Wednesday. It treats 12-week reports as approximately mature and bridges target outages with visible national pathogen proxies. NSSP point outputs respect the observed 0.0001 proportion grid. Its prescribed scenario reconstructs eight weeks; the newest week is the primary evaluation.
+
+The [selected model, assumptions, replay results and manager commands](experiments/seasonal-nowcast-20261001/index.md) describe the recommended research configuration. The [original triangle/ridge formulation](experiments/reporting-triangle-20261001/index.md) remains an explicit comparator and the backward-compatible scenario default. The selected finalizer does not silently replace forecast inputs; a downstream forecasting benefit has not been established.
+
 ## Fitting with CRPS
 
 For an observed value `y` and `M` independent members from one fitted model:

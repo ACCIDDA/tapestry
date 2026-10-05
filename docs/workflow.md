@@ -31,6 +31,7 @@ requires a new experiment name: planned runs verify the recorded input hashes.
 |---|---|
 | `task=forecast` | Fit a standalone four-week forecaster |
 | `task=nowcast` | Reconstruct recent completed weeks |
+| `task=finalize` | Estimate final target/covariate values over a recent window ending at T-X; [selected seasonal model and commands](experiments/seasonal-nowcast-20261001/index.md) |
 | `task=pipeline` | Fit independent nowcaster and forecaster with cross-fitted histories |
 | `input_mode=finalized` | Use frozen reference histories; retrospective benchmark |
 | `input_mode=scheduled_final` | Use final values subject to explicit source-lag assumptions |

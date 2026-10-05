@@ -1,0 +1,471 @@
+--- a/src/tapestry/model/scenario.py
++++ b/src/tapestry/model/scenario.py
+@@ -30,7 +30,7 @@
+ # of silently becoming a new field the way an unconstrained string would.
+ CODES = {
+     'reporting_method': {'local_log', 'calendar_log', 'local_additive', 'synchronous_log', 'phase_log'},
+-    'weekend_family': {'none', 'direct', 'two_stage', 'joint'},
++    'weekend_family': {'none', 'direct', 'two_stage', 'joint', 'fixed_corrected'},
+     'reporting_augmentation': {'none', 'vintage', 'nowcast'},
+     'replay_inputs': {'none', 'finalized', 'vintage', 'nowcast'},
+     'replay_flags': {'native', 'available', 'off'},
+@@ -197,13 +197,22 @@
+     # Network shape and training budget (formerly TrainingScenario).
+     task: str = 'forecast'
+     weekend_family: str = 'none'
++    fixed_forecaster: str = ''
++    fixed_nowcaster: str = ''
++    fixed_refit_nowcaster: bool = False
++    fixed_history_mode: str = 'none'
++    fixed_uncertainty_strength: float = 0.
++    fixed_correction_channels: str = 'all'
++    fixed_nowcaster_covariates: str = 'source'
+     reporting_probability: float = 1.
+     reporting_random_strength: bool = False
+     reporting_recent: int = 0
+     joint_weight: float = 1.
++    nowcast_anchor: bool = False
+     correction_penalty: float = 10.
+     correction_strength: float = 1.
+     correction_features: str = 'phase'
++    correction_observed_pairs_only: bool = False
+     reporting_augmentation: str = 'none'
+     reporting_missingness: bool = True
+     reporting_method: str = 'local_log'
+@@ -304,11 +313,27 @@
+     validation_offset: int = 4
+ 
+     def __post_init__(self):
+-        if self.weekend_family != 'none' and (self.task != 'forecast' or self.input_mode != 'scheduled_final' or self.supplied_final or self.reporting_missingness or self.mask_rate):
+-            raise ValueError('Weekend experiments require scheduled-final forecast, no final flag, no added missingness or masking')
++        if self.fixed_nowcaster_covariates not in ('source','none'):
++            raise ValueError('Unknown nowcaster covariate override')
++        if self.fixed_nowcaster_covariates!='source' and not self.fixed_refit_nowcaster:
++            raise ValueError('Changing nowcaster features requires refitting')
++        if self.fixed_correction_channels not in ('all','admissions'):
++            raise ValueError('Unknown fixed correction channel scope')
++        if self.fixed_history_mode not in ('none','point','raw_full_mixture','crossfit_residual'):
++            raise ValueError('Unknown fixed history mode')
++        if self.fixed_history_mode!='none' and self.weekend_family!='fixed_corrected':
++            raise ValueError('History sensitivity requires fixed forecaster replay')
++        if self.fixed_uncertainty_strength<0 or (self.fixed_history_mode=='crossfit_residual' and (not self.fixed_refit_nowcaster or self.fixed_uncertainty_strength<=0)):
++            raise ValueError('Crossfit uncertainty requires refitting and positive dispersion')
++        if self.fixed_refit_nowcaster and (self.weekend_family!='fixed_corrected' or self.fixed_nowcaster=='raw'):
++            raise ValueError('Nowcaster refit requires a fixed-forecaster correction recipe')
++        if (self.weekend_family == 'fixed_corrected') != bool(self.fixed_forecaster and self.fixed_nowcaster):
++            raise ValueError('Fixed correction replay requires both source checkpoint paths')
++        if self.weekend_family != 'none' and (self.task != 'forecast' or self.input_mode != 'scheduled_final' or self.supplied_final or self.reporting_missingness):
++            raise ValueError('Weekend experiments require scheduled-final forecast, no final flag, no transported reporting missingness')
+         if not 0 <= self.reporting_probability <= 1 or self.reporting_recent < 0 or self.joint_weight <= 0:
+             raise ValueError('Invalid revision probability, recent window, or joint loss weight')
+-        if self.correction_penalty <= 0 or not 0 <= self.correction_strength <= 1 or self.correction_features not in ('age', 'phase', 'phase_local'):
++        if self.correction_penalty <= 0 or not 0 <= self.correction_strength <= 1 or self.correction_features not in ('age', 'phase', 'phase_local', 'trajectory'):
+             raise ValueError('Invalid nowcaster settings')
+         if not 0 < self.reporting_strength <= 1:
+             raise ValueError('reporting_strength must be in (0, 1]')
+@@ -488,7 +513,7 @@
+                 self.mask_rate * self.mask_gap, self.mask_rate * self.mask_outage)
+ 
+     def model_options(self):
+-        return dict(signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
++        return dict(nowcast_anchor=self.nowcast_anchor, signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
+                     noise=self.noise, head_sharing=self.head_sharing, count_transform=self.count_transform,
+                     ed_transform=self.ed_transform, geography=self.geography, coordinates=self.coordinates, dynamics=self.dynamics,
+                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,
+--- a/src/tapestry/model/network.py
++++ b/src/tapestry/model/network.py
+@@ -280,10 +280,12 @@
+                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
+                  annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False,
+                  covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
+-                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none'):
++                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none', nowcast_anchor=False):
+         super().__init__()
+         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
+-                           supplied_final=supplied_final, supplied_estimated=supplied_estimated)
++                           supplied_final=supplied_final, supplied_estimated=supplied_estimated, nowcast_anchor=nowcast_anchor)
++        if nowcast_anchor and (0 not in horizons or not any(h > 0 for h in horizons)):
++            raise ValueError('Nowcast anchoring requires both t0 and future horizons')
+         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
+                 or spatial not in ('neighbors', 'distance', 'gravity', 'none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
+                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
+@@ -609,6 +611,12 @@
+                 raise ValueError('National noise must have shape [members, episodes, channels]')
+             delta = delta + national_z[:, :, None, None, :, None] * F.softplus(self.national_scale)[None, None, None, None, :, None]
+         delta = delta.squeeze(-1).permute(0, 1, 2, 4, 3)
++        if config.get('nowcast_anchor', False):
++            # Same stochastic t0 correction anchors every future member in the
++            # decoder link space, propagating inferred-current-level uncertainty.
++            offsets = torch.as_tensor(config['horizons'], device=delta.device)
++            current = delta[:, :, config['horizons'].index(0):config['horizons'].index(0)+1]
++            delta = delta + (offsets > 0)[None, None, :, None, None] * current
+         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
+         anchor = values.gather(1, idx[:, None]).squeeze(1)
+         anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
+--- /dev/null
++++ b/src/tapestry/model/nowcast_overnight.py
+@@ -0,0 +1,88 @@
++"""Nonlinear residual nowcaster trained only on permitted synthetic trajectories.
++
++The predictor sees reported histories, their masks, annual phase, and optional
++reported covariates. Finalized histories are labels, never predictors. Tree
++capacity is deliberately small; entire trajectory seasons are cross-fitted by
++the weekend orchestrator before this nowcaster supplies forecaster inputs.
++"""
++import numpy as np
++from sklearn.ensemble import HistGradientBoostingRegressor
++from tapestry.dataset.cv import season
++from tapestry.dataset.episodes import calendar
++from tapestry.model.revision_regression import RevisionRegression
++
++class TrajectoryNowcaster(RevisionRegression):
++    def design(self,e,channel):
++        values=e['values'].astype(float); valid=e['available']
++        units=np.array([1.,1.,1.,.0001,.0001,.0001])[:,None]
++        scale=np.maximum(np.max(np.where(valid,values,0),axis=0),units)
++        floor=np.maximum(.05*scale,units)
++        log=np.log((values+floor)/(scale+floor))
++        log=np.where(valid,log,np.nan)
++        l=values.shape[-1]
++        # A full recent path preserves direction, acceleration and isolated dips.
++        own=log[-8:,channel].T
++        ownmask=valid[-8:,channel].T.astype(float)
++        cross=[]
++        for a,b in ((-2,None),(-4,-2),(-8,-4)):
++            z=log[a:b];ok=valid[a:b]
++            cross.append(np.divide(np.nansum(z,axis=0),ok.sum(0),out=np.zeros_like(scale),where=ok.sum(0)>0).T)
++        cal=np.broadcast_to(calendar([e['context_dates'][-1]])[0],(l,3))
++        pieces=[own,ownmask,*cross,cal,np.eye(l)]
++        if 'covariates' in e:
++            cov=e['covariates']; cv=cov[...,0,:]; ca=cov[...,1,:].astype(bool)
++            for a,b in ((-2,None),(-6,-2)):
++                x=np.divide(np.where(ca[a:b],cv[a:b],0).sum(0),ca[a:b].sum(0),out=np.zeros_like(cv[0]),where=ca[a:b].sum(0)>0)
++                pieces.append(np.sign(x.T)*np.log1p(np.abs(x.T)))
++        shared=np.concatenate(pieces,axis=1)
++        # Keep age explicit, with one common estimator to share phase relationships.
++        rows=[np.column_stack((np.full(l,age),shared)) for age in range(self.weeks)]
++        return np.stack(rows),floor[channel]
++
++    def fit(self,examples):
++        self.models=[];self.training_cells=[]
++        seasons=[season(t['context_dates'][-1]) for _,t in examples]
++        self.training_seasons=sorted(set(seasons))
++        counts={s:seasons.count(s) for s in set(seasons)}
++        indices=np.arange(-1,-self.weeks-1,-1)
++        for k in range(6):
++            xs=[];ys=[];ws=[]
++            for (reported,truth),s in zip(examples,seasons):
++                x,floor=self.design(reported,k)
++                ok=reported['available'][indices,k]&truth['available'][indices,k]
++                y=np.log((truth['values'][indices,k]+floor)/(reported['values'][indices,k]+floor))
++                xs.append(x[ok]);ys.append(y[ok]);ws.append(np.full(ok.sum(),1./counts[s]))
++            x=np.concatenate(xs);y=np.concatenate(ys);w=np.concatenate(ws)
++            self.training_cells.append(len(y))
++            w*=len(w)/w.sum()
++            model=HistGradientBoostingRegressor(max_iter=100,max_leaf_nodes=7,min_samples_leaf=100,
++                l2_regularization=self.penalty,learning_rate=.05,early_stopping=False,random_state=0)
++            model.fit(x,y,sample_weight=w);self.models.append(model)
++        return self
++
++    def apply_batch(self,episodes):
++        values=[e['values'].copy() for e in episodes]
++        indices=np.arange(-1,-self.weeks-1,-1)
++        for k,model in enumerate(self.models):
++            designs=[self.design(e,k) for e in episodes]
++            matrices=[x.reshape(-1,x.shape[-1]) for x,_ in designs]
++            predictions=model.predict(np.concatenate(matrices))
++            pos=0
++            for v,(x,floor),matrix in zip(values,designs,matrices):
++                correction=np.clip(predictions[pos:pos+len(matrix)].reshape(x.shape[:2]),-np.log(4),np.log(4))*self.strength
++                pos+=len(matrix)
++                v[indices,k]=np.maximum(0,(v[indices,k]+floor)*np.exp(correction)-floor)
++        out=[]
++        for e,v in zip(episodes,values):
++            v[:,3:]=np.minimum(1,v[:,3:])
++            out.append(dict(e,values=np.where(e['available'],v,0).astype(np.float32),known_final=np.zeros_like(e['available'])))
++        return out
++
++    def apply(self,e):
++        return self.apply_batch([e])[0]
++
++    def record(self):
++        return dict(model='Histogram gradient boosting;100trees;7leaves;minleaf100',weeks=self.weeks,
++            penalty=self.penalty,strength=self.strength,features=self.features,training_seasons=self.training_seasons,
++            observed_donor_pairs_only=getattr(self,'observed_donor_pairs_only',False),training_cells=getattr(self,'training_cells',None),
++            features_description='Reported eight-week own trajectory, six-channel multiscale levels, availability, annual phase, location indicators, optional reported covariates; no final predictors')
+--- a/src/tapestry/experiment/weekend.py
++++ b/src/tapestry/experiment/weekend.py
+@@ -49,7 +49,15 @@
+     def __init__(self, bank, models):
+         self.bank, self.models = bank, models
+     def batch(self, batch, rng):
+-        return [self.models[cv.season(e['context_dates'][-1])].apply(self.bank.draw(e, rng)) for e in batch]
++        reported = [self.bank.draw(e, rng) for e in batch]
++        corrected = [None] * len(batch)
++        for label, model in self.models.items():
++            ids = [i for i,e in enumerate(batch) if cv.season(e['context_dates'][-1]) == label]
++            if not ids: continue
++            subset = [reported[i] for i in ids]
++            result = model.apply_batch(subset) if hasattr(model, 'apply_batch') else [model.apply(e) for e in subset]
++            for i,e in zip(ids,result): corrected[i] = e
++        return corrected
+ 
+ 
+ def fit_correctors(train, bank, scenario, seed):
+@@ -57,9 +65,15 @@
+     # trajectory season is excluded from its correction regressor's label fit.
+     rng = np.random.default_rng(seed + 410000)
+     examples = [(bank.draw(e, rng), e) for e in train for _ in range(2)]
++    if scenario.correction_observed_pairs_only:
++        examples=[(x,dict(t,available=t['available'] & x['reporting_pair_support'])) for x,t in examples]
+     def build(ex):
+-        return RevisionRegression(scenario.nowcast_weeks, scenario.correction_penalty,
++        from tapestry.model.nowcast_overnight import TrajectoryNowcaster
++        cls = TrajectoryNowcaster if scenario.correction_features == 'trajectory' else RevisionRegression
++        model=cls(scenario.nowcast_weeks, scenario.correction_penalty,
+                                   scenario.correction_strength, scenario.correction_features).fit(ex)
++        model.observed_donor_pairs_only=scenario.correction_observed_pairs_only
++        return model
+     labels = sorted({cv.season(e['context_dates'][-1]) for e in train})
+     by_season = {}
+     for label in labels:
+@@ -93,6 +107,9 @@
+ 
+ 
+ def fit(scenario, seed, held_out, members, device, output, dataset):
++    if scenario.weekend_family == 'fixed_corrected':
++        from .nowcast_overnight import evaluate_fixed
++        return evaluate_fixed(scenario, seed, held_out, members, device, output, dataset)
+     panel = load(dataset)
+     full = cv.fold(panel, scenario, held_out)
+     inner = cv.fold(panel, scenario, held_out, inner=True) if scenario.patience else None
+@@ -114,7 +131,11 @@
+             selection_augmentation = CorrectedErrors(selection, inner_cross)
+             raw = selection.batch(inner.validation, np.random.default_rng(seed + 800000))
+             inner.validation = [inner_final.apply(e) for e in raw]
+-        score = [final.apply(e) for e in score]
++        raw_score = score
++        score = final.apply_batch(score) if hasattr(final, 'apply_batch') else [final.apply(e) for e in score]
++        torch.save(dict(final=final, cross=cross), out / 'nowcast_correctors.pt')
++        from tapestry.experiment.nowcast_overnight import correction_diagnostics
++        correction_diagnostics(full.score, raw_score, score, scenario.nowcast_weeks, held_out, out)
+         correction_records = dict(full=final.record(), cross_fits={k:v.record() for k,v in cross.items()},
+             inner=inner_final.record() if inner else None,
+             error_library='Shared fold-permitted donor errors; regression labels exclude the corrected trajectory season')
+--- /dev/null
++++ b/src/tapestry/experiment/nowcast_overnight.py
+@@ -0,0 +1,182 @@
++"""Native-unit nowcaster diagnostics alongside the shared forecasting score."""
++import csv
++import numpy as np
++from tapestry.dataset.cv import season
++
++def correction_diagnostics(truth, raw, corrected, weeks, held_out, output):
++    rows=[]
++    for age in range(weeks):
++        for k in range(6):
++            for geography in ('states_dc','US'):
++                loc=np.array([x=='US' for x in truth[0]['locations']])
++                if geography=='states_dc':loc=~loc
++                before=[];after=[]
++                for t,r,c in zip(truth,raw,corrected):
++                    if season(t['context_dates'][-1-age]) != held_out:continue
++                    ok=t['available'][-1-age,k]&r['available'][-1-age,k]&loc
++                    before.extend(abs(r['values'][-1-age,k,ok]-t['values'][-1-age,k,ok]))
++                    after.extend(abs(c['values'][-1-age,k,ok]-t['values'][-1-age,k,ok]))
++                if before:rows.append(dict(age=age,channel=k,geography=geography,cells=len(before),raw_mae=float(np.mean(before)),corrected_mae=float(np.mean(after))))
++    with (output/'nowcast_diagnostics.csv').open('w') as f:
++        w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
++
++
++def evaluate_fixed(scenario, seed, held_out, members, device, output, dataset):
++    """Change only evaluation inputs of a saved clean-input forecast model."""
++    import torch
++    from pathlib import Path
++    from tapestry.model.scenario import Scenario
++    from tapestry.model.network import load_model,checkpoint
++    from tapestry.dataset import cv
++    from tapestry.dataset.build import load,covariate_names_for
++    from .weekend import scheduled_reports
++    from .training import evaluate
++    from .provenance import sha256,save
++    fp=Path(scenario.fixed_forecaster.format(seed=seed,season=held_out))
++    npth=Path(scenario.fixed_nowcaster.format(seed=seed,season=held_out)) if scenario.fixed_nowcaster!='raw' else None
++    saved=torch.load(fp,map_location='cpu',weights_only=False);original=saved['metadata']
++    source=Scenario.from_string(original['scenario'])
++    if original['seed']!=seed or original['held_out_season']!=held_out or original['dataset_sha256']!=sha256(dataset):
++        raise ValueError('Fixed forecast checkpoint differs in seed, season, or dataset')
++    if source.weekend_family!='direct' or source.reporting_probability!=0:
++        raise ValueError('Expected a clean-input-trained direct forecaster')
++    for name in ['fit_partition','spatial','covariate_set','lookback','mask_rate']:
++        if getattr(source,name)!=getattr(scenario,name):raise ValueError(f'Architecture mismatch: {name}')
++    corrector=torch.load(npth,map_location='cpu',weights_only=False)['final'] if npth else None
++    permitted={'2022-2023','2023-2024','2024-2025','2025-2026'}-{held_out}
++    if corrector and set(corrector.training_seasons)!=permitted:raise ValueError('Nowcaster trajectory seasons differ from permitted training split')
++    panel=load(dataset);fold=cv.fold(panel,source,held_out)
++    raw=[scheduled_reports(e,panel,list(covariate_names_for(source.covariate_set)))[0] for e in fold.score]
++    correction_scenario=None;corrector_error_record=None;uncertainty_record=None
++    if corrector:
++        import pandas as pd
++        design=pd.read_csv(npth.parents[4]/'design.csv')
++        selected=design[design.run_id.eq(npth.parents[3].name)]
++        if len(selected)!=1:raise ValueError('Nowcaster source recipe is ambiguous')
++        import json
++        source_manifest=npth.parent/'manifest.json'
++        source_metadata=json.loads(source_manifest.read_text()) if source_manifest.exists() else {}
++        correction_scenario=Scenario.from_string(source_metadata.get('corrector_source_scenario') or selected.iloc[0].scenario)
++        correction_fold=cv.fold(panel,correction_scenario,held_out)
++        correction_truth=correction_fold.score
++        template=corrector
++        if scenario.fixed_refit_nowcaster:
++            from dataclasses import replace
++            correction_scenario=replace(correction_scenario,correction_observed_pairs_only=scenario.correction_observed_pairs_only)
++            if scenario.fixed_nowcaster_covariates=='none':
++                correction_scenario=replace(correction_scenario,covariate_set='')
++                correction_fold=cv.fold(panel,correction_scenario,held_out)
++                correction_truth=correction_fold.score
++            from .weekend import fit_correctors
++            from tapestry.dataset.reporting_error import ReportingErrors
++            roles=cv.week_roles(panel['dates'],correction_scenario,held_out)
++            errors=ReportingErrors(panel,correction_scenario,held_out,np.isin(roles,['fit','validation']))
++            cross,corrector=fit_correctors(correction_fold.train,errors,correction_scenario,seed)
++            corrector_error_record=errors.metadata
++            if set(corrector.training_seasons)!=permitted:raise ValueError('Refitted nowcaster leaked a trajectory season')
++            Path(output).mkdir(parents=True,exist_ok=True)
++            # Save the final estimator after setting its applied correction strength below.
++        by_date={e['context_dates'][-1]:e for e in correction_truth}
++        correction_raw=[scheduled_reports(by_date[e['context_dates'][-1]],panel,list(covariate_names_for(correction_scenario.covariate_set)))[0] for e in fold.score]
++        for x,y in zip(raw,correction_raw):
++            for key in ['values','available','context_dates','locations']:
++                np.testing.assert_array_equal(x[key],y[key],err_msg=f'Nowcaster/forecaster input mismatch: {key}')
++        if scenario.fixed_refit_nowcaster and seed==42 and not scenario.correction_observed_pairs_only and scenario.fixed_nowcaster_covariates=='source':
++            old=template.apply_batch(correction_raw[:2]) if hasattr(template,'apply_batch') else [template.apply(e) for e in correction_raw[:2]]
++            new=corrector.apply_batch(correction_raw[:2]) if hasattr(corrector,'apply_batch') else [corrector.apply(e) for e in correction_raw[:2]]
++            for x,y in zip(old,new):np.testing.assert_allclose(x['values'],y['values'],rtol=1e-6,atol=1e-6,err_msg='Refit differs from seed42 source nowcaster')
++        if scenario.fixed_refit_nowcaster:
++            corrector.strength=scenario.correction_strength
++            torch.save(dict(final=corrector),Path(output)/'nowcast_correctors.pt')
++        estimates=corrector.apply_batch(correction_raw) if hasattr(corrector,'apply_batch') else [corrector.apply(e) for e in correction_raw]
++        # Only target histories change. The forecast model keeps its own covariates.
++        corrected=[dict(x,values=y['values']) for x,y in zip(raw,estimates)]
++    else:corrected=raw
++    if scenario.fixed_correction_channels=='admissions':
++        corrected=[dict(y,values=np.concatenate((y['values'][:,:3],x['values'][:,3:]),axis=1)) for x,y in zip(raw,corrected)]
++    for x,y in zip(raw,corrected):
++        for key in ['target_values','target_available','target_dates','available']:
++            np.testing.assert_array_equal(x[key],y[key],err_msg=f'Correction changed {key}')
++    if scenario.fixed_history_mode=='crossfit_residual':
++        corrected,uncertainty_record=crossfit_residual_histories(correction_fold.train,errors,cross,corrector,correction_raw,corrected,members,seed,scenario.fixed_uncertainty_strength,scenario.fixed_correction_channels)
++    elif scenario.fixed_history_mode!='none':
++        if scenario.fixed_history_mode=='raw_full_mixture' and (corrector is None or corrector.strength!=1 or members%2):
++            raise ValueError('Raw/full mixture needs a full-strength corrector and even member count')
++        for x,y in zip(raw,corrected):
++            bank=np.broadcast_to(y['values'],(members,*y['values'].shape)).copy()
++            if scenario.fixed_history_mode=='raw_full_mixture':
++                # One global hypothesis per draw preserves cross-target/location/week coherence.
++                # Alternate hypotheses to balance every sampling chunk; this is a sensitivity
++                # distribution, not an empirically calibrated posterior.
++                bank[::2]=x['values']
++                np.testing.assert_array_equal(bank[0],x['values'])
++                np.testing.assert_array_equal(bank[1],y['values'])
++            y['history_samples']=bank
++    out=Path(output);out.mkdir(parents=True,exist_ok=True)
++    model=load_model(saved).to(device)
++    metadata=dict(original,scenario=scenario.scenario_string,run_id=scenario.run_id,
++        operation='No forecaster retraining: saved clean-input forecaster receives '+('learned-corrected' if corrector else 'raw')+' archived evaluation inputs',
++        corrector_error_source_season=('2024-2025' if held_out=='2025-2026' else '2025-2026') if corrector else None,
++        original_forecaster_scenario=source.scenario_string,
++        source_forecaster=str(fp),source_forecaster_sha256=sha256(fp),source_nowcaster=str(npth) if npth else None,source_nowcaster_sha256=sha256(npth) if npth else None,
++        nowcaster_covariates=scenario.fixed_nowcaster_covariates,correction_channels=scenario.fixed_correction_channels,history_mode=scenario.fixed_history_mode,crossfit_uncertainty=uncertainty_record,history_interpretation='Equal-weight coherent raw/full correction hypotheses; uncalibrated sensitivity' if scenario.fixed_history_mode=='raw_full_mixture' else ('Cross-fitted synthetic residual bootstrap' if scenario.fixed_history_mode=='crossfit_residual' else 'Point history'),
++        correction=corrector.record() if corrector else None,corrector_source_scenario=correction_scenario.scenario_string if correction_scenario else None,nowcaster_refitted=scenario.fixed_refit_nowcaster,nowcaster_fit_seed=seed if scenario.fixed_refit_nowcaster else None,nowcaster_reporting_errors=corrector_error_record,eval_members=members)
++    torch.save(checkpoint(model,metadata),out/'model.pt');save(out/'manifest.json',metadata)
++    if corrector:correction_diagnostics(fold.score,raw,corrected,corrector.weeks,held_out,out)
++    torch.manual_seed(seed+1000)
++    return evaluate(model,corrected,members,device,out)
++
++
++def crossfit_residual_histories(train,errors,cross,corrector,reported,centers,members,seed,strength,channels='all'):
++    """Bootstrap intact out-of-season synthetic revision residual trajectories.
++
++    This uncertainty is learned from permitted training data, not calibrated on
++    evaluation labels. Median centering preserves the chosen point correction.
++    """
++    from tapestry.dataset.cv import season
++    rng=np.random.default_rng(seed+420000)
++    residuals=[];donor_seasons=[]
++    indices=np.arange(-1,-corrector.weeks-1,-1)
++    for label,model in cross.items():
++        if label in model.training_seasons:raise ValueError('Residual estimator saw its trajectory season')
++        truths=[e for e in train if season(e['context_dates'][-1])==label for _ in range(2)]
++        raw=[errors.draw(e,rng) for e in truths]
++        estimates=model.apply_batch(raw)
++        for x,y,t in zip(raw,estimates,truths):
++            floor=np.stack([model.design(x,k)[1] for k in range(6)])
++            ok=x['available'][indices]&t['available'][indices]
++            # Context may cross a season boundary: retain only this held-out
++            # trajectory season's labels, never in-season fitted residuals.
++            ok &= np.array([season(x['context_dates'][i])==label for i in indices])[:,None,None]
++            z=np.log((t['values'][indices]+floor)/(y['values'][indices]+floor))
++            residuals.append(np.where(ok,np.clip(z,-np.log(4),np.log(4)),np.nan))
++            donor_seasons.append(label)
++    bank=np.stack(residuals);support=np.isfinite(bank)
++    counts={s:donor_seasons.count(s) for s in set(donor_seasons)}
++    weights=np.array([1./counts[s] for s in donor_seasons]);weights/=weights.sum()
++    order=np.argsort(np.where(support,bank,np.inf),axis=0)
++    sorted_bank=np.take_along_axis(bank,order,axis=0)
++    cell_weights=np.where(support,weights[:,None,None,None],0.)
++    cumulative=np.cumsum(np.take_along_axis(cell_weights,order,axis=0),axis=0)
++    median_index=(cumulative<.5*cumulative[-1]).sum(0).clip(0,len(bank)-1)
++    median=np.take_along_axis(sorted_bank,median_index[None],axis=0)[0]
++    noise=np.nan_to_num(np.where(support,bank-median,0.))
++    out=[]
++    for x,c in zip(reported,centers):
++        issue=int(np.datetime64(x['context_dates'][-1],'D').astype(int))
++        chosen=np.random.default_rng(seed+430000+issue).choice(len(bank),size=members,p=weights)
++        histories=np.broadcast_to(c['values'],(members,*c['values'].shape)).copy()
++        floor=np.stack([corrector.design(x,k)[1] for k in range(6)])
++        values=np.maximum(0,(c['values'][indices]+floor)*np.exp(strength*noise[chosen])-floor)
++        values[:,:,3:]=np.minimum(1,values[:,:,3:])
++        if channels=='admissions':values[:,:,3:]=c['values'][indices,3:]
++        histories[:,indices]=np.where(x['available'][indices],values,0.)
++        # Earlier history, availability and finalized future labels are unchanged.
++        np.testing.assert_array_equal(histories[:,:-corrector.weeks],np.broadcast_to(c['values'][:-corrector.weeks],histories[:,:-corrector.weeks].shape))
++        out.append(dict(c,history_samples=histories))
++    record=dict(method='Intact cross-fitted synthetic log-revision residual bootstrap; cellwise median centered; seasons sampled equally',
++        donor_trajectory_seasons=sorted(counts),donors=len(bank),supported_fraction=float(support.mean()),
++        noise_strength=strength,point_correction_strength=corrector.strength,channels=channels,
++        labels='Final recent histories from permitted training seasons only; each residual predictor excluded its trajectory season',
++        calibration='Synthetic training residual distribution; no evaluation-season fitting or posterior-calibration claim')
++    return out,record
+--- a/src/tapestry/experiment/dispatch.py
++++ b/src/tapestry/experiment/dispatch.py
+@@ -160,7 +160,7 @@
+         parser.error('The shared GPU dispatcher requires a Slurm allocation')
+     folder = Path('data/experiments') / args.experiment
+     settings = json.loads((folder / 'experiment.json').read_text())
+-    settings['device'] = 'cuda'
++    settings['device'] = os.environ.get('DEVICE', 'cuda')
+     owner = (os.environ['SLURM_ARRAY_JOB_ID'] + '_' + os.environ['SLURM_ARRAY_TASK_ID']
+              if 'SLURM_ARRAY_JOB_ID' in os.environ else os.environ['SLURM_JOB_ID'])
+     queue = Queue(folder, owner, args.lanes, args.gpu_count, args.retry_failed, args.seeds)
+--- a/src/tapestry/dataset/reporting_error.py
++++ b/src/tapestry/dataset/reporting_error.py
+@@ -122,6 +122,8 @@
+         self.metadata = dict(mode=self.mode, transport_missingness=self.transport_missingness, donor_season=self.donor_season, donor_origins=self.donors,
+             permitted_error_dates=sorted(self.error_dates), windows=len(self.donors),
+             held_out=held_out, target_evidence_fraction=float(self.support.mean()),
++            archived_pair_fraction=float((self.support & self.visible).mean()),
++            missing_donor_pairs='zero residual fallback, not observed evidence of no revision',
+             version='local_seasonal_log_v2',
+             method=self.method, strength=self.strength, probability=self.probability,
+             random_strength=self.random_strength, recent_weeks=self.recent,
+@@ -192,7 +194,8 @@
+             available &= ~local(self.support) | local(self.visible)
+         values = np.where(available, values, 0).astype(np.float32)
+         out = dict(episode, values=values, available=available,
+-                   known_final=np.zeros_like(available))
++                   known_final=np.zeros_like(available),
++                   reporting_pair_support=local(self.support) & local(self.visible))
+         if self.names:
+             cov = episode['covariates'].copy()
+             floor = np.maximum(.05 * self.cov_peak(label)[None], 1e-8)

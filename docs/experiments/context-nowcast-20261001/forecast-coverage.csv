@@ -1,0 +1,289 @@
+season,target,cells,arm,stratum,seed
+2024-2025,wk inc covid hosp,6968,Raw reports,all,42
+2024-2025,wk inc flu hosp,5616,Raw reports,all,42
+2025-2026,wk inc covid hosp,9048,Raw reports,all,42
+2025-2026,wk inc covid prop ed visits,5586,Raw reports,all,42
+2025-2026,wk inc flu hosp,5824,Raw reports,all,42
+2025-2026,wk inc flu prop ed visits,5768,Raw reports,all,42
+2025-2026,wk inc rsv hosp,6032,Raw reports,all,42
+2025-2026,wk inc rsv prop ed visits,5586,Raw reports,all,42
+2024-2025,wk inc covid hosp,6284,Raw reports,complete_history_12,42
+2024-2025,wk inc flu hosp,5140,Raw reports,complete_history_12,42
+2025-2026,wk inc covid hosp,9048,Raw reports,complete_history_12,42
+2025-2026,wk inc covid prop ed visits,5544,Raw reports,complete_history_12,42
+2025-2026,wk inc flu hosp,5824,Raw reports,complete_history_12,42
+2025-2026,wk inc flu prop ed visits,5508,Raw reports,complete_history_12,42
+2025-2026,wk inc rsv hosp,6032,Raw reports,complete_history_12,42
+2025-2026,wk inc rsv prop ed visits,5442,Raw reports,complete_history_12,42
+2024-2025,wk inc covid hosp,2496,Raw reports,complete_and_uninterrupted,42
+2024-2025,wk inc flu hosp,2288,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc covid hosp,7592,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc covid prop ed visits,4519,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc flu hosp,4576,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc flu prop ed visits,3060,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc rsv hosp,4576,Raw reports,complete_and_uninterrupted,42
+2025-2026,wk inc rsv prop ed visits,3000,Raw reports,complete_and_uninterrupted,42
+2024-2025,wk inc covid hosp,6968,Raw reports,all,43
+2024-2025,wk inc flu hosp,5616,Raw reports,all,43
+2025-2026,wk inc covid hosp,9048,Raw reports,all,43
+2025-2026,wk inc covid prop ed visits,5586,Raw reports,all,43
+2025-2026,wk inc flu hosp,5824,Raw reports,all,43
+2025-2026,wk inc flu prop ed visits,5768,Raw reports,all,43
+2025-2026,wk inc rsv hosp,6032,Raw reports,all,43
+2025-2026,wk inc rsv prop ed visits,5586,Raw reports,all,43
+2024-2025,wk inc covid hosp,6284,Raw reports,complete_history_12,43
+2024-2025,wk inc flu hosp,5140,Raw reports,complete_history_12,43
+2025-2026,wk inc covid hosp,9048,Raw reports,complete_history_12,43
+2025-2026,wk inc covid prop ed visits,5544,Raw reports,complete_history_12,43
+2025-2026,wk inc flu hosp,5824,Raw reports,complete_history_12,43
+2025-2026,wk inc flu prop ed visits,5508,Raw reports,complete_history_12,43
+2025-2026,wk inc rsv hosp,6032,Raw reports,complete_history_12,43
+2025-2026,wk inc rsv prop ed visits,5442,Raw reports,complete_history_12,43
+2024-2025,wk inc covid hosp,2496,Raw reports,complete_and_uninterrupted,43
+2024-2025,wk inc flu hosp,2288,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc covid hosp,7592,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc covid prop ed visits,4519,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc flu hosp,4576,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc flu prop ed visits,3060,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc rsv hosp,4576,Raw reports,complete_and_uninterrupted,43
+2025-2026,wk inc rsv prop ed visits,3000,Raw reports,complete_and_uninterrupted,43
+2024-2025,wk inc covid hosp,6968,Raw reports,all,44
+2024-2025,wk inc flu hosp,5616,Raw reports,all,44
+2025-2026,wk inc covid hosp,9048,Raw reports,all,44
+2025-2026,wk inc covid prop ed visits,5586,Raw reports,all,44
+2025-2026,wk inc flu hosp,5824,Raw reports,all,44
+2025-2026,wk inc flu prop ed visits,5768,Raw reports,all,44
+2025-2026,wk inc rsv hosp,6032,Raw reports,all,44
+2025-2026,wk inc rsv prop ed visits,5586,Raw reports,all,44
+2024-2025,wk inc covid hosp,6284,Raw reports,complete_history_12,44
+2024-2025,wk inc flu hosp,5140,Raw reports,complete_history_12,44
+2025-2026,wk inc covid hosp,9048,Raw reports,complete_history_12,44
+2025-2026,wk inc covid prop ed visits,5544,Raw reports,complete_history_12,44
+2025-2026,wk inc flu hosp,5824,Raw reports,complete_history_12,44
+2025-2026,wk inc flu prop ed visits,5508,Raw reports,complete_history_12,44
+2025-2026,wk inc rsv hosp,6032,Raw reports,complete_history_12,44
+2025-2026,wk inc rsv prop ed visits,5442,Raw reports,complete_history_12,44
+2024-2025,wk inc covid hosp,2496,Raw reports,complete_and_uninterrupted,44
+2024-2025,wk inc flu hosp,2288,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc covid hosp,7592,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc covid prop ed visits,4519,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc flu hosp,4576,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc flu prop ed visits,3060,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc rsv hosp,4576,Raw reports,complete_and_uninterrupted,44
+2025-2026,wk inc rsv prop ed visits,3000,Raw reports,complete_and_uninterrupted,44
+2024-2025,wk inc covid hosp,6968,Context residual,all,42
+2024-2025,wk inc flu hosp,5616,Context residual,all,42
+2025-2026,wk inc covid hosp,9048,Context residual,all,42
+2025-2026,wk inc covid prop ed visits,5586,Context residual,all,42
+2025-2026,wk inc flu hosp,5824,Context residual,all,42
+2025-2026,wk inc flu prop ed visits,5768,Context residual,all,42
+2025-2026,wk inc rsv hosp,6032,Context residual,all,42
+2025-2026,wk inc rsv prop ed visits,5586,Context residual,all,42
+2024-2025,wk inc covid hosp,6284,Context residual,complete_history_12,42
+2024-2025,wk inc flu hosp,5140,Context residual,complete_history_12,42
+2025-2026,wk inc covid hosp,9048,Context residual,complete_history_12,42
+2025-2026,wk inc covid prop ed visits,5544,Context residual,complete_history_12,42
+2025-2026,wk inc flu hosp,5824,Context residual,complete_history_12,42
+2025-2026,wk inc flu prop ed visits,5508,Context residual,complete_history_12,42
+2025-2026,wk inc rsv hosp,6032,Context residual,complete_history_12,42
+2025-2026,wk inc rsv prop ed visits,5442,Context residual,complete_history_12,42
+2024-2025,wk inc covid hosp,2496,Context residual,complete_and_uninterrupted,42
+2024-2025,wk inc flu hosp,2288,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc covid hosp,7592,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc covid prop ed visits,4519,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc flu hosp,4576,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc flu prop ed visits,3060,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc rsv hosp,4576,Context residual,complete_and_uninterrupted,42
+2025-2026,wk inc rsv prop ed visits,3000,Context residual,complete_and_uninterrupted,42
+2024-2025,wk inc covid hosp,6968,Context residual,all,43
+2024-2025,wk inc flu hosp,5616,Context residual,all,43
+2025-2026,wk inc covid hosp,9048,Context residual,all,43
+2025-2026,wk inc covid prop ed visits,5586,Context residual,all,43
+2025-2026,wk inc flu hosp,5824,Context residual,all,43
+2025-2026,wk inc flu prop ed visits,5768,Context residual,all,43
+2025-2026,wk inc rsv hosp,6032,Context residual,all,43
+2025-2026,wk inc rsv prop ed visits,5586,Context residual,all,43
+2024-2025,wk inc covid hosp,6284,Context residual,complete_history_12,43
+2024-2025,wk inc flu hosp,5140,Context residual,complete_history_12,43
+2025-2026,wk inc covid hosp,9048,Context residual,complete_history_12,43
+2025-2026,wk inc covid prop ed visits,5544,Context residual,complete_history_12,43
+2025-2026,wk inc flu hosp,5824,Context residual,complete_history_12,43
+2025-2026,wk inc flu prop ed visits,5508,Context residual,complete_history_12,43
+2025-2026,wk inc rsv hosp,6032,Context residual,complete_history_12,43
+2025-2026,wk inc rsv prop ed visits,5442,Context residual,complete_history_12,43
+2024-2025,wk inc covid hosp,2496,Context residual,complete_and_uninterrupted,43
+2024-2025,wk inc flu hosp,2288,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc covid hosp,7592,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc covid prop ed visits,4519,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc flu hosp,4576,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc flu prop ed visits,3060,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc rsv hosp,4576,Context residual,complete_and_uninterrupted,43
+2025-2026,wk inc rsv prop ed visits,3000,Context residual,complete_and_uninterrupted,43
+2024-2025,wk inc covid hosp,6968,Context residual,all,44
+2024-2025,wk inc flu hosp,5616,Context residual,all,44
+2025-2026,wk inc covid hosp,9048,Context residual,all,44
+2025-2026,wk inc covid prop ed visits,5586,Context residual,all,44
+2025-2026,wk inc flu hosp,5824,Context residual,all,44
+2025-2026,wk inc flu prop ed visits,5768,Context residual,all,44
+2025-2026,wk inc rsv hosp,6032,Context residual,all,44
+2025-2026,wk inc rsv prop ed visits,5586,Context residual,all,44
+2024-2025,wk inc covid hosp,6284,Context residual,complete_history_12,44
+2024-2025,wk inc flu hosp,5140,Context residual,complete_history_12,44
+2025-2026,wk inc covid hosp,9048,Context residual,complete_history_12,44
+2025-2026,wk inc covid prop ed visits,5544,Context residual,complete_history_12,44
+2025-2026,wk inc flu hosp,5824,Context residual,complete_history_12,44
+2025-2026,wk inc flu prop ed visits,5508,Context residual,complete_history_12,44
+2025-2026,wk inc rsv hosp,6032,Context residual,complete_history_12,44
+2025-2026,wk inc rsv prop ed visits,5442,Context residual,complete_history_12,44
+2024-2025,wk inc covid hosp,2496,Context residual,complete_and_uninterrupted,44
+2024-2025,wk inc flu hosp,2288,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc covid hosp,7592,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc covid prop ed visits,4519,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc flu hosp,4576,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc flu prop ed visits,3060,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc rsv hosp,4576,Context residual,complete_and_uninterrupted,44
+2025-2026,wk inc rsv prop ed visits,3000,Context residual,complete_and_uninterrupted,44
+2024-2025,wk inc covid hosp,6968,Final input,all,42
+2024-2025,wk inc flu hosp,5616,Final input,all,42
+2025-2026,wk inc covid hosp,9048,Final input,all,42
+2025-2026,wk inc covid prop ed visits,5586,Final input,all,42
+2025-2026,wk inc flu hosp,5824,Final input,all,42
+2025-2026,wk inc flu prop ed visits,5768,Final input,all,42
+2025-2026,wk inc rsv hosp,6032,Final input,all,42
+2025-2026,wk inc rsv prop ed visits,5586,Final input,all,42
+2024-2025,wk inc covid hosp,6284,Final input,complete_history_12,42
+2024-2025,wk inc flu hosp,5140,Final input,complete_history_12,42
+2025-2026,wk inc covid hosp,9048,Final input,complete_history_12,42
+2025-2026,wk inc covid prop ed visits,5544,Final input,complete_history_12,42
+2025-2026,wk inc flu hosp,5824,Final input,complete_history_12,42
+2025-2026,wk inc flu prop ed visits,5508,Final input,complete_history_12,42
+2025-2026,wk inc rsv hosp,6032,Final input,complete_history_12,42
+2025-2026,wk inc rsv prop ed visits,5442,Final input,complete_history_12,42
+2024-2025,wk inc covid hosp,2496,Final input,complete_and_uninterrupted,42
+2024-2025,wk inc flu hosp,2288,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc covid hosp,7592,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc covid prop ed visits,4519,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc flu hosp,4576,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc flu prop ed visits,3060,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc rsv hosp,4576,Final input,complete_and_uninterrupted,42
+2025-2026,wk inc rsv prop ed visits,3000,Final input,complete_and_uninterrupted,42
+2024-2025,wk inc covid hosp,6968,Final input,all,43
+2024-2025,wk inc flu hosp,5616,Final input,all,43
+2025-2026,wk inc covid hosp,9048,Final input,all,43
+2025-2026,wk inc covid prop ed visits,5586,Final input,all,43
+2025-2026,wk inc flu hosp,5824,Final input,all,43
+2025-2026,wk inc flu prop ed visits,5768,Final input,all,43
+2025-2026,wk inc rsv hosp,6032,Final input,all,43
+2025-2026,wk inc rsv prop ed visits,5586,Final input,all,43
+2024-2025,wk inc covid hosp,6284,Final input,complete_history_12,43
+2024-2025,wk inc flu hosp,5140,Final input,complete_history_12,43
+2025-2026,wk inc covid hosp,9048,Final input,complete_history_12,43
+2025-2026,wk inc covid prop ed visits,5544,Final input,complete_history_12,43
+2025-2026,wk inc flu hosp,5824,Final input,complete_history_12,43
+2025-2026,wk inc flu prop ed visits,5508,Final input,complete_history_12,43
+2025-2026,wk inc rsv hosp,6032,Final input,complete_history_12,43
+2025-2026,wk inc rsv prop ed visits,5442,Final input,complete_history_12,43
+2024-2025,wk inc covid hosp,2496,Final input,complete_and_uninterrupted,43
+2024-2025,wk inc flu hosp,2288,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc covid hosp,7592,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc covid prop ed visits,4519,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc flu hosp,4576,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc flu prop ed visits,3060,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc rsv hosp,4576,Final input,complete_and_uninterrupted,43
+2025-2026,wk inc rsv prop ed visits,3000,Final input,complete_and_uninterrupted,43
+2024-2025,wk inc covid hosp,6968,Final input,all,44
+2024-2025,wk inc flu hosp,5616,Final input,all,44
+2025-2026,wk inc covid hosp,9048,Final input,all,44
+2025-2026,wk inc covid prop ed visits,5586,Final input,all,44
+2025-2026,wk inc flu hosp,5824,Final input,all,44
+2025-2026,wk inc flu prop ed visits,5768,Final input,all,44
+2025-2026,wk inc rsv hosp,6032,Final input,all,44
+2025-2026,wk inc rsv prop ed visits,5586,Final input,all,44
+2024-2025,wk inc covid hosp,6284,Final input,complete_history_12,44
+2024-2025,wk inc flu hosp,5140,Final input,complete_history_12,44
+2025-2026,wk inc covid hosp,9048,Final input,complete_history_12,44
+2025-2026,wk inc covid prop ed visits,5544,Final input,complete_history_12,44
+2025-2026,wk inc flu hosp,5824,Final input,complete_history_12,44
+2025-2026,wk inc flu prop ed visits,5508,Final input,complete_history_12,44
+2025-2026,wk inc rsv hosp,6032,Final input,complete_history_12,44
+2025-2026,wk inc rsv prop ed visits,5442,Final input,complete_history_12,44
+2024-2025,wk inc covid hosp,2496,Final input,complete_and_uninterrupted,44
+2024-2025,wk inc flu hosp,2288,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc covid hosp,7592,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc covid prop ed visits,4519,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc flu hosp,4576,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc flu prop ed visits,3060,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc rsv hosp,4576,Final input,complete_and_uninterrupted,44
+2025-2026,wk inc rsv prop ed visits,3000,Final input,complete_and_uninterrupted,44
+2024-2025,wk inc covid hosp,6968,Seasonal control,all,42
+2024-2025,wk inc flu hosp,5616,Seasonal control,all,42
+2025-2026,wk inc covid hosp,9048,Seasonal control,all,42
+2025-2026,wk inc covid prop ed visits,5586,Seasonal control,all,42
+2025-2026,wk inc flu hosp,5824,Seasonal control,all,42
+2025-2026,wk inc flu prop ed visits,5768,Seasonal control,all,42
+2025-2026,wk inc rsv hosp,6032,Seasonal control,all,42
+2025-2026,wk inc rsv prop ed visits,5586,Seasonal control,all,42
+2024-2025,wk inc covid hosp,6284,Seasonal control,complete_history_12,42
+2024-2025,wk inc flu hosp,5140,Seasonal control,complete_history_12,42
+2025-2026,wk inc covid hosp,9048,Seasonal control,complete_history_12,42
+2025-2026,wk inc covid prop ed visits,5544,Seasonal control,complete_history_12,42
+2025-2026,wk inc flu hosp,5824,Seasonal control,complete_history_12,42
+2025-2026,wk inc flu prop ed visits,5508,Seasonal control,complete_history_12,42
+2025-2026,wk inc rsv hosp,6032,Seasonal control,complete_history_12,42
+2025-2026,wk inc rsv prop ed visits,5442,Seasonal control,complete_history_12,42
+2024-2025,wk inc covid hosp,2496,Seasonal control,complete_and_uninterrupted,42
+2024-2025,wk inc flu hosp,2288,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc covid hosp,7592,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc covid prop ed visits,4519,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc flu hosp,4576,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc flu prop ed visits,3060,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc rsv hosp,4576,Seasonal control,complete_and_uninterrupted,42
+2025-2026,wk inc rsv prop ed visits,3000,Seasonal control,complete_and_uninterrupted,42
+2024-2025,wk inc covid hosp,6968,Seasonal control,all,43
+2024-2025,wk inc flu hosp,5616,Seasonal control,all,43
+2025-2026,wk inc covid hosp,9048,Seasonal control,all,43
+2025-2026,wk inc covid prop ed visits,5586,Seasonal control,all,43
+2025-2026,wk inc flu hosp,5824,Seasonal control,all,43
+2025-2026,wk inc flu prop ed visits,5768,Seasonal control,all,43
+2025-2026,wk inc rsv hosp,6032,Seasonal control,all,43
+2025-2026,wk inc rsv prop ed visits,5586,Seasonal control,all,43
+2024-2025,wk inc covid hosp,6284,Seasonal control,complete_history_12,43
+2024-2025,wk inc flu hosp,5140,Seasonal control,complete_history_12,43
+2025-2026,wk inc covid hosp,9048,Seasonal control,complete_history_12,43
+2025-2026,wk inc covid prop ed visits,5544,Seasonal control,complete_history_12,43
+2025-2026,wk inc flu hosp,5824,Seasonal control,complete_history_12,43
+2025-2026,wk inc flu prop ed visits,5508,Seasonal control,complete_history_12,43
+2025-2026,wk inc rsv hosp,6032,Seasonal control,complete_history_12,43
+2025-2026,wk inc rsv prop ed visits,5442,Seasonal control,complete_history_12,43
+2024-2025,wk inc covid hosp,2496,Seasonal control,complete_and_uninterrupted,43
+2024-2025,wk inc flu hosp,2288,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc covid hosp,7592,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc covid prop ed visits,4519,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc flu hosp,4576,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc flu prop ed visits,3060,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc rsv hosp,4576,Seasonal control,complete_and_uninterrupted,43
+2025-2026,wk inc rsv prop ed visits,3000,Seasonal control,complete_and_uninterrupted,43
+2024-2025,wk inc covid hosp,6968,Seasonal control,all,44
+2024-2025,wk inc flu hosp,5616,Seasonal control,all,44
+2025-2026,wk inc covid hosp,9048,Seasonal control,all,44
+2025-2026,wk inc covid prop ed visits,5586,Seasonal control,all,44
+2025-2026,wk inc flu hosp,5824,Seasonal control,all,44
+2025-2026,wk inc flu prop ed visits,5768,Seasonal control,all,44
+2025-2026,wk inc rsv hosp,6032,Seasonal control,all,44
+2025-2026,wk inc rsv prop ed visits,5586,Seasonal control,all,44
+2024-2025,wk inc covid hosp,6284,Seasonal control,complete_history_12,44
+2024-2025,wk inc flu hosp,5140,Seasonal control,complete_history_12,44
+2025-2026,wk inc covid hosp,9048,Seasonal control,complete_history_12,44
+2025-2026,wk inc covid prop ed visits,5544,Seasonal control,complete_history_12,44
+2025-2026,wk inc flu hosp,5824,Seasonal control,complete_history_12,44
+2025-2026,wk inc flu prop ed visits,5508,Seasonal control,complete_history_12,44
+2025-2026,wk inc rsv hosp,6032,Seasonal control,complete_history_12,44
+2025-2026,wk inc rsv prop ed visits,5442,Seasonal control,complete_history_12,44
+2024-2025,wk inc covid hosp,2496,Seasonal control,complete_and_uninterrupted,44
+2024-2025,wk inc flu hosp,2288,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc covid hosp,7592,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc covid prop ed visits,4519,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc flu hosp,4576,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc flu prop ed visits,3060,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc rsv hosp,4576,Seasonal control,complete_and_uninterrupted,44
+2025-2026,wk inc rsv prop ed visits,3000,Seasonal control,complete_and_uninterrupted,44

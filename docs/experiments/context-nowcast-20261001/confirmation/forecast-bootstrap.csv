@@ -1,0 +1,3 @@
+stratum,strength,uncertainty,change_pct,low,high,valid_draws,block_weeks
+complete_history_12,0.25,0.5,-0.4125588083988774,-0.8294990139142511,0.20454322481083223,917,4
+complete_and_uninterrupted,0.25,0.5,-0.2722647826372289,-0.9173094025446795,0.3971407707740358,656,4

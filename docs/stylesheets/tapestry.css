@@ -83,3 +83,7 @@
 .md-typeset .report-plot img { max-width: none; height: auto; display: block; }
 .md-typeset table code { white-space: normal; overflow-wrap: anywhere; }
 body:has(.report-figure) .md-grid { max-width: 88rem; }
+
+.staircase-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+body:has(.staircase-comparison) .md-grid { max-width: 100rem; }
+@media (max-width: 1000px) { .staircase-comparison { grid-template-columns: 1fr; } }

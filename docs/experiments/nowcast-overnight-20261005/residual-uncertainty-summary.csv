@@ -1,0 +1,25 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2024-2025,US,3,0.9854929545134468,-10.377531592777187,0.9854929545134467
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2024-2025,all,3,0.8955648970213129,-5.5755022258535165,0.8955648970213129
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2024-2025,states_dc,3,0.8730828826482794,-4.135719072140816,0.8730828826482794
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2025-2026,US,3,0.8556880036874775,-2.420168828116339,0.8227316285811369
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2025-2026,all,3,0.9265740657783281,-0.6666042148265642,0.9223348443386467
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0,2025-2026,states_dc,3,0.9442955813010405,-0.25327659860278073,0.9472356482780239
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2024-2025,US,3,0.9926165458097184,-9.742956341028625,0.9926165458097184
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2024-2025,all,3,0.8888136021145527,-6.285505167134442,0.8888136021145527
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2024-2025,states_dc,3,0.8628628661907612,-5.255646799924356,0.8628628661907611
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2025-2026,US,3,0.8521340939126537,-2.8067846549436575,0.8222538959189928
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2025-2026,all,3,0.9249739671329408,-0.8370212527150497,0.9231428925358646
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 0.5,2025-2026,states_dc,3,0.9431839354380124,-0.3707483978521127,0.9483651416900821
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2024-2025,US,3,0.9925601276428182,-9.744991118518605,0.9925601276428182
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2024-2025,all,3,0.8805794928381022,-7.148734564922569,0.8805794928381022
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2024-2025,states_dc,3,0.8525843341369231,-6.381338787770315,0.8525843341369231
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2025-2026,US,3,0.8547202506232788,-2.5011642856391867,0.8133894139065637
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2025-2026,all,3,0.9253033333698077,-0.8007031379268356,0.9227220533700775
+Half nonlinear point correction; cross-fitted synthetic residual noise strength 1,2025-2026,states_dc,3,0.9429491040564398,-0.39559688968931656,0.9500552132359559
+Raw archived input histories; identical history-bank CPU control,2024-2025,US,3,1.0993312659121015,0.0,1.0993312659121015
+Raw archived input histories; identical history-bank CPU control,2024-2025,all,3,0.9484774526252254,0.0,0.9484774526252254
+Raw archived input histories; identical history-bank CPU control,2024-2025,states_dc,3,0.9107639993035064,0.0,0.9107639993035064
+Raw archived input histories; identical history-bank CPU control,2025-2026,US,3,0.8773744713556044,0.0,0.8333757377696726
+Raw archived input histories; identical history-bank CPU control,2025-2026,all,3,0.93282782529419,0.0,0.9256379017954771
+Raw archived input histories; identical history-bank CPU control,2025-2026,states_dc,3,0.9466911637788362,0.0,0.9487034428019284

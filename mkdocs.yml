@@ -61,6 +61,7 @@ nav:
   - Data:
       - Overview: data/index.md
       - Interactive staircase: data/staircase.md
+      - Revision explorer: data/revision-staircase.md
       - Sources: data/sources.md
       - Selection and provenance: data/methods.md
       - Panel diagnostics: data/panel.md

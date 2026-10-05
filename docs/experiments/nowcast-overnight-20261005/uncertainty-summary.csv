@@ -1,0 +1,25 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2024-2025,US,3,0.9702842437116538,-11.719072204495433,0.9702842437116536
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2024-2025,all,3,0.8900635948037495,-6.150552708117792,0.8900635948037495
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2024-2025,states_dc,3,0.8700084325767734,-4.472718782849501,0.8700084325767734
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2025-2026,US,3,0.850611711532688,-2.9934020404053534,0.8150883564180007
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2025-2026,all,3,0.9241335413214203,-0.9281834892075088,0.9185952589176173
+Equal mixture of raw and full nonlinear-corrected histories; coherent global hypothesis per predictive draw,2025-2026,states_dc,3,0.9425139987686033,-0.44145601501795656,0.9444719845425212
+Point nonlinear correction; log strength 0.5,2024-2025,US,3,0.9854929545134468,-10.377531592777187,0.9854929545134467
+Point nonlinear correction; log strength 0.5,2024-2025,all,3,0.8955648970213129,-5.5755022258535165,0.8955648970213129
+Point nonlinear correction; log strength 0.5,2024-2025,states_dc,3,0.8730828826482794,-4.135719072140816,0.8730828826482794
+Point nonlinear correction; log strength 0.5,2025-2026,US,3,0.8556880036874775,-2.420168828116339,0.8227316285811369
+Point nonlinear correction; log strength 0.5,2025-2026,all,3,0.9265740657783281,-0.6666042148265642,0.9223348443386467
+Point nonlinear correction; log strength 0.5,2025-2026,states_dc,3,0.9442955813010405,-0.25327659860278073,0.9472356482780239
+Point nonlinear correction; log strength 1,2024-2025,US,3,0.8980924290522431,-18.275693760930576,0.8980924290522431
+Point nonlinear correction; log strength 1,2024-2025,all,3,0.8600022801498556,-9.31575954381026,0.8600022801498556
+Point nonlinear correction; log strength 1,2024-2025,states_dc,3,0.8504797429242587,-6.615657240243126,0.8504797429242587
+Point nonlinear correction; log strength 1,2025-2026,US,3,0.852568839003626,-2.715479858912166,0.8387103916078673
+Point nonlinear correction; log strength 1,2025-2026,all,3,0.9326833627577523,-0.0077987663365900834,0.938271215412243
+Point nonlinear correction; log strength 1,2025-2026,states_dc,3,0.9527119936962839,0.6356611705320944,0.9631614213633369
+Raw archived input histories; identical history-bank CPU control,2024-2025,US,3,1.0993312659121015,0.0,1.0993312659121015
+Raw archived input histories; identical history-bank CPU control,2024-2025,all,3,0.9484774526252254,0.0,0.9484774526252254
+Raw archived input histories; identical history-bank CPU control,2024-2025,states_dc,3,0.9107639993035064,0.0,0.9107639993035064
+Raw archived input histories; identical history-bank CPU control,2025-2026,US,3,0.8773744713556044,0.0,0.8333757377696726
+Raw archived input histories; identical history-bank CPU control,2025-2026,all,3,0.93282782529419,0.0,0.9256379017954771
+Raw archived input histories; identical history-bank CPU control,2025-2026,states_dc,3,0.9466911637788362,0.0,0.9487034428019284

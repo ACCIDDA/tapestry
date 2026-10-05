@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wednesday revisions and fitting periods</title>
+<style>
+:root{font:15px system-ui;color:#192b3a;background:#fff}body{margin:0;padding:22px;max-width:1600px}h1{font-size:25px;margin:10px 0}h2{font-size:20px}p{line-height:1.5}.muted{color:#536575;font-size:13px}.controls{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0;align-items:end}label{display:grid;gap:5px;font-size:12px;font-weight:600}select,input,button{font:14px system-ui;padding:8px;border:1px solid #b7c6d2;border-radius:5px;background:#fff;color:inherit}button{cursor:pointer}button:hover{background:#edf3f7}canvas{display:block;width:100%}.chart{border:1px solid #d3dce3;border-radius:7px;overflow:auto;background:#fbfcfd}.legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:12px}.swatch{display:inline-block;width:15px;height:12px;margin-right:5px;vertical-align:middle;border:1px solid #aebbc5}.detail{background:#edf3f7;border-left:3px solid #54728a;padding:12px;margin-top:10px;min-height:55px;white-space:pre-line;font-size:13px;line-height:1.5}.scale{width:220px;height:13px;background:linear-gradient(to right,#2166ac,#fff,#b2182b);border:1px solid #bcc7cf}.scale-labels{display:flex;justify-content:space-between;width:220px;font-size:12px}.summary{margin:10px 0;font-size:13px}section{margin-bottom:32px}[hidden]{display:none!important}a{color:#245f94}#error{color:#a32020}nav{font-size:13px}
+</style></head><body>
+<nav><a href="../availability/timeline/evidence.html">Open the separate availability staircase</a></nav>
+<h1 id="heading">Wednesday revisions and fitting periods</h1>
+<p id="metadata" class="muted">Loading the pinned experiment data…</p><p id="error" role="alert"></p>
+<div class="controls">
+<label>Signal<select id="signal"></select></label>
+<label>State / location<select id="location"></select></label>
+</div>
+<section id="revision-section">
+<h2>Signed change after Wednesday</h2>
+<p class="muted">Each colored line is one Wednesday forecast round, extending backward across its selected observation weeks. Positive = revised upward; negative = revised downward; 0 = unchanged. The dashed reference curve uses the right axis. Hover a point for exact values.</p>
+<div class="controls">
+<label>First Wednesday<input id="start" type="date"></label><label>Last Wednesday<input id="end" type="date"></label>
+<button id="recent">Last 52 Wednesdays</button><button id="all">All Wednesdays</button>
+<label>Trailing weeks<select id="window"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12" selected>12</option></select></label>
+<label>Forecast round<select id="round"><option value="all">All selected Wednesdays</option></select></label>
+<label>Percentage denominator<select id="denominator"><option value="report">Wednesday report</option><option value="reference">Reference value</option></select></label>
+<button id="download">Download visible points (CSV)</button>
+</div>
+<p id="formula" class="muted"></p>
+<div class="legend"><span style="color:#247a98">━━ Colored lines: revision % (left axis)</span><span>┄┄ Black dashed: reference value (right axis)</span><span>Thin dotted tails connect the newest observation to its Wednesday; they contain no new observation.</span><span>Missing values / undefined percentages break lines.</span></div>
+<div id="revision-summary" class="summary"></div><div class="chart"><canvas id="revisions" aria-label="Revision time series by Wednesday"></canvas></div>
+<div id="revision-detail" class="detail" aria-live="polite">Select a state and signal, then hover or click a cell.</div>
+</section>
+<section id="split-section">
+<h2>Training and held-out evaluation</h2>
+<p class="muted">Black line: reference-value history. Background: the actual role of that observation week at the selected reconstruction age. Orange denotes chronological <strong>missing-cell validation</strong> inside outer training. Reported-cell correction strength uses up to 52 training weeks; triangle factors update online from available vintages. Unused includes the maturity gap, purged dates, unavailable labels and insufficient vintage support.</p>
+<div class="controls">
+<label>Evaluation protocol<select id="protocol"><option value="rolling">Recent rolling blocks</option><option value="season">Forward seasons</option></select></label>
+<label>Weeks reconstructed<select id="weeks"></select></label>
+<label>Reconstructed week<select id="age"></select></label>
+</div>
+<div class="legend"><span><i class="swatch" style="background:#cfe0f3"></i>Training</span><span><i class="swatch" style="background:#f3b6b6"></i>Held-out evaluation</span><span><i class="swatch" style="background:#f6c77b"></i>Missing-cell validation</span><span><i class="swatch" style="background:#eee"></i>Not used</span></div>
+<p id="split-summary" class="summary"></p><div class="chart"><canvas id="splits" aria-label="Reference series with actual training and held-out periods"></canvas></div>
+<div id="split-detail" class="detail" aria-live="polite">Hover or click a week to see its role and associated Wednesday.</div>
+</section>
+<script src="revisions.js"></script></body></html>

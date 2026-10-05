@@ -1,0 +1,14 @@
+{
+  "experiment": "context-nowcast-v6-20261001",
+  "scenario": "task=finalize,finalization_cv=season,finalization_model=context_residual,finalization_gap=proxy,finalization_scope=targets,finalization_features=age,finalization_gate=admissions,finalization_strength=0.25,finalization_penalty=1000.0,finalization_statistic=median,finalization_quantize=1,finalization_weeks=8,input_mode=vintaged,evaluation_seasons=recent_two",
+  "run_id": "mlp-all-vintaged-4498052c695b",
+  "features": "age",
+  "gate": "admissions",
+  "strength": 0.25,
+  "model": "context_residual",
+  "growth": 0.2,
+  "penalty": 1000.0,
+  "growth_weight": 1.0,
+  "residual_halflife": 26.0,
+  "criterion": "Fixed shrinkage tradeoff; not the point-score winner"
+}

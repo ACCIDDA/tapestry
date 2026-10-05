@@ -132,14 +132,17 @@ def complete_artifacts(output):
         seasons = Scenario.from_string(manifest.get('scenario', '')).scored_seasons
     except (OSError, ValueError, TypeError):
         return False
-    required = ['manifest.json'] + [f'eval_{s}/model.pt' for s in seasons] + [f'eval_{s}/forecasts.npz' for s in seasons]
+    task = Scenario.from_string(manifest.get('scenario', '')).task
+    predictions = 'finalizations.csv.gz' if task == 'finalize' else 'forecasts.npz'
+    required = ['manifest.json'] + [f'eval_{s}/model.pt' for s in seasons] + [f'eval_{s}/{predictions}' for s in seasons]
     if not all((output / n).is_file() and (output / n).stat().st_size for n in required):
         return False
     try:
         manifest = json.loads((output / 'manifest.json').read_text())
         task = Scenario.from_string(manifest.get('scenario', '')).task
-        extra = (['nowcast_scores.json'] if task == 'nowcast' else
-                 ['nowcaster.pt', 'forecaster.pt', 'nowcast/forecasts.npz', 'nowcast/nowcast_scores.json']
+        extra = (['finalization_scores.json', 'finalization-metrics.csv', 'baselinenowcast_scores.json'] if task == 'finalize' else
+                 ['nowcast_scores.json', 'baselinenowcast.npz'] if task == 'nowcast' else
+                 ['nowcaster.pt', 'forecaster.pt', 'nowcast/forecasts.npz', 'nowcast/nowcast_scores.json', 'nowcast/baselinenowcast.npz']
                  if task == 'pipeline' else [])
         return (sorted(manifest.get('folds', [])) == sorted(seasons)
                 and all((output / f'eval_{season}' / name).is_file() for season in seasons for name in extra))
@@ -261,6 +264,12 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
     if not 0 <= us_weight <= 1 or min(admissions_weight, ed_weight) < 0 or not admissions_weight + ed_weight:
         raise ValueError('Need 0 <= us_weight <= 1 and nonnegative target weights, not both zero')
     done, every_run = completed_runs(folder, allow_incomplete, seeds)
+    finalizers = [r for r in done if Scenario.from_string(r['scenario']).task == 'finalize']
+    if finalizers:
+        if len(finalizers) != len(done):
+            raise ValueError('Rank finalization separately from forecast/nowcast experiments')
+        from .finalization import rank as rank_finalization
+        return rank_finalization(folder, finalizers, make_plots)
     nowcasts = [r for r in done if Scenario.from_string(r['scenario']).task == 'nowcast']
     if nowcasts:
         if len(nowcasts) != len(done):
@@ -270,8 +279,12 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
         rows = []
         for row in nowcasts:
             scores = [json.loads((folder / row['attempt'] / f'eval_{s}' / 'nowcast_scores.json').read_text())
-                      ['normalized_crps'] for s in SEASONS]
-            rows.append(dict(scenario=row['scenario'], seed=row['seed'], normalized_crps=float(np.mean(scores))))
+                      for s in Scenario.from_string(row['scenario']).scored_seasons]
+            model_score = float(np.mean([s['normalized_crps'] for s in scores]))
+            baseline_score = float(np.mean([s.get('baselinenowcast_normalized_mae', np.nan) for s in scores]))
+            rows.append(dict(scenario=row['scenario'], seed=row['seed'], normalized_crps=model_score,
+                             baselinenowcast_normalized_mae=baseline_score,
+                             baselinenowcast_point_crps_ratio=model_score/baseline_score if baseline_score > 0 else np.nan))
         rows.sort(key=lambda r: r['normalized_crps'])
         destination = folder / 'nowcast-ranking.csv'
         write_csv(destination, rows, list(rows[0]))
@@ -313,7 +326,7 @@ def main(argv=None):
     fit_parser.add_argument('--dataset', default=PANEL_DATASET)
     fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
-    for name in ('plan', 'run', 'status', 'rank', 'plots'):
+    for name in ('plan', 'run', 'baseline', 'status', 'rank', 'plots'):
         p = sub.add_parser(name)
         p.add_argument('-e', '--experiment', required=True)
         p.add_argument('--root', default='data/experiments')
@@ -354,7 +367,7 @@ def main(argv=None):
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
                                             seed=args.seed, folds=list(scenario.scored_seasons), fold_manifests=folds,
                                             eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
-        if scenario.task != 'nowcast':
+        if scenario.task not in ('nowcast', 'finalize'):
             from tapestry.evaluation.totals import score_run
             score_run(output, args.frozen)
         return
@@ -367,6 +380,9 @@ def main(argv=None):
         jobs = plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(args.seeds),
                               runs=len(jobs) and len(scenarios) * len(args.seeds))))
+    elif args.command == 'baseline':
+        from .baseline import run as run_baseline
+        run_baseline(folder)
     elif args.command == 'run':
         if run(folder, args.task, args.device, args.keep_going, args.fit_workers, args.seeds):
             raise SystemExit(1)
@@ -379,8 +395,11 @@ def main(argv=None):
         unfinished = sum(row['status'] != 'complete' for row in rows)
         if unfinished:
             root = '' if args.root == 'data/experiments' else f' --root {args.root}'
+            cpu_finalization = all(Scenario.from_string(row['scenario']).task == 'finalize' for row in rows) and json.loads((folder / 'experiment.json').read_text())['device'] == 'cpu'
+            launcher = (f'scripts/finalization.sbatch {args.experiment}' if cpu_finalization else
+                        f'--array=0-3 scripts/jlessler.sbatch {args.experiment} --retry-failed')
             print(f'{unfinished} of {len(rows)} runs not complete. Resume on Longleaf: sbatch --job-name={args.experiment} '
-                  f'--array=0-3 scripts/jlessler.sbatch {args.experiment} --retry-failed\n'
+                  f'{launcher}\n'
                   f'or locally: .venv/bin/python -m tapestry.experiment.planner run -e {args.experiment}{root}')
     elif args.command == 'rank':
         print(rank(folder, args.allow_incomplete, args.seeds, args.us_weight, args.admissions_weight, args.ed_weight,

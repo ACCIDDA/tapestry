@@ -1,0 +1,42 @@
+{
+  "model_id": "mlp-pathogen-scheduled_final-1ba45a22690c",
+  "training_seasons": [
+    "2022-2023",
+    "2023-2024",
+    "2024-2025"
+  ],
+  "error_donor": "2024-2025",
+  "evaluation": "2025-2026",
+  "source_hubs": {
+    "flusight": {
+      "commit": "db3d8a9b8f022404affe56166c63a9d224a11861",
+      "url": "https://github.com/cdcepi/FluSight-forecast-hub",
+      "truth_vintages": {
+        "wk inc flu hosp": "2026-07-08",
+        "wk inc flu prop ed visits": "2026-07-08"
+      }
+    },
+    "covid": {
+      "commit": "df7965dd1d4832a96fe6712f9de9f000abc01f3e",
+      "url": "https://github.com/CDCgov/covid19-forecast-hub",
+      "truth_vintages": {
+        "wk inc covid hosp": "2026-09-02",
+        "wk inc covid prop ed visits": "2026-09-02"
+      }
+    },
+    "rsv": {
+      "commit": "53baf7db03a2429f5a3710d859319b9029df76cd",
+      "url": "https://github.com/CDCgov/rsv-forecast-hub",
+      "truth_vintages": {
+        "wk inc rsv hosp": "2026-09-02",
+        "wk inc rsv prop ed visits": "2026-09-02"
+      }
+    }
+  },
+  "forecast_hashes": {
+    "mlp-pathogen-scheduled_final-1ba45a22690c/s44/attempt-001/eval_2025-2026/forecasts.npz": "9da405f0a4953a0cfc260d65e4f34a18d835a28f8b53d91f11af60791df9569f",
+    "mlp-pathogen-scheduled_final-1ba45a22690c/s43/attempt-001/eval_2025-2026/forecasts.npz": "f3150ea0b4096bc58e702d9a160b4cce47542c0c8773d85040ebc2791e04849a",
+    "mlp-pathogen-scheduled_final-1ba45a22690c/s42/attempt-001/eval_2025-2026/forecasts.npz": "508eea5778c7adc82ca97bccf38a98403a9dd19d86971802b748c0ce068c1b1a"
+  },
+  "scoring": "Native: existing Tapestry location-relative Hub-ensemble WIS, US20%/states80%, equal state weighting, on Google intersection. Log offsets are sensitivities, NOT official CDC replication."
+}

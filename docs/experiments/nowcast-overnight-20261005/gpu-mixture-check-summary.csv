@@ -1,0 +1,13 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2024-2025,US,3,0.9719215194100514,-11.057915470328714,0.9719215194100514
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2024-2025,all,3,0.8884026856921757,-5.818400031577021,0.8884026856921757
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2024-2025,states_dc,3,0.8675229772627069,-4.240809427051647,0.8675229772627068
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2025-2026,US,3,0.8429164742641763,-3.100213371382791,0.814916037152229
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2025-2026,all,3,0.9182618691872274,-1.1000770335178804,0.917061349346972
+Equal raw/full mixture; admissions histories only; saved no-covariate nowcaster identical to CPU comparison; H1002048,2025-2026,states_dc,3,0.9370982179179904,-0.6287712962030382,0.9425976773956575
+Raw archived histories; matched H1002048 control,2024-2025,US,3,1.0930018008089601,0.0,1.0930018008089601
+Raw archived histories; matched H1002048 control,2024-2025,all,3,0.943373485226846,0.0,0.9433734852268459
+Raw archived histories; matched H1002048 control,2024-2025,states_dc,3,0.9059664063313173,0.0,0.9059664063313173
+Raw archived histories; matched H1002048 control,2025-2026,US,3,0.8705262182495427,0.0,0.8274456428563894
+Raw archived histories; matched H1002048 control,2025-2026,all,3,0.9285294431279666,0.0,0.9209289661335456
+Raw archived histories; matched H1002048 control,2025-2026,states_dc,3,0.9430302493475726,0.0,0.9442997969528345

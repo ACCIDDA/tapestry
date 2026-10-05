@@ -1,0 +1,19 @@
+treatment,season,geography,seeds,wis_ratio,paired_change_percent,shared_flu_covid_admissions_wis_ratio
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2024-2025,US,3,0.9702842437116538,-11.719072204495433,0.9702842437116536
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2024-2025,all,3,0.8900635948037495,-6.150552708117792,0.8900635948037495
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2024-2025,states_dc,3,0.8700084325767734,-4.472718782849501,0.8700084325767734
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2025-2026,US,3,0.850611711532688,-2.9934020404053534,0.8150883564180007
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2025-2026,all,3,0.9241335413214203,-0.9281834892075088,0.9185952589176173
+Coherent raw/full nonlinear correction mixture; nowcaster with Kinsa features,2025-2026,states_dc,3,0.9425139987686033,-0.44145601501795656,0.9444719845425212
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2024-2025,US,3,0.9703315857905643,-11.709913442516672,0.9703315857905643
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2024-2025,all,3,0.8903746206381408,-6.117689774247171,0.8903746206381408
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2024-2025,states_dc,3,0.8703853793500348,-4.43148212894446,0.8703853793500348
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2025-2026,US,3,0.8507950081502947,-2.9713222063939337,0.8142440095250429
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2025-2026,all,3,0.9236179490633306,-0.9833323316862633,0.9175019104087832
+Coherent raw/full nonlinear correction mixture; nowcaster with no covariate features,2025-2026,states_dc,3,0.9418236842915895,-0.5144311097326123,0.9433163856297181
+Raw archived input histories; identical history-bank CPU control,2024-2025,US,3,1.0993312659121015,0.0,1.0993312659121015
+Raw archived input histories; identical history-bank CPU control,2024-2025,all,3,0.9484774526252254,0.0,0.9484774526252254
+Raw archived input histories; identical history-bank CPU control,2024-2025,states_dc,3,0.9107639993035064,0.0,0.9107639993035064
+Raw archived input histories; identical history-bank CPU control,2025-2026,US,3,0.8773744713556044,0.0,0.8333757377696726
+Raw archived input histories; identical history-bank CPU control,2025-2026,all,3,0.93282782529419,0.0,0.9256379017954771
+Raw archived input histories; identical history-bank CPU control,2025-2026,states_dc,3,0.9466911637788362,0.0,0.9487034428019284

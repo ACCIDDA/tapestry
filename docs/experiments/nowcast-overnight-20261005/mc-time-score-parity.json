@@ -1,0 +1,50 @@
+[
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-40eb78af29b5/s42/attempt-001",
+    "max_absolute_score_difference": 0.0
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-40eb78af29b5/s43/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-40eb78af29b5/s44/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-efb8ff91d30a/s42/attempt-001",
+    "max_absolute_score_difference": 2.220446049250313e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-efb8ff91d30a/s43/attempt-001",
+    "max_absolute_score_difference": 2.220446049250313e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-efb8ff91d30a/s44/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-ff001327e617/s42/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-ff001327e617/s43/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-ff001327e617/s44/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-eec5b242963f/s42/attempt-001",
+    "max_absolute_score_difference": 2.220446049250313e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-eec5b242963f/s43/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  },
+  {
+    "run": "data/experiments/nowcast-overnight-mc-check-20261005/mlp-pathogen-scheduled_final-eec5b242963f/s44/attempt-001",
+    "max_absolute_score_difference": 1.1102230246251565e-16
+  }
+]

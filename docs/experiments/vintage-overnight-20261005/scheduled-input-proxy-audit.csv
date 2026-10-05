@@ -1,0 +1,721 @@
+forecast_evaluation_season,reporting_error_donor_season,input_role,input_season,kind,signal,report_age_weeks,origins,all_cells,scheduled_available_cells,archived_numerical_cells,frozen_final_proxy_cells,proxy_fraction_of_available
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,0,51,2652,2630,1716,914,0.34752851711026617
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,1,51,2652,2628,1872,756,0.2876712328767123
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,2,51,2652,2628,1872,756,0.2876712328767123
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,3,51,2652,2628,1872,756,0.2876712328767123
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,4,51,2652,2628,1872,756,0.2876712328767123
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,5,51,2652,2628,1872,756,0.2876712328767123
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,6,51,2652,2626,1869,757,0.28827113480578825
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,7,51,2652,2624,1867,757,0.2884908536585366
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,8,51,2652,2622,1864,758,0.28909229595728453
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,9,51,2652,2620,1862,758,0.28931297709923665
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,10,51,2652,2618,1860,758,0.28953399541634833
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_flu_admissions,11,51,2652,2616,1858,758,0.2897553516819572
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,0,51,2652,2630,1664,966,0.3673003802281369
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,1,51,2652,2628,1820,808,0.3074581430745814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,2,51,2652,2628,1820,808,0.3074581430745814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,3,51,2652,2628,1820,808,0.3074581430745814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,4,51,2652,2628,1820,808,0.3074581430745814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,5,51,2652,2628,1820,808,0.3074581430745814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,6,51,2652,2626,1817,809,0.3080731150038081
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,7,51,2652,2624,1815,809,0.3083079268292683
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,8,51,2652,2622,1812,810,0.30892448512585813
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,9,51,2652,2620,1810,810,0.30916030534351147
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,10,51,2652,2618,1808,810,0.3093964858670741
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_covid_admissions,11,51,2652,2616,1806,810,0.30963302752293576
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,0,51,2652,2487,1664,823,0.33092078809811015
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,1,51,2652,2468,1820,648,0.2625607779578606
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,2,51,2652,2450,1820,630,0.2571428571428571
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,3,51,2652,2431,1768,663,0.2727272727272727
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,4,51,2652,2414,1716,698,0.2891466445733223
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,5,51,2652,2398,1716,682,0.28440366972477066
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,6,51,2652,2381,1716,665,0.2792944141117178
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,7,51,2652,2366,1716,650,0.27472527472527475
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,8,51,2652,2350,1716,634,0.26978723404255317
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,9,51,2652,2333,1703,630,0.2700385769395628
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,10,51,2652,2314,1689,625,0.27009507346586
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nhsn_rsv_admissions,11,51,2652,2297,1673,624,0.2716586852416195
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,0,51,2652,2652,300,2352,0.8868778280542986
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,1,51,2652,2652,2083,569,0.2145550527903469
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,2,51,2652,2652,2276,376,0.14177978883861236
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,3,51,2652,2652,2420,232,0.08748114630467571
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,4,51,2652,2652,2468,184,0.0693815987933635
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,5,51,2652,2652,2517,135,0.05090497737556561
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,6,51,2652,2652,2518,134,0.05052790346907994
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,7,51,2652,2652,2519,133,0.05015082956259427
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,8,51,2652,2652,2520,132,0.049773755656108594
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,9,51,2652,2652,2521,131,0.049396681749622924
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,10,51,2652,2652,2522,130,0.049019607843137254
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_flu_proportion,11,51,2652,2652,2523,129,0.048642533936651584
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,0,51,2652,2652,306,2346,0.8846153846153846
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,1,51,2652,2652,2089,563,0.21229260935143288
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,2,51,2652,2652,2282,370,0.13951734539969834
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,3,51,2652,2652,2426,226,0.08521870286576169
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,4,51,2652,2652,2474,178,0.06711915535444947
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,5,51,2652,2652,2523,129,0.048642533936651584
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,6,51,2652,2652,2524,128,0.048265460030165915
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,7,51,2652,2652,2525,127,0.047888386123680245
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,8,51,2652,2652,2526,126,0.04751131221719457
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,9,51,2652,2652,2527,125,0.0471342383107089
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,10,51,2652,2652,2528,124,0.04675716440422323
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_covid_proportion,11,51,2652,2652,2529,123,0.04638009049773756
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,0,51,2652,2652,306,2346,0.8846153846153846
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,1,51,2652,2652,2089,563,0.21229260935143288
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,2,51,2652,2652,2282,370,0.13951734539969834
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,3,51,2652,2652,2426,226,0.08521870286576169
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,4,51,2652,2652,2474,178,0.06711915535444947
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,5,51,2652,2652,2522,130,0.049019607843137254
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,6,51,2652,2652,2522,130,0.049019607843137254
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,7,51,2652,2652,2522,130,0.049019607843137254
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,8,51,2652,2652,2523,129,0.048642533936651584
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,9,51,2652,2652,2524,128,0.048265460030165915
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,10,51,2652,2652,2525,127,0.047888386123680245
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,target,nssp_rsv_proportion,11,51,2652,2652,2526,126,0.04751131221719457
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,0,51,2652,2539,1505,1034,0.4072469476171721
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,1,51,2652,2540,1503,1037,0.4082677165354331
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,2,51,2652,2541,1460,1081,0.42542306178669814
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,3,51,2652,2542,1460,1082,0.42564909520062943
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,4,51,2652,2542,1505,1037,0.4079464988198269
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,5,51,2652,2543,1539,1004,0.3948092803775069
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,6,51,2652,2543,1583,960,0.37750688163586316
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,7,51,2652,2544,1598,946,0.3718553459119497
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,8,51,2652,2544,1616,928,0.36477987421383645
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,9,51,2652,2545,1669,876,0.34420432220039293
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,10,51,2652,2545,1691,854,0.33555992141453833
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_flu,11,51,2652,2545,1735,810,0.3182711198428291
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,0,51,2652,2538,861,1677,0.6607565011820331
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,1,51,2652,2539,832,1707,0.6723119338322174
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,2,51,2652,2540,808,1732,0.6818897637795276
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,3,51,2652,2541,831,1710,0.6729634002361276
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,4,51,2652,2541,860,1681,0.6615505706414797
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,5,51,2652,2542,939,1603,0.6306058221872541
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,6,51,2652,2542,1035,1507,0.5928402832415421
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,7,51,2652,2543,1100,1443,0.5674400314589068
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,8,51,2652,2542,1108,1434,0.5641227380015735
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,9,51,2652,2543,1187,1356,0.5332284703106567
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,10,51,2652,2543,1248,1295,0.5092410538733779
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,inpatient_covid,11,51,2652,2543,1319,1224,0.4813212740857255
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,0,51,2652,2286,0,2286,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,1,51,2652,2283,0,2283,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,2,51,2652,2280,0,2280,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,3,51,2652,2279,0,2279,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,4,51,2652,2275,0,2275,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,5,51,2652,2270,0,2270,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,6,51,2652,2266,0,2266,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,7,51,2652,2263,0,2263,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,8,51,2652,2259,0,2259,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,9,51,2652,2255,0,2255,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,10,51,2652,2251,0,2251,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_flu_wval_like,11,51,2652,2248,0,2248,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,0,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,1,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,2,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,3,51,2652,2385,0,2385,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,4,51,2652,2384,0,2384,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,5,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,6,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,7,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,8,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,9,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,10,51,2652,2383,0,2383,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_covid_wval_like,11,51,2652,2384,0,2384,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,0,51,2652,2201,0,2201,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,1,51,2652,2196,0,2196,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,2,51,2652,2191,0,2191,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,3,51,2652,2189,0,2189,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,4,51,2652,2185,0,2185,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,5,51,2652,2181,0,2181,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,6,51,2652,2177,0,2177,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,7,51,2652,2171,0,2171,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,8,51,2652,2167,0,2167,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,9,51,2652,2162,0,2162,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,10,51,2652,2157,0,2157,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,nwss_rsv_wval_like,11,51,2652,2152,0,2152,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,0,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,1,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,2,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,3,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,4,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,5,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,6,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,7,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,8,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,9,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,10,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,kinsa_ili,11,51,2652,2652,0,2652,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,0,51,2652,0,0,0,
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,1,51,2652,2652,2618,34,0.01282051282051282
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,2,51,2652,2652,2641,11,0.004147812971342383
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,3,51,2652,2652,2642,10,0.003770739064856712
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,4,51,2652,2652,2643,9,0.003393665158371041
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,5,51,2652,2652,2644,8,0.0030165912518853697
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,6,51,2652,2652,2645,7,0.0026395173453996985
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,7,51,2652,2652,2646,6,0.0022624434389140274
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,8,51,2652,2652,2647,5,0.001885369532428356
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,9,51,2652,2652,2648,4,0.0015082956259426848
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,10,51,2652,2652,2649,3,0.0011312217194570137
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,ilinet_ili,11,51,2652,2652,2650,2,0.0007541478129713424
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,0,51,2652,0,0,0,
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,1,51,2652,2136,1958,178,0.08333333333333333
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,2,51,2652,2139,2106,33,0.015427769985974754
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,3,51,2652,2142,2126,16,0.007469654528478058
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,4,51,2652,2145,2136,9,0.004195804195804196
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,5,51,2652,2148,2142,6,0.002793296089385475
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,6,51,2652,2149,2145,4,0.0018613308515588647
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,7,51,2652,2150,2147,3,0.0013953488372093023
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,8,51,2652,2152,2150,2,0.0009293680297397769
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,9,51,2652,2153,2152,1,0.00046446818392940084
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,10,51,2652,2154,2154,0,0.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,11,51,2652,2155,2155,0,0.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,0,51,2652,0,0,0,
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,1,51,2652,560,0,560,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,2,51,2652,574,0,574,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,3,51,2652,588,0,588,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,4,51,2652,602,0,602,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,5,51,2652,616,0,616,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,6,51,2652,630,0,630,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,7,51,2652,644,0,644,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,8,51,2652,658,0,658,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,9,51,2652,672,0,672,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,10,51,2652,686,0,686,1.0
+2025-2026,2024-2025,Recent training season actual inputs,2024-2025,covariate,flusurv_flu_rate,11,51,2652,700,0,700,1.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,0,52,2704,2704,2392,312,0.11538461538461539
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,1,52,2704,2704,2444,260,0.09615384615384616
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,2,52,2704,2704,2496,208,0.07692307692307693
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,3,52,2704,2704,2548,156,0.057692307692307696
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,4,52,2704,2704,2600,104,0.038461538461538464
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,5,52,2704,2704,2652,52,0.019230769230769232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,6,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,7,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,8,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,9,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,10,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_flu_admissions,11,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,0,52,2704,2704,2340,364,0.1346153846153846
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,1,52,2704,2704,2392,312,0.11538461538461539
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,2,52,2704,2704,2444,260,0.09615384615384616
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,3,52,2704,2704,2496,208,0.07692307692307693
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,4,52,2704,2704,2548,156,0.057692307692307696
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,5,52,2704,2704,2600,104,0.038461538461538464
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,6,52,2704,2704,2652,52,0.019230769230769232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,7,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,8,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,9,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,10,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_covid_admissions,11,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,0,52,2704,2704,2340,364,0.1346153846153846
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,1,52,2704,2704,2392,312,0.11538461538461539
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,2,52,2704,2704,2444,260,0.09615384615384616
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,3,52,2704,2704,2496,208,0.07692307692307693
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,4,52,2704,2704,2548,156,0.057692307692307696
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,5,52,2704,2704,2600,104,0.038461538461538464
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,6,52,2704,2704,2652,52,0.019230769230769232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,7,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,8,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,9,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,10,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nhsn_rsv_admissions,11,52,2704,2704,2704,0,0.0
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,0,52,2704,2704,2094,610,0.22559171597633135
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,1,52,2704,2704,2297,407,0.15051775147928995
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,2,52,2704,2704,2398,306,0.11316568047337278
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,3,52,2704,2704,2448,256,0.09467455621301775
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,4,52,2704,2704,2498,206,0.07618343195266272
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,5,52,2704,2704,2548,156,0.057692307692307696
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,6,52,2704,2704,2598,106,0.03920118343195266
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,7,52,2704,2704,2648,56,0.020710059171597635
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,8,52,2704,2704,2648,56,0.020710059171597635
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,9,52,2704,2704,2648,56,0.020710059171597635
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,10,52,2704,2704,2648,56,0.020710059171597635
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_flu_proportion,11,52,2704,2704,2648,56,0.020710059171597635
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,0,52,2704,2704,2150,554,0.20488165680473372
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,1,52,2704,2704,2353,351,0.12980769230769232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,2,52,2704,2704,2403,301,0.11131656804733728
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,3,52,2704,2704,2453,251,0.09282544378698225
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,4,52,2704,2704,2503,201,0.07433431952662722
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,5,52,2704,2704,2553,151,0.05584319526627219
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,6,52,2704,2704,2603,101,0.03735207100591716
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,7,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,8,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,9,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,10,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_covid_proportion,11,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,0,52,2704,2704,2150,554,0.20488165680473372
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,1,52,2704,2704,2353,351,0.12980769230769232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,2,52,2704,2704,2403,301,0.11131656804733728
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,3,52,2704,2704,2453,251,0.09282544378698225
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,4,52,2704,2704,2503,201,0.07433431952662722
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,5,52,2704,2704,2553,151,0.05584319526627219
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,6,52,2704,2704,2603,101,0.03735207100591716
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,7,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,8,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,9,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,10,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,target,nssp_rsv_proportion,11,52,2704,2704,2653,51,0.01886094674556213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,0,52,2704,2185,1530,655,0.2997711670480549
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,1,52,2704,2196,1682,514,0.23406193078324225
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,2,52,2704,2209,1754,455,0.20597555454956995
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,3,52,2704,2216,1792,424,0.19133574007220217
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,4,52,2704,2222,1853,369,0.16606660666066606
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,5,52,2704,2230,1902,328,0.14708520179372198
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,6,52,2704,2241,1922,319,0.142347166443552
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,7,52,2704,2253,1956,297,0.1318242343541944
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,8,52,2704,2266,1961,305,0.13459841129744043
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,9,52,2704,2276,1994,282,0.12390158172231985
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,10,52,2704,2285,2032,253,0.11072210065645514
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_flu,11,52,2704,2297,2052,245,0.10666086199390509
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,0,52,2704,2085,1345,740,0.354916067146283
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,1,52,2704,2109,1482,627,0.2972972972972973
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,2,52,2704,2133,1559,574,0.26910454758556024
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,3,52,2704,2152,1612,540,0.25092936802973975
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,4,52,2704,2169,1665,504,0.23236514522821577
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,5,52,2704,2186,1730,456,0.20860018298261665
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,6,52,2704,2201,1744,457,0.20763289413902772
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,7,52,2704,2218,1768,450,0.20288548241659152
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,8,52,2704,2232,1790,442,0.19802867383512546
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,9,52,2704,2244,1819,425,0.1893939393939394
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,10,52,2704,2256,1862,394,0.17464539007092197
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,inpatient_covid,11,52,2704,2271,1883,388,0.17084984588287097
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,0,52,2704,2422,311,2111,0.8715937241948802
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,1,52,2704,2423,764,1659,0.6846884028064383
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,2,52,2704,2423,968,1455,0.6004952538175815
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,3,52,2704,2424,995,1429,0.5895214521452146
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,4,52,2704,2424,1013,1411,0.5820957095709571
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,5,52,2704,2424,1025,1399,0.5771452145214522
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,6,52,2704,2424,1028,1396,0.5759075907590759
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,7,52,2704,2423,1031,1392,0.5744944283945522
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,8,52,2704,2421,1034,1387,0.5729037587773648
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,9,52,2704,2420,1035,1385,0.5723140495867769
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,10,52,2704,2419,1035,1384,0.5721372467961968
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_flu_wval_like,11,52,2704,2418,1035,1383,0.5719602977667494
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,0,52,2704,2477,298,2179,0.8796931772305208
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,1,52,2704,2478,733,1745,0.7041969330104924
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,2,52,2704,2478,1014,1464,0.5907990314769975
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,3,52,2704,2479,1048,1431,0.5772488906817265
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,4,52,2704,2479,1063,1416,0.5711980637353772
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,5,52,2704,2479,1074,1405,0.5667607906413876
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,6,52,2704,2479,1078,1401,0.5651472367890278
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,7,52,2704,2478,1081,1397,0.5637610976594027
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,8,52,2704,2477,1083,1394,0.5627775534921275
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,9,52,2704,2476,1083,1393,0.5626009693053312
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,10,52,2704,2475,1083,1392,0.5624242424242424
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_covid_wval_like,11,52,2704,2474,1083,1391,0.5622473726758286
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,0,52,2704,2372,416,1956,0.8246205733558178
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,1,52,2704,2373,908,1465,0.617361989043405
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,2,52,2704,2374,979,1395,0.5876158382476833
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,3,52,2704,2376,995,1381,0.5812289562289562
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,4,52,2704,2377,1005,1372,0.5771981489272192
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,5,52,2704,2377,1010,1367,0.5750946571308372
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,6,52,2704,2376,1014,1362,0.5732323232323232
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,7,52,2704,2375,1018,1357,0.5713684210526315
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,8,52,2704,2374,1023,1351,0.5690817186183657
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,9,52,2704,2372,1025,1347,0.5678752107925801
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,10,52,2704,2370,1026,1344,0.5670886075949367
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,nwss_rsv_wval_like,11,52,2704,2368,1027,1341,0.5663006756756757
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,0,52,2704,2704,676,2028,0.75
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,1,52,2704,2704,728,1976,0.7307692307692307
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,2,52,2704,2704,780,1924,0.7115384615384616
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,3,52,2704,2704,832,1872,0.6923076923076923
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,4,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,5,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,6,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,7,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,8,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,9,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,10,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,kinsa_ili,11,52,2704,2704,884,1820,0.6730769230769231
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,0,52,2704,0,0,0,
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,1,52,2704,2368,1957,411,0.1735641891891892
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,2,52,2704,2376,2010,366,0.15404040404040403
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,3,52,2704,2384,2063,321,0.13464765100671142
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,4,52,2704,2392,2116,276,0.11538461538461539
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,5,52,2704,2400,2169,231,0.09625
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,6,52,2704,2408,2222,186,0.07724252491694353
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,7,52,2704,2416,2297,119,0.04925496688741722
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,8,52,2704,2424,2319,105,0.043316831683168314
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,9,52,2704,2432,2341,91,0.03741776315789474
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,10,52,2704,2440,2362,78,0.031967213114754096
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,ilinet_ili,11,52,2704,2448,2383,65,0.026552287581699346
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,0,52,2704,0,0,0,
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,1,52,2704,1893,1445,448,0.23666138404648707
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,2,52,2704,1898,1575,323,0.1701791359325606
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,3,52,2704,1903,1635,268,0.14083026799789805
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,4,52,2704,1908,1680,228,0.11949685534591195
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,5,52,2704,1912,1724,188,0.09832635983263599
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,6,52,2704,1916,1765,151,0.07881002087682672
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,7,52,2704,1922,1823,99,0.051508844953173774
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,8,52,2704,1928,1845,83,0.04304979253112033
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,9,52,2704,1933,1863,70,0.03621314019658562
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,10,52,2704,1939,1879,60,0.030943785456420837
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,11,52,2704,1945,1895,50,0.02570694087403599
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,0,52,2704,0,0,0,
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,1,52,2704,546,338,208,0.38095238095238093
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,2,52,2704,533,338,195,0.36585365853658536
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,3,52,2704,520,338,182,0.35
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,4,52,2704,507,338,169,0.3333333333333333
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,5,52,2704,494,338,156,0.3157894736842105
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,6,52,2704,481,338,143,0.2972972972972973
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,7,52,2704,468,338,130,0.2777777777777778
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,8,52,2704,455,338,117,0.2571428571428571
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,9,52,2704,442,338,104,0.23529411764705882
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,10,52,2704,429,338,91,0.21212121212121213
+2025-2026,2024-2025,Evaluation actual inputs,2025-2026,covariate,flusurv_flu_rate,11,52,2704,416,338,78,0.1875
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,0,52,2704,2704,2392,312,0.11538461538461539
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,1,52,2704,2652,2392,260,0.09803921568627451
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,2,52,2704,2600,2392,208,0.08
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,3,52,2704,2548,2392,156,0.061224489795918366
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,4,52,2704,2496,2392,104,0.041666666666666664
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,5,52,2704,2444,2392,52,0.02127659574468085
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,6,52,2704,2392,2392,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,7,52,2704,2340,2340,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,8,52,2704,2288,2288,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,9,52,2704,2236,2236,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,10,52,2704,2184,2184,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_flu_admissions,11,52,2704,2132,2132,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,0,52,2704,2704,2340,364,0.1346153846153846
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,1,52,2704,2652,2340,312,0.11764705882352941
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,2,52,2704,2600,2340,260,0.1
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,3,52,2704,2548,2340,208,0.08163265306122448
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,4,52,2704,2496,2340,156,0.0625
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,5,52,2704,2444,2340,104,0.0425531914893617
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,6,52,2704,2392,2340,52,0.021739130434782608
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,7,52,2704,2340,2340,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,8,52,2704,2288,2288,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,9,52,2704,2236,2236,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,10,52,2704,2184,2184,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_covid_admissions,11,52,2704,2132,2132,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,0,52,2704,2704,2340,364,0.1346153846153846
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,1,52,2704,2652,2340,312,0.11764705882352941
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,2,52,2704,2600,2340,260,0.1
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,3,52,2704,2548,2340,208,0.08163265306122448
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,4,52,2704,2496,2340,156,0.0625
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,5,52,2704,2444,2340,104,0.0425531914893617
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,6,52,2704,2392,2340,52,0.021739130434782608
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,7,52,2704,2340,2340,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,8,52,2704,2288,2288,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,9,52,2704,2236,2236,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,10,52,2704,2184,2184,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nhsn_rsv_admissions,11,52,2704,2132,2132,0,0.0
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,0,52,2704,2704,2094,610,0.22559171597633135
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,1,52,2704,2652,2247,405,0.15271493212669685
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,2,52,2704,2600,2298,302,0.11615384615384615
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,3,52,2704,2548,2298,250,0.09811616954474098
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,4,52,2704,2496,2298,198,0.07932692307692307
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,5,52,2704,2444,2298,146,0.05973813420621931
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,6,52,2704,2392,2297,95,0.03971571906354515
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,7,52,2704,2340,2297,43,0.018376068376068377
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,8,52,2704,2288,2246,42,0.018356643356643356
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,9,52,2704,2236,2195,41,0.018336314847942754
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,10,52,2704,2184,2145,39,0.017857142857142856
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_flu_proportion,11,52,2704,2132,2095,37,0.017354596622889306
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,0,52,2704,2704,2150,554,0.20488165680473372
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,1,52,2704,2652,2302,350,0.13197586726998492
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,2,52,2704,2600,2301,299,0.115
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,3,52,2704,2548,2300,248,0.09733124018838304
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,4,52,2704,2496,2299,197,0.07892628205128205
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,5,52,2704,2444,2298,146,0.05973813420621931
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,6,52,2704,2392,2297,95,0.03971571906354515
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,7,52,2704,2340,2296,44,0.018803418803418803
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,8,52,2704,2288,2245,43,0.018793706293706292
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,9,52,2704,2236,2194,42,0.018783542039355994
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,10,52,2704,2184,2144,40,0.018315018315018316
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_covid_proportion,11,52,2704,2132,2094,38,0.017823639774859287
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,0,52,2704,2704,2150,554,0.20488165680473372
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,1,52,2704,2652,2302,350,0.13197586726998492
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,2,52,2704,2600,2301,299,0.115
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,3,52,2704,2548,2300,248,0.09733124018838304
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,4,52,2704,2496,2299,197,0.07892628205128205
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,5,52,2704,2444,2298,146,0.05973813420621931
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,6,52,2704,2392,2297,95,0.03971571906354515
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,7,52,2704,2340,2296,44,0.018803418803418803
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,8,52,2704,2288,2245,43,0.018793706293706292
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,9,52,2704,2236,2194,42,0.018783542039355994
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,10,52,2704,2184,2144,40,0.018315018315018316
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,target,nssp_rsv_proportion,11,52,2704,2132,2094,38,0.017823639774859287
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,0,52,2704,2185,1530,655,0.2997711670480549
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,1,52,2704,2146,1633,513,0.23904939422180801
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,2,52,2704,2110,1670,440,0.20853080568720378
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,3,52,2704,2068,1657,411,0.19874274661508703
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,4,52,2704,2025,1686,339,0.1674074074074074
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,5,52,2704,1983,1680,303,0.15279878971255673
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,6,52,2704,1945,1659,286,0.14704370179948587
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,7,52,2704,1907,1641,266,0.13948610382800208
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,8,52,2704,1871,1617,254,0.13575628006413681
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,9,52,2704,1831,1614,217,0.11851447296559257
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,10,52,2704,1791,1601,190,0.10608598548297041
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_flu,11,52,2704,1753,1568,185,0.10553337136337707
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,0,52,2704,2085,1345,740,0.354916067146283
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,1,52,2704,2059,1433,626,0.3040310830500243
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,2,52,2704,2034,1498,536,0.2635201573254671
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,3,52,2704,2004,1499,505,0.25199600798403193
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,4,52,2704,1972,1538,434,0.22008113590263692
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,5,52,2704,1939,1552,387,0.1995874161939144
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,6,52,2704,1905,1519,386,0.2026246719160105
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,7,52,2704,1872,1492,380,0.202991452991453
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,8,52,2704,1837,1493,344,0.18726183995645074
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,9,52,2704,1799,1510,289,0.16064480266814898
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,10,52,2704,1762,1489,273,0.15493757094211125
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,inpatient_covid,11,52,2704,1727,1454,273,0.1580775911986103
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,0,52,2704,2422,311,2111,0.8715937241948802
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,1,52,2704,2377,764,1613,0.6785864535128313
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,2,52,2704,2331,968,1363,0.5847275847275847
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,3,52,2704,2286,995,1291,0.5647419072615923
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,4,52,2704,2242,1013,1229,0.548171275646744
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,5,52,2704,2196,1025,1171,0.5332422586520947
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,6,52,2704,2150,1028,1122,0.521860465116279
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,7,52,2704,2103,1031,1072,0.5097479790775084
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,8,52,2704,2056,1034,1022,0.4970817120622568
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,9,52,2704,2009,1035,974,0.4848183175709308
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,10,52,2704,1962,1035,927,0.4724770642201835
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_flu_wval_like,11,52,2704,1915,1035,880,0.4595300261096606
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,0,52,2704,2477,298,2179,0.8796931772305208
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,1,52,2704,2431,733,1698,0.6984779925956397
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,2,52,2704,2384,1014,1370,0.5746644295302014
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,3,52,2704,2338,1048,1290,0.5517536355859709
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,4,52,2704,2293,1063,1230,0.5364151766245093
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,5,52,2704,2246,1074,1172,0.5218165627782725
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,6,52,2704,2199,1078,1121,0.5097771714415643
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,7,52,2704,2151,1081,1070,0.497443049744305
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,8,52,2704,2103,1083,1020,0.48502139800285304
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,9,52,2704,2055,1083,972,0.472992700729927
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,10,52,2704,2007,1083,924,0.46038863976083705
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_covid_wval_like,11,52,2704,1959,1083,876,0.44716692189892804
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,0,52,2704,2372,416,1956,0.8246205733558178
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,1,52,2704,2329,908,1421,0.6101331043366252
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,2,52,2704,2286,979,1307,0.5717410323709536
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,3,52,2704,2244,995,1249,0.5565953654188949
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,4,52,2704,2203,1005,1198,0.5438039037675897
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,5,52,2704,2159,1010,1149,0.5321908290875406
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,6,52,2704,2115,1014,1101,0.5205673758865248
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,7,52,2704,2070,1018,1052,0.5082125603864734
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,8,52,2704,2025,1023,1002,0.4948148148148148
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,9,52,2704,1980,1025,955,0.4823232323232323
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,10,52,2704,1934,1026,908,0.46949327817993797
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,nwss_rsv_wval_like,11,52,2704,1888,1027,861,0.4560381355932203
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,0,52,2704,2704,676,2028,0.75
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,1,52,2704,2652,728,1924,0.7254901960784313
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,2,52,2704,2600,780,1820,0.7
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,3,52,2704,2548,832,1716,0.673469387755102
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,4,52,2704,2496,884,1612,0.6458333333333334
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,5,52,2704,2444,884,1560,0.6382978723404256
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,6,52,2704,2392,884,1508,0.6304347826086957
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,7,52,2704,2340,884,1456,0.6222222222222222
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,8,52,2704,2288,884,1404,0.6136363636363636
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,9,52,2704,2236,884,1352,0.6046511627906976
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,10,52,2704,2184,884,1300,0.5952380952380952
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,kinsa_ili,11,52,2704,2132,884,1248,0.5853658536585366
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,0,52,2704,0,0,0,
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,1,52,2704,2316,1905,411,0.17746113989637305
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,2,52,2704,2272,1906,366,0.16109154929577466
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,3,52,2704,2228,1907,321,0.1440754039497307
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,4,52,2704,2184,1908,276,0.12637362637362637
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,5,52,2704,2140,1909,231,0.10794392523364486
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,6,52,2704,2096,1910,186,0.08874045801526717
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,7,52,2704,2052,1933,119,0.05799220272904483
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,8,52,2704,2008,1903,105,0.052290836653386456
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,9,52,2704,1964,1873,91,0.04633401221995927
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,10,52,2704,1920,1842,78,0.040625
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,ilinet_ili,11,52,2704,1876,1811,65,0.03464818763326226
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,0,52,2704,0,0,0,
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,1,52,2704,1854,1409,445,0.24002157497303128
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,2,52,2704,1820,1498,322,0.17692307692307693
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,3,52,2704,1786,1518,268,0.15005599104143338
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,4,52,2704,1752,1524,228,0.13013698630136986
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,5,52,2704,1717,1529,188,0.10949330227140361
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,6,52,2704,1682,1531,151,0.08977407847800238
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,7,52,2704,1647,1548,99,0.060109289617486336
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,8,52,2704,1612,1529,83,0.05148883374689826
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,9,52,2704,1577,1507,70,0.04438807863031072
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,10,52,2704,1542,1482,60,0.038910505836575876
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,clinical_lab_flu_pct_positive,11,52,2704,1507,1457,50,0.033178500331785
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,0,52,2704,0,0,0,
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,1,52,2704,546,338,208,0.38095238095238093
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,2,52,2704,533,338,195,0.36585365853658536
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,3,52,2704,520,338,182,0.35
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,4,52,2704,507,338,169,0.3333333333333333
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,5,52,2704,494,338,156,0.3157894736842105
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,6,52,2704,481,338,143,0.2972972972972973
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,7,52,2704,468,338,130,0.2777777777777778
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,8,52,2704,455,338,117,0.2571428571428571
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,9,52,2704,442,338,104,0.23529411764705882
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,10,52,2704,429,338,91,0.21212121212121213
+2024-2025,2025-2026,Recent training season actual inputs,2025-2026,covariate,flusurv_flu_rate,11,52,2704,416,338,78,0.1875
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,0,51,2652,2630,1716,914,0.34752851711026617
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,1,51,2652,2628,1872,756,0.2876712328767123
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,2,51,2652,2628,1872,756,0.2876712328767123
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,3,51,2652,2628,1872,756,0.2876712328767123
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,4,51,2652,2628,1872,756,0.2876712328767123
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,5,51,2652,2628,1872,756,0.2876712328767123
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,6,51,2652,2626,1869,757,0.28827113480578825
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,7,51,2652,2624,1867,757,0.2884908536585366
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,8,51,2652,2622,1864,758,0.28909229595728453
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,9,51,2652,2620,1862,758,0.28931297709923665
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,10,51,2652,2618,1860,758,0.28953399541634833
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_flu_admissions,11,51,2652,2616,1858,758,0.2897553516819572
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,0,51,2652,2630,1664,966,0.3673003802281369
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,1,51,2652,2628,1820,808,0.3074581430745814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,2,51,2652,2628,1820,808,0.3074581430745814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,3,51,2652,2628,1820,808,0.3074581430745814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,4,51,2652,2628,1820,808,0.3074581430745814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,5,51,2652,2628,1820,808,0.3074581430745814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,6,51,2652,2626,1817,809,0.3080731150038081
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,7,51,2652,2624,1815,809,0.3083079268292683
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,8,51,2652,2622,1812,810,0.30892448512585813
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,9,51,2652,2620,1810,810,0.30916030534351147
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,10,51,2652,2618,1808,810,0.3093964858670741
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_covid_admissions,11,51,2652,2616,1806,810,0.30963302752293576
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,0,51,2652,2487,1664,823,0.33092078809811015
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,1,51,2652,2468,1820,648,0.2625607779578606
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,2,51,2652,2450,1820,630,0.2571428571428571
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,3,51,2652,2431,1768,663,0.2727272727272727
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,4,51,2652,2414,1716,698,0.2891466445733223
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,5,51,2652,2398,1716,682,0.28440366972477066
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,6,51,2652,2381,1716,665,0.2792944141117178
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,7,51,2652,2366,1716,650,0.27472527472527475
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,8,51,2652,2350,1716,634,0.26978723404255317
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,9,51,2652,2333,1703,630,0.2700385769395628
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,10,51,2652,2314,1689,625,0.27009507346586
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nhsn_rsv_admissions,11,51,2652,2297,1673,624,0.2716586852416195
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,0,51,2652,2652,300,2352,0.8868778280542986
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,1,51,2652,2652,2083,569,0.2145550527903469
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,2,51,2652,2652,2276,376,0.14177978883861236
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,3,51,2652,2652,2420,232,0.08748114630467571
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,4,51,2652,2652,2468,184,0.0693815987933635
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,5,51,2652,2652,2517,135,0.05090497737556561
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,6,51,2652,2652,2518,134,0.05052790346907994
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,7,51,2652,2652,2519,133,0.05015082956259427
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,8,51,2652,2652,2520,132,0.049773755656108594
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,9,51,2652,2652,2521,131,0.049396681749622924
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,10,51,2652,2652,2522,130,0.049019607843137254
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_flu_proportion,11,51,2652,2652,2523,129,0.048642533936651584
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,0,51,2652,2652,306,2346,0.8846153846153846
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,1,51,2652,2652,2089,563,0.21229260935143288
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,2,51,2652,2652,2282,370,0.13951734539969834
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,3,51,2652,2652,2426,226,0.08521870286576169
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,4,51,2652,2652,2474,178,0.06711915535444947
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,5,51,2652,2652,2523,129,0.048642533936651584
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,6,51,2652,2652,2524,128,0.048265460030165915
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,7,51,2652,2652,2525,127,0.047888386123680245
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,8,51,2652,2652,2526,126,0.04751131221719457
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,9,51,2652,2652,2527,125,0.0471342383107089
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,10,51,2652,2652,2528,124,0.04675716440422323
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_covid_proportion,11,51,2652,2652,2529,123,0.04638009049773756
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,0,51,2652,2652,306,2346,0.8846153846153846
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,1,51,2652,2652,2089,563,0.21229260935143288
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,2,51,2652,2652,2282,370,0.13951734539969834
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,3,51,2652,2652,2426,226,0.08521870286576169
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,4,51,2652,2652,2474,178,0.06711915535444947
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,5,51,2652,2652,2522,130,0.049019607843137254
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,6,51,2652,2652,2522,130,0.049019607843137254
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,7,51,2652,2652,2522,130,0.049019607843137254
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,8,51,2652,2652,2523,129,0.048642533936651584
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,9,51,2652,2652,2524,128,0.048265460030165915
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,10,51,2652,2652,2525,127,0.047888386123680245
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,target,nssp_rsv_proportion,11,51,2652,2652,2526,126,0.04751131221719457
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,0,51,2652,2539,1505,1034,0.4072469476171721
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,1,51,2652,2540,1503,1037,0.4082677165354331
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,2,51,2652,2541,1460,1081,0.42542306178669814
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,3,51,2652,2542,1460,1082,0.42564909520062943
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,4,51,2652,2542,1505,1037,0.4079464988198269
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,5,51,2652,2543,1539,1004,0.3948092803775069
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,6,51,2652,2543,1583,960,0.37750688163586316
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,7,51,2652,2544,1598,946,0.3718553459119497
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,8,51,2652,2544,1616,928,0.36477987421383645
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,9,51,2652,2545,1669,876,0.34420432220039293
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,10,51,2652,2545,1691,854,0.33555992141453833
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_flu,11,51,2652,2545,1735,810,0.3182711198428291
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,0,51,2652,2538,861,1677,0.6607565011820331
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,1,51,2652,2539,832,1707,0.6723119338322174
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,2,51,2652,2540,808,1732,0.6818897637795276
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,3,51,2652,2541,831,1710,0.6729634002361276
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,4,51,2652,2541,860,1681,0.6615505706414797
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,5,51,2652,2542,939,1603,0.6306058221872541
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,6,51,2652,2542,1035,1507,0.5928402832415421
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,7,51,2652,2543,1100,1443,0.5674400314589068
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,8,51,2652,2542,1108,1434,0.5641227380015735
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,9,51,2652,2543,1187,1356,0.5332284703106567
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,10,51,2652,2543,1248,1295,0.5092410538733779
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,inpatient_covid,11,51,2652,2543,1319,1224,0.4813212740857255
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,0,51,2652,2286,0,2286,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,1,51,2652,2283,0,2283,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,2,51,2652,2280,0,2280,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,3,51,2652,2279,0,2279,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,4,51,2652,2275,0,2275,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,5,51,2652,2270,0,2270,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,6,51,2652,2266,0,2266,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,7,51,2652,2263,0,2263,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,8,51,2652,2259,0,2259,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,9,51,2652,2255,0,2255,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,10,51,2652,2251,0,2251,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_flu_wval_like,11,51,2652,2248,0,2248,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,0,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,1,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,2,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,3,51,2652,2385,0,2385,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,4,51,2652,2384,0,2384,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,5,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,6,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,7,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,8,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,9,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,10,51,2652,2383,0,2383,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_covid_wval_like,11,51,2652,2384,0,2384,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,0,51,2652,2201,0,2201,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,1,51,2652,2196,0,2196,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,2,51,2652,2191,0,2191,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,3,51,2652,2189,0,2189,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,4,51,2652,2185,0,2185,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,5,51,2652,2181,0,2181,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,6,51,2652,2177,0,2177,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,7,51,2652,2171,0,2171,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,8,51,2652,2167,0,2167,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,9,51,2652,2162,0,2162,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,10,51,2652,2157,0,2157,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,nwss_rsv_wval_like,11,51,2652,2152,0,2152,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,0,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,1,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,2,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,3,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,4,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,5,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,6,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,7,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,8,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,9,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,10,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,kinsa_ili,11,51,2652,2652,0,2652,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,0,51,2652,0,0,0,
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,1,51,2652,2652,2618,34,0.01282051282051282
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,2,51,2652,2652,2641,11,0.004147812971342383
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,3,51,2652,2652,2642,10,0.003770739064856712
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,4,51,2652,2652,2643,9,0.003393665158371041
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,5,51,2652,2652,2644,8,0.0030165912518853697
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,6,51,2652,2652,2645,7,0.0026395173453996985
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,7,51,2652,2652,2646,6,0.0022624434389140274
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,8,51,2652,2652,2647,5,0.001885369532428356
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,9,51,2652,2652,2648,4,0.0015082956259426848
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,10,51,2652,2652,2649,3,0.0011312217194570137
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,ilinet_ili,11,51,2652,2652,2650,2,0.0007541478129713424
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,0,51,2652,0,0,0,
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,1,51,2652,2136,1958,178,0.08333333333333333
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,2,51,2652,2139,2106,33,0.015427769985974754
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,3,51,2652,2142,2126,16,0.007469654528478058
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,4,51,2652,2145,2136,9,0.004195804195804196
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,5,51,2652,2148,2142,6,0.002793296089385475
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,6,51,2652,2149,2145,4,0.0018613308515588647
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,7,51,2652,2150,2147,3,0.0013953488372093023
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,8,51,2652,2152,2150,2,0.0009293680297397769
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,9,51,2652,2153,2152,1,0.00046446818392940084
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,10,51,2652,2154,2154,0,0.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,clinical_lab_flu_pct_positive,11,51,2652,2155,2155,0,0.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,0,51,2652,0,0,0,
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,1,51,2652,560,0,560,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,2,51,2652,574,0,574,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,3,51,2652,588,0,588,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,4,51,2652,602,0,602,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,5,51,2652,616,0,616,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,6,51,2652,630,0,630,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,7,51,2652,644,0,644,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,8,51,2652,658,0,658,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,9,51,2652,672,0,672,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,10,51,2652,686,0,686,1.0
+2024-2025,2025-2026,Evaluation actual inputs,2024-2025,covariate,flusurv_flu_rate,11,51,2652,700,0,700,1.0

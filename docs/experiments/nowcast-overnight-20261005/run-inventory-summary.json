@@ -1,0 +1,17 @@
+{
+  "recorded_utc": "2026-10-05T11:47:24.681496+00:00",
+  "completed_tasks_by_kind": {
+    "fixed_forecaster_replay": 117,
+    "forecaster_retraining": 65
+  },
+  "unique_recipe_seed_draw_device_by_kind": {
+    "fixed_forecaster_replay": 95,
+    "forecaster_retraining": 65
+  },
+  "completed_replay_nowcaster_refits": 42,
+  "all_task_status_counts": {
+    "complete": 182,
+    "failed": 11
+  },
+  "definition": "One task covers both seasonal folds. Exact recipe/seed/draw/device deduplication does not imply independent scientific comparisons. Component compositions and derived audits are additional reuses, not fits."
+}

@@ -1,0 +1,237 @@
+{
+  "applies_to": "Pinned first-round v1 and admissions/dilution v2 generators; descriptive correction only, no fitted data or scores changed",
+  "conditional_description_fields": "Legacy conditional_model, ridge_penalty, residual_scale and centered-residual descriptions apply only when generator=ridge. Empirical generators use raw joint error windows with no fitted/subtracted conditional mean. Probability-zero controls apply no artificial errors.",
+  "legacy_target_evidence_fraction": "Final-truth support, NOT observed archived/final-pair support",
+  "probability_zero_controls": "Probability zero means no synthetic perturbation, regardless of legacy synthetic_seasons or recent_donor_inputs descriptions; early_actual still supplies real recent-season reports",
+  "empirical_unsupported_cells": "Zero empirical perturbation when donor archived/final pair is absent",
+  "learned_unsupported_cells": "Empirical residual zero when pair absent; conditional mean can extrapolate into those cells, so inherited unsupported_cells=unchanged is not valid for the learned generator",
+  "truth_support": "Final-truth availability is never invented. RSV admission inputs are absent in 2022-23.",
+  "covariate_scope": "C2 six-group covariate set; target support is shared by C1/C2/C3. C3 uses its Kinsa subset; C1 has no covariates.",
+  "support_denominator": "Donor origins x context ages x locations, within each signal; eligible reference weeks must belong to the permitted donor season",
+  "folds": [
+    {
+      "forecast_evaluation_season": "2025-2026",
+      "reporting_error_training_season": "2024-2025",
+      "donor_origins": 34,
+      "signals": [
+        {
+          "kind": "target",
+          "signal": "nhsn_flu_admissions",
+          "final_truth_support_fraction": 0.9982088989441931,
+          "archived_pair_support_fraction": 0.9908559577677225,
+          "archived_pair_fraction_given_final_truth": 0.9926338653319482
+        },
+        {
+          "kind": "target",
+          "signal": "nhsn_covid_admissions",
+          "final_truth_support_fraction": 0.9982088989441931,
+          "archived_pair_support_fraction": 0.9908559577677225,
+          "archived_pair_fraction_given_final_truth": 0.9926338653319482
+        },
+        {
+          "kind": "target",
+          "signal": "nhsn_rsv_admissions",
+          "final_truth_support_fraction": 0.9897247360482655,
+          "archived_pair_support_fraction": 0.9470682503770739,
+          "archived_pair_fraction_given_final_truth": 0.9569006572054481
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_flu_proportion",
+          "final_truth_support_fraction": 1.0,
+          "archived_pair_support_fraction": 0.8934766214177979,
+          "archived_pair_fraction_given_final_truth": 0.8934766214177979
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_covid_proportion",
+          "final_truth_support_fraction": 1.0,
+          "archived_pair_support_fraction": 0.896870286576169,
+          "archived_pair_fraction_given_final_truth": 0.896870286576169
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_rsv_proportion",
+          "final_truth_support_fraction": 1.0,
+          "archived_pair_support_fraction": 0.896870286576169,
+          "archived_pair_fraction_given_final_truth": 0.896870286576169
+        },
+        {
+          "kind": "covariate",
+          "signal": "inpatient_flu",
+          "final_truth_support_fraction": 0.9578148567119156,
+          "archived_pair_support_fraction": 0.5378016591251885,
+          "archived_pair_fraction_given_final_truth": 0.5614881157423355
+        },
+        {
+          "kind": "covariate",
+          "signal": "inpatient_covid",
+          "final_truth_support_fraction": 0.9576263197586727,
+          "archived_pair_support_fraction": 0.4479166666666667,
+          "archived_pair_fraction_given_final_truth": 0.4677363784023232
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_flu_wval_like",
+          "final_truth_support_fraction": 0.8667043740573153,
+          "archived_pair_support_fraction": 0.0,
+          "archived_pair_fraction_given_final_truth": 0.0
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_covid_wval_like",
+          "final_truth_support_fraction": 0.8980957767722474,
+          "archived_pair_support_fraction": 0.0,
+          "archived_pair_fraction_given_final_truth": 0.0
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_rsv_wval_like",
+          "final_truth_support_fraction": 0.8398849924585219,
+          "archived_pair_support_fraction": 0.0,
+          "archived_pair_fraction_given_final_truth": 0.0
+        },
+        {
+          "kind": "covariate",
+          "signal": "kinsa_ili",
+          "final_truth_support_fraction": 1.0,
+          "archived_pair_support_fraction": 0.0,
+          "archived_pair_fraction_given_final_truth": 0.0
+        },
+        {
+          "kind": "covariate",
+          "signal": "ilinet_ili",
+          "final_truth_support_fraction": 0.9166666666666666,
+          "archived_pair_support_fraction": 0.9130373303167421,
+          "archived_pair_fraction_given_final_truth": 0.9960407239819005
+        },
+        {
+          "kind": "covariate",
+          "signal": "clinical_lab_flu_pct_positive",
+          "final_truth_support_fraction": 0.7427413273001509,
+          "archived_pair_support_fraction": 0.7348699095022625,
+          "archived_pair_fraction_given_final_truth": 0.9894022084020815
+        },
+        {
+          "kind": "covariate",
+          "signal": "flusurv_flu_rate",
+          "final_truth_support_fraction": 0.20654223227752638,
+          "archived_pair_support_fraction": 0.0,
+          "archived_pair_fraction_given_final_truth": 0.0
+        }
+      ]
+    },
+    {
+      "forecast_evaluation_season": "2024-2025",
+      "reporting_error_training_season": "2025-2026",
+      "donor_origins": 48,
+      "signals": [
+        {
+          "kind": "target",
+          "signal": "nhsn_flu_admissions",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.875,
+          "archived_pair_fraction_given_final_truth": 0.9882352941176471
+        },
+        {
+          "kind": "target",
+          "signal": "nhsn_covid_admissions",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.875,
+          "archived_pair_fraction_given_final_truth": 0.9882352941176471
+        },
+        {
+          "kind": "target",
+          "signal": "nhsn_rsv_admissions",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.875,
+          "archived_pair_fraction_given_final_truth": 0.9882352941176471
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_flu_proportion",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.8516292735042735,
+          "archived_pair_fraction_given_final_truth": 0.9618401206636501
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_covid_proportion",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.8553685897435898,
+          "archived_pair_fraction_given_final_truth": 0.9660633484162896
+        },
+        {
+          "kind": "target",
+          "signal": "nssp_rsv_proportion",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.8553685897435898,
+          "archived_pair_fraction_given_final_truth": 0.9660633484162896
+        },
+        {
+          "kind": "covariate",
+          "signal": "inpatient_flu",
+          "final_truth_support_fraction": 0.7126068376068376,
+          "archived_pair_support_fraction": 0.5792935363247863,
+          "archived_pair_fraction_given_final_truth": 0.812921664167916
+        },
+        {
+          "kind": "covariate",
+          "signal": "inpatient_covid",
+          "final_truth_support_fraction": 0.6943776709401709,
+          "archived_pair_support_fraction": 0.5240384615384616,
+          "archived_pair_fraction_given_final_truth": 0.7546879507644966
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_flu_wval_like",
+          "final_truth_support_fraction": 0.7944043803418803,
+          "archived_pair_support_fraction": 0.3764022435897436,
+          "archived_pair_fraction_given_final_truth": 0.47381692863747166
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_covid_wval_like",
+          "final_truth_support_fraction": 0.8126335470085471,
+          "archived_pair_support_fraction": 0.3913261217948718,
+          "archived_pair_fraction_given_final_truth": 0.4815529991783073
+        },
+        {
+          "kind": "covariate",
+          "signal": "nwss_rsv_wval_like",
+          "final_truth_support_fraction": 0.7819845085470085,
+          "archived_pair_support_fraction": 0.38214476495726496,
+          "archived_pair_fraction_given_final_truth": 0.4886858509094014
+        },
+        {
+          "kind": "covariate",
+          "signal": "kinsa_ili",
+          "final_truth_support_fraction": 0.8854166666666666,
+          "archived_pair_support_fraction": 0.3368055555555556,
+          "archived_pair_fraction_given_final_truth": 0.3803921568627451
+        },
+        {
+          "kind": "covariate",
+          "signal": "ilinet_ili",
+          "final_truth_support_fraction": 0.6971153846153846,
+          "archived_pair_support_fraction": 0.6495392628205128,
+          "archived_pair_fraction_given_final_truth": 0.9317528735632183
+        },
+        {
+          "kind": "covariate",
+          "signal": "clinical_lab_flu_pct_positive",
+          "final_truth_support_fraction": 0.5608306623931624,
+          "archived_pair_support_fraction": 0.5179620726495726,
+          "archived_pair_fraction_given_final_truth": 0.9235623288486725
+        },
+        {
+          "kind": "covariate",
+          "signal": "flusurv_flu_rate",
+          "final_truth_support_fraction": 0.17057291666666666,
+          "archived_pair_support_fraction": 0.12413194444444445,
+          "archived_pair_fraction_given_final_truth": 0.727735368956743
+        }
+      ]
+    }
+  ]
+}

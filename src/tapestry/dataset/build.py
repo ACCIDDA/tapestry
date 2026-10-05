@@ -62,6 +62,7 @@ SOURCE_GROUPS = tuple(COVARIATE_GROUPS)
 COVARIATE_NAMES = tuple(name for group in COVARIATE_GROUPS.values() for name in group)
 STATE_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n not in NATIONAL_ONLY)
 NATIONAL_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n in NATIONAL_ONLY)
+LAG_ONE_COVARIATES = frozenset({'ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'})
 PANEL_DATASET = 'data/processed/panel.npz'
 SNAPSHOT_DATASETS = sorted({d for spec in TARGET_SOURCES.values() for d in spec[:2] if d} |
                            {spec[0] for spec in DELPHI_COVARIATES.values()} |

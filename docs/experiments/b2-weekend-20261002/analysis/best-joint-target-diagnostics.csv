@@ -1,0 +1,49 @@
+effective_id,actual_treatment,season,geography,target,wis,coverage90
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,US,wk inc covid hosp,1.058420371654093,0.527363184079602
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,US,wk inc flu hosp,0.650465102964221,0.8302469135802468
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,all,wk inc covid hosp,0.8866449576568619,0.7632426104770268
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,all,wk inc flu hosp,0.756960429165924,0.7490559186637619
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,states_dc,wk inc covid hosp,0.843701104157554,0.822212467076383
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2024-2025,states_dc,wk inc flu hosp,0.7835842607163497,0.7287581699346406
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc covid hosp,0.7982078625334524,0.7145593869731801
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc covid prop ed visits,1.6130824361642173,0.45454545454545453
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc flu hosp,0.8380451998674697,0.7738095238095237
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc flu prop ed visits,0.8437705194676334,0.6726190476190476
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc rsv hosp,0.7045213770099936,0.6637931034482759
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,US,wk inc rsv prop ed visits,0.8755751617301334,0.6726726726726726
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc covid hosp,0.9681027793011081,0.7715648711591919
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc covid prop ed visits,1.2876745171608055,0.6107590320739111
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc flu hosp,0.9568494982116733,0.7295518207282914
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc flu prop ed visits,0.9333499288563041,0.6847105508870216
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc rsv hosp,0.8772319057595478,0.7650777552400272
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,all,wk inc rsv prop ed visits,0.81230085904097,0.7690789894815476
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc covid hosp,1.0105765084930218,0.7858162422056947
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc covid prop ed visits,1.2063225374099522,0.6498124264560251
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc flu hosp,0.9865505727977242,0.7184873949579832
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc flu prop ed visits,0.9557447812034714,0.687733426704015
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc rsv hosp,0.9204095379469361,0.7903989181879649
+mlp-pathogen-scheduled_final-8ab90457afe3,Joint recent reconstruction and forecast; local half; pooled eight-horizon loss,2025-2026,states_dc,wk inc rsv prop ed visits,0.7964822833686793,0.7931805686837663
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,US,wk inc covid hosp,1.1751810129477434,0.5746268656716418
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,US,wk inc flu hosp,0.702527858058167,0.8456790123456791
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,all,wk inc covid hosp,1.0071825566506902,0.7405033655253147
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,all,wk inc flu hosp,0.8122631708061664,0.7427983539094652
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,states_dc,wk inc covid hosp,0.9651829425764267,0.781972490488733
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2024-2025,states_dc,wk inc flu hosp,0.8396969989931661,0.7170781893004117
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc covid hosp,0.7494800539628034,0.7164750957854406
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc covid prop ed visits,1.4413742454263032,0.46969696969696967
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc flu hosp,0.8805008002052114,0.8035714285714285
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc flu prop ed visits,0.8778766314871712,0.7767857142857143
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc rsv hosp,0.7922419045740551,0.735632183908046
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,US,wk inc rsv prop ed visits,0.8863773978877864,0.7177177177177176
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc covid hosp,0.9412831666783302,0.7562917887461499
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc covid prop ed visits,1.1153193991495114,0.6120566681812357
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc flu hosp,0.9280995786320944,0.7528711484593839
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc flu prop ed visits,0.9038796006466124,0.7307539682539682
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc rsv hosp,0.9916524108240314,0.7151679062429572
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,all,wk inc rsv prop ed visits,0.8529458327228777,0.7502393615191233
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc covid hosp,0.9892339448572119,0.7662459619863272
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc covid prop ed visits,1.0338056875803134,0.6476465928023022
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc flu hosp,0.9399992732388153,0.7401960784313726
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc flu prop ed visits,0.9103803429364729,0.7192460317460317
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc rsv hosp,1.0415050373865253,0.7100518368266848
+mlp-pathogen-scheduled_final-ee6294dc9974,Unchanged finalized training inputs,2025-2026,states_dc,wk inc rsv prop ed visits,0.8445879414316506,0.7583697724694747

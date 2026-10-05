@@ -2,7 +2,17 @@
 
 Choose a target or covariate and a location below. Select a covariate/target and then a state. The aggregate view can mix statuses across states; hover lists the states in each category.
 
-<iframe class="availability-frame" src="../availability/timeline/evidence.html" title="Interactive availability staircase" loading="lazy"></iframe>
+<div class="staircase-comparison">
+<div><h2>Availability</h2><iframe class="availability-frame" src="../availability/timeline/evidence.html" title="Interactive availability staircase" loading="lazy"></iframe></div>
+<div><h2>Revisions</h2><iframe class="availability-frame" src="../revisions/index.html?view=revisions" title="Separate signed revision explorer" loading="lazy"></iframe></div>
+</div>
+
+The separate revision graph shows one time-series line per Wednesday over a selectable 2–12 trailing weeks, with a dashed reference curve on the right axis. Positive means an upward revision; 0% means unchanged. Select the same signal and state in each panel to compare them. [Revision definitions and assumptions](revision-staircase.md) · [Open both graphs full-size](revisions/comparison.html).
+
+## Nowcaster training and held-out periods
+
+<iframe class="availability-frame" src="../revisions/index.html?view=splits" title="Actual nowcaster training and held-out calendar" loading="lazy"></iframe>
+
 
 [Open the full-size interactive view](availability/timeline/evidence.html). Its return link leads back to this documentation page.
 

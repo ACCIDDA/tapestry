@@ -1,0 +1,146 @@
+[
+  {
+    "run": "40eb78af29b5",
+    "seed": 42,
+    "season": "2024-2025",
+    "max_count_difference": 1.0,
+    "max_ed_difference": 3.91155481338501e-08,
+    "changed_fraction": 0.0034353345574573194
+  },
+  {
+    "run": "40eb78af29b5",
+    "seed": 42,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 4.135072231847836e-08,
+    "changed_fraction": 0.0026765232398593603
+  },
+  {
+    "run": "40eb78af29b5",
+    "seed": 43,
+    "season": "2024-2025",
+    "max_count_difference": 1.0,
+    "max_ed_difference": 4.190951585769653e-08,
+    "changed_fraction": 0.004300828469626423
+  },
+  {
+    "run": "40eb78af29b5",
+    "seed": 43,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 3.91155481338501e-08,
+    "changed_fraction": 0.0023422090729783036
+  },
+  {
+    "run": "40eb78af29b5",
+    "seed": 44,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.004302194679432531
+  },
+  {
+    "run": "40eb78af29b5",
+    "seed": 44,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 3.725290298461914e-08,
+    "changed_fraction": 0.0026041666666666665
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 42,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.00158207095547249
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 42,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.60770320892334e-08,
+    "changed_fraction": 0.0019884658262584684
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 43,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.0015813878505694364
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 43,
+    "season": "2025-2026",
+    "max_count_difference": 1.0,
+    "max_ed_difference": 5.960464477539063e-08,
+    "changed_fraction": 0.003022226867335563
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 44,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.0028068780466478675
+  },
+  {
+    "run": "95a8c6a81971",
+    "seed": 44,
+    "season": "2025-2026",
+    "max_count_difference": 1.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.001337256667524226
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 42,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 2.9802322387695312e-08,
+    "changed_fraction": 0.0023963319999125627
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 42,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 9.313225746154785e-09,
+    "changed_fraction": 0.0015757653717519938
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 43,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 4.0978193283081055e-08,
+    "changed_fraction": 0.0021510973397162654
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 43,
+    "season": "2025-2026",
+    "max_count_difference": 1.0,
+    "max_ed_difference": 3.3527612686157227e-08,
+    "changed_fraction": 0.001753976931652517
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 44,
+    "season": "2024-2025",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 3.3527612686157227e-08,
+    "changed_fraction": 0.00269075021312873
+  },
+  {
+    "run": "73b02ebe83a5",
+    "seed": 44,
+    "season": "2025-2026",
+    "max_count_difference": 0.0,
+    "max_ed_difference": 3.725290298461914e-08,
+    "changed_fraction": 0.00228459180173227
+  }
+]

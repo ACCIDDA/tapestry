@@ -1,0 +1,38 @@
+[
+  {
+    "seed": 42,
+    "season": "2024-2025",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  },
+  {
+    "seed": 42,
+    "season": "2025-2026",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  },
+  {
+    "seed": 43,
+    "season": "2024-2025",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  },
+  {
+    "seed": 43,
+    "season": "2025-2026",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  },
+  {
+    "seed": 44,
+    "season": "2024-2025",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  },
+  {
+    "seed": 44,
+    "season": "2025-2026",
+    "all_arrays_exact": true,
+    "max_quantile_difference": 0.0
+  }
+]

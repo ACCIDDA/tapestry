@@ -148,6 +148,6 @@ def fit_pipeline(scenario, seed, held_out, eval_members, device, output, dataset
     nowcast_fold = cv.fold(panel, ns, held_out)
     nowcast_output = output / 'nowcast'
     nowcast_output.mkdir(exist_ok=True)
-    training.evaluate(nowcaster.to(device), nowcast_fold.score, eval_members, device, nowcast_output)
+    training.evaluate(nowcaster.to(device), nowcast_fold.score, eval_members, device, nowcast_output, panel=panel)
     save(output / 'manifest.json', metadata)
     return output / 'model.pt'

@@ -1,0 +1,18 @@
+--- src/tapestry/experiment/training.py	2026-10-02 10:41:13
++++ /tmp/tapestry-nowcast-overnight-20261005/src/tapestry/experiment/training.py	2026-10-05 01:25:09
+@@ -121,10 +121,13 @@
+     model = Model(horizons=scenario.horizons, scale=loss_scales(unique_truth(train)), **options).to(device)
+     weights_by_channel = LOSS_WEIGHTS[scenario.loss_weights]
+     values, available, known_final, y, y_mask, cal, cov = to_tensors(train, device)
+-    weights = torch.as_tensor(loss_cell_weights(train, weights_by_channel), device=device)[:, :, channels]
++    weights = torch.as_tensor(objective_weights(train, scenario, channels), device=device)
+     if selecting:
+         vvalues, vavailable, vknown_final, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
+-        vweights = torch.as_tensor(loss_cell_weights(validation, weights_by_channel), device=device)[:, :, channels]
++        vweights = torch.as_tensor(objective_weights(validation, scenario, channels), device=device)
++        if scenario.weekend_family == 'joint':
++            # Select epochs on finalized future labels: reconstruction is auxiliary.
++            vweights[:, np.asarray(scenario.horizons) <= 0] = 0
+         if not float(vweights.sum()) > 0:
+             raise ValueError(f'Component {component} (channels {channels}) has no weighted validation labels; '
+                              'early stopping cannot select an epoch')

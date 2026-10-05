@@ -1,0 +1,16 @@
+[
+  {
+    "evaluation_season": "2024-2025",
+    "training_episodes": 155,
+    "synthetic_draws": 310,
+    "target_inputs_labels_and_donor_support_exactly_equal": true,
+    "augmentation_seed": 42
+  },
+  {
+    "evaluation_season": "2025-2026",
+    "training_episodes": 155,
+    "synthetic_draws": 310,
+    "target_inputs_labels_and_donor_support_exactly_equal": true,
+    "augmentation_seed": 42
+  }
+]

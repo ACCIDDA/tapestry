@@ -1,0 +1,47 @@
+{
+  "status": "completed development comparison; prospective validation still needed",
+  "balanced": {
+    "experiment": "context-nowcast-v6-20261001",
+    "scenario": "task=finalize,finalization_cv=season,finalization_model=context_residual,finalization_gap=proxy,finalization_scope=targets,finalization_features=age,finalization_gate=admissions,finalization_strength=0.25,finalization_penalty=1000.0,finalization_statistic=median,finalization_quantize=1,finalization_weeks=8,input_mode=vintaged,evaluation_seasons=recent_two",
+    "run_id": "mlp-all-vintaged-4498052c695b",
+    "features": "age",
+    "gate": "admissions",
+    "strength": 0.25,
+    "model": "context_residual",
+    "growth": 0.2,
+    "penalty": 1000.0,
+    "growth_weight": 1.0,
+    "residual_halflife": 26.0,
+    "criterion": "Fixed shrinkage tradeoff; not the point-score winner",
+    "uncertainty_strength": 0.5,
+    "history_members": 2048
+  },
+  "best_point": {
+    "experiment": "context-nowcast-v5-20261001",
+    "scenario": "task=finalize,finalization_cv=season,finalization_model=context_residual,finalization_gap=proxy,finalization_scope=targets,finalization_features=age,finalization_gate=admissions,finalization_penalty=1000.0,finalization_statistic=median,finalization_quantize=1,finalization_weeks=8,input_mode=vintaged,evaluation_seasons=recent_two",
+    "run_id": "mlp-all-vintaged-eb672d2cc4de",
+    "features": "age",
+    "gate": "admissions",
+    "model": "context_residual",
+    "growth": 0.2,
+    "penalty": 1000.0,
+    "growth_weight": 1.0,
+    "residual_halflife": 26.0,
+    "criterion": "2025-2026 complete history: 0.8 states + 0.2 US trajectory",
+    "score": 0.034383982712307644,
+    "strength": 1.0
+  },
+  "c1_only": {
+    "point_model": "adaptive_chain",
+    "uncertainty_strength": 0.5
+  },
+  "confirmed_forecast_experiment": "context-replay-confirm-20261002",
+  "dataset_sha256": "54d0e3306a76ded067c6d1b65493d50b1c19bde2e66ab80a438674ec37e6c80f",
+  "primary_scores": {
+    "season": "2025-2026",
+    "balanced_trajectory_improvement_pct": 1.4406,
+    "confirmed_complete_history_wis_change_pct": -0.412559,
+    "confirmed_uninterrupted_wis_change_pct": -0.272265
+  },
+  "uncertainty_calibrated": false
+}

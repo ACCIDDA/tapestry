@@ -1,0 +1,14 @@
+{
+  "experiment": "context-nowcast-v5-20261001",
+  "scenario": "task=finalize,finalization_cv=season,finalization_model=context_residual,finalization_gap=proxy,finalization_scope=targets,finalization_features=age,finalization_gate=admissions,finalization_penalty=1000.0,finalization_statistic=median,finalization_quantize=1,finalization_weeks=8,input_mode=vintaged,evaluation_seasons=recent_two",
+  "run_id": "mlp-all-vintaged-eb672d2cc4de",
+  "features": "age",
+  "gate": "admissions",
+  "model": "context_residual",
+  "growth": 0.2,
+  "penalty": 1000.0,
+  "growth_weight": 1.0,
+  "residual_halflife": 26.0,
+  "criterion": "2025-2026 complete history: 0.8 states + 0.2 US trajectory",
+  "score": 0.034383982712307644
+}
