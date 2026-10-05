@@ -358,7 +358,8 @@ def main(argv=None):
         p.add_argument('--root', default='data/experiments')
         if name == 'plan':
             p.add_argument('-s', '--scenario', nargs='+', required=True, help='Full scenario strings to plan')
-            p.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
+            p.add_argument('--seeds', nargs='+', type=int, default=[42, 43],
+                           help='Two seeds screen (default, 2026-10-05); confirm finalists with more, e.g. 42 43 44 45 46')
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
             p.add_argument('--dataset', default=PANEL_DATASET)
             p.add_argument('--frozen', default=FROZEN)

@@ -257,6 +257,9 @@ def for_hub(panel, hub):
     Only the rows `hub_<hub>_issuances` differ from the FluSight deadline; they are
     swapped in (already masked like the main arrays by `cv.masked`).
     `forecast_cutoff_utc` records each issuance's deadline for that Hub."""
+    if 'hub_names' not in panel:
+        raise ValueError('This panel predates per-Hub deadlines (2026-10-05); rebuild it with '
+                         '`python -m tapestry.dataset.build build` before fitting or evaluating')
     hubs = [str(h) for h in panel['hub_names']]
     out = dict(panel, forecast_cutoff_utc=panel['issuance_cutoffs_utc'][hubs.index(hub)])
     if hub == HUBS[0]:

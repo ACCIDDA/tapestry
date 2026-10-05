@@ -54,11 +54,35 @@ Example standalone forecasting experiment, using a new name:
 ```bash
 .venv/bin/python -m tapestry.experiment.planner plan -e my-experiment \
     -s 'task=forecast,input_mode=scheduled_final,evaluation_seasons=recent_two' \
-    --seeds 42 43 44 --device cuda
+    --seeds 42 43 --device cuda
 sbatch --job-name=my-experiment --array=0-3 scripts/jlessler.sbatch my-experiment
 .venv/bin/python -m tapestry.experiment.planner status -e my-experiment
 .venv/bin/python -m tapestry.experiment.planner rank -e my-experiment
 ```
+
+**Seeds.** Two seeds (42, 43; the `plan` default since 5 October 2026) screen
+configurations; confirm the 3–5 finalists in a new experiment with five seeds
+(`--seeds 42 43 44 45 46`) before choosing a model. In the B2 T-0 sweep (309
+configurations, three seeds), one seed's per-configuration score varied by about
+0.032 (median seed SD of the combined Hub-relative WIS). Two seeds ranked
+configurations like three (Spearman 0.95), always picked a configuration within
+0.008 of the three-seed best, and gave the right direction for 98% of matched
+effects larger than 0.01. One seed could pick the 99th configuration. Neither two
+nor three seeds separates configurations within about 0.01.
+
+**Removed, 5 October 2026.** The experiment-specific forecast planners and report
+jobs that used their own evaluation inputs or sample counts were deleted:
+`plan_b2_replay.py`, `plan_b2_augmentation.py`, `plan_b2_augmentation_controls.py`,
+`plan_b2_reporting_values_only.py`, `plan_b2_weekend.py`, `plan_c1_local_errors.py`,
+`plan_context_replay.py`, `report_b2_weekend.py` and their `*_report.sbatch` /
+`context_report.sbatch` / `b2_reporting_controls_followup.sbatch` jobs. Their
+experiment pages keep the commands as a historical record; recover the scripts from
+Git history (commit `c03fcae` or earlier) only to reproduce those old results. New
+forecast experiments plan with `planner plan` and report with `planner rank`.
+
+**Panel.** Plan only against a panel built after 5 October 2026 (per-Hub deadlines);
+older panels are refused at fitting. Rebuild with
+`.venv/bin/python -m tapestry.dataset.build build` and use a new experiment name.
 
 For local execution, plan with `--device cpu` (or `mps`) and use
 `.venv/bin/python -m tapestry.experiment.planner run -e my-experiment` as the launch.
