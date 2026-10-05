@@ -15,6 +15,33 @@
 
 T is the latest completed Saturday in the forecast context. These are human
 assumptions for the [B-2 training protocol](../experiments/b-2-t0/index.md#protocol), not measured release dates.
+The same schedule governs the [standard evaluation](../workflow.md#standard-evaluation).
+ED (NSSP) is assumed T-0 in **every** season because CDC publishes it in time for
+the Wednesday deadline since 2025–26 and will next season. In 2024–25 the archived
+NSSP data first appeared on the Friday after each week (one week late), so 2024–25
+newest-week ED inputs are mostly finalized values, starred in reports.
+
+## Deadlines
+
+Decided 5 October 2026: **each Hub's own deadline**, never a common earliest one. The
+panel reads archived reports at Wednesday 23:00 America/New_York (before: 23:59 UTC,
+i.e. 18:59/19:59 Eastern). A release labelled only by a date counts at the end of that
+UTC day; Git commits keep their exact time. Holiday extensions, from each Hub's
+`hub-config/tasks.json` / README history (`dataset/build.py` `HOLIDAY_DEADLINES`):
+
+| Hub reference date (Saturday) | Nominal Wednesday | FluSight | COVID Hub | RSV Hub |
+|---|---|---|---|---|
+| 2024-12-28 | 2024-12-25 | Thu 2024-12-26 | Thu 2024-12-26 | Wed 2024-12-25 (no RSV Hub before 2025-08) |
+| 2025-01-04 | 2025-01-01 | Thu 2025-01-02 | Thu 2025-01-02 | Wed 2025-01-01 (no RSV Hub) |
+| 2025-12-27 | 2025-12-24 | Tue 2025-12-30 | Mon 2025-12-29 | Mon 2025-12-29 |
+| 2026-01-03 | 2025-12-31 | Mon 2026-01-05 | Sun 2026-01-04 | Sun 2026-01-04 |
+
+The Wednesday and its context Saturday stay fixed. The panel's main as-of arrays use
+the FluSight deadline (flu forecasts and all training episodes); the rows where the
+COVID or RSV deadline differs are stored separately and used for those pathogens'
+forecasts. No extension was found for the 2025-01-22 round (newest week 2025-01-18),
+whose admissions were not archived by the deadline: those inputs are finalized values
+and starred.
 
 Start here for **what is in the dataset, when it was available, and how much it changed**. Coverage of finalized history and evidence of historical availability are different questions; the pages below keep them separate.
 

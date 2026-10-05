@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from tapestry.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
-                                    wednesdays)
+                                    wednesdays, deadline, utc, HUBS)
 
 LOCATIONS = ('NC', 'US')
 
@@ -37,13 +37,21 @@ def synthetic_panel(n_weeks=3 * 52 + 10):
     for w in range(0, len(issuances), 3):  # some latest weeks not yet reported: fall back to truth, known-final
         if visible[w].any():
             asof_targets[w, visible[w].sum() - 1] = np.nan
+    # Other Hubs' own-deadline rows (holiday extensions differ): as-of = truth + .25 there.
+    hubs = {}
+    for hub in HUBS[1:]:
+        rows = np.array([w for w, i in enumerate(issuances) if deadline(i, hub) != deadline(i, HUBS[0])], int)
+        hubs[f'hub_{hub}_issuances'] = rows
+        for name, truth in (('targets', targets), ('covariates', covariates), ('covariates_national', national)):
+            hubs[f'hub_{hub}_asof_{name}'] = (asof(truth)[rows] - .25).astype(np.float32)
     return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(LOCATIONS),
                 target_names=np.array(CHANNELS), targets=targets,
                 covariate_names=np.array(STATE_COVARIATE_NAMES), covariates=covariates,
                 covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
                 issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
                 asof_covariates=asof(covariates), asof_covariates_national=asof(national),
-                metadata=json.dumps(dict(truth_day=dates[-1])))
+                hub_names=np.array(HUBS), issuance_cutoffs_utc=np.array([[utc(deadline(i, h)) for i in issuances] for h in HUBS]),
+                **hubs, metadata=json.dumps(dict(truth_day=dates[-1])))
 
 
 @pytest.fixture

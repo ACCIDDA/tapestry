@@ -19,13 +19,17 @@
   validation mask (`inner=False`).
 - Score episodes come from the unmasked panel with origins in the held-out season;
   earlier weeks are allowed as context, only labels inside the held-out season count.
+  Forecasts are always scored on Wednesday reports (`input_mode='reported'`,
+  2026-10-05 standard evaluation), whatever the training inputs, with the inputs
+  visible at the forecast Hub's own deadline (`score_episodes(..., hub)`).
+  Nowcast and pipeline tasks keep their own dated inputs.
 """
 from dataclasses import dataclass
 from datetime import date, timedelta
 
 import numpy as np
 
-from .build import covariate_names_for
+from .build import covariate_names_for, for_hub, HUBS
 from .episodes import episodes, restrict_labels
 
 SEASONS = ('2023-2024', '2024-2025', '2025-2026')
@@ -53,7 +57,8 @@ def masked(panel, keep):
     out = dict(panel)
     for name in ('targets', 'covariates', 'covariates_national'):
         out[name] = np.where(keep.reshape(-1, *(1,) * (panel[name].ndim - 1)), panel[name], np.nan).astype(np.float32)
-    for name in ('asof_targets', 'asof_covariates', 'asof_covariates_national'):
+    asof = [name for name in panel if name.startswith(('asof_', 'hub_')) and 'asof_' in name]
+    for name in asof:  # the main as-of arrays and each Hub's own-deadline rows (dataset.build.for_hub)
         shape = (1, -1, *(1,) * (panel[name].ndim - 2))
         out[name] = np.where(keep.reshape(shape), panel[name], np.nan).astype(np.float32)
     return out
@@ -95,8 +100,46 @@ class Fold:
     info: dict
 
 
-def fold(panel, scenario, held_out, inner=False):
-    """Episodes for one leave-one-season-out fold; `inner=True` gives the early-stopping split."""
+def score_inputs(scenario):
+    """Standard evaluation inputs: Wednesday reports for forecasts; nowcasts keep their own."""
+    return 'reported' if scenario.task == 'forecast' else scenario.input_mode
+
+
+def score_episodes(panel, scenario, held_out, hub=HUBS[0], legacy_inputs=False):
+    """Held-out-season score episodes on inputs visible at `hub`'s deadlines.
+
+    `legacy_inputs=True` cuts them with the scenario's own `input_mode` instead; only
+    fixed-checkpoint replay (`experiment.replay`) uses it to reproduce old B2 inputs."""
+    mode = scenario.input_mode if legacy_inputs else score_inputs(scenario)
+    if scenario.task == 'pipeline':
+        scenario = scenario.episode_scenario()
+        mode = scenario.input_mode
+    dates = np.array([str(d) for d in panel['dates']])
+    season_dates = set(dates[week_roles(dates, scenario, held_out) == 'score'])
+    source = for_hub(panel, hub) if mode == 'reported' else panel
+    score = episodes(source, scenario.lookback, mode, covariate_names_for(scenario.covariate_set),
+                     scenario.lookback if scenario.task != 'forecast' else scenario.asof_weeks,
+                     horizons=scenario.horizons)
+    score = [e for e in score if e['context_dates'][-1] in season_dates]
+    score = [e for e in (restrict_labels(e, season_dates) for e in score) if e is not None]
+    if not score:
+        raise ValueError(f'No score episodes for held-out {held_out}')
+    if mode == 'reported' and scenario.input_mode == 'vintaged':
+        # The known-final flag keeps the meaning it had in training (2026-10-05): vintaged
+        # training marks its newest `asof_weeks` weeks non-final and older weeks final.
+        # Other training modes marked every available cell final, as reported episodes do.
+        recent = min(scenario.asof_weeks, scenario.lookback)
+        for e in score:
+            if recent:
+                e['known_final'][-recent:] = False
+    return score
+
+
+def fold(panel, scenario, held_out, inner=False, legacy_inputs=False):
+    """Episodes for one leave-one-season-out fold; `inner=True` gives the early-stopping split.
+
+    `score` holds the FluSight-deadline score episodes; other Hubs come from `score_episodes`."""
+    original = scenario
     if scenario.task == 'pipeline':
         scenario = scenario.episode_scenario()
     if held_out not in scenario.scored_seasons:
@@ -135,12 +178,9 @@ def fold(panel, scenario, held_out, inner=False):
         if not validation:
             raise ValueError(f'No validation episodes for held-out {held_out}')
     else:
-        season_dates = set(dates[roles == 'score'])
-        score = [e for e in cut(panel) if e['context_dates'][-1] in season_dates]
-        score = [e for e in (restrict_labels(e, season_dates) for e in score) if e is not None]
-        info.update(score_episodes=len(score), first_score_origin=score[0]['context_dates'][-1] if score else None)
-        if not score:
-            raise ValueError(f'No score episodes for held-out {held_out}')
+        score = score_episodes(panel, original, held_out, HUBS[0], legacy_inputs)
+        info.update(score_episodes=len(score), score_inputs='scenario' if legacy_inputs else score_inputs(original),
+                    first_score_origin=score[0]['context_dates'][-1])
     info['train_episodes'] = len(train)
     if not train:
         raise ValueError(f'No training episodes for held-out {held_out}')

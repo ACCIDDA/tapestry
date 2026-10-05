@@ -32,6 +32,10 @@ from tapestry.model.scenario import Scenario
 from .fitting import fit, LOCATIONS
 from .provenance import save, now, environment, git_state, sha256
 
+# Forecast samples per episode for every reported score (user decision 2026-10-05), so
+# extreme quantiles have the same sampling noise in every experiment.
+EVAL_MEMBERS = 512
+
 JOB_FIELDS = ['task', 'name', 'scenario', 'seeds']
 FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 
@@ -297,6 +301,15 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
             for row in sorted(done, key=lambda r: r['attempt'])]
     ranking = rank_runs(runs, destination, us_weight, admissions_weight, ed_weight)
     print(ranking.head(20).to_string(index=False), flush=True)
+    standard_runs = [run for run in runs if Scenario.from_string(run['config_id']).task == 'forecast']
+    if standard_runs and all(standard_inputs(run['path']) for run in standard_runs):
+        from tapestry.evaluation.standard import score as score_standard
+        settings = json.loads((folder / 'experiment.json').read_text())
+        score_standard(standard_runs, settings['frozen'], destination)
+        print(f'Standard evaluation tables written to {destination}', flush=True)
+    else:
+        print('Standard evaluation skipped: some runs were not scored on standard reported inputs '
+              '(fitted before 2026-10-05 or replaying old inputs); refit them.', flush=True)
     from tapestry.evaluation.effects import write_effects
     write_effects(destination)
     if not make_plots:
@@ -315,6 +328,19 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
     return destination
 
 
+def standard_inputs(path):
+    """True when every season of a run was scored on standard reported inputs at 512 samples."""
+    manifest = json.loads((Path(path) / 'manifest.json').read_text())
+    for season in manifest['folds']:
+        with np.load(Path(path) / f'eval_{season}' / 'forecasts.npz', allow_pickle=False) as data:
+            if 'filled_covid' not in data.files or 'forecast_cutoff_utc_covid' not in data.files:
+                return False
+        fold = json.loads((Path(path) / f'eval_{season}' / 'manifest.json').read_text())
+        if fold.get('eval_members') != EVAL_MEMBERS:
+            return False
+    return True
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -322,7 +348,7 @@ def main(argv=None):
     fit_parser.add_argument('--scenario', required=True)
     fit_parser.add_argument('--seed', type=int, default=42)
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
-    fit_parser.add_argument('--eval-members', type=int, default=256)
+    fit_parser.add_argument('--eval-members', type=int, default=EVAL_MEMBERS)
     fit_parser.add_argument('--dataset', default=PANEL_DATASET)
     fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
@@ -333,7 +359,6 @@ def main(argv=None):
         if name == 'plan':
             p.add_argument('-s', '--scenario', nargs='+', required=True, help='Full scenario strings to plan')
             p.add_argument('--seeds', nargs='+', type=int, default=[42, 43, 44])
-            p.add_argument('--eval-members', type=int, default=256)
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
             p.add_argument('--dataset', default=PANEL_DATASET)
             p.add_argument('--frozen', default=FROZEN)
@@ -374,7 +399,7 @@ def main(argv=None):
     folder = Path(args.root) / args.experiment
     if args.command == 'plan':
         scenarios = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}
-        settings = dict(device=args.device, eval_members=args.eval_members, dataset=args.dataset,
+        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset,
                         frozen=args.frozen)
         settings.update(pinned_inputs(settings))
         jobs = plan(folder, scenarios, args.seeds, settings)

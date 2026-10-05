@@ -1,4 +1,8 @@
-"""Fold-purged reporting augmentation and real-vintage evaluation for B2 retraining."""
+"""Fold-purged reporting augmentation for B2 retraining.
+
+Evaluation uses the standard reported inputs (`cv.score_episodes`); with
+`reporting_augmentation='nowcast'` the newest eight target weeks are additionally
+replaced by the causal nowcasts, computed from FluSight-deadline reports."""
 from pathlib import Path
 import fcntl
 import json
@@ -9,7 +13,7 @@ from tapestry.dataset import cv
 from tapestry.dataset.build import covariate_names_for
 from tapestry.dataset.reporting_error import ReportingErrors
 from .provenance import sha256
-from .replay import cached_nowcasts, replay_episode, selected_nowcasts
+from .replay import cached_nowcasts, selected_nowcasts
 
 
 def donor_corrections(panel, scenario, held_out, keep, folder, dataset_hash):
@@ -45,10 +49,32 @@ def prepare(panel, scenario, held_out, full, inner, seed, folder, dataset_hash):
     if inner:
         # One fixed random validation intervention: identical at every epoch and arm.
         inner.validation = selection.batch(inner.validation, np.random.default_rng(seed + 800000))
-    corrections = cached_nowcasts(panel, folder, dataset_hash) if scenario.reporting_augmentation == 'nowcast' else None
-    full.score = [replay_episode(e, panel, covariate_names_for(scenario.covariate_set),
-                                scenario.reporting_augmentation, corrections, 'off') for e in full.score]
+    transform = None
+    if scenario.reporting_augmentation == 'nowcast':
+        corrections = cached_nowcasts(panel, folder, dataset_hash)
+        transform = lambda eps: [corrected(e, panel, corrections) for e in eps]
     metadata = dict(full=outer.metadata, selection=selection.metadata if selection else None,
                     validation='fixed donor draw from inner-fitting-only library',
-                    scoring='real held-out Wednesday vintages; final labels and frozen support unchanged')
-    return outer, selection, metadata
+                    scoring='standard reported Wednesday inputs' + (
+                        '; newest eight target weeks replaced by causal nowcasts' if transform else ''))
+    return outer, selection, metadata, transform
+
+
+def corrected(episode, panel, corrections, weeks=8):
+    """Reported episode with its newest `weeks` target weeks replaced by finite causal nowcasts."""
+    issues = panel['issuance_dates'].astype(str)
+    issue = str(np.datetime64(episode['context_dates'][-1]) + np.timedelta64(4, 'D'))
+    w = np.searchsorted(issues, issue)
+    if w >= len(issues) or issues[w] != issue:
+        raise ValueError(f'No nowcast issuance {issue}')
+    recent = min(weeks, len(episode['values']))
+    nowcast = np.moveaxis(corrections[w, np.arange(recent - 1, -1, -1)], -1, -2)  # age -> calendar order, [week, C, L]
+    values, available = episode['values'].copy(), episode['available'].copy()
+    use = np.isfinite(nowcast)
+    values[-recent:] = np.where(use, nowcast, values[-recent:])
+    available[-recent:] |= use
+    out = dict(episode, values=values, available=available, known_final=available.copy())
+    if 'filled' in episode:  # a nowcast replaced the value: it is no longer a supplied finalized value
+        out['filled'] = episode['filled'].copy()
+        out['filled'][-recent:] &= ~use
+    return out

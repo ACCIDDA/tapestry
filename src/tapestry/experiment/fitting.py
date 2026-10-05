@@ -7,7 +7,7 @@ from tapestry.dataset import cv
 from tapestry.dataset.build import load as load_dataset, PANEL_DATASET
 from tapestry.model.network import checkpoint
 from tapestry.model.objective import LOSS_DEFINITION, US_WEIGHT
-from .training import populations, fit_models, evaluate, GROUPS
+from .training import populations, fit_models, evaluate, evaluate_hubs, GROUPS
 from .provenance import save, environment, sha256
 from .two_stage import fit_pipeline
 
@@ -34,10 +34,10 @@ def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=P
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     groups = GROUPS[scenario.fit_partition]
-    augmentation = selection_augmentation = augmentation_metadata = None
+    augmentation = selection_augmentation = augmentation_metadata = score_transform = None
     if scenario.reporting_augmentation != 'none':
         from .augmentation import prepare
-        augmentation, selection_augmentation, augmentation_metadata = prepare(
+        augmentation, selection_augmentation, augmentation_metadata, score_transform = prepare(
             panel, scenario, held_out_season, full, inner, seed, output.parents[3], sha256(dataset))
     model, records = fit_models(inner.train if inner else full.train, inner.validation if inner else None,
                                full.train, scenario, seed, device, pop,
@@ -57,8 +57,12 @@ def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=P
     torch.save(checkpoint(model, metadata), output / 'model.pt')
     save(output / 'manifest.json', metadata)
     model.to(device)
-    torch.manual_seed(seed + 1000)
-    scores = evaluate(model, full.score, eval_members, device, output, panel=panel)
+    if scenario.task == 'forecast':
+        scores = evaluate_hubs(model, panel, scenario, held_out_season, seed, eval_members, device, output,
+                               prepare=score_transform, first=full.score)
+    else:
+        torch.manual_seed(seed + 1000)
+        scores = evaluate(model, full.score, eval_members, device, output, panel=panel)
     metadata['evaluation_scores'] = len(scores)
     save(output / 'manifest.json', metadata)
     return output / 'model.pt'

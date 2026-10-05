@@ -191,6 +191,23 @@ The frozen comparison support is incomplete:
 | 2024–25 | Influenza and COVID-19 admissions |
 | 2025–26 | All six targets |
 
+Since 5 October 2026 the evaluation inputs, deadlines, sample count and the additional
+Hub-pairwise, log-scale and raw-WIS tables are fixed for every experiment; see
+[Standard evaluation](workflow.md#standard-evaluation).
+
+**Decision log, 2026-10-05 — standard evaluation.** (1) Forecasts are always scored on
+Wednesday reports with finalized values only where the schedule assumes availability
+and nothing was archived, starred in reports; this replaces each experiment's own
+replay/proxy input builder (the weekend `scheduled_reports` was removed). (2) Each
+pathogen's inputs are read at its own Hub's deadline, with holiday extensions from Git
+history; a common earliest deadline was rejected by the user. Deadline time moved from
+23:59 UTC to 23:00 Eastern, and date-only releases count at the end of their day.
+(3) ED is T-0 in every season, matching next season. (4) 512 samples everywhere.
+(5) Hub tables add the CDC pairwise ranking (with Google) and log(x + 1) scores for
+admissions; ED is never transformed; non-Hub targets get raw WIS. Earlier results used
+256 or 2,048 samples, 23:59 UTC Wednesday cutoffs and experiment-specific inputs; they
+must be refitted before comparison with standard results.
+
 Each fold trains on permitted non-held-out seasons. The available training calendar
 and scored seasons are recorded in the experiment. Finalized and scheduled-final
 inputs define retrospective benchmarks; fully as-of inputs define a different

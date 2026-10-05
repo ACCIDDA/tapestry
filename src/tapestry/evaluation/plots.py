@@ -48,6 +48,17 @@ each configuration's lowest seed (seeds are not pooled); heatmaps average over s
    seasons with support. One log colour scale centred at 1, shared by every panel of
    every heatmap file of the call; grey = no frozen support.
 
+5. `standard-ranking-<season>.png` (standard evaluation, `evaluation/standard.py`): per
+   Hub target (rows) and scale (columns: natural; log(count + 1) for admissions only),
+   the CDC-style pairwise relative WIS of every qualifying Hub model (grey), Google's
+   models (orange) and each selected configuration (blue, seed mean; each seed joined
+   the Hub pool alone). Hub models' values are means over those pools. Lower is
+   better; dashed line = Hub baseline (1).
+
+Every figure in the report carries the standard footnote (★) giving the share of
+inputs supplied as finalized values because no report was archived by the Hub
+deadline (`standard.star_note`).
+
 `write_report` writes `docs/experiments/<experiment>/index.md`: summary line, figures (CV
 layout, fans, dot plot, heatmaps; base64-embedded; configurations named `C<k>` +
 scenario string, as in the appendix), the preserved write-up, the ranking table (with
@@ -330,9 +341,52 @@ def plot_experiment(folder, ranking, configs=None, dates=None):
     scenarios = [Scenario.from_string(c) for c in labels]
     seasons = pd.read_csv(ranking / 'season_scores.csv', keep_default_na=False, na_values=[''])
     seasons['config_id'] = seasons.config_id.fillna('')
+    standard = []
+    if (ranking / 'standard_pairwise.csv').exists():
+        standard = standard_ranking(pd.read_csv(ranking / 'standard_pairwise.csv', keep_default_na=False,
+                                                na_values=['']).fillna({'config_id': ''}), configs, labels, output)
     return [*cv_layout(panel, scenarios, labels, output),
             *fans(panel, runs, configs, labels, settings['frozen'], dates, output),
-            *dotplot(seasons, weights, labels, output), *heatmaps(runs, configs, labels, output)]
+            *dotplot(seasons, weights, labels, output), *heatmaps(runs, configs, labels, output), *standard]
+
+
+def standard_ranking(pairwise, configs, labels, output):
+    """Figure 5: CDC-style pairwise relative WIS among Hub models, ours and Google highlighted."""
+    paths = []
+    ours = pairwise[pairwise.ours & pairwise.config_id.isin(configs)]
+    hub = pairwise[~pairwise.ours & pairwise.config_id.isin(configs)]
+    for held_out, part in hub.groupby('season'):
+        targets = sorted(part.target.unique(), key=list(CHANNEL).index)
+        fig, axes = plt.subplots(len(targets), 2, figsize=(11, 3.2 * len(targets)), squeeze=False)
+        for i, target in enumerate(targets):
+            for j, scale in enumerate(('natural', 'log')):
+                ax = axes[i, j]
+                rows = part[(part.target == target) & (part.scale == scale)]
+                if rows.empty:
+                    ax.axis('off')
+                    ax.set_title(f'{target.removeprefix("wk inc ")}: ED is not transformed', fontsize=8)
+                    continue
+                values = rows.dropna(subset=['relative_wis']).groupby('model').relative_wis.mean()
+                mine = ours[(ours.season == held_out) & (ours.target == target) & (ours.scale == scale)]
+                for config in configs:
+                    seed_values = mine[mine.config_id == config].relative_wis.dropna()
+                    if len(seed_values):
+                        values[labels[config]] = seed_values.mean()
+                values = values.sort_values()
+                colors = [MODEL_COLOR if name in labels.values() else '#e69f00' if name.startswith('Google_')
+                          else '#bbbbbb' for name in values.index]
+                ax.barh(range(len(values)), values.to_numpy(), color=colors)
+                ax.set_yticks(range(len(values)), values.index, fontsize=5)
+                ax.invert_yaxis()
+                ax.axvline(1, color='k', ls='--', lw=.7)
+                ax.set_title(f'{target.removeprefix("wk inc ")}, {scale} scale', fontsize=8)
+                ax.tick_params(axis='x', labelsize=7)
+        fig.suptitle(f'{held_out}: relative WIS among Hub models (CDC pairwise method; states/DC; '
+                     'lower is better, 1 = Hub baseline)\nblue = our configurations (seed mean), '
+                     'orange = Google, grey = other Hub models', fontsize=9)
+        fig.tight_layout()
+        paths.append(_save(fig, output / f'standard-ranking-{held_out}.png'))
+    return paths
 
 
 def write_scenario_key(path):
@@ -365,7 +419,8 @@ WRITEUP_START, WRITEUP_END = '<!-- write-up: kept across regenerations -->', '<!
 FIGURE_ORDER = (('cv-layout-*.png', 'Cross-validation layout'),
                 *((f'fans-{l}-{k}.png', f'Forecast fans, {l}, {u}') for l in FAN_LOCATIONS for k, (u, _) in KINDS.items()),
                 ('dotplot.png', 'Configurations and hub ensemble ranked, per-seed metrics'),
-                ('heatmap-*.png', 'WIS ratio by location, season and target'))
+                ('heatmap-*.png', 'WIS ratio by location, season and target'),
+                ('standard-ranking-*.png', 'Standard evaluation: ranking among Hub models'))
 
 
 def write_report(folder, ranking, root='docs/experiments'):
@@ -426,6 +481,24 @@ def write_report(folder, ranking, root='docs/experiments'):
             lines.append(f'| {row.factor} | `{row.reference}` → `{row.value}` | {row.contexts} | {row.seeds} | '
                          f'{row.mean_delta:+.4f} | {interval} | {row.improved_contexts}/{row.contexts} |')
         lines.append('')
+    standard_note = ''
+    if (ranking / 'standard_pairwise.csv').exists():
+        from tapestry.evaluation.standard import summary_tables, star_note
+        read = lambda name: pd.read_csv(ranking / f'standard_{name}.csv', keep_default_na=False,
+                                        na_values=['']).fillna({'config_id': ''})
+        written = {name: read(name) for name in ('hub_relative', 'pairwise', 'raw_wis', 'input_fills')}
+        top = {config: labels[config] for config in list(labels)[:3]}
+        standard_note = star_note(written['input_fills'])
+        for name in ('hub_relative', 'pairwise', 'raw_wis', 'input_fills'):
+            (page_dir / f'standard_{name}.csv').write_bytes((ranking / f'standard_{name}.csv').read_bytes())
+        lines += ['## Standard evaluation', '',
+                  'Every forecast is scored on Wednesday reports at its own Hub\'s deadline (holiday '
+                  'extensions included), with the documented availability schedule (all six targets T-0, ED '
+                  'included) and 512 forecast samples. Tables show C1-C3; all configurations are in '
+                  '[Hub-relative](standard_hub_relative.csv) · [pairwise ranking](standard_pairwise.csv) · '
+                  '[raw WIS](standard_raw_wis.csv) · [input fills](standard_input_fills.csv).', '',
+                  standard_note, '', summary_tables(written, top), '']
+    (page_dir / 'standard-note.txt').write_text(standard_note)
     lines += ['## Write-up', '', WRITEUP_START, writeup, WRITEUP_END, '', '## Ranking', '']
     targets = [c.removesuffix('_mean') for c in ranked.columns
                if c.endswith('_mean') and c.startswith('wk inc')]

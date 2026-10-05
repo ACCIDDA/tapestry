@@ -3,7 +3,6 @@ from dataclasses import replace
 import numpy as np
 from tapestry.model.scenario import Scenario
 from tapestry.experiment.training import objective_weights
-from tapestry.experiment.weekend import scheduled_reports
 from tapestry.model.revision_regression import RevisionRegression
 
 
@@ -25,19 +24,6 @@ def test_joint_weights_keep_forecast_objective():
     w=objective_weights([episode()],s,list(range(6)))
     np.testing.assert_allclose(w[:,:4].sum(),.25,rtol=1e-6)
     np.testing.assert_allclose(w[:,4:].sum(),1.,rtol=1e-6)
-
-
-def test_reporting_schedule_never_changes_labels_or_availability():
-    e=episode()
-    reports=np.moveaxis(e['values']*.8,-1,-2)[None]
-    reports[0,-1,0,0]=np.nan
-    panel=dict(dates=np.array(e['context_dates']),issuance_dates=np.array(['2025-12-24']),asof_targets=reports)
-    got,proxies=scheduled_reports(e,panel,[])
-    assert proxies==1
-    np.testing.assert_array_equal(got['available'],e['available'])
-    np.testing.assert_array_equal(got['target_values'],e['target_values'])
-    assert got['values'][-1,0,0]==e['values'][-1,0,0]
-    np.testing.assert_allclose(got['values'][-2],.8*e['values'][-2])
 
 
 def test_nowcast_features_do_not_read_final_labels():

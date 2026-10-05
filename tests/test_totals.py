@@ -96,3 +96,33 @@ def test_rank_refuses_missing_location_in_one_run(tmp_path):
         runs.append(dict(config_id=str(i), seed=42, path=path))
     with pytest.raises(ValueError, match='different frozen'):
         rank(runs, tmp_path / 'ranking')
+
+
+def test_pairwise_relative_wis_uses_shared_tasks_and_baseline():
+    """CDC method: mean WIS ratios on shared tasks, geometric mean over all models, over the baseline."""
+    import pandas as pd
+    from tapestry.evaluation.standard import relative_wis
+    scores = pd.DataFrame({'A': [1., 2., 3.], 'B': [2., 4., np.nan], 'base': [4., 4., 4.]})
+    got = relative_wis(scores, 'base')
+    ab = 1.5 / 3  # A vs B on the two shared tasks
+    theta = {'A': (1 * ab * (2 / 4)) ** (1 / 3), 'B': ((1 / ab) * 1 * (3 / 4)) ** (1 / 3),
+             'base': ((4 / 2) * (4 / 3) * 1) ** (1 / 3)}
+    for model in theta:
+        np.testing.assert_allclose(got[model], theta[model] / theta['base'])
+    assert got['base'] == 1
+
+
+def test_raw_wis_rejects_invalid_forecasts_instead_of_averaging_them_away():
+    import pandas as pd
+    from tapestry.evaluation.standard import check_raw_tasks, transform
+    from tapestry.evaluation.hubs import QCOLS, KEY
+    frame = pd.DataFrame([dict(zip(KEY, ('2025-11-22', '2025-11-22', '37', 0)), **{q: float(i) for i, q in enumerate(QCOLS)},
+                               model_original_truth=5.)])
+    check_raw_tasks(frame, 'wk inc flu hosp', 'ok')
+    for broken in (dict(model_original_truth=np.nan), {QCOLS[3]: np.nan}, {QCOLS[3]: 100.}):
+        with pytest.raises(ValueError):
+            check_raw_tasks(frame.assign(**broken), 'wk inc flu hosp', 'broken')
+    with pytest.raises(ValueError):
+        check_raw_tasks(frame, 'wk inc flu prop ed visits', 'ED above one')
+    with pytest.raises(ValueError):
+        transform([-1.], 'log')

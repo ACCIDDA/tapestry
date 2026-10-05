@@ -64,3 +64,72 @@ def test_multiscale_slopes_curvature_and_masked_values():
     torch.testing.assert_close(a, b)
     torch.testing.assert_close(a[:, 1], torch.full((3,), 3.))
     torch.testing.assert_close(multiscale_features(changed, torch.zeros_like(mask)), torch.zeros((1, 1, 18)))
+
+
+def test_reported_inputs_use_reports_and_star_only_unarchived_cells(panel):
+    """Standard evaluation inputs: reports where archived, finalized only where nothing was, labels final."""
+    names = covariate_names_for('inpatient+kinsa+ilinet')
+    final = {e['context_dates'][-1]: e for e in episodes(panel, 12, 'finalized', names)}
+    dates = list(panel['dates'].astype(str))
+    reported = episodes(panel, 12, 'reported', names)
+    assert reported and any(e['filled'].any() for e in reported)
+    for e in reported:
+        base = final.get(e['context_dates'][-1])
+        if base is not None:  # finalized episodes stop once labels leave the calendar
+            np.testing.assert_array_equal(e['Y'], base['Y'])  # labels are never reports
+        w = list(panel['issuance_dates'].astype(str)).index(e['issuance'])
+        for i, day in enumerate(e['context_dates']):
+            if day not in dates:
+                continue
+            asof = np.moveaxis(panel['asof_targets'][w, dates.index(day)], -1, -2)
+            truth = np.moveaxis(panel['targets'][dates.index(day)], -1, -2)
+            np.testing.assert_array_equal(e['filled'][i], np.isnan(asof))
+            np.testing.assert_array_equal(e['values'][i], np.where(np.isnan(asof), truth, asof))
+        np.testing.assert_array_equal(e['known_final'], e['available'])
+        for k, name in enumerate(names):
+            if name == 'ilinet_ili':  # T-1 source: newest week never available, even if archived
+                assert not e['covariates'][-1, k, 1].any()
+        assert not (e['covariates_filled'] & ~e['covariates'][..., 1, :].astype(bool)).any()
+
+
+def test_hub_deadlines_follow_each_hub_holiday_schedule(panel):
+    from tapestry.dataset.build import deadline, for_hub
+    eastern = lambda hub, wednesday: deadline(wednesday, hub).strftime('%Y-%m-%d %H:%M %Z')
+    assert eastern('flusight', '2024-12-25') == '2024-12-26 23:00 EST'
+    assert eastern('covid', '2024-12-25') == '2024-12-26 23:00 EST'
+    assert eastern('rsv', '2024-12-25') == '2024-12-25 23:00 EST'  # no RSV Hub in 2024-25
+    assert eastern('flusight', '2025-12-24') == '2025-12-30 23:00 EST'
+    assert eastern('covid', '2025-12-24') == '2025-12-29 23:00 EST'
+    assert eastern('flusight', '2025-12-31') == '2026-01-05 23:00 EST'
+    assert eastern('rsv', '2025-12-31') == '2026-01-04 23:00 EST'
+    assert eastern('covid', '2025-10-15') == '2025-10-15 23:00 EDT'
+    covid = for_hub(panel, 'covid')
+    rows = panel['hub_covid_issuances']
+    assert len(rows)
+    others = np.setdiff1d(np.arange(len(panel['issuance_dates'])), rows)
+    np.testing.assert_array_equal(covid['asof_targets'][others], panel['asof_targets'][others])
+    np.testing.assert_array_equal(covid['asof_targets'][rows], panel['hub_covid_asof_targets'])
+    assert not np.array_equal(covid['asof_targets'][rows], panel['asof_targets'][rows], equal_nan=True)
+
+
+def test_instant_cutoffs_treat_date_labels_as_whole_days():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from tapestry.dataset.extract import cutoff_time, end_of_label_day, last_report_day
+    deadline = datetime(2025, 12, 24, 23, tzinfo=ZoneInfo('America/New_York'))  # Thursday 04:00 UTC
+    labels = end_of_label_day(np.array(['2025-12-24', '2025-12-25', '2025-12-25T03:00'], 'datetime64[ns]'))
+    assert list(labels <= cutoff_time(deadline)) == [True, False, True]
+    assert last_report_day(deadline) == '2025-12-24'
+    assert cutoff_time('2025-12-24') == np.datetime64('2025-12-24T23:59:59.999999', 'ns')
+
+
+def test_reported_evaluation_keeps_the_trained_meaning_of_the_final_flag(panel):
+    """Vintage-trained models saw non-final flags on their newest as-of weeks; evaluation must too."""
+    from tapestry.dataset.cv import score_episodes
+    vintaged = Scenario(input_mode='vintaged', supplied_final=True, asof_weeks=2)
+    for e in score_episodes(panel, vintaged, '2024-2025', 'covid'):
+        assert not e['known_final'][-2:].any()
+        np.testing.assert_array_equal(e['known_final'][:-2], e['available'][:-2])
+    scheduled = Scenario(input_mode='scheduled_final', supplied_final=True)
+    for e in score_episodes(panel, scheduled, '2024-2025', 'covid'):
+        np.testing.assert_array_equal(e['known_final'], e['available'])

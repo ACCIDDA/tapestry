@@ -179,7 +179,7 @@ def evaluate_replay(scenario, seed, held_out, members, device, output, dataset):
     if original['scenario'] != source.scenario_string or original['held_out_season'] != held_out or original['seed'] != seed:
         raise ValueError('Source checkpoint scenario, seed, or CV season differs')
     panel = load(dataset)
-    fold = cv.fold(panel, source, held_out)
+    fold = cv.fold(panel, source, held_out, legacy_inputs=True)  # reproduces the original B2 inputs
     mode = 'adaptive_chain' if scenario.replay_nowcaster == 'selected' else scenario.replay_nowcaster
     corrections = cached_nowcasts(panel, folder, dataset_hash, mode, scenario.replay_growth, scenario.replay_penalty,
                                   scenario.replay_growth_weight, scenario.replay_residual_halflife, scenario.replay_features, scenario.replay_gate, scenario.replay_strength) if scenario.replay_inputs == 'nowcast' else None

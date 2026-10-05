@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-SECTIONS = ('Best models by season', 'Protocol', 'Season splits', 'Findings',
+SECTIONS = ('Best models by season', 'Standard evaluation', 'Protocol', 'Season splits', 'Findings',
             'Forecast fans', 'Score diagnostics', 'Matched comparisons', 'Full ranking', 'Appendix')
 START, END = '<!-- write-up: kept across regenerations -->', '<!-- end write-up -->'
 
@@ -66,15 +66,17 @@ def ranking_summary(ranking, baseline_path=None):
     return summary_table(rows, seasons, baseline, note)
 
 
-def figure(path, caption, width=None):
+def figure(path, caption, width=None, note=''):
+    """One report figure; `note` (the standard ★ input footnote) is printed under the graph."""
     caption = caption.replace('\n', ' ').replace('`', '')
     caption = caption[:160] if len(caption) > 160 else caption
     style = f' style="width: {width}px"' if width else ''
+    note = f'<p class="figure-note">{html.escape(note)}</p>\n\n' if note else ''
     return (f'<figure class="report-figure" markdown="1">\n\n'
             f'<figcaption>{html.escape(caption)}</figcaption>\n\n'
             f'<div class="report-plot" markdown="1">\n\n'
             f'![{caption}]({path}){{{style.strip()}}}\n\n</div>\n\n'
-            f'[Open original figure]({path})\n\n</figure>')
+            f'{note}[Open original figure]({path})\n\n</figure>')
 
 
 def organize_report(page, summary=None, protocol=None):
@@ -145,6 +147,8 @@ def organize_report(page, summary=None, protocol=None):
             section = 'Protocol'
         elif re.search('appendix|scenario', heading, re.I):
             section = 'Appendix'
+        elif re.search('^standard evaluation', heading, re.I):
+            section = 'Standard evaluation'
         elif re.search('^ranking', heading, re.I):
             section = 'Full ranking'
         elif re.search('matched comparisons|one.factor|paired contrasts|masking around', heading, re.I):
@@ -171,8 +175,12 @@ def organize_report(page, summary=None, protocol=None):
     if protocol:
         protocol = images.sub(lambda m: place_image(m, 'Protocol', 'Protocol'), protocol)
         buckets['Protocol'].append(re.sub(r'^(#{1,2}) ', lambda m: '#' * (len(m[1])+2) + ' ', protocol, flags=re.M))
+    note_path = page.parent / 'standard-note.txt'
+    note = note_path.read_text().strip() if note_path.exists() else ''
     for item in gallery:
-        buckets[item['section']].append(figure(item['path'], item['caption'], item['width']))
+        if 'standard' in item['path'] or 'standard' in item['caption'].lower():
+            item['section'] = 'Standard evaluation'
+        buckets[item['section']].append(figure(item['path'], item['caption'], item['width'], note))
     meta['figures'] = gallery
     meta_path.write_text(json.dumps(meta, indent=2) + '\n')
     summary_path = page.parent / 'season-summary.txt'
@@ -187,7 +195,7 @@ def organize_report(page, summary=None, protocol=None):
     if meta.get('archived'):
         lines += ['Archived experiment. Results and figures describe the recorded protocol; current execution instructions are in the Workflow page.', '']
     for section in SECTIONS:
-        content = '\n\n'.join(x.strip() for x in buckets[section] if x.strip()) or 'No known '+ ('season-split graph or description.' if section == 'Season splits' else 'result or figure.')
+        content = '\n\n'.join(x.strip() for x in buckets[section] if x.strip()) or 'No known '+ ('season-split graph or description.' if section == 'Season splits' else 'standard evaluation: runs were not scored on standard reported inputs.' if section == 'Standard evaluation' else 'result or figure.')
         if section == 'Findings':
             content = f'{START}\n\n{content}\n\n{END}'
         elif section == 'Protocol':

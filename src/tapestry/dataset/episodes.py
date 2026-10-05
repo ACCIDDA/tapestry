@@ -11,6 +11,16 @@ One builder, one switch (docs/architecture.md):
   covariates use final values only where the Wednesday snapshot has a report.
   This permits later revisions, but never fills an unpublished input. Labels
   are final truth. It is a retrospective forecaster training protocol.
+- `input_mode='reported'` (2026-10-05, the standard evaluation input): one episode per
+  Wednesday, origin = its context end. Every context week of every target and
+  covariate takes the value reported by the panel's deadline (`dataset.build.for_hub`
+  selects the Hub). The documented schedule decides what is available: all six
+  targets through T-0, covariates through T-0 except `LAG_ONE_COVARIATES` (T-1), and
+  Vermont inpatient never. Where the schedule says available but no report was
+  archived by the deadline, the finalized value is supplied and marked in `filled` /
+  `covariates_filled` (reports show these as starred). Absent finalized values stay
+  unavailable. `known_final` equals availability, the encoding scheduled-final
+  training uses; it does not claim reported values are final. Labels are final truth.
 - `input_mode='vintaged'`: one episode per Wednesday issuance, origin = its context
   end (the Saturday four days earlier). With `asof_weeks` = the scenario's field
   (default 2, the previous vintaged builder):
@@ -69,9 +79,9 @@ def _channel_first(panel):
 
 def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, horizons=HORIZONS):
     """All usable episodes of a (possibly masked) panel; see the module docstring."""
-    if input_mode not in ('finalized', 'finalized_available', 'scheduled_final', 'vintaged'):
+    if input_mode not in ('finalized', 'finalized_available', 'scheduled_final', 'vintaged', 'reported'):
         raise ValueError(f'Unknown input_mode: {input_mode}')
-    vintaged = input_mode == 'vintaged'
+    vintaged, reported = input_mode == 'vintaged', input_mode == 'reported'
     dated = input_mode not in ('finalized', 'scheduled_final')
     dates = [str(d) for d in panel['dates']]
     first, locations = date.fromisoformat(dates[0]), tuple(str(l) for l in panel['locations'])
@@ -87,12 +97,17 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         else:
             covariates = select_covariates(_pad(panel['covariates'], pad, tail),
                                            _pad(panel['covariates_national'], pad, tail), *names)
-        if input_mode == 'finalized_available':
+        if input_mode in ('finalized_available', 'reported'):
             final_values, final_available = select_covariates(
                 _pad(panel['covariates'], pad, tail),
                 _pad(panel['covariates_national'], pad, tail), *names)
-            available = covariates[1] & final_available[None]
-            covariates = (np.where(available, final_values[None], 0), available)
+            if reported:
+                covariates_filled = ~covariates[1] & final_available[None]
+                covariates = (np.where(covariates_filled, final_values[None], covariates[0]),
+                              covariates[1] | final_available[None])
+            else:
+                available = covariates[1] & final_available[None]
+                covariates = (np.where(available, final_values[None], 0), available)
     week = lambda t: (first + timedelta(weeks=t)).isoformat()
     if dated:
         origins = [((date.fromisoformat(context_end(d)) - first).days // 7, w)
@@ -115,6 +130,11 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         if input_mode == 'finalized_available':
             values[np.isnan(asof_targets[w, context])] = np.nan
             known_final = ~np.isnan(values)
+        if reported:  # all six targets through T-0; finalized value only where nothing was archived
+            asof = asof_targets[w, context]
+            filled = np.isnan(asof) & ~np.isnan(values)
+            values = np.where(filled, values, asof)
+            known_final = ~np.isnan(values)
         # scheduled_final keeps all six target histories through T-0, including
         # the latest context week. Source-specific covariate lags apply below.
         available = ~np.isnan(values)
@@ -127,13 +147,17 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
                        context_dates=tuple(week(t - pad + i) for i in range(lookback)),
                        target_dates=tuple(week(t + h) for h in horizons), locations=locations,
                        issuance=None if w is None else str(panel['issuance_dates'][w]))
+        if reported:
+            episode['filled'] = filled
         if w is not None and 'forecast_cutoff_utc' in panel:
             episode['forecast_cutoff_utc'] = str(panel['forecast_cutoff_utc'][w])
         episode['Y'] = np.stack((episode['target_values'], episode['target_available']), axis=2)
         if covariate_names:
             cov_values, cov_available = (covariates[0][context], covariates[1][context]) if w is None else \
                 (covariates[0][w, context], covariates[1][w, context])
-            if input_mode == 'scheduled_final':
+            if reported:
+                cov_filled = covariates_filled[w, context].copy()
+            if input_mode in ('scheduled_final', 'reported'):
                 cov_values, cov_available = cov_values.copy(), cov_available.copy()
                 for k, name in enumerate(covariate_names):
                     if name in LAG_ONE_COVARIATES:
@@ -141,6 +165,8 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
                     if name in ('inpatient_flu', 'inpatient_covid') and 'VT' in locations:
                         cov_available[:, k, locations.index('VT')] = False
                 cov_values = np.where(cov_available, cov_values, 0)
+                if reported:
+                    episode['covariates_filled'] = cov_filled & cov_available
             episode['covariates'] = np.stack((cov_values, cov_available), axis=-2)
         result.append(episode)
     return result

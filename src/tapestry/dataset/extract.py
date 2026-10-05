@@ -34,7 +34,12 @@ release per cell; see the decision log entry "Hub vintages stop shadowing"):
   date equal to the snapshot's own last reference week) is moved to the first Git
   release whose snapshot reaches that week, i.e. the commit that published it, or
   to label + 4 days when the source has no Git history.
-- A release is visible at a cutoff day if released by 23:59:59.999999 UTC that day.
+- A release is visible at a cutoff day if released by 23:59:59.999999 UTC that day, or at
+  a cutoff instant (a timezone-aware datetime, e.g. a Hub's 23:00 Eastern deadline) if
+  released by that instant. Date-only release labels (a bare day, stored as UTC
+  midnight) are moved to the end of their UTC day (2026-10-05): the label says only
+  that the value appeared during that day, so it is visible at an instant cutoff only
+  once the whole day has passed. Real timestamps (Git commits) are kept as they are.
 - Values must be finite and nonnegative; NSSP percentages must be at most 100 and
   are divided by 100. Covariates keep their native units (claims and ILI percent,
   clinical-lab percent positive, FluSurv rate per 100,000). Claims archives are daily:
@@ -45,7 +50,8 @@ release per cell; see the decision log entry "Hub vintages stop shadowing"):
   New York exists only as Delphi's `nyc_plus_ny_minus_nyc` pool of its two CDC
   jurisdictions). Rows with an `age_group` other than `all` are dropped.
 - NWSS indices and Kinsa (report-date files, not archives) use the latest report
-  dated on or before the cutoff day, after dropping missing values.
+  dated on or before the cutoff day (for an instant cutoff: whose whole report day has
+  passed by the cutoff), after dropping missing values.
 
 Tables are read columnar (pyarrow), and every per-row policy function
 (`observation_geography`, `describe`) is evaluated once per unique combination of
@@ -117,15 +123,34 @@ NATIVE_FILL = ('source', 'none', '', 'null')
 
 
 def cutoff_time(day):
-    """End of UTC day `day` (a date or 'YYYY-MM-DD'); anything released that day is visible.
+    """Naive-UTC datetime64[ns] cutoff, like every stored release.
 
-    Accepts only a calendar day, never an already-converted timestamp, so a cutoff
-    cannot be converted twice.
+    A calendar day (a date or 'YYYY-MM-DD') means the end of that UTC day: anything
+    released that day is visible. A timezone-aware datetime is an exact instant (a Hub
+    deadline). Naive datetimes and already-converted timestamps are refused, so a
+    cutoff cannot be converted twice or read in the wrong timezone.
     """
-    if isinstance(day, datetime) or not isinstance(day, (date, str)):
-        raise TypeError(f'Cutoff must be a calendar day, not {day!r}')
+    if isinstance(day, datetime):
+        if day.tzinfo is None:
+            raise TypeError(f'Instant cutoffs must be timezone-aware, not {day!r}')
+        return np.datetime64(pd.Timestamp(day).tz_convert('UTC').tz_localize(None).to_datetime64(), 'ns')
+    if not isinstance(day, (date, str)):
+        raise TypeError(f'Cutoff must be a calendar day or an aware datetime, not {day!r}')
     day = day if isinstance(day, date) else date.fromisoformat(day)
-    return np.datetime64(f'{day.isoformat()}T23:59:59.999999', 'ns')  # UTC, like every stored release
+    return np.datetime64(f'{day.isoformat()}T23:59:59.999999', 'ns')
+
+
+def last_report_day(cutoff):
+    """Latest date-only report day wholly elapsed by `cutoff` (see `cutoff_time`), ISO."""
+    end = cutoff_time(cutoff)
+    return str((end + np.timedelta64(1, 'us') - np.timedelta64(1, 'D')).astype('datetime64[D]'))
+
+
+def end_of_label_day(releases):
+    """Date-only labels (exact UTC midnight) -> end of that UTC day; real timestamps unchanged."""
+    releases = np.asarray(releases, 'datetime64[ns]')
+    midnight = releases == releases.astype('datetime64[D]').astype('datetime64[ns]')
+    return np.where(midnight, releases + np.timedelta64(86_400_000_000_000 - 1_000, 'ns'), releases)
 
 
 def _releases(values):
@@ -286,7 +311,9 @@ def revisions(name, data_root='data'):
                     day=days.to_numpy(), location=location.astype(str), value=values)))
     rows = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(
         dict(tier=[], release=np.array([], 'datetime64[ns]'), day=[], location=[], value=[]))
-    return Revisions(_without_conflicts(_publication_times(rows)), np.sort(_releases(git_releases)))
+    rows = _publication_times(rows)
+    rows['release'] = end_of_label_day(rows.release.to_numpy('datetime64[ns]'))
+    return Revisions(_without_conflicts(rows), np.sort(_releases(git_releases)))
 
 
 def _publication_times(rows):
@@ -332,7 +359,9 @@ def _without_conflicts(rows):
 
 
 def resolve(revisions_, day, dates, locations=LOCATIONS):
-    """[len(dates), len(locations)] float values visible at the end of `day` (NaN = unavailable).
+    """[len(dates), len(locations)] float values visible at cutoff `day` (NaN = unavailable).
+
+    `day` is a calendar day (end of that UTC day) or an aware instant; see `cutoff_time`.
 
     `dates` are Saturday ISO strings. Each tier states what it knew at its own latest
     eligible release (module docstring); per cell the most recent statement wins,
@@ -461,9 +490,9 @@ def kinsa_frame(data_root='data'):
 
 
 def resolve_reports(frame, day, dates, locations=LOCATIONS, names=None):
-    """[len(dates), len(locations), len(names)] latest value reported on or before `day`."""
+    """[len(dates), len(locations), len(names)] latest value reported by cutoff `day` (see `cutoff_time`)."""
     names = list(names if names is not None else frame.name.unique())
-    visible = frame[frame.report_time <= date.fromisoformat(str(day)).isoformat()]
+    visible = frame[frame.report_time <= last_report_day(day)]
     visible = visible[visible.reference_time.isin(set(dates))]
     visible = visible.sort_values('report_time', kind='stable').drop_duplicates(
         ['name', 'location', 'reference_time'], keep='last')

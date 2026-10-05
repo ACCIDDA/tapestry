@@ -5,42 +5,12 @@ import numpy as np
 import torch
 
 from tapestry.dataset import cv
-from tapestry.dataset.build import load, covariate_names_for
-from tapestry.dataset.episodes import select_covariates
+from tapestry.dataset.build import load
 from tapestry.dataset.reporting_error import ReportingErrors
 from tapestry.model.network import checkpoint
 from tapestry.model.revision_regression import RevisionRegression
 from . import training
 from .provenance import save, sha256, environment
-
-
-def scheduled_reports(e, panel, names):
-    """Preserve B2 availability and source lags; replace visible values by reports.
-
-    Archived gaps use explicitly assumed final proxies. They are not revision
-    observations and never enter the empirical reporting-error library.
-    """
-    dates = panel['dates'].astype(str)
-    issue = str(np.datetime64(e['context_dates'][-1]) + np.timedelta64(4, 'D'))
-    issues = panel['issuance_dates'].astype(str)
-    wi = np.searchsorted(issues, issue)
-    if wi >= len(issues) or issues[wi] != issue:
-        raise ValueError(f'No evaluation issuance {issue}')
-    ti = np.searchsorted(dates, e['context_dates'])
-    if (ti >= len(dates)).any() or not np.array_equal(dates[ti], e['context_dates']):
-        raise ValueError('Evaluation dates do not align')
-    raw = np.moveaxis(panel['asof_targets'][wi, ti], -1, -2)
-    available = e['available'].copy()
-    out = dict(e, values=np.where(available, np.where(np.isfinite(raw), raw, e['values']), 0),
-               known_final=np.zeros_like(available), issuance=issue)
-    proxy = int((available & ~np.isfinite(raw)).sum())
-    if names:
-        v, a = select_covariates(panel['asof_covariates'][wi, ti], panel['asof_covariates_national'][wi, ti],
-            panel['covariate_names'], panel['covariate_national_names'], panel['locations'], names)
-        cov = e['covariates'].copy()
-        cov[..., 0, :] = np.where(cov[..., 1, :], np.where(a, v, cov[..., 0, :]), 0)
-        out['covariates'] = cov
-    return out, proxy
 
 
 class CorrectedErrors:
@@ -100,10 +70,8 @@ def fit(scenario, seed, held_out, members, device, output, dataset):
     keep = np.isin(roles, ['fit', 'validation'])
     outer = ReportingErrors(panel, scenario, held_out, keep)
     selection = ReportingErrors(panel, scenario, held_out, roles == 'fit') if inner else None
-    names = list(covariate_names_for(scenario.covariate_set))
-    score, proxies = zip(*(scheduled_reports(e, panel, names) for e in full.score))
-    score = list(score)
     out = Path(output); out.mkdir(parents=True, exist_ok=True)
+    correct = None
     correction_records = None
     if scenario.weekend_family == 'two_stage':
         cross, final = fit_correctors(full.train, outer, scenario, seed)
@@ -114,7 +82,7 @@ def fit(scenario, seed, held_out, members, device, output, dataset):
             selection_augmentation = CorrectedErrors(selection, inner_cross)
             raw = selection.batch(inner.validation, np.random.default_rng(seed + 800000))
             inner.validation = [inner_final.apply(e) for e in raw]
-        score = [final.apply(e) for e in score]
+        correct = lambda eps: [final.apply(e) for e in eps]
         correction_records = dict(full=final.record(), cross_fits={k:v.record() for k,v in cross.items()},
             inner=inner_final.record() if inner else None,
             error_library='Shared fold-permitted donor errors; regression labels exclude the corrected trajectory season')
@@ -130,23 +98,24 @@ def fit(scenario, seed, held_out, members, device, output, dataset):
         seed=seed, held_out_season=held_out, protocol='b2_weekend_scheduled_reports_v1',
         fold=full.info, inner_fold=inner.info if inner else None, records=records,
         reporting_errors=outer.metadata, selection_errors=selection.metadata if selection else None,
-        corrections=correction_records, target_proxy_cells=sum(proxies),
+        corrections=correction_records,
         labels='Finalized future values; joint models additionally learn finalized recent context values',
-        evaluation='Wednesday archived values on B2 source schedule; absent archives use final proxies',
+        evaluation='Standard reported inputs (cv.score_episodes) at each Hub deadline',
         loss=training.LOSS_DEFINITION, joint_weight=scenario.joint_weight,
         dataset=str(dataset), dataset_sha256=sha256(dataset), eval_members=members,
         channels=panel['target_names'].tolist(), locations=list(full.train[0]['locations']), **environment())
     torch.save(checkpoint(model, metadata), out / 'model.pt')
     save(out / 'manifest.json', metadata)
     model.to(device)
-    torch.manual_seed(seed + 1000)
     if scenario.weekend_family == 'joint':
         horizons = np.asarray(scenario.horizons)
-        indices = np.flatnonzero(horizons > 0).tolist()
-        training.evaluate(ForecastSlice(model, indices), [subset_labels(e, indices) for e in score], members, device, out)
+        future = np.flatnonzero(horizons > 0).tolist()
+        training.evaluate_hubs(ForecastSlice(model, future), panel, scenario, held_out, seed, members, device, out,
+                               prepare=lambda eps: [subset_labels(e, future) for e in eps], first=full.score)
         indices = np.flatnonzero(horizons <= 0).tolist()
         recent = out / 'nowcast'; recent.mkdir(exist_ok=True)
-        training.evaluate(ForecastSlice(model, indices), [subset_labels(e, indices) for e in score], members, device, recent, panel=panel)
+        torch.manual_seed(seed + 1000)
+        training.evaluate(ForecastSlice(model, indices), [subset_labels(e, indices) for e in full.score], members, device, recent, panel=panel)
     else:
-        training.evaluate(model, score, members, device, out)
+        training.evaluate_hubs(model, panel, scenario, held_out, seed, members, device, out, prepare=correct, first=full.score)
     return out / 'model.pt'

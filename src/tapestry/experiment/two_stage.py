@@ -110,7 +110,7 @@ def fit_pipeline(scenario, seed, held_out, eval_members, device, output, dataset
     ns, fs = scenario.stage('nowcast'), scenario.stage('forecast')
     episode_scenario = scenario.episode_scenario()
     all_names = list(covariate_names_for(episode_scenario.covariate_set))
-    full = cv.fold(panel, episode_scenario, held_out)
+    full = cv.fold(panel, episode_scenario, held_out, legacy_inputs=True)  # the pipeline nowcasts its own dated inputs
     pop = training.populations(population_file, full.train[0]['locations'])
     roles = cv.week_roles(panel['dates'], fs, held_out)
     full_keep = np.isin(roles, ['fit', 'validation'])
@@ -121,7 +121,7 @@ def fit_pipeline(scenario, seed, held_out, eval_members, device, output, dataset
                                                  all_names, seed, device, pop)
     inner_train, validation, inner_records = train, None, None
     if fs.patience:
-        inner = cv.fold(panel, episode_scenario, held_out, inner=True)
+        inner = cv.fold(panel, episode_scenario, held_out, inner=True, legacy_inputs=True)
         inner_keep = roles == 'fit'
         inner_train, inner_cross = cross_fitted_histories(panel, scenario, inner_keep, inner.train,
                                                          all_names, seed, device, pop)

@@ -8,9 +8,19 @@ lookback, any `Scenario.asof_weeks`) are cut from it by `dataset.episodes`; see
 docs/architecture.md for the layout and every choice below.
 
 In memory (`build`, `load`) the as-of arrays are dense and indexed by calendar week:
-`asof_targets[w, t]` is week t as visible at the end of issuance day w, NaN when
-nothing was visible, and NaN by definition for weeks after the issuance's context
-end (the Saturday four days earlier). On disk (`save`) each as-of array is stored
+`asof_targets[w, t]` is week t as visible at issuance w's FluSight submission deadline,
+NaN when nothing was visible, and NaN by definition for weeks after the issuance's
+context end (the Saturday four days earlier).
+
+Deadlines (2026-10-05, user decision: per Hub, never a common earliest deadline): each
+Hub's deadline is Wednesday 23:00 America/New_York, except the holiday extensions in
+`HOLIDAY_DEADLINES`, read from each Hub's `hub-config/tasks.json` Git history. The
+Wednesday identifier and its context Saturday never move; only the information
+cutoff does. The main as-of arrays use the FluSight deadline (flu targets, and the
+inputs of every training episode). For each other Hub, issuances whose deadline
+differs are stored separately (`hub_<hub>_issuances`, `hub_<hub>_asof_*`) and
+`for_hub` swaps them in, so COVID and RSV forecasts are scored on the inputs visible
+at their own Hub's deadline. `issuance_cutoffs_utc[h, w]` records every deadline. On disk (`save`) each as-of array is stored
 only where it differs from the truth panel: a bool mask `<name>_revised [W, T, ...]`
 plus the differing values `<name>_values [N]` (NaN = visible in truth but not at
 the cutoff), in `np.savez_compressed`. `load` rebuilds the dense arrays exactly.
@@ -34,8 +44,9 @@ from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, time as clock, timedelta
 import os
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import time
 
@@ -64,6 +75,34 @@ STATE_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n not in NATIONAL_ON
 NATIONAL_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n in NATIONAL_ONLY)
 LAG_ONE_COVARIATES = frozenset({'ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'})
 PANEL_DATASET = 'data/processed/panel.npz'
+HUBS = ('flusight', 'covid', 'rsv')
+CHANNEL_HUBS = ('flusight', 'covid', 'rsv', 'flusight', 'covid', 'rsv')  # Hub of each CHANNELS entry
+# Deadline day per Hub forecast reference date (the Saturday after the Wednesday).
+# FluSight: tasks.json submissions_due end -2 (Thursday) 6da755c7 2024-12-26, reverted
+# b791af8e 2025-01-07; end +3 (Tuesday) 4dbd6833 2025-12-28; +2 (Monday) 2b92e8db
+# 2025-12-31; reverted fc07d821 2026-01-05. COVID: end -2 5e96cfd 2024-12-23, reverted
+# ca66561 2025-01-03; README holiday schedule 0dbd496 2025-12-29 (Dec 29, Jan 4), reverted
+# c07049a 2026-01-05. RSV: same 2025-26 schedule 49854c8/9aba0e4, reverted da5a003; the
+# RSV Hub repository starts 2025-08-14, so 2024-25 RSV keeps the plain Wednesday.
+HOLIDAY_DEADLINES = {
+    'flusight': {'2024-12-28': '2024-12-26', '2025-01-04': '2025-01-02',
+                 '2025-12-27': '2025-12-30', '2026-01-03': '2026-01-05'},
+    'covid': {'2024-12-28': '2024-12-26', '2025-01-04': '2025-01-02',
+              '2025-12-27': '2025-12-29', '2026-01-03': '2026-01-04'},
+    'rsv': {'2025-12-27': '2025-12-29', '2026-01-03': '2026-01-04'},
+}
+DEADLINE_ZONE, DEADLINE_HOUR = ZoneInfo('America/New_York'), 23
+
+
+def deadline(issuance, hub):
+    """Aware submission deadline of Wednesday `issuance` for `hub` (23:00 Eastern, holiday extensions)."""
+    nominal = date.fromisoformat(str(issuance)[:10])
+    day = HOLIDAY_DEADLINES[hub].get((nominal + timedelta(days=3)).isoformat(), nominal.isoformat())
+    return datetime.combine(date.fromisoformat(day), clock(DEADLINE_HOUR), DEADLINE_ZONE)
+
+
+def utc(moment):
+    return moment.astimezone(ZoneInfo('UTC')).strftime('%Y-%m-%dT%H:%M:%SZ')
 SNAPSHOT_DATASETS = sorted({d for spec in TARGET_SOURCES.values() for d in spec[:2] if d} |
                            {spec[0] for spec in DELPHI_COVARIATES.values()} |
                            {'derived_nwss_state_indices', 'pophive_kinsa_ili'})
@@ -130,7 +169,7 @@ def finalized_admissions(name, values, dates, data_root):
 
 
 def _source(task):
-    """One process per source: its truth panel and its dense as-of array [W, T, L, K]."""
+    """One process per source: truth, FluSight-deadline as-of [W, T, L, K], and other Hubs' differing rows."""
     name, data_root, dates, issuances, truth_day = task
     started = time.perf_counter()
     if name == 'nwss':
@@ -143,12 +182,22 @@ def _source(task):
         archive = revisions(name, data_root)
         at = lambda day, days: resolve(archive, day, days, LOCATIONS)[:, :, None]
     truth = finalized_admissions(name, at(truth_day, dates), dates, data_root)
-    asof = np.full((len(issuances), *truth.shape), np.nan)
-    for w, seen in enumerate(visible_weeks(dates, issuances)):
-        weeks = int(seen.sum())  # visible weeks are a calendar prefix
-        if weeks:
-            asof[w, :weeks] = at(issuances[w], dates[:weeks])
-    return name, truth.astype(np.float32), asof.astype(np.float32), time.perf_counter() - started
+    visible = visible_weeks(dates, issuances)
+
+    def asof_rows(rows, hub):
+        result = np.full((len(rows), *truth.shape), np.nan)
+        for i, w in enumerate(rows):
+            weeks = int(visible[w].sum())  # visible weeks are a calendar prefix
+            if weeks:
+                result[i, :weeks] = at(deadline(issuances[w], hub), dates[:weeks])
+        return result.astype(np.float32)
+
+    asof = asof_rows(range(len(issuances)), HUBS[0])
+    others = {}
+    for hub in HUBS[1:]:
+        rows = [w for w, i in enumerate(issuances) if deadline(i, hub) != deadline(i, HUBS[0])]
+        others[hub] = (np.array(rows, int), asof_rows(rows, hub))
+    return name, truth.astype(np.float32), asof, others, time.perf_counter() - started
 
 
 def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=None):
@@ -159,8 +208,8 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     names = (*CHANNELS, *DELPHI_COVARIATES, 'nwss', 'kinsa_ili')
     tasks = [(name, data_root, dates, issuances, truth_day) for name in names]
     with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:
-        results = {name: (truth, asof, seconds) for name, truth, asof, seconds in pool.map(_source, tasks)}
-    timings = {name: round(seconds, 1) for name, (_, _, seconds) in results.items()}
+        results = {name: (truth, asof, others, seconds) for name, truth, asof, others, seconds in pool.map(_source, tasks)}
+    timings = {name: round(seconds, 1) for name, (*_, seconds) in results.items()}
     targets = np.concatenate([results[n][0] for n in CHANNELS], axis=2)
     asof_targets = np.concatenate([results[n][1] for n in CHANNELS], axis=3)
     columns = {n: (results[n][0], results[n][1]) for n in DELPHI_COVARIATES}
@@ -170,11 +219,25 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     asof_covariates = np.concatenate([columns[n][1] for n in STATE_COVARIATE_NAMES], axis=3)
     national = results['kinsa_ili'][0][:, LOCATIONS.index('US'), :]
     asof_national = results['kinsa_ili'][1][:, :, LOCATIONS.index('US'), :]
+    hub_arrays = {}
+    for hub in HUBS[1:]:
+        rows = results[CHANNELS[0]][2][hub][0]
+        hub_arrays[f'hub_{hub}_issuances'] = rows
+        hub_arrays[f'hub_{hub}_asof_targets'] = np.concatenate([results[n][2][hub][1] for n in CHANNELS], axis=3)
+        columns_ = {n: results[n][2][hub][1] for n in DELPHI_COVARIATES}
+        columns_ |= {n: results['nwss'][2][hub][1][..., k:k + 1] for k, n in enumerate(NWSS_INDICES)}
+        hub_arrays[f'hub_{hub}_asof_covariates'] = np.concatenate([columns_[n] for n in STATE_COVARIATE_NAMES], axis=3)
+        hub_arrays[f'hub_{hub}_asof_covariates_national'] = results['kinsa_ili'][2][hub][1][:, :, LOCATIONS.index('US'), :]
+    cutoffs = np.array([[utc(deadline(i, hub)) for i in issuances] for hub in HUBS])
     snapshots = {key: _latest_snapshot(data_root, key).name for key in [*SNAPSHOT_DATASETS, 'cdc_nhsn_final']}
     metadata = dict(finalized_admissions_policy='Finite CDC finalized NHSN counts take precedence in retrospective truth; archive-resolved values remain where the finalized source has no finite value. Historical as-of arrays never receive this override.', version=4, kind='panel', start=start, end=dates[-1], truth_day=truth_day,
-                    asof='asof_*[w, t]: calendar week t as visible by 23:59:59.999999 UTC on issuance day w; '
-                         'NaN after context_end(w) = issuance - 4 days. Stored as <name>_revised mask + '
-                         '<name>_values where it differs from the truth panel.',
+                    asof='asof_*[w, t]: calendar week t as visible at issuance w\'s FluSight deadline '
+                         '(Wednesday 23:00 America/New_York, holiday extensions in HOLIDAY_DEADLINES); '
+                         'date-only release labels count at the end of their UTC day. NaN after '
+                         'context_end(w) = issuance - 4 days. Stored as <name>_revised mask + '
+                         '<name>_values where it differs from the truth panel. hub_<hub>_asof_* hold the '
+                         'rows hub_<hub>_issuances at that Hub\'s own deadline (dataset.build.for_hub).',
+                    hubs=list(HUBS), holiday_deadlines=HOLIDAY_DEADLINES,
                     channels=list(CHANNELS), locations=list(LOCATIONS),
                     covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
                     snapshots=snapshots, source_seconds=timings)
@@ -184,7 +247,26 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
                 covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
                 issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
                 asof_covariates=asof_covariates, asof_covariates_national=asof_national,
+                hub_names=np.array(HUBS), issuance_cutoffs_utc=cutoffs, **hub_arrays,
                 metadata=json.dumps(metadata))
+
+
+def for_hub(panel, hub):
+    """Shallow copy of `panel` whose as-of arrays are visible at `hub`'s own deadlines.
+
+    Only the rows `hub_<hub>_issuances` differ from the FluSight deadline; they are
+    swapped in (already masked like the main arrays by `cv.masked`).
+    `forecast_cutoff_utc` records each issuance's deadline for that Hub."""
+    hubs = [str(h) for h in panel['hub_names']]
+    out = dict(panel, forecast_cutoff_utc=panel['issuance_cutoffs_utc'][hubs.index(hub)])
+    if hub == HUBS[0]:
+        return out
+    rows = panel[f'hub_{hub}_issuances']
+    for name in ASOF_ARRAYS:
+        if len(rows):
+            out[name] = panel[name].copy()
+            out[name][rows] = panel[f'hub_{hub}_{name}']
+    return out
 
 
 def _visible_like(arrays, name):
@@ -244,7 +326,7 @@ def _check_source(task):
             direct = finalized_admissions(name, direct, dates[:weeks], data_root)
         stored = expected[:weeks]
         equal = (direct == stored) | (np.isnan(direct) & np.isnan(stored))
-        mismatches[day] = int((~equal).sum())
+        mismatches[str(day)] = int((~equal).sum())
     return name, mismatches
 
 
@@ -271,7 +353,7 @@ def check(path=PANEL_DATASET, data_root='data', samples=4, seed=0, workers=None)
             asof = np.full((len(issuances), len(dates), len(locations), 1), np.nan, np.float32)
             asof[:, :, locations.index('US'), 0] = arrays['asof_covariates_national'][:, :, k]
             k = 0
-        days = [(issuances[w], int(visible[w].sum()), asof[w, :, :, k]) for w in picked]
+        days = [(deadline(issuances[w], HUBS[0]), int(visible[w].sum()), asof[w, :, :, k]) for w in picked]
         days.append((metadata['truth_day'], len(dates), truth[:, :, k]))
         tasks.append((name, data_root, days, dates))
     with ProcessPoolExecutor(max_workers=workers or min(len(tasks), os.cpu_count() or 1)) as pool:

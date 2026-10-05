@@ -310,9 +310,17 @@ def evaluate(model, eps, eval_members, device, output, panel=None):
         masks.append(e['target_available'])
     q = np.stack(quantiles, axis=1)
     y, mask = np.stack(truths), np.stack(masks)
+    # Standard reported inputs record which context cells received a finalized value
+    # because nothing was archived by the deadline (reports star them).
+    inputs = {name: np.stack([e[name] for e in eps]) for name in ('filled', 'available', 'covariates_filled')
+              if name in eps[0]}
+    if 'covariates' in eps[0] and 'covariates_filled' in inputs:
+        inputs['covariates_available'] = np.stack([e['covariates'][..., 1, :] for e in eps]).astype(bool)
+    if 'forecast_cutoff_utc' in eps[0]:
+        inputs['forecast_cutoff_utc'] = np.array([e['forecast_cutoff_utc'] for e in eps])
     np.savez_compressed(output / 'forecasts.npz', quantiles=q, quantile_levels=LEVELS,
                         truth=y, mask=mask, context_end=[e['context_dates'][-1] for e in eps],
-                        target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'])
+                        target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'], **inputs)
     if nowcasting:
         scales = (model.models[0].scale if isinstance(model, IndependentBundle) else model.scale).detach().cpu().numpy()
         score = float((np.stack(crps) * loss_cell_weights(eps) / scales).sum())
@@ -381,3 +389,50 @@ def input_scales(episodes, transform, ed_transform, populations):
     if ed_transform == 'logit':
         result['input_offset'] = offsets
     return result
+
+
+def evaluate_hubs(model, panel, scenario, held_out, seed, eval_members, device, output, prepare=None, first=None):
+    """Standard forecast evaluation: each pathogen scored on inputs visible at its own Hub's deadline.
+
+    Evaluates the held-out season once per Hub (`dataset.build.HUBS`, Wednesday reports
+    from `cv.score_episodes`; `first` reuses already cut FluSight episodes), each with the
+    same evaluation seed, so issuances with identical inputs get identical draws. Writes
+    one `forecasts.npz` whose channel c comes from the evaluation of `CHANNEL_HUBS[c]`.
+    `prepare` maps episodes before evaluation (e.g. a correction stage). `filled`/`available`
+    hold channel c at its own Hub's deadline; `<name>_<hub>` keep every channel and
+    covariate a Hub's forecasts saw, since a model reads all six target histories."""
+    from pathlib import Path
+    import shutil
+    from tapestry.dataset import cv
+    from tapestry.dataset.build import HUBS, CHANNEL_HUBS
+    output = Path(output)
+    parts = {}
+    for hub in HUBS:
+        eps = first if hub == HUBS[0] and first is not None else cv.score_episodes(panel, scenario, held_out, hub)
+        eps = prepare(eps) if prepare else eps
+        folder = output / f'hub-{hub}'
+        folder.mkdir(parents=True, exist_ok=True)
+        torch.manual_seed(seed + 1000)
+        evaluate(model, eps, eval_members, device, folder)
+        with np.load(folder / 'forecasts.npz', allow_pickle=False) as data:
+            parts[hub] = {k: data[k] for k in data.files}
+        shutil.rmtree(folder)
+    merged = dict(parts[HUBS[0]])
+    for name in ('context_end', 'target_dates', 'locations', 'truth', 'mask'):
+        if any(not np.array_equal(parts[h][name], merged[name]) for h in HUBS):
+            raise ValueError(f'Hub evaluations differ in {name}; Hub deadlines must only change inputs')
+    for c, hub in enumerate(CHANNEL_HUBS):
+        merged['quantiles'][:, :, :, c] = parts[hub]['quantiles'][:, :, :, c]
+        for name, axis in (('filled', 2), ('available', 2)):
+            if name in merged:
+                np.moveaxis(merged[name], axis, 0)[c] = np.moveaxis(parts[hub][name], axis, 0)[c]
+    for hub in HUBS:  # every input a Hub's forecasts saw, all channels, at that Hub's deadline
+        if 'forecast_cutoff_utc' in parts[hub]:
+            merged[f'forecast_cutoff_utc_{hub}'] = parts[hub]['forecast_cutoff_utc']
+        for name in ('filled', 'available', 'covariates_filled', 'covariates_available'):
+            if name in parts[hub]:
+                merged[f'{name}_{hub}'] = parts[hub][name]
+    for name in ('forecast_cutoff_utc', 'covariates_filled', 'covariates_available'):
+        merged.pop(name, None)
+    np.savez_compressed(output / 'forecasts.npz', **merged)
+    return [dict(context_end=d) for d in merged['context_end']]
