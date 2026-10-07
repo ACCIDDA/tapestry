@@ -26,6 +26,7 @@ LOSS_WEIGHTS = {
     'influenza_first': [1, .1, .1, .1, .1, .1],
     'balanced_admissions': [1, 1, 1, .1, .1, .1],
     'flu_only': [1, 0, 0, 0, 0, 0],
+    'flu_hosp_ed': [1, 0, 0, .5, 0, 0],
     'objective': list(TARGET_WEIGHTS),
 }
 

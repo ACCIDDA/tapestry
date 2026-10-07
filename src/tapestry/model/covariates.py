@@ -29,10 +29,10 @@ class CovariateEncoder(nn.Module):
         self.kind = kind
         if kind == 'shared':
             self.encoder = nn.Sequential(nn.Linear(2 * lookback, 8), nn.SiLU(), nn.Linear(8, 4))
-        elif kind != 'summary':
+        elif kind not in ('summary', 'growth'):
             raise ValueError(f'Unknown compact covariate representation: {kind}')
 
-    def forward(self, values, available):
+    def forward(self, values, available, log_values=None):
         # Each source/location is encoded independently with shared weights.
         x = torch.where(available, values, 0).permute(0, 3, 2, 1)
         mask = available.permute(0, 3, 2, 1)
@@ -45,6 +45,20 @@ class CovariateEncoder(nn.Module):
         if self.kind == 'shared':
             features = self.encoder(torch.cat((x, mask.to(x.dtype)), -1))
             features = features * (count > 0)[..., None]
+        elif self.kind == 'growth':
+            # Recent turn of each covariate (2026-10-06): level at the newest report, then
+            # one- and two-week log growth and acceleration of log(raw + floor) ending at
+            # that report; each term needs its weeks reported, otherwise 0.
+            z = torch.where(available, log_values, 0).permute(0, 3, 2, 1)
+            def at(k):
+                i = (last_index - k).clamp_min(0).long()[..., None]
+                return z.gather(-1, i).squeeze(-1), mask.gather(-1, i).squeeze(-1) & (last_index - k >= 0)
+            (z0, m0), (z1, m1), (z2, m2) = at(0), at(1), at(2)
+            last = x.gather(-1, last_index.clamp_min(0).long()[..., None]).squeeze(-1)
+            g1 = torch.where(m0 & m1, z0 - z1, 0)
+            g2 = torch.where(m0 & m2, (z0 - z2) / 2, 0)
+            accel = torch.where(m0 & m1 & m2, z0 - 2 * z1 + z2, 0)
+            features = torch.stack((last, g1, g2, accel), -1)
         else:
             last = x.gather(-1, last_index.clamp_min(0).long()[..., None]).squeeze(-1)
             mean = x.sum(-1) / count.clamp_min(1)

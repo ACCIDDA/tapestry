@@ -1,0 +1,56 @@
+{
+  "A25_B75": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+  ],
+  "A50_B50": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+  ],
+  "A_B_Bfinalized": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s43/attempt-001"
+  ],
+  "Afinalized25_B75": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-796d93c070c0/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-796d93c070c0/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+  ],
+  "Afinalized50_B50": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-796d93c070c0/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-796d93c070c0/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+  ],
+  "B_Bfinalized": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s43/attempt-001"
+  ],
+  "B_only": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006/data/experiments/b4-flu-heads-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+  ],
+  "Bfinalized_only": [
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s42/attempt-001",
+    "/proj/jlessler/projects/tapestry-all/tapestry-b4-refinetop2-20261006/data/experiments/b4-refinetop2-20261006/mlp-pathogen-scheduled_final-080b71da0d92/s43/attempt-001"
+  ]
+}

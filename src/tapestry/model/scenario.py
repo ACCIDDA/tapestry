@@ -38,21 +38,31 @@ CODES = {
     'training_inputs': {'same', 'finalized'},
     'input_normalization': {'none', 'b0'},
     'validation_calendar': {'season', 'b0'},
-    'evaluation_seasons': {'all', 'recent_two'},
+    'evaluation_seasons': {'all', 'recent_two', 'production'},
     'count_transform': {'raw', 'rate', 'sqrt', 'fourth_root', 'log1p'},
     'ed_transform': {'linear', 'logit', 'fourth_root'},
-    'loss_weights': {'influenza_first', 'balanced_admissions', 'flu_only', 'objective'},
+    'loss_weights': {'influenza_first', 'balanced_admissions', 'flu_only', 'flu_hosp_ed', 'objective'},
     'signal_features': {'none', 'multiscale', 'smooth_multiscale'},
-    'covariate_encoder': {'raw', 'smooth', 'summary', 'shared'},
-    'encoder': {'mlp', 'conv', 'multiscale_conv'},
+    'covariate_encoder': {'raw', 'smooth', 'summary', 'shared', 'growth'},
+    'encoder': {'mlp', 'conv', 'multiscale_conv', 'series_mlp', 'series_mixer'},
+    'pilot_method': {'none', 'finalized', 'reported', 'errors', 'corrected', 'two_stage', 'joint'},
+    'revision_scope': {'all', 'early_actual'},
+    'revision_signals': {'all', 'admissions'},
+    'pilot_nowcaster': {'synthetic_tree', 'real_tree', 'real_mlp', 'pretrained_mlp'},
+    'ili_training': {'none', 'pretrain', 'joint'},
+    'vintage_seasons': {'latest', 'all'},
+    'training_window': {'all', 'recent2'},
+    'ili_units': {'own', 'flu_scaled'},
+    'forecast_targets': {'all', 'flu'},
+    'pathogen_inputs': {'all', 'flu', 'flu_covid', 'flu_rsv'},
     'spatial': {'neighbors', 'distance', 'gravity', 'none', 'pooled', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target', 'national_broadcast', 'gated_pool'},
     'heads': {'shared', 'state_us'},
-    'decoder': {'legacy', 'residual2'},
+    'decoder': {'legacy', 'residual2', 'quantile', 'quantile_small'},
     'noise': {'global', 'local'},
     'us_error': {'none', 'shared_factor'},
     'head_sharing': {'shared', 'pathogen', 'target'},
     'fit_partition': {'all', 'pathogen', 'target'},
-    'input_mode': {'finalized', 'finalized_available', 'scheduled_final', 'vintaged'},
+    'input_mode': {'finalized', 'finalized_available', 'scheduled_final', 'vintaged', 'reported'},
     'task': {'forecast', 'nowcast', 'pipeline', 'finalize'},
     'finalization_cv': {'rolling', 'season'},
     'finalization_loss': {'mae'},
@@ -71,6 +81,29 @@ CODES = {
 # taken from the existing design docs and code; where the meaning is longer than a
 # line the entry points to the document that defines it.
 MEANING = {
+    'forecast_targets': 'All six targets or flu admissions + ED only; exported forecasts and scoring follow this scope.',
+    'pathogen_inputs': 'Allowed admissions/ED input pathogens in both forecaster and nowcaster; excluded values and masks are removed.',
+    'vintage_seasons': 'Archived seasons supplying artificial reporting errors and real correction pairs: latest permitted training season, or every archived training season with recency weights 1, 1/2, 1/4.',
+    'actual_share': 'Probability a training episode uses the actual archived report (finalized fill where none) instead of an artificial-error draw.',
+    'correction_realizations': 'Independent artificial-report-then-correction realizations per training episode; one is drawn per minibatch.',
+    'uncorrected_share': 'Probability a corrected-history training episode is shown uncorrected instead (robustness to correction failure).',
+    'nowcast_noise': 'Scale of sampled out-of-fold correction residuals added to corrected admissions; 0 = point correction. Evaluation uses 16 sampled histories per issuance.',
+    'nowcast_noise_train': 'Also add sampled correction residuals to corrected training histories each minibatch.',
+    'log_loss_weight': 'Weight of an extra weekly flu-admission loss on the log(1 + count) scale, added to the native-scale loss.',
+    'covariate_dropout': 'Probability a training episode has all covariates (e.g. Kinsa) hidden.',
+    'training_window': 'Training seasons per fold: all four seasons except the held-out one, or only the two seasons immediately before it.',
+    'stress_views': 'Also evaluate delayed-admission and covariate-missing input views of the same fitted model.',
+    'ili_units': 'Own-source ILI proportions or auxiliary flu-head pseudo-tasks rescaled by fitting-only modern Q95 / historical ILI Q95.',
+    'ili_steps': 'Historical forecasting pretraining updates; each uses 64 auxiliary examples (series models) or batch_size historical panel episodes (flu MLP).',
+    'correction_weeks': 'Recent admissions ages corrected by the pilot nowcaster, clipped to lookback.',
+    'pilot_method': 'Exploratory forecaster treatment; all variants use the standard per-Hub scorer and raw/half/full admission-correction views.',
+    'revision_scope': 'Apply artificial reporting errors in all training seasons, or early two with actual/proxy recent-season reports.',
+    'revision_signals': 'Signals perturbed by empirical errors; admissions leaves ED and auxiliary covariates unchanged.',
+    'pilot_nowcaster': 'Admissions-only synthetic/real-pair tree or matched real-pair neural corrector, optionally synthetic-pretrained.',
+    'ili_training': 'No historical transfer, forecasting pretraining, or joint forecasting on the pinned pre-2022 ILI archive.',
+    'ili_path': 'Historical ILI auxiliary dataset; its hash is pinned by the experiment manager.',
+    'ili_weight': 'Historical ILI loss weight for joint training after within-history normalization.',
+    'growth_anchor': 'Shared-series models: add damped observed two-week transformed growth to the level anchor.',
     'reporting_missingness': 'Transfer donor reporting masks with reporting augmentation; false transports numerical errors only and retains native input availability.',
     'reporting_augmentation': 'Stochastic training-season joint revision windows; vintage errors or causal nowcast residuals; real-vintage scoring.',
     'replay_from': 'Completed experiment supplying fixed CV checkpoints for inference-only input replay.',
@@ -106,7 +139,7 @@ MEANING = {
     'finalization_weeks': 'finalize only: reconstruct this many completed weeks ending at each signal\'s T-X boundary.',
     'signal_features': 'Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing.',
     'coordinates': 'Census state internal-point latitude/longitude and non-US indicator.',
-    'evaluation_seasons': 'all three held-out seasons, or recent_two (2025-26 and 2024-25).',
+    'evaluation_seasons': 'all three held-out seasons, recent_two (2025-26 and 2024-25), or production (fit on all four seasons 2022-23 to 2025-26; forecast 2026-27 inputs, unscored).',
     'training_inputs': 'same as forecasting, or complete finalized target and covariate histories during fitting only.',
     'input_normalization': 'none, or B0 per-location transformed target scales fitted on training contexts only.',
     'validation_calendar': 'season-relative blocks, or B0 blocks counted from the first stored week of each season.',
@@ -127,6 +160,7 @@ MEANING = {
     'spatial': 'Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); '
                'see architecture.md.',
     'heads': 'State and US output heads shared or separate (`state_us`).',
+    'sum_wis_weight': 'Auxiliary four-week flu admission sum WIS weight; sampled heads only; normalized by four times training-only admission Q95.',
     'decoder': 'Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see architecture.md.',
     'noise': 'Global latent noise, or global plus a per-location latent (`local`).',
     'us_error': 'Extra common noise factor (`shared_factor`); see architecture.md.',
@@ -151,7 +185,7 @@ MEANING = {
     'mask_recent': 'Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1).',
     'mask_gap': 'Share of masked episodes whose pattern is a local gap in one location history.',
     'mask_outage': 'Share of masked episodes whose pattern is a whole-channel outage.',
-    'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age.',
+    'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, a shared 4-dimensional encoder, or recent growth (level, 1/2-week log growth, acceleration) plus coverage/age.',
     'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
                      'workflow.md and experiments/b-2-t0/index.md#protocol.',
     'input_mode': 'scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context '
@@ -195,6 +229,19 @@ def _decode(name, raw, field_type):
 @dataclass(frozen=True)
 class Scenario:
     # Network shape and training budget (formerly TrainingScenario).
+    pilot_method: str = 'none'
+    revision_scope: str = 'all'
+    revision_signals: str = 'admissions'
+    pilot_nowcaster: str = 'synthetic_tree'
+    forecast_targets: str = 'all'
+    pathogen_inputs: str = 'all'
+    ili_units: str = 'own'
+    ili_steps: int = 200
+    correction_weeks: int = 8
+    ili_training: str = 'none'
+    ili_path: str = 'data/processed/historical_ili.npz'
+    ili_weight: float = .25
+    growth_anchor: bool = False
     task: str = 'forecast'
     weekend_family: str = 'none'
     reporting_probability: float = 1.
@@ -254,6 +301,7 @@ class Scenario:
     spatial: str = 'none'
     heads: str = 'shared'
     decoder: str = 'legacy'
+    sum_wis_weight: float = 0.
     noise: str = 'global'
     us_error: str = 'none'
     latent: int = 16
@@ -302,16 +350,61 @@ class Scenario:
     validation_weeks: int = 3
     validation_spacing: int = 16
     validation_offset: int = 4
+    # B5 / B4.polish options (2026-10-06); defaults reproduce B4 exactly.
+    vintage_seasons: str = 'latest'
+    actual_share: float = 0.
+    correction_realizations: int = 1
+    uncorrected_share: float = 0.
+    nowcast_noise: float = 0.
+    nowcast_noise_train: bool = False
+    log_loss_weight: float = 0.
+    covariate_dropout: float = 0.
+    training_window: str = 'all'
+    stress_views: bool = False
 
     def __post_init__(self):
+        if not 0 <= self.sum_wis_weight <= 1:
+            raise ValueError('Sum WIS weight must be between zero and one')
+        if self.sum_wis_weight and (self.decoder not in ('legacy', 'residual2') or self.encoder in ('series_mlp', 'series_mixer') or self.forecast_targets != 'flu' or self.task != 'forecast'):
+            raise ValueError('Sum WIS requires sampled flu forecasting')
+        if self.forecast_targets == 'flu' and self.loss_weights != 'flu_hosp_ed':
+            raise ValueError('Flu-only forecasts require flu admission + ED loss weights')
+        if self.ili_units != 'own' and self.ili_training == 'none':
+            raise ValueError('Scaled ILI requires ILI training')
+        if self.ili_steps < 1 or self.correction_weeks < 1:
+            raise ValueError('Invalid ILI or correction budget')
+        if self.growth_anchor and self.encoder not in ('series_mlp', 'series_mixer', 'mlp'):
+            raise ValueError('Growth anchor needs an MLP or shared series encoder')
+        if not (0 <= self.actual_share <= 1 and 0 <= self.uncorrected_share <= 1 and 0 <= self.covariate_dropout <= 1
+                and self.correction_realizations >= 1 and self.nowcast_noise >= 0 and self.log_loss_weight >= 0):
+            raise ValueError('Invalid B5 vintage/nowcast/loss option')
+        if (self.correction_realizations > 1 or self.uncorrected_share or self.nowcast_noise_train) and self.pilot_method not in ('corrected', 'two_stage'):
+            raise ValueError('Correction realizations, uncorrected share and training noise need corrected training histories')
+        if self.evaluation_seasons == 'production' and (self.training_window != 'all' or self.pilot_method == 'none'):
+            raise ValueError('Production fits use every season and the pilot fitting path')
+        if self.nowcast_noise_train and not self.nowcast_noise:
+            raise ValueError('Training correction noise needs nowcast_noise > 0')
+        if (self.actual_share or self.vintage_seasons != 'latest') and self.pilot_method in ('none', 'finalized', 'reported'):
+            raise ValueError('Actual-report mixing and multi-season vintages need artificial training reports')
+        if self.ili_weight < 0:
+            raise ValueError('Historical source loss weight must be nonnegative')
+        if self.decoder in ('quantile', 'quantile_small') and (self.noise != 'global' or self.us_error != 'none'):
+            raise ValueError('Direct quantiles cannot add sampled output noise')
+        if self.ili_training != 'none' and self.encoder not in ('series_mlp', 'series_mixer') and \
+                (self.encoder != 'mlp' or self.ili_training != 'pretrain' or self.ili_units != 'flu_scaled' or self.forecast_targets != 'flu'):
+            raise ValueError('Historical ILI needs a shared series encoder, or flu-scaled panel pretraining of a flu MLP')
+        if self.encoder in ('series_mlp', 'series_mixer') and (self.fit_partition != 'all' or self.spatial != 'none' or self.covariate_set):
+            raise ValueError('Pilot series models use one shared fit, no spatial messages or covariates')
+        if self.pilot_method != 'none' and (self.task != 'forecast' or self.supplied_final or self.mask_rate):
+            raise ValueError('Pilot requires forecast with no finality flag or artificial masking')
         if self.weekend_family != 'none' and (self.task != 'forecast' or self.input_mode != 'scheduled_final' or self.supplied_final or self.reporting_missingness or self.mask_rate):
             raise ValueError('Weekend experiments require scheduled-final forecast, no final flag, no added missingness or masking')
         if not 0 <= self.reporting_probability <= 1 or self.reporting_recent < 0 or self.joint_weight <= 0:
             raise ValueError('Invalid revision probability, recent window, or joint loss weight')
         if self.correction_penalty <= 0 or not 0 <= self.correction_strength <= 1 or self.correction_features not in ('age', 'phase', 'phase_local'):
             raise ValueError('Invalid nowcaster settings')
-        if not 0 < self.reporting_strength <= 1:
-            raise ValueError('reporting_strength must be in (0, 1]')
+        if not 0 < self.reporting_strength <= 2:
+            raise ValueError('reporting_strength must be in (0, 2]')
         for key in CODES:
             if getattr(self, key) not in CODES[key]:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)!r}')
@@ -435,11 +528,13 @@ class Scenario:
     def scored_seasons(self):
         if self.task == 'finalize' and self.finalization_cv == 'rolling':
             return ('rolling_1', 'rolling_2', 'rolling_3')
+        if self.evaluation_seasons == 'production':
+            return ('2026-2027',)
         return ('2025-2026', '2024-2025') if self.evaluation_seasons == 'recent_two' else ('2023-2024', '2024-2025', '2025-2026')
 
     @property
     def horizons(self):
-        if self.weekend_family == 'joint':
+        if self.weekend_family == 'joint' or self.pilot_method == 'joint':
             return tuple(range(1 - self.nowcast_weeks, 5))
         return tuple(range(1 - self.nowcast_weeks, 1)) if self.task == 'nowcast' else (1, 2, 3, 4)
 
@@ -488,8 +583,8 @@ class Scenario:
                 self.mask_rate * self.mask_gap, self.mask_rate * self.mask_outage)
 
     def model_options(self):
-        return dict(signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
+        return dict(pathogen_inputs=self.pathogen_inputs, signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, heads=self.heads,
                     noise=self.noise, head_sharing=self.head_sharing, count_transform=self.count_transform,
                     ed_transform=self.ed_transform, geography=self.geography, coordinates=self.coordinates, dynamics=self.dynamics,
                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,
-                    us_error=self.us_error, supplied_final=self.supplied_final)
+                    us_error=self.us_error, supplied_final=self.supplied_final, growth_anchor=self.growth_anchor)

@@ -63,8 +63,8 @@ class Queue:
             from tapestry.model.scenario import Scenario
             s = Scenario.from_string(job['scenario'])
             components = {'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
-            encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2.}[s.encoder]
-            decoder = {'legacy': 1., 'residual2': 2.}[s.decoder]
+            encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2., 'series_mlp': .5, 'series_mixer': .6}[s.encoder]
+            decoder = {'legacy': 1., 'residual2': 2., 'quantile': .5, 'quantile_small': .5}[s.decoder]
             exchange = 1.4 if s.spatial == 'joint_location_target' else 1.
             self.cost[task] = components * s.epochs * (s.width / 64)**2 * (s.lookback / 12)**.5 * encoder * decoder * exchange
         self.local = threading.Lock()
@@ -123,8 +123,11 @@ class Queue:
             save(self.folder / 'dispatch.json', state)
 
     def reclaim(self):
-        result = subprocess.run(['squeue', '-a', '-r', '-h', '-u', os.environ['USER'], '-o', '%i'],
-                                text=True, capture_output=True)
+        try:  # an unreachable Slurm controller must not block dispatch (7 October 2026 outage)
+            result = subprocess.run(['squeue', '-a', '-r', '-h', '-u', os.environ['USER'], '-o', '%i'],
+                                    text=True, capture_output=True, timeout=20)
+        except subprocess.TimeoutExpired:
+            return
         if result.returncode:
             return
         live = set(result.stdout.split())

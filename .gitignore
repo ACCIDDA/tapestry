@@ -42,3 +42,7 @@ site/
 # Commit report summaries, figures, and the analysis script instead.
 /docs/experiments/b2-weekend-20261002/analysis/ranking/
 /docs/experiments/b2-weekend-20261002/analysis/all-available-seed-scores.csv
+# Large regenerable ranking tables (planner rank rewrites them from the Longleaf run folders)
+docs/experiments/**/distribution-scores.csv
+docs/experiments/**/pilot-raw-wis.csv
+docs/experiments/b4-flu-600-20261005/provisional-analysis/

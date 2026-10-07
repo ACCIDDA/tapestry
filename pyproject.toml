@@ -20,7 +20,7 @@ dataset = ["numpy>=1.24", "pandas>=2"]
 # binary compatibility with the sm_86 cubin, verified on g1803jles01; sm_80 and
 # sm_90 are native. PyTorch stops publishing cu126 wheels at 2.15, so do not
 # let `uv sync --upgrade` move this pin without re-checking the arch list.
-model = ["numpy>=1.24", "torch==2.9.1"]
+model = ["numpy>=1.24", "torch==2.9.1", "scikit-learn==1.7.2"]
 evaluation = ["numpy>=1.24", "pandas>=2", "scipy>=1.11", "pyarrow>=10", "torch==2.9.1", "matplotlib>=3.8", "seaborn>=0.13"]
 explorer = ["pyarrow>=10"]
 docs = [

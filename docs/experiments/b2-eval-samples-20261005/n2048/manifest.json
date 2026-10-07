@@ -1,0 +1,55 @@
+{
+  "runs": [
+    {
+      "config_id": "replay_from=data/experiments/b-2-t0,replay_inputs=finalized,ed_transform=logit,spatial=distance,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-135f5bbd1fd8",
+      "seed": 42,
+      "path": "data/experiments/b2-eval-samples-20261005-n2048/mlp-pathogen-scheduled_final-135f5bbd1fd8/s42/attempt-001"
+    },
+    {
+      "config_id": "replay_from=data/experiments/b-2-t0,replay_inputs=finalized,ed_transform=logit,spatial=distance,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-135f5bbd1fd8",
+      "seed": 43,
+      "path": "data/experiments/b2-eval-samples-20261005-n2048/mlp-pathogen-scheduled_final-135f5bbd1fd8/s43/attempt-001"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally sharing 1 - us_weight; the US ratio gets us_weight (default 0.2). Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions_weight (default 1) and ed_weight (default .5). Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped. Summed WIS columns are raw totals, not a score.",
+  "score_version": "location-relative-season-first-v2",
+  "us_weight": 0.2,
+  "admissions_weight": 1.0,
+  "ed_weight": 0.5,
+  "runs_sha256": "bc70bd8ae28e63568ad4a018174291e4b61c4a9cba783365cf039ed7a0155022"
+}

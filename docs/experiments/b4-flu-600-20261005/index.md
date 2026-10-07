@@ -1,0 +1,185 @@
+# Flu admissions and ED: 600 configurations, two seeds
+
+User authorization: launch 600 models adapted to B3 findings, focus on flu ED and admissions, test other pathogens as inputs and historical ILI transfer, use more workers per GPU, check hourly, and autonomously refine if finished before 9am. We interpret 9am as **2026-10-06 09:00 America/New_York**. The main experiment may finish later; no new refinement is launched after that cutoff. A follow-up batch is bounded to 60 configurations × seeds 42/43, and only one refinement batch may be active at a time.
+
+## Execution state
+
+- Main experiment: `b4-flu-600-20261005`; **600 unique configurations × seeds 42/43 = 1,200 manager runs**, each with two seasonal folds.
+- Intended isolated remote checkout: `/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-600-20261005`.
+- **RUNNING on all six GPUs.** Submitted at 23:53:51 EDT. All 20 GPU validation runs passed: job `3977476` completed with exit 0 in 7m51s. Replacement L40 array `3981509` has four running allocations on `g1803jles01`, four workers each (original `3977477` cancelled after GPU-memory failures); H100 array `3977478` has two running allocations on `g1803jles02`. CPU ranking job `3977479` waits for both arrays. No network blocker remains.
+- Hourly thread heartbeat `flu-sweep-hourly-review` is ACTIVE. It reads this document, checks jobs, handles routine failures, scores completed results and may launch the authorized focused refinement. It remains quiet for unchanged status.
+- Do not start a duplicate launch while the original chat turn is still preparing it. Inspect both this execution log and cluster queue first.
+
+## Scientific design
+
+All runs predict **flu admissions and flu ED**, not COVID or RSV outcomes. Modern loss weights are admissions 1 and ED 0.5; other target losses are zero and their independent component models are not fitted. A flu pathogen model jointly fits the two targets; a target model fits them separately. Six-channel tensor storage is retained, but untrained channels are excluded from exported/scored forecasts.
+
+The forward fold trains 2022–23, 2023–24, 2024–25 and evaluates 2025–26. The retrospective fold trains 2022–23, 2023–24, 2025–26 and evaluates 2024–25. Both are equally weighted. Future labels are finalized next-four-week outcomes; joint reconstruction also learns recent finalized flu labels. Both evaluation seasons have influenced development. There is no claim of an untouched test.
+
+Reported evaluation histories use each Hub's Wednesday/holiday deadline and finalized fills for absent archives, with the chosen T-0 ED regime. Each fitted model produces reported-history forecasts, admission-corrected-history forecasts, and a 50/50 distribution mixture. Only flu admissions are corrected in this sweep; ED stays reported. Predictions use 512 samples or exact 23 quantiles; direct-quantile mixtures retain the documented deterministic numerical approximation.
+
+The design is **150 recipes × four matched pathogen-input sets**: flu alone, flu+COVID, flu+RSV, flu+COVID+RSV. Inputs include both admissions and ED for each allowed pathogen. Excluded channels' values and availability are masked inside both the forecaster and nowcaster feature construction. They cannot act as hidden nowcaster covariates. Optional Kinsa is randomized in the existing models; shared models currently have no Kinsa/spatial support. These are independent model retrainings on the same seed, not input replays of one fitted model.
+
+Training-treatment counts:
+
+| Histories supplied during forecaster fitting | Configurations |
+|---|---:|
+| Synthetic reports corrected by cross-fitted synthetic-pair trees | 180 |
+| Synthetic reports corrected by cross-fitted real-pair trees | 120 |
+| Artificial admission errors in 2022–24; archived/fill reports in latest permitted training season | 120 |
+| Archived reports where available, finalized fills otherwise | 60 |
+| Artificial errors plus recent-history reconstruction | 60 |
+| Unchanged finalized histories | 60 |
+
+The first 440 configurations use existing MLP encoders: 336 independent flu-target fits and 104 joint flu-pathogen fits. They randomize width 32/64/96, lookback 8/12/16, learning rate .0003/.0005/.001/.002, weight decay 0/.0001/.001, fourth-root/sqrt/log1p admission transforms, sampled or ordered-quantile output, neighbor/distance/no spatial exchange, Kinsa/no Kinsa, and 160/240 epochs with patience 25. Correction strength .5/.75/1, correction ages 2/4/8, tree penalty 3/10/30 and artificial reporting-error strength .25/.5/.75/1 are randomized. Real supervision uses genuinely archived report-to-12-week-reference pairs from the latest permitted training season; labels are approximately mature, not guaranteed final. Cross-fitting purges entire context-date unions; inner validation labels are excluded.
+
+The remaining 160 configurations comprise 10 shared recipes × four ILI choices × four pathogen-input sets. There are 112 mixer configurations and 48 shared MLP configurations, with a 320-epoch cap and patience 40. ILI choices are none, own-source pretraining, flu-scaled pretraining, and flu-scaled joint learning. Pretraining uses 400 updates of 64 examples; joint weight is .05, down from the unsuccessful pilot .25. Modern training exposure stays fixed.
+
+**Scaled ILI assumption:** historical pre-August-2022 ILI values are multiplied by the current fit partition's mean flu-target Q95 divided by historical ILI Q95. Each auxiliary batch uses either the flu admissions or flu ED source identity, equally likely; ED pseudo-values are clipped to [0,1]. The future ILI values receive the identical scale conversion. This is a shape-transfer pseudo-task, not observed historical admissions or ED. Own-source pretraining retains the ILI identity. Modern scale estimates use only permitted fitting truth; inner validation and evaluation outcomes are excluded. The matched ILI recipes isolate transfer mode from the other model choices. The current damped growth anchor is excluded.
+
+## Scoring and selection
+
+The common manager's native rank is now flu-only: admissions and ED weights 1/.5, states/DC 80%, US 20%, equal seasons. **Frozen retrospective support has flu admissions but no flu ED**, so its composite includes only admissions in that season. Keep separate flu admissions native and log(1+count) relative WIS. `pilot-raw-wis.csv` also reports native flu ED WIS in **both seasons**, separately for states/DC and US, for every evaluation-input choice; do not silently discard retrospective ED when selecting refinements. Flu ED ensemble-relative WIS has only the supported forward season and is explicitly marked `available_season_mean`, not an equal two-season mean.
+
+Use candidates strong on native/log admissions without a material ED deterioration. Inspect both seasons and both seeds, not only the top mean. These are separate objectives; no invented weighted combination of raw counts and ED proportions. Complete fit workers cache their view scores and full-window raw WIS, so hourly ranking does not rescore 1,200 runs serially. The flu sweep skips the optional official-style all-model pairwise Hub export; its common frozen-ensemble and raw-WIS scores remain available.
+
+## Commands
+
+From the remote directory above, after synchronization and validation:
+
+```bash
+export PYTHONPATH=src
+# Helper issues the common manager plan with all 600 exact scenarios:
+.venv/bin/python scripts/plan_b4_flu.py --plan
+# Equivalent direct plan (use one method, not both):
+.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-600-20261005 \
+  -s $(cat docs/experiments/b4-flu-600-20261005/scenarios.txt) --seeds 42 43 --device cuda
+# Intended launch: 10 workers per L40, plus 16 per H100 if available; 6 GPUs total.
+LANES=10 GPUS=6 sbatch --job-name=b4-flu-600-20261005 --array=0-3 \
+  --cpus-per-task=10 --mem=95G --time=12:00:00 scripts/jlessler.sbatch b4-flu-600-20261005
+LANES=16 GPUS=6 sbatch --job-name=b4-flu-600-h100 --array=0-1 \
+  --nodelist=g1803jles02 --cpus-per-task=16 --mem=180G --time=12:00:00 \
+  scripts/jlessler.sbatch b4-flu-600-20261005
+.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-600-20261005
+.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --no-plots
+# While still incomplete (explicitly provisional):
+.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
+```
+
+Hardware affects runtime and may cause small numerical differences; scheduling is recorded per run. Begin at the documented concurrency, inspect memory/utilization/failures, and reduce workers if needed. Do not interfere with unrelated GPU work. Main jobs need not stop at 9am, but the monitor must not launch refinements afterward. The native ntfy launcher notifications remain enabled.
+
+Validation uses the same helper with `--experiment b4-flu-check-20261005 --smoke --plan` (10 representative configurations × two seeds, three epochs) and the same manager status/rank commands with that experiment name. Validation scores are never included in research rankings. A successful validation is required before main submission.
+
+[Exact scenarios and recipe groups](design.json). [Scenario strings](scenarios.txt). Generator: `scripts/plan_b4_flu.py`, random seed 20261006.
+
+### Launch orchestration and validation record
+
+`scripts/launch_b4_flu.sh` issues both manager plans, submits GPU validation, queues the main L40/H100 arrays with `afterok` dependencies, and queues CPU ranking after the main arrays end. Main training cannot start unless GPU validation succeeds. The script records IDs in `data/experiments/b4-flu-600-20261005/launch.json` and refuses a duplicate recorded launch. If interrupted before that file is written, inspect `squeue`/`sacct` before retrying. Ranking permits incomplete runs explicitly; missing runs must still be repaired/resubmitted.
+
+Six scientific checks passed: quantile/WIS mathematics, mixture semantics, flu ED loss and output retention, and exclusion of other-pathogen values/masks from both forecaster and nowcaster. Two local integration runs completed both seasonal folds, inner selection, refitting, real-tree correction or scaled ILI pretraining, three evaluation views and cached scoring; their manager rank completed. These two-epoch validation scores are excluded from research rankings.
+
+Local integration manager commands:
+
+```bash
+.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-localcheck-20261005 \
+  -s $(cat docs/experiments/b4-flu-localcheck-20261005/scenarios.txt) --seeds 42 --device cpu
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TAPESTRY_TORCH_THREADS=1 \
+  .venv/bin/python -m tapestry.experiment.planner run -e b4-flu-localcheck-20261005 --device cpu --fit-workers 2
+.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-localcheck-20261005
+.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-localcheck-20261005 --no-plots
+```
+
+At 23:50 EDT the user reconnected the VPN, SSH succeeded, and both patron nodes were idle. The isolated remote checkout was created; its processed data, frozen evaluation support, metadata and environment link to the unchanged B3 pilot assets. The new source is copied separately and pinned by each experiment plan.
+
+ILI interpretation detail: the shared encoder normalizes each visible series by its own recent level. Scaling ILI therefore mainly aligns its auxiliary source head and loss units with modern flu, rather than simply making the latent input numerically larger. The own-source versus flu-scaled comparison changes both source identity and units; it cannot isolate a pure unit-conversion effect. This is an explicit transfer hypothesis to test.
+
+### Submitted jobs
+
+Validation `3977476`, L40 main array `3977477`, H100 main array `3977478`, dependent CPU ranking `3977479`. At 23:55 EDT, validation was running and all main jobs were correctly waiting on its successful completion. [Submission IDs](launch.json), [local source checksums](source-provenance.json). Inspect exact IDs with `squeue -j 3977476,3977477,3977478,3977479` or `sacct`; use manager status for individual training runs.
+
+### Comparable B3 reference
+
+Do not compare the new flu-only composite directly with B3's six-target 0.9251. Filtering the saved B3 synthetic-tree-corrected-training target-MLP forecasts (corrected evaluation histories) to the identical flu-only frozen support gives **0.856258** for the new native composite. Its flu admissions native/log equal-season scores are 0.83991/0.88213, and forward flu ED relative WIS is 0.97422. The underlying model was trained on all six future outcomes, with the prior fold assignments and corrected synthetic histories; this sweep retrains flu-only models. B3 also corrected other admissions covariates at evaluation, whereas B4 corrects only flu admissions. Report these differences when comparing results.
+
+A useful focused follow-up, if the main sweep finishes before the cutoff, is matched inclusion of contemporary `ilinet` and `kinsa+ilinet` covariates on strong existing MLP recipes; the frozen panel supports them with the documented publication lag. The main 600 already test historical ILI transfer/scaling, but contemporary ILINet as an extra covariate is a distinct question. Prioritize unclear matched effects and the admission/ED tradeoff over simply adding more random draws.
+
+At 23:57–23:58 EDT, eight validation workers used about 22,838 MiB of a 46,068 MiB L40 at 99% utilization; completed validation runs were passing. A temporary local `caffeinate -i -t 36000` assertion was verified (PID 28875, execution session 1203) to prevent idle system sleep for about ten hours, without changing display-sleep settings. The laptop must remain open with Codex and VPN connected for local hourly checks; cluster jobs continue independently. Other pre-existing sleep assertions were not changed.
+
+Main start confirmed just after midnight October 6: all six allocations running, four L40s with 10 workers each and two H100s with 16 workers each. Shared queue capacity is 72 concurrent runs. GPU validation finished successfully before release of every main allocation.
+
+Initial main-worker GPU samples showed L40 10,949/46,068 MiB and H100 23,969/95,830 MiB, both 99% utilization. These are startup samples, not worst-case guarantees; hourly checks should continue to watch memory failures and throughput. The hourly automation was confirmed active after the main allocations started.
+
+## Hourly review — October 6, 00:45–00:50 EDT
+
+The first hourly manager status found 138 completed runs, 244 failed, 72 active and 746 not started; additional completions/failures occurred during inspection. The sampled L40 had 45,294/46,068 MiB allocated, while the sampled H100 had 53,903/95,830 MiB. Failed run logs showed CUDA memory exhaustion, including failures during initial model transfer to the GPU. Startup memory samples underestimated sustained memory pressure at ten L40 workers.
+
+Intervention: cancelled only L40 array `3977477`, preserving the H100 array `3977478` and all completed results. Submitted replacement L40 array **3981509** with **four workers per GPU** and `--retry-failed`, using the unchanged pinned experiment/source/scenarios. Interrupted runs are reclaimed by the common dispatcher, and failed runs are eligible again. Total intended concurrency is now 48 (16 across L40s + 32 across H100s). Updated ranking job `3977479` to wait for replacement L40 array `3981509` and original H100 array `3977478`.
+
+No replan or new scientific configuration was needed. Original plan command remains the one above. Recovery launch and follow-up commands:
+
+```bash
+cd /proj/jlessler/projects/tapestry-all/tapestry-b4-flu-600-20261005
+export PYTHONPATH=src
+LANES=4 GPUS=6 sbatch --job-name=b4-flu-l40-recovery --array=0-3 \
+  --cpus-per-task=8 --mem=95G --time=12:00:00 \
+  scripts/jlessler.sbatch b4-flu-600-20261005 --retry-failed
+scontrol update JobId=3977479 Dependency=afterany:3981509:3977478
+.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-600-20261005
+.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
+```
+
+Next checks must use `squeue -j 3981509,3977478,3977479` and distinguish historical failed attempts from a run's current/latest attempt. Do not interpret the incomplete ranking as a final scientific result or launch refinement while this recovery is still running.
+
+Recovery confirmed: dispatcher owns exactly four replacement L40 allocations at four workers each plus two original H100 allocations at 16 workers each. At recovery inspection: **141 complete, 48 running, 1,011 pending; zero currently failed** after requeuing. Historical failures included 244 explicit CUDA-memory errors and 11 CUDA-device-busy/unavailable errors during GPU initialization. All are requeued without changing training data, labels, hyperparameters or seeds.
+
+After restart, a sampled L40 used 29,827/46,068 MiB at 100% utilization. Recovery dispatcher logs had no new failures at inspection. `scontrol show job 3977479` confirmed both replacement-L40 and original-H100 dependencies are unfulfilled and the rank job remains safely pending. Future launches of this sweep should use four L40 workers, not the original ten-worker command.
+
+## Hourly review — October 6, 01:46 EDT
+
+Manager and dispatcher agree: **237/1,200 complete, 48 running, 915 pending, zero currently failed**. All four replacement L40 allocations (`3981509`) and both H100 allocations (`3977478`) remain running; ranking `3977479` still waits on their completion. Sampled GPU memory/utilization: L40 21,577/46,068 MiB at 100%; H100 32,959/95,830 MiB at 99%. The reduced L40 concurrency has remained healthy for approximately an hour. No intervention or refinement launch was needed.
+
+Old `attempt-001/run.json` files still contain the previous memory failures for pending retries; these are not new failures. Use dispatcher seed states and manager status to identify current failures, rather than counting failed artifact files. The sweep is incomplete; no scientific winners or final comparisons are inferred from this check. Continue hourly monitoring quietly while progress remains healthy.
+
+## Hourly review — October 6, 02:51 EDT
+
+**398/1,200 complete, 48 running, 754 pending, zero currently failed.** The common manager and dispatcher agree. All six allocations remain running, and ranking job `3977479` is still waiting on their completion. Sampled GPU memory/utilization: L40 21,107/46,068 MiB at 100%; H100 41,203/95,830 MiB at 99%. Dispatcher logs show continued completions and new starts, with no failure messages in either the replacement L40 logs or the H100 logs. No intervention, new scoring job, or refinement was needed. The sweep remains incomplete; continue hourly checks without selecting scientific winners from the partial completion set.
+
+## Hourly review — October 6, 03:56 EDT
+
+**560/1,200 complete, 48 running, 592 pending, zero currently failed.** The common manager and dispatcher agree. All four replacement L40 allocations (`3981509`) and both H100 allocations (`3977478`) remain running; ranking job `3977479` remains pending on their completion. Sampled GPU memory/utilization: L40 22,983/46,068 MiB at 100%; H100 29,873/95,830 MiB at 99%. Current dispatcher logs show continued completions and new starts, with no failure messages in the replacement L40 or original H100 logs. No intervention or refinement was needed. The main sweep is incomplete, so no final scientific comparison or refinement selection was made. Continue hourly monitoring.
+
+## Hourly review — October 6, 04:51 EDT
+
+**707/1,200 complete, 48 running, 445 pending, zero currently failed.** The common manager and dispatcher agree. All four replacement L40 allocations (`3981509`) and both H100 allocations (`3977478`) remain running; ranking job `3977479` still waits on their completion. Sampled GPU memory/utilization: L40 14,861/46,068 MiB at 100%; H100 50,727/95,830 MiB at 99%. Current dispatcher logs show continued completions and new starts, with no failure messages in the replacement L40 or original H100 logs. No intervention or refinement launch was needed. The main sweep remains incomplete; continue hourly monitoring and wait for completion before selecting a refinement batch.
+
+## Hourly review — October 6, 05:52 EDT
+
+**835/1,200 complete, 48 running, 317 pending, zero currently failed.** The common manager and dispatcher agree. All four replacement L40 allocations (`3981509`) and both H100 allocations (`3977478`) remain running; ranking job `3977479` remains pending on their completion. Sampled GPU memory/utilization: L40 14,865/46,068 MiB at 100%; H100 47,195/95,830 MiB at 99%. Dispatcher logs continue to show completions and new starts, with no failure messages in the replacement L40 or original H100 logs. No intervention or refinement was needed. The main sweep remains incomplete; continue hourly checks and wait for completion before selecting refinements. The refinement launch cutoff remains 09:00 America/New_York (13:00 UTC), not 09:00 UTC.
+
+## Hourly review — October 6, 06:59 EDT
+
+**985/1,200 complete, 48 running, 167 pending, zero currently failed.** The common manager and dispatcher agree. All four replacement L40 allocations (`3981509`) and both H100 allocations (`3977478`) remain running; ranking job `3977479` remains pending on their completion. Sampled GPU memory/utilization: L40 11,149/46,068 MiB at 79%; H100 45,127/95,830 MiB at 99%. Dispatcher logs show continued completions and new starts, with no failure messages in the replacement L40 or original H100 logs. No intervention or refinement launch was needed. The main sweep remains incomplete; continue hourly monitoring and wait for completion before analyzing final results and selecting any refinement. The refinement launch cutoff is still 09:00 EDT (13:00 UTC).
+
+## User-requested provisional analysis — October 6, about 07:25 EDT
+
+The requested interim analysis is in [provisional-analysis/README.md](provisional-analysis/README.md). The view snapshot contains 1,059 completed runs, including 506 complete two-seed configurations and 123 fully matched four-input recipes. The leading flu-input model improves on the B3 reference across native/log admissions and forward ED. Added COVID generally worsens matched results; RSV is mixed, with modest retrospective ED benefit but no consistent composite benefit. These are provisional development comparisons, not final sweep selection. Common manager ranking completed in `ranking-2e1b9626ed8a`. Main training continues; no refinement launched.
+
+## Hourly review — October 6, 07:59 EDT
+
+**1,163/1,200 complete, 37 running, zero pending, zero currently failed.** The common manager and dispatcher agree. All remaining runs have started. All six allocations remain running and ranking job `3977479` still waits on their completion. Dispatcher logs show completions and no failure messages in the replacement L40 or original H100 logs. No resubmission is needed. No refinement has launched because the main sweep is not yet complete; final analysis must include the remaining runs. The existing provisional analysis remains the latest scientific assessment. Refinement launches remain prohibited at or after 09:00 EDT.
+
+After the successful status inspection, syncing this log to Longleaf failed twice: SSH reported `Can't assign requested address`, including a fresh connection with multiplexing disabled. This review is saved locally but is not yet synced remotely. The last verified cluster state is the healthy 1,163-complete/37-running snapshot above; loss of the local connection does not stop cluster jobs. Retry connectivity on the next check before assuming completion or launching anything.
+
+## Completion and refinement — October 6, 08:55–09:00 EDT
+
+Connectivity recovered. Dispatcher confirms **all 1,200 runs complete**, and final common-manager tables are in `ranking-98cf1e1c8cb0`. Local copies and matched analysis are in `final-analysis/`. Both previously identified leaders remain unchanged. All 150 complete matched recipes show median corrected-view composite deterioration of 4.38% with COVID, 0.73% with RSV, and 0.65% with both. Raw ED WIS in both seasons was inspected for the native/log leaders and reveals a season tradeoff, so both are retained.
+
+One bounded refinement was submitted before the cutoff: **24 configurations × two seeds**, experiment `b4-flu-refine-20261006`, Slurm array **4005335**. It crosses both leaders with contemporary covariates (none/Kinsa/ILINet/both) and flu-admission correction windows (2/4/8 weeks). Full conditions and manager plan/launch/status/rank commands are in [the refinement protocol](../b4-flu-refine-20261006/index.md). The monitor must now check this refinement as well as summarize the completed main sweep; no duplicate or further refinement batch may launch. Existing work may finish after 9am. Keep monitoring active until refinement scoring and analysis complete.
+
+## Additional user-authorized output-head comparison
+
+After the cutoff, the user explicitly requested four output variants and approved cumulative admission WIS as an auxiliary training loss with coverage diagnostics only. This is new user authorization, distinct from the one bounded autonomous refinement. Experiment **b4-flu-heads-20261006** uses an isolated remote checkout `/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-heads-20261006`, eight configurations × seeds 42/43 (16 runs). Main Slurm array **4006081** waits on validation **4006033**. [Protocol and exact manager commands](../b4-flu-heads-20261006/index.md). The hourly monitor should inspect both this new comparison and ILINet refinement `4005335`, score completed batches with their respective pinned source/common manager and analyze them. No additional autonomous configuration batches should be created. Deactivate only when all launched comparisons and analysis are complete.
+
+## All launched work analyzed
+
+Main sweep, 48-run ILINet/correction refinement, and 16-run output-head comparison all completed successfully and have final rankings. [Refinement analysis](../b4-flu-refine-20261006/analysis/README.md) retains the original covariates and two-week correction. [Output-head analysis and figures](../b4-flu-heads-20261006/analysis/README.md) shows strong recipe dependence: samples remain best with real-tree-corrected synthetic training histories; current quantiles remain best for log admissions with error-augmented reconstruction training; adding cumulative WIS makes that second recipe's sampled model competitive and improves cumulative uncertainty. Compact quantiles do not improve the original leaders. No further training is queued or authorized by this analysis. Hourly monitoring can now be deactivated.

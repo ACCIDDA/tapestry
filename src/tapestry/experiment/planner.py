@@ -45,7 +45,7 @@ def pinned_inputs(settings):
 
     The population file (`LOCATIONS`) and the frozen support are git-ignored, not
     synced with the code: copy them to the cluster (docs/longleaf-setup.md)."""
-    return dict(dataset_sha256=sha256(settings['dataset']),
+    return dict(ili_sha256=sha256(settings['ili_path']) if settings.get('ili_path') else None, dataset_sha256=sha256(settings['dataset']),
                 frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'),
                 population_sha256=sha256(LOCATIONS))
 
@@ -300,13 +300,19 @@ def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
     runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'])
             for row in sorted(done, key=lambda r: r['attempt'])]
     ranking = rank_runs(runs, destination, us_weight, admissions_weight, ed_weight)
+    pilot_runs=[r for r in runs if Scenario.from_string(r['config_id']).pilot_method != 'none']
+    if pilot_runs:
+        from .pilot import rank_pilot
+        rank_pilot(pilot_runs, json.loads((folder/'experiment.json').read_text())['frozen'], destination)
     print(ranking.head(20).to_string(index=False), flush=True)
     standard_runs = [run for run in runs if Scenario.from_string(run['config_id']).task == 'forecast']
-    if standard_runs and all(standard_inputs(run['path']) for run in standard_runs):
+    if standard_runs and not all(Scenario.from_string(r['config_id']).forecast_targets=='flu' for r in standard_runs) and all(standard_inputs(run['path']) for run in standard_runs):
         from tapestry.evaluation.standard import score as score_standard
         settings = json.loads((folder / 'experiment.json').read_text())
         score_standard(standard_runs, settings['frozen'], destination)
         print(f'Standard evaluation tables written to {destination}', flush=True)
+    elif standard_runs and all(Scenario.from_string(r['config_id']).forecast_targets=='flu' for r in standard_runs):
+        print('Flu-only sweep: cached common Hub-relative and full-window raw WIS tables written; optional pairwise Hub export omitted.',flush=True)
     else:
         print('Standard evaluation skipped: some runs were not scored on standard reported inputs '
               '(fitted before 2026-10-05 or replaying old inputs); refit them.', flush=True)
@@ -393,15 +399,21 @@ def main(argv=None):
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
                                             seed=args.seed, folds=list(scenario.scored_seasons), fold_manifests=folds,
                                             eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
-        if scenario.task not in ('nowcast', 'finalize'):
+        if scenario.task not in ('nowcast', 'finalize') and scenario.evaluation_seasons != 'production':
             from tapestry.evaluation.totals import score_run
             score_run(output, args.frozen)
+            if scenario.pilot_method != 'none' and scenario.forecast_targets == 'flu':
+                from .pilot import cache_pilot_scores
+                cache_pilot_scores(output,args.frozen)
         return
     folder = Path(args.root) / args.experiment
     if args.command == 'plan':
         scenarios = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}
         settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset,
                         frozen=args.frozen)
+        ili_paths={s.ili_path for s in scenarios.values() if s.ili_training != 'none'}
+        if len(ili_paths)>1:raise ValueError('One historical ILI dataset per experiment')
+        if ili_paths:settings['ili_path']=next(iter(ili_paths))
         settings.update(pinned_inputs(settings))
         jobs = plan(folder, scenarios, args.seeds, settings)
         print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(args.seeds),

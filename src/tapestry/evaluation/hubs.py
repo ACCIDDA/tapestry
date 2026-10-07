@@ -29,12 +29,15 @@ def export(run):
     postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
     frames = {}
     manifest = json.loads((Path(run) / 'manifest.json').read_text())
+    from tapestry.model.scenario import Scenario
+    flu_only=Scenario.from_string(manifest['scenario']).forecast_targets=='flu'
     for held in manifest['folds']:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
             if not np.array_equal(data['quantile_levels'], LEVELS):  # training.evaluate saves exactly LEVELS
                 raise ValueError(f'{run}/eval_{held}/forecasts.npz holds other quantile levels than LEVELS')
             selected = data['quantiles']
             for target, c in CHANNEL.items():
+                if flu_only and c not in (0,3):continue
                 q = selected[:, :, :, c, :]
                 n, h, l = q.shape[1:]
                 reference = [(date.fromisoformat(d) + timedelta(weeks=1)).isoformat() for d in data['context_end']]

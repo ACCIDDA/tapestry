@@ -1,0 +1,184 @@
+
+== flu_native  (R2 0.46); effect = % change in score vs reference level, other settings held fixed; negative = better
+               axis               level      reference  configs  effect_pct  low_pct  high_pct  median_score
+ correction_penalty                10.0            3.0      144       -1.04    -2.42      0.36          0.95
+ correction_penalty                 3.0            3.0      160        0.00      NaN       NaN          0.95
+ correction_penalty                30.0            3.0      136       -1.97    -3.29     -0.62          0.94
+correction_strength                 0.5           0.75      132        0.23    -1.04      1.53          0.96
+correction_strength                0.75           0.75      164        0.00      NaN       NaN          0.94
+correction_strength                 1.0           0.75      144        0.20    -1.16      1.57          0.93
+   correction_weeks                   2              8      140       -1.12    -2.45      0.22          0.95
+   correction_weeks                   4              8      148       -1.25    -2.51      0.03          0.94
+   correction_weeks                   8              8      152        0.00      NaN       NaN          0.95
+    count_transform         fourth_root    fourth_root      196        0.00      NaN       NaN          0.93
+    count_transform               log1p    fourth_root      120        5.53     4.03      7.04          0.99
+    count_transform                sqrt    fourth_root      124        1.21    -0.20      2.64          0.94
+      covariate_set               kinsa          kinsa      308        0.00      NaN       NaN          0.95
+      covariate_set                none          kinsa      132       -0.76    -1.95      0.45          0.94
+            decoder           quantiles        samples      128        1.08    -0.10      2.29          0.94
+            decoder             samples        samples      312        0.00      NaN       NaN          0.95
+             epochs                 160            240      216       -0.43    -1.59      0.75          0.95
+             epochs                 240            240      224        0.00      NaN       NaN          0.94
+      fit_partition            pathogen         target      104       -0.20    -1.50      1.11          0.94
+      fit_partition              target         target      336        0.00      NaN       NaN          0.95
+           lookback                  12              8      144       -1.16    -2.35      0.05          0.94
+           lookback                  16              8      140        1.52     0.05      3.01          0.96
+           lookback                   8              8      156        0.00      NaN       NaN          0.94
+                 lr              0.0003          0.002       76        0.13    -1.43      1.72          0.94
+                 lr              0.0005          0.002      116        1.34    -0.19      2.90          0.97
+                 lr               0.001          0.002      120        0.87    -0.64      2.39          0.93
+                 lr               0.002          0.002      128        0.00      NaN       NaN          0.94
+    pathogen_inputs                 all            all      110        0.00      NaN       NaN          0.93
+    pathogen_inputs                 flu            all      110       -1.84    -3.06     -0.61          0.92
+    pathogen_inputs           flu_covid            all      110        4.83     3.44      6.24          0.98
+    pathogen_inputs             flu_rsv            all      110        0.18    -1.19      1.56          0.94
+       pilot_method           corrected      corrected      132        0.00      NaN       NaN          0.95
+       pilot_method errors_early_actual      corrected       88       -2.42    -4.20     -0.61          0.93
+       pilot_method           finalized      corrected       44       -0.81    -2.44      0.86          0.97
+       pilot_method               joint      corrected       44       -0.95    -2.87      1.01          0.95
+       pilot_method            reported      corrected       44       -1.21    -3.20      0.82          0.93
+       pilot_method           two_stage      corrected       88        0.30    -2.04      2.70          0.94
+    pilot_nowcaster           real_tree synthetic_tree      168       -0.34    -1.91      1.25          0.94
+    pilot_nowcaster      synthetic_tree synthetic_tree      272        0.00      NaN       NaN          0.95
+ reporting_strength                0.25            1.0      116        1.62     0.18      3.08          0.96
+ reporting_strength                 0.5            1.0      108        0.86    -0.68      2.42          0.93
+ reporting_strength                0.75            1.0       84        0.67    -1.09      2.46          0.93
+ reporting_strength                 1.0            1.0      132        0.00      NaN       NaN          0.95
+            spatial            distance      neighbors      100       -0.38    -1.90      1.17          0.93
+            spatial           neighbors      neighbors      220        0.00      NaN       NaN          0.95
+            spatial                none      neighbors      120       -0.70    -2.07      0.69          0.94
+       weight_decay                 0.0            0.0      176        0.00      NaN       NaN          0.93
+       weight_decay              0.0001            0.0      116        0.00    -1.43      1.45          0.93
+       weight_decay               0.001            0.0      148        5.83     4.45      7.22          0.97
+              width                  32             32      180        0.00      NaN       NaN          0.95
+              width                  64             32      108        0.50    -0.84      1.85          0.93
+              width                  96             32      152        1.39     0.03      2.77          0.95
+
+== flu_admissions_log  (R2 0.46); effect = % change in score vs reference level, other settings held fixed; negative = better
+               axis               level      reference  configs  effect_pct  low_pct  high_pct  median_score
+ correction_penalty                10.0            3.0      144       -0.81    -2.09      0.49          0.96
+ correction_penalty                 3.0            3.0      160        0.00      NaN       NaN          0.96
+ correction_penalty                30.0            3.0      136       -1.70    -2.91     -0.48          0.95
+correction_strength                 0.5           0.75      132        1.07    -0.10      2.24          0.97
+correction_strength                0.75           0.75      164        0.00      NaN       NaN          0.95
+correction_strength                 1.0           0.75      144       -0.02    -1.26      1.23          0.94
+   correction_weeks                   2              8      140       -0.26    -1.44      0.94          0.96
+   correction_weeks                   4              8      148       -0.65    -1.87      0.59          0.96
+   correction_weeks                   8              8      152        0.00      NaN       NaN          0.95
+    count_transform         fourth_root    fourth_root      196        0.00      NaN       NaN          0.93
+    count_transform               log1p    fourth_root      120        3.84     2.55      5.14          0.99
+    count_transform                sqrt    fourth_root      124        0.55    -0.73      1.85          0.96
+      covariate_set               kinsa          kinsa      308        0.00      NaN       NaN          0.96
+      covariate_set                none          kinsa      132       -1.09    -2.21      0.04          0.95
+            decoder           quantiles        samples      128       -0.51    -1.54      0.53          0.95
+            decoder             samples        samples      312        0.00      NaN       NaN          0.96
+             epochs                 160            240      216       -0.46    -1.52      0.60          0.96
+             epochs                 240            240      224        0.00      NaN       NaN          0.96
+      fit_partition            pathogen         target      104        0.83    -0.42      2.09          0.97
+      fit_partition              target         target      336        0.00      NaN       NaN          0.95
+           lookback                  12              8      144       -2.45    -3.54     -1.34          0.94
+           lookback                  16              8      140        1.00    -0.34      2.35          0.98
+           lookback                   8              8      156        0.00      NaN       NaN          0.95
+                 lr              0.0003          0.002       76       -0.16    -1.58      1.28          0.95
+                 lr              0.0005          0.002      116        1.07    -0.33      2.50          0.97
+                 lr               0.001          0.002      120        0.09    -1.32      1.52          0.95
+                 lr               0.002          0.002      128        0.00      NaN       NaN          0.95
+    pathogen_inputs                 all            all      110        0.00      NaN       NaN          0.96
+    pathogen_inputs                 flu            all      110       -3.57    -4.71     -2.41          0.93
+    pathogen_inputs           flu_covid            all      110       -0.22    -1.45      1.02          0.97
+    pathogen_inputs             flu_rsv            all      110       -1.45    -2.73     -0.15          0.95
+       pilot_method           corrected      corrected      132        0.00      NaN       NaN          0.96
+       pilot_method errors_early_actual      corrected       88       -2.51    -4.12     -0.88          0.95
+       pilot_method           finalized      corrected       44       -0.27    -1.78      1.26          0.98
+       pilot_method               joint      corrected       44       -1.53    -3.12      0.09          0.95
+       pilot_method            reported      corrected       44       -2.58    -4.37     -0.75          0.93
+       pilot_method           two_stage      corrected       88        0.94    -1.30      3.23          0.97
+    pilot_nowcaster           real_tree synthetic_tree      168       -0.47    -1.98      1.06          0.96
+    pilot_nowcaster      synthetic_tree synthetic_tree      272        0.00      NaN       NaN          0.96
+ reporting_strength                0.25            1.0      116        2.65     1.31      4.00          0.98
+ reporting_strength                 0.5            1.0      108        1.50     0.08      2.94          0.95
+ reporting_strength                0.75            1.0       84        0.62    -1.01      2.27          0.94
+ reporting_strength                 1.0            1.0      132        0.00      NaN       NaN          0.95
+            spatial            distance      neighbors      100       -0.57    -1.97      0.84          0.95
+            spatial           neighbors      neighbors      220        0.00      NaN       NaN          0.96
+            spatial                none      neighbors      120       -0.91    -2.13      0.33          0.95
+       weight_decay                 0.0            0.0      176        0.00      NaN       NaN          0.94
+       weight_decay              0.0001            0.0      116       -0.19    -1.53      1.18          0.94
+       weight_decay               0.001            0.0      148        5.44     4.15      6.73          0.99
+              width                  32             32      180        0.00      NaN       NaN          0.96
+              width                  64             32      108        0.00    -1.23      1.25          0.94
+              width                  96             32      152        1.51     0.28      2.77          0.96
+
+== flu_ed_native  (R2 0.50); effect = % change in score vs reference level, other settings held fixed; negative = better
+               axis               level      reference  configs  effect_pct  low_pct  high_pct  median_score
+ correction_penalty                10.0            3.0      144       -1.18    -2.79      0.45          0.97
+ correction_penalty                 3.0            3.0      160        0.00      NaN       NaN          1.00
+ correction_penalty                30.0            3.0      136       -1.18    -2.87      0.54          0.99
+correction_strength                 0.5           0.75      132       -0.28    -1.87      1.34          1.01
+correction_strength                0.75           0.75      164        0.00      NaN       NaN          0.98
+correction_strength                 1.0           0.75      144       -0.30    -1.84      1.27          0.97
+   correction_weeks                   2              8      140       -0.73    -2.40      0.97          0.99
+   correction_weeks                   4              8      148       -0.79    -2.41      0.85          0.98
+   correction_weeks                   8              8      152        0.00      NaN       NaN          0.99
+    count_transform         fourth_root    fourth_root      196        0.00      NaN       NaN          0.98
+    count_transform               log1p    fourth_root      120       -0.12    -1.97      1.75          1.00
+    count_transform                sqrt    fourth_root      124       -0.37    -2.02      1.31          0.97
+      covariate_set               kinsa          kinsa      308        0.00      NaN       NaN          0.98
+      covariate_set                none          kinsa      132        2.72     1.15      4.32          1.00
+            decoder           quantiles        samples      128        4.27     2.70      5.86          1.00
+            decoder             samples        samples      312        0.00      NaN       NaN          0.98
+             epochs                 160            240      216       -0.65    -2.10      0.82          0.98
+             epochs                 240            240      224        0.00      NaN       NaN          0.99
+      fit_partition            pathogen         target      104       -3.43    -4.84     -2.00          0.96
+      fit_partition              target         target      336        0.00      NaN       NaN          1.00
+           lookback                  12              8      144        0.38    -1.19      1.98          0.98
+           lookback                  16              8      140        3.02     1.24      4.83          1.00
+           lookback                   8              8      156        0.00      NaN       NaN          0.97
+                 lr              0.0003          0.002       76        2.41     0.37      4.50          0.99
+                 lr              0.0005          0.002      116        2.02     0.11      3.97          0.99
+                 lr               0.001          0.002      120        2.85     0.93      4.81          0.99
+                 lr               0.002          0.002      128        0.00      NaN       NaN          0.97
+    pathogen_inputs                 all            all      110        0.00      NaN       NaN          0.98
+    pathogen_inputs                 flu            all      110       -3.29    -4.69     -1.87          0.94
+    pathogen_inputs           flu_covid            all      110        5.80     4.08      7.56          1.03
+    pathogen_inputs             flu_rsv            all      110       -1.04    -2.78      0.74          0.99
+       pilot_method           corrected      corrected      132        0.00      NaN       NaN          0.98
+       pilot_method errors_early_actual      corrected       88       -0.17    -2.40      2.11          0.99
+       pilot_method           finalized      corrected       44       -0.59    -2.68      1.55          0.99
+       pilot_method               joint      corrected       44        0.20    -2.29      2.77          0.97
+       pilot_method            reported      corrected       44        2.36    -0.43      5.23          1.01
+       pilot_method           two_stage      corrected       88        2.26    -0.74      5.36          0.96
+    pilot_nowcaster           real_tree synthetic_tree      168        0.69    -1.36      2.78          0.98
+    pilot_nowcaster      synthetic_tree synthetic_tree      272        0.00      NaN       NaN          0.99
+ reporting_strength                0.25            1.0      116        0.90    -0.85      2.69          1.01
+ reporting_strength                 0.5            1.0      108       -1.19    -3.00      0.65          0.96
+ reporting_strength                0.75            1.0       84       -0.85    -2.97      1.31          0.97
+ reporting_strength                 1.0            1.0      132        0.00      NaN       NaN          0.99
+            spatial            distance      neighbors      100       -2.51    -4.38     -0.61          0.96
+            spatial           neighbors      neighbors      220        0.00      NaN       NaN          0.99
+            spatial                none      neighbors      120       -1.13    -2.74      0.50          0.98
+       weight_decay                 0.0            0.0      176        0.00      NaN       NaN          0.96
+       weight_decay              0.0001            0.0      116        2.96     1.04      4.92          0.97
+       weight_decay               0.001            0.0      148       10.27     8.39     12.19          1.03
+              width                  32             32      180        0.00      NaN       NaN          0.99
+              width                  64             32      108        0.15    -1.46      1.79          0.98
+              width                  96             32      152        0.85    -0.80      2.53          0.98
+
+Top-20 native composite: level counts
+pilot_method {'errors_early_actual': np.int64(6), 'two_stage': np.int64(5), 'joint': np.int64(4), 'corrected': np.int64(3), 'reported': np.int64(2)}
+pilot_nowcaster {'real_tree': np.int64(10), 'synthetic_tree': np.int64(10)}
+pathogen_inputs {'flu': np.int64(12), 'flu_rsv': np.int64(4), 'all': np.int64(4)}
+fit_partition {'target': np.int64(14), 'pathogen': np.int64(6)}
+decoder {'samples': np.int64(14), 'quantiles': np.int64(6)}
+covariate_set {'kinsa': np.int64(14), 'none': np.int64(6)}
+spatial {'distance': np.int64(9), 'neighbors': np.int64(8), 'none': np.int64(3)}
+width {'96': np.int64(11), '64': np.int64(5), '32': np.int64(4)}
+lookback {'12': np.int64(9), '8': np.int64(6), '16': np.int64(5)}
+lr {'0.002': np.int64(9), '0.001': np.int64(7), '0.0005': np.int64(3), '0.0003': np.int64(1)}
+weight_decay {'0.0': np.int64(12), '0.0001': np.int64(7), '0.001': np.int64(1)}
+count_transform {'fourth_root': np.int64(11), 'sqrt': np.int64(7), 'log1p': np.int64(2)}
+epochs {'160': np.int64(12), '240': np.int64(8)}
+reporting_strength {'1.0': np.int64(8), '0.25': np.int64(4), '0.75': np.int64(4), '0.5': np.int64(4)}
+correction_weeks {'2': np.int64(8), '4': np.int64(7), '8': np.int64(5)}
+correction_strength {'1.0': np.int64(9), '0.75': np.int64(6), '0.5': np.int64(5)}
+correction_penalty {'3.0': np.int64(9), '10.0': np.int64(6), '30.0': np.int64(5)}

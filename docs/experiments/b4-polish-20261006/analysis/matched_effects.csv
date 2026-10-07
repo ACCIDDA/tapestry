@@ -1,0 +1,3 @@
+factor,reference,value,contexts,seeds,mean_delta,seed_ci_low,seed_ci_high,improved_contexts,improved_seeds
+pilot_method,finalized,joint,2,"44,45,46,47,48",-0.02191603464039692,-0.08916027868548508,0.04532820940469125,1,2
+training_window,all,recent2,3,"44,45,46,47,48",0.07896224743682213,0.05277966518346468,0.10514482969017959,0,0

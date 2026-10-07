@@ -63,6 +63,13 @@ def positive_residual(anchor, delta):
     return F.softplus(base[None, :, None] + delta)
 
 
+def horizon_residual(anchor, delta):
+    """`positive_residual` with a per-horizon anchor [N,H,C,L]; identical when horizons share it."""
+    positive = anchor.clamp_min(.001)
+    base = positive + torch.log(-torch.expm1(-positive))
+    return F.softplus(base[None] + delta)
+
+
 def affine(modulation, z, local=None, local_z=None, local_scale=None):
     """Per-member scale and shift broadcast as [M,N,H,L,C,width]."""
     gamma, beta = modulation(z)[:, :, None, None, None, :].chunk(2, -1)
@@ -200,7 +207,14 @@ class ForecastHead(nn.Module):
     def __init__(self, width, latent, local, kind):
         super().__init__()
         self.kind = kind
-        if kind == 'residual2':
+        if kind in ('quantile', 'quantile_small'):
+            self.output = nn.Sequential(nn.Linear(width, width), nn.SiLU(), nn.Linear(width, 3 if kind == 'quantile_small' else 23))
+            nn.init.normal_(self.output[-1].weight, std=.01)
+            nn.init.zeros_(self.output[-1].bias)
+            if kind == 'quantile_small':
+                # Two shared monotone shapes; only median and two spreads vary by forecast.
+                self.shape_gaps = nn.Parameter(torch.zeros(2, 11))
+        elif kind == 'residual2':
             self.output = ModulatedDecoder(width, latent, local)
         elif kind == 'legacy':
             self.modulate = modulation_layer(latent, width)
@@ -214,6 +228,20 @@ class ForecastHead(nn.Module):
             raise ValueError(f'Unknown forecast head: {kind}')
 
     def forward(self, h, z, local_z):
+        if self.kind == 'quantile_small':
+            raw = self.output(h)
+            shape = F.softplus(self.shape_gaps).cumsum(-1)
+            shape = shape / shape[:, -1:]
+            median = raw[..., :1]
+            lower = median - F.softplus(raw[..., 1:2]) * shape[0].flip(-1)
+            upper = median + F.softplus(raw[..., 2:3]) * shape[1]
+            return torch.cat((lower, median, upper), -1).movedim(-1, 0).unsqueeze(-1)
+        if self.kind == 'quantile':
+            raw = self.output(h)
+            median = raw[..., 11:12]
+            lower = median - torch.flip(torch.cumsum(F.softplus(torch.flip(raw[..., :11], [-1])) * .05, -1), [-1])
+            upper = median + torch.cumsum(F.softplus(raw[..., 12:]) * .05, -1)
+            return torch.cat((lower, median, upper), -1).movedim(-1, 0).unsqueeze(-1)
         if self.kind == 'residual2':
             return self.output(h, z, local_z)
         local = getattr(self, 'local_modulate', None)
@@ -280,14 +308,19 @@ class Model(nn.Module):
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
                  annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False,
                  covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
-                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none'):
+                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none', direct_quantiles=False, pathogen_inputs='all',
+                 growth_anchor=False):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           supplied_final=supplied_final, supplied_estimated=supplied_estimated)
-        if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2')
+                           supplied_final=supplied_final, supplied_estimated=supplied_estimated, pathogen_inputs=pathogen_inputs,
+                           growth_anchor=growth_anchor)
+        if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2', 'quantile', 'quantile_small')
                 or spatial not in ('neighbors', 'distance', 'gravity', 'none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
             raise ValueError('Unknown model architecture option')
+        if decoder in ('quantile', 'quantile_small'):
+            self.config['direct_quantiles'] = True
+            if noise != 'global' or us_error != 'none':raise ValueError('Direct quantiles cannot add sampled output noise')
         if min(lookback, width, latent) < 1:
             raise ValueError('Model dimensions must be positive')
         if count_transform not in COUNT_TRANSFORMS:
@@ -306,7 +339,7 @@ class Model(nn.Module):
         covariate_names = list(covariate_names)
         if len(set(covariate_names)) != len(covariate_names):
             raise ValueError('Covariate names must be unique')
-        if covariate_encoder not in ('raw', 'smooth', 'summary', 'shared'):
+        if covariate_encoder not in ('raw', 'smooth', 'summary', 'shared', 'growth'):
             raise ValueError('Unknown covariate encoder')
         if signal_features not in ('none', 'multiscale', 'smooth_multiscale'):
             raise ValueError('Unknown signal features')
@@ -338,7 +371,7 @@ class Model(nn.Module):
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
         if signal_features != 'none':
             extra_width += 18 * (6 + len(covariate_names))
-        compact_covariates = bool(covariate_names) and covariate_encoder in ('summary', 'shared')
+        compact_covariates = bool(covariate_names) and covariate_encoder in ('summary', 'shared', 'growth')
         if compact_covariates:
             self.covariate_encoder = CovariateEncoder(lookback, covariate_encoder)
             extra_width += 6 * len(covariate_names)
@@ -446,6 +479,9 @@ class Model(nn.Module):
                  covariates=None):
         n, p, c, _, l = x.shape
         config = self.config
+        channels = {'all': range(6), 'flu': [0,3], 'flu_covid': [0,1,3,4], 'flu_rsv': [0,2,3,5]}[config.get('pathogen_inputs','all')]
+        keep = x.new_tensor([c in channels for c in range(6)])[None,None,:,None,None]
+        x = x * keep
         if config['heads'] == 'state_us' and (locations is None or len(locations) != l):
             raise ValueError('Separate heads require ordered location IDs')
         mask = x[:, :, :, 1, :]
@@ -490,7 +526,12 @@ class Model(nn.Module):
                 cov_values = signed_log(cov_values)
             if kind == 'smooth':
                 cov_values, cov_available = trailing_mean(cov_values, cov_available)
-            if kind in ('summary', 'shared'):
+            if kind == 'growth':
+                # Log of raw values, floored at 10% of the training-only SD (no zero/negative logs).
+                raw_cov = covariates[:, :, :, 0].clamp_min(0)
+                log_cov = torch.log(raw_cov + .1 * self.covariate_scale[None, None])
+                cov_summary = self.covariate_encoder(cov_values, cov_available, log_cov)
+            elif kind in ('summary', 'shared'):
                 cov_summary = self.covariate_encoder(cov_values, cov_available)
             else:
                 cov_fields = torch.stack((cov_values, cov_available.to(cov_values.dtype)), -1)
@@ -612,18 +653,27 @@ class Model(nn.Module):
         idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
         anchor = values.gather(1, idx[:, None]).squeeze(1)
         anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
-        counts = positive_residual(anchor[:, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
+        # Per-horizon anchor [N,H,C,L]. Damped growth (2026-10-06): add the latest
+        # two-week slope in model space, damped by 1/2 per week ahead (1, 1.5, 1.75, 1.875);
+        # only where the newest and two-weeks-earlier context cells are both observed.
+        anchor = anchor[:, None].expand(-1, len(config['horizons']), -1, -1)
+        if config.get('growth_anchor') and p >= 3:
+            ok = valid[:, -1] & valid[:, -3]
+            slope = torch.where(ok, (values[:, -1] - values[:, -3]) / 2, torch.zeros_like(values[:, -1]))
+            damping = x.new_tensor([sum(.5 ** i for i in range(max(0, t))) for t in config['horizons']])
+            anchor = anchor + slope[:, None] * damping[None, :, None, None]
+        counts = horizon_residual(anchor[:, :, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
         counts = invert_counts(counts, population, config['count_transform'])
         if config['ed_transform'] == 'fourth_root':
-            root = positive_residual(anchor[:, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
+            root = horizon_residual(anchor[:, :, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
             ed = root.pow(4).clamp(max=1)
         else:
             if config['ed_transform'] == 'logit':
-                logit = anchor[:, 3:] * input_scale[None, 3:, :] + offset[None, 3:, :]
+                logit = anchor[:, :, 3:] * input_scale[None, None, 3:, :] + offset[None, None, 3:, :]
             else:
-                proportion = (anchor[:, 3:] * input_scale[None, 3:, :]).clamp(*ED_BOUNDS)
+                proportion = (anchor[:, :, 3:] * input_scale[None, None, 3:, :]).clamp(*ED_BOUNDS)
                 logit = torch.logit(proportion)
-            ed = torch.sigmoid(logit[None, :, None] + delta[:, :, :, 3:])
+            ed = torch.sigmoid(logit[None] + delta[:, :, :, 3:])
         return torch.cat((counts, ed), dim=3)
 
 
@@ -654,7 +704,10 @@ class IndependentBundle(nn.Module):
         outputs = [model(*args, members=members, **kwargs)[:, :, :, group]
                    for model, group in zip(self.models, self.groups)]
         order = [c for group in self.groups for c in group]
-        return torch.cat(outputs, 3)[:, :, :, [order.index(c) for c in range(6)]]
+        combined = torch.cat(outputs, 3)
+        result = combined.new_zeros((*combined.shape[:3],6,combined.shape[-1]))
+        result[:,:,:,order] = combined
+        return result
 
 
 def checkpoint(model, metadata):
@@ -675,6 +728,10 @@ def load_model(saved):
         return NowcastForecast(load_model(saved['nowcaster']), load_model(saved['forecaster']))
     if 'components' in saved:
         return IndependentBundle([load_model(c) for c in saved['components']], saved['groups'])
-    model = Model(**saved['config'])
+    factory = Model
+    if saved['config'].get('encoder') in ('series_mlp', 'series_mixer'):
+        from .series import SeriesModel
+        factory = SeriesModel
+    model = factory(**saved['config'])
     model.load_state_dict(saved['state_dict'])
     return model

@@ -1,0 +1,42 @@
+{
+  "status": "proposal_only_not_runnable",
+  "configurations": 1000,
+  "seeds": [
+    42,
+    43
+  ],
+  "seed_configurations": 2000,
+  "seasonal_evaluations": 4000,
+  "primary": "2025-26 flu admission mean log1p WIS on common frozen state/DC tasks",
+  "folds": [
+    {
+      "train": [
+        "2022-23",
+        "2023-24",
+        "2024-25"
+      ],
+      "evaluate": "2025-26",
+      "reporting_donor": "2024-25",
+      "role": "primary_forward_development"
+    },
+    {
+      "train": [
+        "2022-23",
+        "2023-24",
+        "2025-26"
+      ],
+      "evaluate": "2024-25",
+      "reporting_donor": "2025-26",
+      "role": "secondary_retrospective"
+    }
+  ],
+  "blocks": {
+    "existing_mlp_360": 360,
+    "quantile_architectures_240": 240,
+    "flu_scope_160": 160,
+    "reporting_treatments_120": 120,
+    "loss_alignment_80": 80,
+    "boosted_quantile_trees_40": 40
+  },
+  "configurations_file": "configurations.csv"
+}

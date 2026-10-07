@@ -1,0 +1,511 @@
+{
+  "runs": [
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-04926ccd21d9",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-04926ccd21d9/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-04926ccd21d9",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-04926ccd21d9/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-04926ccd21d9",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-04926ccd21d9/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-23ec464bd8a7",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-23ec464bd8a7/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-23ec464bd8a7",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-23ec464bd8a7/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-23ec464bd8a7",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-23ec464bd8a7/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-2ee562cc7a1a",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-2ee562cc7a1a/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-2ee562cc7a1a",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-2ee562cc7a1a/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-2ee562cc7a1a",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-2ee562cc7a1a/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-484968ff258f",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-484968ff258f/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-484968ff258f",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-484968ff258f/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-484968ff258f",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-484968ff258f/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-4c80189a0247",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-4c80189a0247/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-4c80189a0247",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-4c80189a0247/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-4c80189a0247",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-4c80189a0247/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-5f8c75bf70b0",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-5f8c75bf70b0/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-5f8c75bf70b0",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-5f8c75bf70b0/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-5f8c75bf70b0",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-5f8c75bf70b0/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-6a703ef2d132",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-6a703ef2d132/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-6a703ef2d132",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-6a703ef2d132/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-6a703ef2d132",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-6a703ef2d132/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-71cf222bc0b9",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-71cf222bc0b9/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-71cf222bc0b9",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-71cf222bc0b9/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-71cf222bc0b9",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-71cf222bc0b9/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7430f4f3f006",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7430f4f3f006/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7430f4f3f006",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7430f4f3f006/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7430f4f3f006",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7430f4f3f006/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-782f84e69e54",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-782f84e69e54/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-782f84e69e54",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-782f84e69e54/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-782f84e69e54",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-782f84e69e54/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7978137c3b62",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7978137c3b62/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7978137c3b62",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7978137c3b62/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7978137c3b62",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-7978137c3b62/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-84728e200b49",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-84728e200b49/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-84728e200b49",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-84728e200b49/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-84728e200b49",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-84728e200b49/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-925dfcbc260d",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-925dfcbc260d",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-925dfcbc260d",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-925dfcbc260d/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-99cced62b86a",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-99cced62b86a/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-99cced62b86a",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-99cced62b86a/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-99cced62b86a",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-99cced62b86a/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-9a0df982597e",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-9a0df982597e/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-9a0df982597e",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-9a0df982597e/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-9a0df982597e",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-9a0df982597e/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a808b5e76cff",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-a808b5e76cff/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a808b5e76cff",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-a808b5e76cff/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=growth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a808b5e76cff",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-a808b5e76cff/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-aa2dec3bc325",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-aa2dec3bc325/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-aa2dec3bc325",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-aa2dec3bc325/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-aa2dec3bc325",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-aa2dec3bc325/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-b617d4a3c9a1",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-b617d4a3c9a1",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-b617d4a3c9a1",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-b617d4a3c9a1/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bceb7034522c",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bceb7034522c/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bceb7034522c",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bceb7034522c/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bceb7034522c",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bceb7034522c/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bcf960a34a8d",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bcf960a34a8d/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bcf960a34a8d",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bcf960a34a8d/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-bcf960a34a8d",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-bcf960a34a8d/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c2efb5fed4fa",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c2efb5fed4fa/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c2efb5fed4fa",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c2efb5fed4fa/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c2efb5fed4fa",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c2efb5fed4fa/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c52c276abe7c",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c52c276abe7c/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c52c276abe7c",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c52c276abe7c/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=growth,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c52c276abe7c",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-c52c276abe7c/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-cc19ab3f5469",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-cc19ab3f5469/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-cc19ab3f5469",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-cc19ab3f5469/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-cc19ab3f5469",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-cc19ab3f5469/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-f889c092ddeb",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-f889c092ddeb/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-f889c092ddeb",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-f889c092ddeb/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=shared,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-f889c092ddeb",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-f889c092ddeb/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fcab75b8cd4d",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fcab75b8cd4d/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fcab75b8cd4d",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fcab75b8cd4d/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=smooth,signal_features=smooth_multiscale,covariate_set=kinsa+ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fcab75b8cd4d",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fcab75b8cd4d/s44/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fe6f6b002420",
+      "seed": 42,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fe6f6b002420/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fe6f6b002420",
+      "seed": 43,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fe6f6b002420/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=smooth_multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-fe6f6b002420",
+      "seed": 44,
+      "path": "data/experiments/b5-covariates-20261006/mlp-pathogen-scheduled_final-fe6f6b002420/s44/attempt-001"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally sharing 1 - us_weight; the US ratio gets us_weight (default 0.2). Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions_weight (default 1) and ed_weight (default .5). Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped. Summed WIS columns are raw totals, not a score.",
+  "score_version": "location-relative-season-first-v2",
+  "us_weight": 0.2,
+  "admissions_weight": 1.0,
+  "ed_weight": 0.5,
+  "runs_sha256": "eb495232042a0a2293a730572992cbe060e46c4fff9c8d80697e2934c88fc4a4"
+}

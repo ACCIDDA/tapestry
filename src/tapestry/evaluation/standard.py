@@ -80,7 +80,7 @@ def hub_relative(run, frozen):
     seasons = set(json.loads((Path(run) / 'manifest.json').read_text())['folds'])
     rows = []
     for case in frozen_cases(frozen):
-        if case['season'] not in seasons:
+        if case['season'] not in seasons or (case['season'],case['target']) not in frames:
             continue
         units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
         quantiles = pd.read_parquet(frozen / case['directory'] / 'quantiles.parquet')
@@ -135,7 +135,7 @@ def pairwise(run, frozen):
     seasons = set(json.loads((Path(run) / 'manifest.json').read_text())['folds'])
     rows = []
     for case in frozen_cases(frozen):
-        if case['season'] not in seasons:
+        if case['season'] not in seasons or (case['season'],case['target']) not in frames:
             continue
         units = pd.read_parquet(frozen / case['directory'] / 'units.parquet')
         units = units[~units.location.isin(EXCLUDED_FROM_RANKING)].reset_index(drop=True)

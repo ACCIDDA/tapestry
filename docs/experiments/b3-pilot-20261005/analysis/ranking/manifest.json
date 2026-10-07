@@ -1,0 +1,487 @@
+{
+  "runs": [
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-0ceba7f66870",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-0ceba7f66870/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-0ceba7f66870",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-0ceba7f66870/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=real_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-2006d23792b6",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-2006d23792b6/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=real_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-2006d23792b6",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-2006d23792b6/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,weight_decay=0.0001,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-355a243f2108",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-355a243f2108/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,weight_decay=0.0001,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-355a243f2108",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-355a243f2108/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-4c7f77682624",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-4c7f77682624/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-4c7f77682624",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-4c7f77682624/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-57efb9854034",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-57efb9854034/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-57efb9854034",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-57efb9854034/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-63f587c43436",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-63f587c43436/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-63f587c43436",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-63f587c43436/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-758fc425a188",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-758fc425a188/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-758fc425a188",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-758fc425a188/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=10,ed_transform=logit,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-779151203dcb",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-779151203dcb/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=10,ed_transform=logit,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-779151203dcb",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-779151203dcb/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7a75df7bf223",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-7a75df7bf223/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-7a75df7bf223",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-7a75df7bf223/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,decoder=quantile,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-84b1d6bc152f",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-84b1d6bc152f/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,decoder=quantile,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-84b1d6bc152f",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-84b1d6bc152f/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=neighbors,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-89696103a804",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-89696103a804/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=neighbors,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-89696103a804",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-89696103a804/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=pretrained_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-8cbfbfaef5ea",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-8cbfbfaef5ea/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,pilot_nowcaster=pretrained_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-8cbfbfaef5ea",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-8cbfbfaef5ea/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-9dc5ed13aaf0",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-9dc5ed13aaf0/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-9dc5ed13aaf0",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-9dc5ed13aaf0/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a1e5ad730021",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-a1e5ad730021/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a1e5ad730021",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-a1e5ad730021/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a54fb9fee0d3",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-a54fb9fee0d3/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-a54fb9fee0d3",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-a54fb9fee0d3/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c515b9a9c9e3",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-c515b9a9c9e3/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-c515b9a9c9e3",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-c515b9a9c9e3/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-e036641565b7",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-e036641565b7/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-pathogen-scheduled_final-e036641565b7",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-pathogen-scheduled_final-e036641565b7/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0a5210714a20",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0a5210714a20/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0a5210714a20",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0a5210714a20/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0f5bda5c1f8a",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0f5bda5c1f8a/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0f5bda5c1f8a",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0f5bda5c1f8a/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0f69b7fe3f8b",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0f69b7fe3f8b/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-0f69b7fe3f8b",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-0f69b7fe3f8b/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-1d9db4bf66eb",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-1d9db4bf66eb/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-1d9db4bf66eb",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-1d9db4bf66eb/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-a9ae30010a95",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-a9ae30010a95/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-a9ae30010a95",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-a9ae30010a95/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-b43bb931911e",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-b43bb931911e/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-b43bb931911e",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-b43bb931911e/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-bced791ae8b9",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-bced791ae8b9/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-bced791ae8b9",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-bced791ae8b9/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-bef6e89edb86",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-bef6e89edb86/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-bef6e89edb86",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-bef6e89edb86/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-c939b2925ed0",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-c939b2925ed0/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-c939b2925ed0",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-c939b2925ed0/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,decoder=quantile,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-fcf588f59106",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-fcf588f59106/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,decoder=quantile,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "mlp-target-scheduled_final-fcf588f59106",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/mlp-target-scheduled_final-fcf588f59106/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-4e0a107a77d3",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-4e0a107a77d3/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-4e0a107a77d3",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-4e0a107a77d3/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-6a9b528a948c",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-6a9b528a948c/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-6a9b528a948c",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-6a9b528a948c/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-7fbb40fdfbc3",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-7fbb40fdfbc3/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-7fbb40fdfbc3",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-7fbb40fdfbc3/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-a8ebb09f4baf",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-a8ebb09f4baf/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-a8ebb09f4baf",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-a8ebb09f4baf/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-bf84c41be916",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-bf84c41be916/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mixer-all-scheduled_final-bf84c41be916",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mixer-all-scheduled_final-bf84c41be916/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-0629edb99b36",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-0629edb99b36/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-0629edb99b36",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-0629edb99b36/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-06f9c68c054e",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-06f9c68c054e/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-06f9c68c054e",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-06f9c68c054e/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-4402451daeea",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-4402451daeea/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-4402451daeea",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-4402451daeea/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-7176bfbd5b81",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-7176bfbd5b81/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-7176bfbd5b81",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-7176bfbd5b81/s43/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-df2450403889",
+      "seed": 42,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-df2450403889/s42/attempt-001"
+    },
+    {
+      "config_id": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "name": "series_mlp-all-scheduled_final-df2450403889",
+      "seed": 43,
+      "path": "data/experiments/b3-pilot-20261005/series_mlp-all-scheduled_final-df2450403889/s43/attempt-001"
+    }
+  ],
+  "quantile_levels": [
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.975,
+    0.99
+  ],
+  "target_weights": {
+    "wk inc flu hosp": 1.0,
+    "wk inc covid hosp": 1.0,
+    "wk inc rsv hosp": 1.0,
+    "wk inc flu prop ed visits": 0.5,
+    "wk inc covid prop ed visits": 0.5,
+    "wk inc rsv prop ed visits": 0.5
+  },
+  "definition": "Per target/season/location: total native-unit model WIS / total ensemble WIS on identical tasks, all eligible dates and horizons 0-3. States/DC ratios average equally sharing 1 - us_weight; the US ratio gets us_weight (default 0.2). Absent geography groups renormalize over available groups. Within season: weighted mean of available targets, admissions_weight (default 1) and ed_weight (default .5). Combined: equal mean of seasons. Configurations: mean and SD across seeds. Nonpositive ensemble denominators raise an error; missing run support is not silently dropped. Summed WIS columns are raw totals, not a score.",
+  "score_version": "location-relative-season-first-v2",
+  "us_weight": 0.2,
+  "admissions_weight": 1.0,
+  "ed_weight": 0.5,
+  "runs_sha256": "8f04b7a0497db0c87034edafe990b3ebe09c3be03cbd05744af61de8a13dbf7d"
+}

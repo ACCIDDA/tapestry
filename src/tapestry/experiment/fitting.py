@@ -16,6 +16,9 @@ LOCATIONS = 'data/metadata/locations.csv'
 
 def fit(scenario, seed, held_out_season, eval_members, device, output, dataset=PANEL_DATASET):
     """One leave-one-season-out fold (`dataset.cv`): select epochs, refit, evaluate the held-out season."""
+    if scenario.pilot_method != 'none':
+        from .pilot import fit as fit_pilot
+        return fit_pilot(scenario, seed, held_out_season, eval_members, device, output, dataset)
     if scenario.weekend_family != 'none':
         from .weekend import fit as fit_weekend
         return fit_weekend(scenario, seed, held_out_season, eval_members, device, output, dataset)

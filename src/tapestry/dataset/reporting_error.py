@@ -67,6 +67,11 @@ class ReportingErrors:
         self.transport_missingness = scenario.reporting_missingness
         self.peaks = peak_scales(panel, keep)
         self.donor_season = max(self.peaks)
+        # Donor seasons (2026-10-06): the latest permitted season only, or every
+        # permitted season with recency weights 1, 1/2, 1/4, ... (latest first).
+        ordered = sorted(self.peaks, reverse=True)
+        pooled = getattr(scenario, 'vintage_seasons', 'latest') == 'all'
+        self.season_weight = {label: .5 ** i for i, label in enumerate(ordered)} if pooled else {self.donor_season: 1.}
         self.state_names = list(panel['covariate_names'])
         self.national_names = list(panel['covariate_national_names'])
         self.unit_floor = np.array([1. if str(n).startswith('nhsn_') else .0001
@@ -76,19 +81,31 @@ class ReportingErrors:
         allowed = set(panel['dates'][keep].astype(str))
         final = episodes(masked, scenario.lookback, 'scheduled_final', self.names)
         self.donors, features, errors, supports, visible, cov_errors, cov_supports, cov_visible = [], [], [], [], [], [], [], []
+        donor_weights = []
         self.error_dates = set()
+        # Signals with any archived report per season (2023-24 has no COVID/RSV archive).
+        # Only reports issued during that season count (later issuances also revise its weeks).
+        labels = np.array([cv.season(d) for d in panel['dates'].astype(str)])
+        issued = np.array([cv.season(d) for d in panel['issuance_dates'].astype(str)])
+        archived = {label: np.isfinite(masked['asof_targets'][issued == label][:, labels == label]).any(axis=(0, 1, 2))
+                    for label in self.season_weight}
+        first_date = str(panel['dates'][0])
         for e in final:
             day = e['context_dates'][-1]
-            if day not in allowed or cv.season(day) != self.donor_season:
+            origin_season = cv.season(day)
+            if day not in allowed or origin_season not in self.season_weight or e['context_dates'][0] < first_date:
                 continue
             raw = replay_episode(e, masked, self.names, 'vintage')
             # Exclude pre-archive/onboarding windows, not ordinary latest-week delays.
-            if not (raw['available'][-4:].any(axis=(0, 2))).all():
+            # Seasons archiving all six signals keep the original rule (every signal reported in
+            # the last four weeks); partially archived seasons (2023-24) need flu admissions only.
+            recent = raw['available'][-4:].any(axis=(0, 2))
+            if not (recent.all() if archived[origin_season].all() else recent[0]):
                 continue
             observed = replay_episode(e, masked, self.names, 'nowcast', corrections) if self.mode == 'nowcast' else raw
             # Error reference weeks must also belong to the donor season; an
             # origin just after its boundary must not import an older season.
-            donor_dates = np.array([cv.season(d) == self.donor_season for d in e['context_dates']])
+            donor_dates = np.array([cv.season(d) == origin_season for d in e['context_dates']])
             supported = e['available'] & donor_dates[:, None, None]
             floor = self.target_floor(e)
             ok = supported & observed['available']
@@ -98,9 +115,10 @@ class ReportingErrors:
             errors.append(np.where(ok, error, 0))
             supports.append(supported)
             visible.append(observed['available'])
-            features.append(phase(e, self.peaks[self.donor_season][0]))
+            features.append(phase(e, self.peaks[origin_season][0]))
             self.donors.append(day)
-            self.error_dates.update(d for d in e['context_dates'] if d in allowed and cv.season(d) == self.donor_season)
+            donor_weights.append(self.season_weight[origin_season])
+            self.error_dates.update(d for d in e['context_dates'] if d in allowed and cv.season(d) == origin_season)
             if self.names:
                 f, x = e['covariates'], observed['covariates']
                 support = f[..., 1, :].astype(bool) & donor_dates[:, None, None]
@@ -115,6 +133,7 @@ class ReportingErrors:
         if len(self.donors) < 8:
             raise ValueError(f'Only {len(self.donors)} reporting windows in {self.donor_season}')
         self.features = np.stack(features)
+        self.donor_log_weight = np.log(np.array(donor_weights))
         self.positions = np.array([season_position(d) for d in self.donors])
         self.errors, self.support, self.visible = map(np.stack, (errors, supports, visible))
         if self.names:
@@ -122,6 +141,8 @@ class ReportingErrors:
         self.metadata = dict(mode=self.mode, transport_missingness=self.transport_missingness, donor_season=self.donor_season, donor_origins=self.donors,
             permitted_error_dates=sorted(self.error_dates), windows=len(self.donors),
             held_out=held_out, target_evidence_fraction=float(self.support.mean()),
+            donor_seasons={k: v for k, v in self.season_weight.items()},
+            donor_windows_by_season={k: sum(cv.season(d) == k for d in self.donors) for k in self.season_weight},
             version='local_seasonal_log_v2',
             method=self.method, strength=self.strength, probability=self.probability,
             random_strength=self.random_strength, recent_weeks=self.recent,
@@ -161,6 +182,8 @@ class ReportingErrors:
         distance = np.where(np.isfinite(distance), distance, 0) + calendar[:, None]
         if self.method == 'phase_log':
             distance -= calendar[:, None]
+        # Older donor seasons are down-weighted inside the exp(-distance/2) kernel.
+        distance = distance - 2 * self.donor_log_weight[:, None]
         if self.method == 'synchronous_log':
             distance = np.broadcast_to(distance.mean(axis=1)[:, None], distance.shape)
         if self.method == 'calendar_log':

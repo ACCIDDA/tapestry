@@ -64,6 +64,14 @@ def masked(panel, keep):
     return out
 
 
+def training_seasons(scenario, held_out):
+    """Seasons fitted in one fold: every other season, or (`training_window=recent2`) the two before it."""
+    if getattr(scenario, 'training_window', 'all') == 'recent2':
+        i = TRAINING_SEASONS.index(held_out)
+        return TRAINING_SEASONS[max(0, i - 2):i]
+    return tuple(s for s in TRAINING_SEASONS if s != held_out)
+
+
 def week_roles(dates, scenario, held_out):
     """[T] role of each calendar week in one fold, exactly as `fold` uses them.
 
@@ -76,9 +84,10 @@ def week_roles(dates, scenario, held_out):
         scenario = scenario.stage('forecast')
     dates = np.asarray(dates).astype(str)
     labels = np.array([season(d) for d in dates])
-    roles = np.where(labels == held_out, 'score', np.where(np.isin(labels, TRAINING_SEASONS), 'fit', 'unused')).astype('U10')
+    seasons = training_seasons(scenario, held_out)
+    roles = np.where(labels == held_out, 'score', np.where(np.isin(labels, seasons), 'fit', 'unused')).astype('U10')
     if scenario.patience:
-        for label in TRAINING_SEASONS:
+        for label in seasons:
             if label != held_out:
                 weeks = np.flatnonzero(labels == label)
                 start = season_start(int(label[:4]))
@@ -162,7 +171,7 @@ def fold(panel, scenario, held_out, inner=False, legacy_inputs=False):
     train_mode = 'finalized' if scenario.training_inputs == 'finalized' else scenario.input_mode
     train = [e for e in cut(masked(panel, keep), train_mode) if e['context_dates'][-1] in kept]
     validation = score = None
-    info = dict(held_out=held_out, training_seasons=[s for s in TRAINING_SEASONS if s != held_out], inner=inner, training_weeks=int(training.sum()), fit_weeks=int(keep.sum()))
+    info = dict(held_out=held_out, training_seasons=list(training_seasons(scenario, held_out)), inner=inner, training_weeks=int(training.sum()), fit_weeks=int(keep.sum()))
     if inner:
         origins = np.zeros(len(dates), dtype=bool)
         for i in np.flatnonzero(hidden):

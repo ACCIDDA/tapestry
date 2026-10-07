@@ -1,0 +1,157 @@
+{
+  "configurations": 37,
+  "seeds": [
+    42,
+    43
+  ],
+  "rows": [
+    {
+      "name": "pathogen_distance_quantile_head",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,decoder=quantile,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_finalized",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_reported",
+      "scenario": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_admission_errors",
+      "scenario": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_early_errors_recent_reports",
+      "scenario": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_synchronous_half_episodes",
+      "scenario": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_joint_two_weeks",
+      "scenario": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_joint_four_weeks",
+      "scenario": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_synthetic_tree_pipeline",
+      "scenario": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "pathogen_distance_real_tree_pipeline",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_quantile_head",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,decoder=quantile,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_finalized",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_reported",
+      "scenario": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_admission_errors",
+      "scenario": "pilot_method=errors,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_early_errors_recent_reports",
+      "scenario": "pilot_method=errors,revision_scope=early_actual,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_synchronous_half_episodes",
+      "scenario": "pilot_method=errors,reporting_probability=0.5,reporting_missingness=0,reporting_method=synchronous_log,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_joint_two_weeks",
+      "scenario": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_joint_four_weeks",
+      "scenario": "pilot_method=joint,joint_weight=0.25,reporting_missingness=0,reporting_strength=0.5,nowcast_weeks=4,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_synthetic_tree_pipeline",
+      "scenario": "pilot_method=corrected,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "target_neighbors_kinsa_real_tree_pipeline",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "fixed_forecaster_real_tree",
+      "scenario": "pilot_method=finalized,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "fixed_forecaster_real_mlp",
+      "scenario": "pilot_method=finalized,pilot_nowcaster=real_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "fixed_forecaster_pretrained_mlp",
+      "scenario": "pilot_method=finalized,pilot_nowcaster=pretrained_mlp,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mlp_ili_none",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mlp_ili_pretrain",
+      "scenario": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mlp_ili_joint",
+      "scenario": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mlp_reported",
+      "scenario": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mlp_damped_growth",
+      "scenario": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mlp,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mixer_ili_none",
+      "scenario": "pilot_method=finalized,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mixer_ili_pretrain",
+      "scenario": "pilot_method=finalized,ili_training=pretrain,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mixer_ili_joint",
+      "scenario": "pilot_method=finalized,ili_training=joint,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mixer_reported",
+      "scenario": "pilot_method=reported,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "series_mixer_damped_growth",
+      "scenario": "pilot_method=finalized,growth_anchor=1,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,encoder=series_mixer,width=32,epochs=120,patience=15,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "random_recipe_0",
+      "scenario": "pilot_method=finalized,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=neighbors,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "random_recipe_1",
+      "scenario": "pilot_method=reported,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=8,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "random_recipe_2",
+      "scenario": "pilot_method=errors,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=distance,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,weight_decay=0.0001,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "name": "random_recipe_3",
+      "scenario": "pilot_method=joint,joint_weight=0.05,reporting_missingness=0,reporting_strength=0.5,lookback=10,ed_transform=logit,width=32,epochs=120,patience=15,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    }
+  ]
+}

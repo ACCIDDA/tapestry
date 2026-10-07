@@ -1,0 +1,117 @@
+398 configurations with both seeds (A 181, B 154, Bs 63)
+
+Anchors (exact B4 leaders refitted, two-seed means):
+anchor  flu_native  flu_admissions_log  flu_admissions_native  flu_ed_native
+     B      0.7959              0.7955                 0.7921         0.8942
+    Bs      0.7965              0.8006                 0.7887         0.8979
+     A      0.7803              0.8479                 0.7728         0.7872
+
+== pooled: combined native, % change vs reference (negative = better), R2 0.48
+               factor level  reference  configs  effect_pct  low_pct  high_pct
+        growth_anchor False       True      185        -5.5     -6.9      -4.0
+               anchor     B          A      154        -5.3     -7.5      -3.1
+         actual_share   0.5        0.0       69        -4.7     -6.6      -2.9
+      log_loss_weight   0.5        0.0       68        -3.9     -5.8      -1.9
+         actual_share   1.0        0.0       66        -3.8     -5.6      -2.0
+reporting_missingness False       True       92        -3.3     -5.1      -1.6
+      log_loss_weight  0.25        0.0       56        -2.9     -4.8      -0.9
+         actual_share  0.25        0.0       79        -2.8     -4.8      -0.8
+      log_loss_weight   1.0        0.0       65        -2.7     -4.6      -0.7
+           batch_size    16          8       72        -2.6     -4.5      -0.7
+      vintage_seasons   all     latest      185         1.8      0.2       3.3
+        nowcast_noise   1.0        0.0      100         1.9      0.1       3.8
+             lr_ratio   0.5        1.0      110         1.9      0.2       3.7
+    uncorrected_share  0.25        0.0       35         3.2      0.0       6.4
+    uncorrected_share   0.1        0.0       37         5.0      2.2       7.9
+     revision_signals   all admissions      106         6.6      4.6       8.6
+
+== A: combined native, % change vs reference (negative = better), R2 0.59
+                   factor level  reference  configs  effect_pct  low_pct  high_pct
+            growth_anchor False       True       86        -9.3    -11.4      -7.1
+               batch_size    16          8       38        -4.9     -7.6      -2.1
+          log_loss_weight   1.0        0.0       30        -4.8     -7.5      -1.9
+          log_loss_weight   0.5        0.0       28        -4.7     -7.6      -1.6
+          log_loss_weight  0.25        0.0       26        -4.3     -7.6      -0.9
+             actual_share   0.5        0.0       37        -4.0     -6.9      -1.0
+    reporting_missingness False       True       36        -3.3     -6.2      -0.3
+reporting_random_strength False       True       89        -2.2     -4.3      -0.0
+        uncorrected_share   0.1        0.0       37         4.1      1.5       6.8
+         revision_signals   all admissions       47         8.8      5.6      12.1
+
+== B: combined native, % change vs reference (negative = better), R2 0.45
+               factor level  reference  configs  effect_pct  low_pct  high_pct
+         actual_share   1.0        0.0       24        -5.1     -7.5      -2.7
+         actual_share  0.25        0.0       37        -4.3     -6.5      -2.0
+         actual_share   0.5        0.0       25        -3.2     -5.8      -0.5
+     correction_weeks     1          2       23        -3.2     -6.2      -0.1
+reporting_missingness False       True       38        -3.1     -5.5      -0.7
+        growth_anchor False       True       70        -2.7     -4.5      -0.8
+             lr_ratio   0.5        1.0       48         3.9      1.5       6.4
+   reporting_strength   0.5        1.0       19         4.8      1.2       8.5
+     revision_signals   all admissions       41         5.4      2.8       8.0
+
+== Bs: combined native, % change vs reference (negative = better), R2 0.80
+                   factor         level      reference  configs  effect_pct  low_pct  high_pct
+       correction_penalty         300.0            3.0       10       -13.0    -19.1      -6.5
+          log_loss_weight          0.25            0.0        9       -11.5    -16.4      -6.2
+reporting_random_strength          True          False       28        -9.5    -13.0      -5.9
+             actual_share           0.5            0.0        7        -6.6    -11.3      -1.6
+                 us_error shared_factor           none       18        -6.2     -9.7      -2.6
+             actual_share           1.0            0.0       13        -5.9    -10.1      -1.6
+          log_loss_weight           1.0            0.0       12        -5.6     -9.5      -1.5
+                  members            64            128       11        -5.6    -10.0      -0.9
+             actual_share          0.25            0.0       12        -5.5    -10.7      -0.0
+                 lookback            10             12       13        -5.3     -8.9      -1.5
+             ili_training      pretrain           none       14        -4.3     -8.1      -0.3
+          pilot_nowcaster     real_tree synthetic_tree       23         4.6      1.5       7.9
+            nowcast_noise           1.0            0.0       16         5.2      1.3       9.2
+                  members           256            128        9         6.4      0.6      12.7
+                 lookback            14             12       11         7.4      4.2      10.8
+           sum_wis_weight           0.1           0.25       10         7.7      2.1      13.6
+       reporting_strength           0.5            1.0        7         8.2      1.8      15.0
+         correction_weeks             3              2        9         9.5      3.0      16.5
+                   latent             8             16       19        10.1      5.9      14.5
+
+Sampled histories vs point correction, same fitted model (combined native, % change; negative = better):
+                                          count  mean   25%   50%   75%
+anchor nowcast_noise nowcast_noise_train                               
+A      0.5           False                 26.0 -0.20 -0.47 -0.18  0.10
+                     True                  16.0 -0.33 -0.69 -0.47  0.10
+       1.0           False                 20.0 -0.40 -1.35 -0.14  0.35
+                     True                  20.0 -0.22 -0.93 -0.63  0.89
+B      0.5           False                 33.0  0.16 -0.02  0.16  0.36
+       1.0           False                 44.0  0.77  0.09  0.91  1.37
+Bs     0.5           False                 14.0 -0.05 -0.15 -0.11 -0.06
+       1.0           False                 16.0 -0.32 -0.73 -0.27 -0.18
+
+Best 10 configurations per anchor (two-seed mean, corrected view):
+A 0.7764 0.8456 {'reporting_strength': 2.0, 'reporting_missingness': True, 'correction_realizations': 2, 'uncorrected_share': 0.1, 'correction_weeks': 1, 'correction_strength': 0.75, 'ili_training': 'pretrain', 'batch_size': 16, 'signal_features': 'multiscale', 'lookback': 10}
+A 0.7799 0.7817 {'actual_share': 0.25, 'reporting_missingness': True, 'correction_realizations': 4, 'uncorrected_share': 0.1, 'correction_penalty': 100.0, 'log_loss_weight': 1.0, 'weight_decay': 3e-05, 'spatial': 'distance', 'width': 128}
+A 0.7803 0.8479 {}
+A 0.7919 0.8306 {'vintage_seasons': 'all', 'actual_share': 1.0, 'reporting_random_strength': True, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'uncorrected_share': 0.25, 'nowcast_noise': 1.0, 'nowcast_noise_train': True, 'correction_penalty': 300.0, 'log_loss_weight': 1.0, 'ili_training': 'pretrain', 'latent': 8, 'spatial': 'distance', 'noise': 'local', 'us_error': 'shared_factor', 'members': 64, 'decoder': 'residual2'}
+A 0.7934 0.8638 {'actual_share': 1.0, 'reporting_strength': 0.5, 'reporting_random_strength': True, 'reporting_missingness': True, 'correction_penalty': 100.0, 'correction_weeks': 1, 'log_loss_weight': 1.0, 'covariate_dropout': 0.1, 'ili_training': 'pretrain', 'weight_decay': 3e-05, 'signal_features': 'multiscale', 'width': 64, 'us_error': 'shared_factor'}
+A 0.7945 0.8316 {'reporting_random_strength': True, 'reporting_missingness': True, 'log_loss_weight': 0.5, 'covariate_dropout': 0.25, 'ili_training': 'pretrain', 'batch_size': 16, 'signal_features': 'multiscale', 'spatial': 'distance', 'width': 64, 'us_error': 'shared_factor'}
+A 0.8038 0.8523 {'actual_share': 0.25, 'reporting_strength': 2.0, 'reporting_missingness': True, 'nowcast_noise': 1.0, 'correction_weeks': 1, 'correction_strength': 0.75, 'log_loss_weight': 0.5, 'ili_training': 'pretrain', 'sum_wis_weight': 0.1, 'latent': 8, 'batch_size': 16, 'noise': 'local', 'us_error': 'shared_factor'}
+A 0.8068 0.7983 {'actual_share': 0.5, 'reporting_strength': 1.5, 'reporting_missingness': True, 'correction_realizations': 4, 'correction_penalty': 300.0, 'log_loss_weight': 0.25, 'covariate_dropout': 0.1, 'weight_decay': 3e-05, 'spatial': 'distance', 'noise': 'local', 'decoder': 'residual2'}
+A 0.8158 0.8042 {'vintage_seasons': 'all', 'actual_share': 0.5, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'correction_penalty': 300.0, 'correction_weeks': 1, 'correction_strength': 0.75, 'log_loss_weight': 1.0, 'covariate_dropout': 0.1, 'batch_size': 4, 'spatial': 'distance', 'noise': 'local', 'members': 64}
+A 0.8175 0.8934 {'reporting_strength': 2.0, 'reporting_random_strength': True, 'reporting_missingness': True, 'correction_realizations': 2, 'nowcast_noise': 0.5, 'covariate_dropout': 0.1, 'ili_training': 'pretrain', 'batch_size': 16, 'signal_features': 'multiscale', 'noise': 'local', 'decoder': 'residual2'}
+B 0.7804 0.8234 {'actual_share': 0.5, 'reporting_strength': 1.5, 'reporting_missingness': True, 'nowcast_noise': 1.0, 'correction_weeks': 3, 'pilot_nowcaster': 'real_tree', 'ili_training': 'pretrain', 'latent': 32, 'lookback': 10, 'width': 64}
+B 0.7875 0.8379 {'actual_share': 1.0, 'reporting_strength': 2.0, 'reporting_random_strength': True, 'reporting_missingness': True, 'correction_weeks': 3, 'log_loss_weight': 0.25}
+B 0.7889 0.827 {'vintage_seasons': 'all', 'actual_share': 0.25, 'reporting_strength': 1.5, 'reporting_random_strength': True, 'reporting_missingness': True, 'correction_penalty': 300.0, 'ili_training': 'pretrain', 'latent': 8, 'lookback': 10}
+B 0.7958 0.8205 {'actual_share': 0.5, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'nowcast_noise': 1.0, 'correction_penalty': 30.0, 'pilot_nowcaster': 'real_tree', 'ili_training': 'pretrain', 'batch_size': 16, 'signal_features': 'multiscale', 'lookback': 14}
+B 0.7959 0.7955 {}
+B 0.7962 0.8708 {'actual_share': 0.25, 'reporting_strength': 0.5, 'reporting_random_strength': True, 'nowcast_noise': 1.0, 'correction_penalty': 30.0, 'correction_strength': 0.75, 'ili_training': 'pretrain', 'latent': 8, 'signal_features': 'multiscale'}
+B 0.7972 0.7991 {'vintage_seasons': 'all', 'actual_share': 0.25, 'reporting_strength': 1.5, 'reporting_missingness': True, 'correction_penalty': 300.0, 'log_loss_weight': 0.5, 'batch_size': 4, 'signal_features': 'multiscale', 'lookback': 10, 'width': 64}
+B 0.7978 0.8583 {'actual_share': 1.0, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'nowcast_noise': 0.5, 'correction_penalty': 100.0, 'signal_features': 'multiscale', 'width': 64}
+B 0.8 0.8524 {'vintage_seasons': 'all', 'actual_share': 0.25, 'reporting_strength': 2.0, 'reporting_missingness': True, 'correction_penalty': 300.0, 'growth_anchor': True, 'ili_training': 'pretrain', 'width': 64}
+B 0.802 0.7785 {'vintage_seasons': 'all', 'actual_share': 0.25, 'reporting_strength': 2.0, 'reporting_random_strength': True, 'reporting_method': 'synchronous_log', 'revision_signals': 'all', 'nowcast_noise': 1.0, 'correction_weeks': 1, 'pilot_nowcaster': 'real_tree', 'log_loss_weight': 1.0, 'signal_features': 'multiscale', 'spatial': 'distance', 'lookback': 10, 'width': 128}
+Bs 0.7682 0.8457 {'actual_share': 0.25, 'reporting_random_strength': True, 'signal_features': 'multiscale'}
+Bs 0.7686 0.8226 {'actual_share': 0.5, 'reporting_strength': 2.0, 'reporting_method': 'synchronous_log', 'correction_weeks': 3, 'growth_anchor': True, 'sum_wis_weight': 0.5, 'batch_size': 4, 'lookback': 10, 'us_error': 'shared_factor', 'decoder': 'residual2'}
+Bs 0.7894 0.7962 {'reporting_random_strength': True, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'nowcast_noise': 0.5, 'correction_penalty': 100.0, 'log_loss_weight': 0.25, 'sum_wis_weight': 0.5, 'spatial': 'distance', 'width': 128, 'noise': 'local', 'us_error': 'shared_factor'}
+Bs 0.7956 0.8519 {'vintage_seasons': 'all', 'actual_share': 1.0, 'reporting_strength': 2.0, 'reporting_method': 'synchronous_log', 'nowcast_noise': 0.5, 'correction_penalty': 30.0, 'signal_features': 'multiscale', 'width': 128}
+Bs 0.7965 0.8006 {}
+Bs 0.8026 0.869 {'vintage_seasons': 'all', 'actual_share': 0.5, 'reporting_random_strength': True, 'reporting_missingness': True, 'correction_penalty': 300.0, 'correction_weeks': 3, 'pilot_nowcaster': 'real_tree', 'growth_anchor': True, 'log_loss_weight': 0.25, 'ili_training': 'pretrain', 'latent': 8, 'width': 128, 'members': 256}
+Bs 0.808 0.7791 {'reporting_strength': 2.0, 'reporting_random_strength': True, 'reporting_missingness': True, 'nowcast_noise': 0.5, 'correction_penalty': 30.0, 'pilot_nowcaster': 'real_tree', 'log_loss_weight': 1.0, 'weight_decay': 0.0001}
+Bs 0.8109 0.8567 {'actual_share': 1.0, 'reporting_random_strength': True, 'nowcast_noise': 0.5, 'correction_weeks': 3, 'correction_strength': 0.75, 'batch_size': 16, 'weight_decay': 0.0001, 'members': 64}
+Bs 0.8132 0.812 {'vintage_seasons': 'all', 'actual_share': 0.25, 'reporting_strength': 2.0, 'reporting_missingness': True, 'pilot_nowcaster': 'real_tree', 'log_loss_weight': 0.25, 'latent': 32, 'batch_size': 4, 'lookback': 14, 'width': 128, 'decoder': 'residual2'}
+Bs 0.8189 0.8151 {'actual_share': 0.25, 'reporting_strength': 2.0, 'reporting_random_strength': True, 'reporting_method': 'synchronous_log', 'reporting_missingness': True, 'revision_signals': 'all', 'growth_anchor': True, 'log_loss_weight': 0.5, 'sum_wis_weight': 0.1, 'latent': 8, 'signal_features': 'multiscale', 'width': 128, 'us_error': 'shared_factor', 'decoder': 'residual2'}

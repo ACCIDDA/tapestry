@@ -1,0 +1,241 @@
+hub,target,season,scale,geography,ensemble,wis_ratio,tasks,history,config_id,seed
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6963271329435887,5616,raw,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.720759185863447,5616,raw,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8415285612222465,5824,raw,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9140469014673892,5824,raw,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8899660198446978,5768,raw,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.692234363948538,5616,half,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7014528980603215,5616,half,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8472113487702516,5824,half,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8695048976820865,5824,half,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8900475271750043,5768,half,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6970727156327616,5616,corrected,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.6980156300690578,5616,corrected,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8659135795077872,5824,corrected,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8573328474008008,5824,corrected,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8902513882787488,5768,corrected,"ensemble=B_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.696216827231004,5616,raw,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7254495787900234,5616,raw,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8419084670899443,5824,raw,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.920810651764298,5824,raw,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8897955755254031,5768,raw,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.691035739221988,5616,half,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.704392031453512,5616,half,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8473729770650983,5824,half,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8753439732030827,5824,half,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8898639529716195,5768,half,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6945380688711503,5616,corrected,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.6983600382986968,5616,corrected,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8656131074017455,5824,corrected,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8616249346546618,5824,corrected,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8900580010034835,5768,corrected,"ensemble=B_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7111040104133426,5616,raw,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7405873705926219,5616,raw,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7998697696605896,5824,raw,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9065829564787914,5824,raw,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8462669971619826,5768,raw,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6951027270820864,5616,half,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7087010996586363,5616,half,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8022509872428143,5824,half,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.859377638180981,5824,half,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8463431531390098,5768,half,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6881835818596455,5616,corrected,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.6934229557098738,5616,corrected,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8149771991070666,5824,corrected,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8390873734758129,5824,corrected,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8465486387133007,5768,corrected,"ensemble=A25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7124527701720189,5616,raw,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7471521442470174,5616,raw,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7956453102210224,5824,raw,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.90818056483755,5824,raw,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8452460042301798,5768,raw,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6959011118955934,5616,half,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7136470330091432,5616,half,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7975044069172507,5824,half,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8611129639639729,5824,half,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8452632015410485,5768,half,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6878535388753568,5616,corrected,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.6958493970058053,5616,corrected,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8094695164835892,5824,corrected,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8393788640835913,5824,corrected,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8454358264844092,5768,corrected,"ensemble=A25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7433549790020311,5616,raw,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7732562980169222,5616,raw,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7666021291977969,5824,raw,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9018288027447376,5824,raw,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8120826820407013,5768,raw,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.715476223620509,5616,half,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7277168520825388,5616,half,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7661717271425074,5824,half,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8541125435716777,5824,half,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8120294893761043,5768,half,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6968275370293693,5616,corrected,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7000059746192613,5616,corrected,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7743892604823132,5824,corrected,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8285816893234959,5824,corrected,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8121505753473127,5768,corrected,"ensemble=A50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7464305701670384,5616,raw,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7849835760378102,5616,raw,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7627605738696756,5824,raw,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9068735234742066,5824,raw,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8117138070370766,5768,raw,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7187028714573992,5616,half,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7386364847136684,5616,half,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7618011749972204,5824,half,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8608208356273228,5824,half,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8115652885768005,5768,half,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6992612395207178,5616,corrected,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7085105143430112,5616,corrected,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7688619981847605,5824,corrected,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8337424261377395,5824,corrected,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8116762074301016,5768,corrected,"ensemble=A50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7914587346227008,5616,raw,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.8084265948941736,5616,raw,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.825927032033526,5824,raw,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9124966701407944,5824,raw,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8713890585554296,5768,raw,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7545845309143706,5616,half,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7544586817251064,5616,half,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8344289851145422,5824,half,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.873990626673567,5824,half,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8706904223066779,5768,half,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.727211991404344,5616,corrected,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7186662829987269,5616,corrected,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8536509126756262,5824,corrected,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8588101289434168,5824,corrected,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8701543973334085,5768,corrected,"ensemble=Afinalized50_B50,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7927096526448522,5616,raw,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.8273810579958726,5616,raw,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8246049509966026,5824,raw,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9192813326546796,5824,raw,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.870369067541715,5768,raw,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7566936710394214,5616,half,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7713361912492374,5616,half,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8316755549111158,5824,half,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8812185713969171,5824,half,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8696981687698091,5768,half,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7287787343575384,5616,corrected,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7318865984792378,5616,corrected,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.848040582222303,5824,corrected,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8622066589889119,5824,corrected,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.869143452218117,5768,corrected,"ensemble=Afinalized50_B50,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7273174489412383,5616,raw,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7513718993979353,5616,raw,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8299496823953482,5824,raw,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9117958344005028,5824,raw,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8766113407733104,5768,raw,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.707111902921039,5616,half,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7158516988709993,5616,half,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.836725390098317,5824,half,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.869402943147008,5824,half,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8763826226956597,5768,half,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6959011153805853,5616,corrected,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.696904627658042,5616,corrected,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.855299812170056,5824,corrected,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.854753632166277,5824,corrected,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8762989385316555,5768,corrected,"ensemble=Afinalized25_B75,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7280659175591928,5616,raw,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7614255326245726,5616,raw,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8284323999297032,5824,raw,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9158111807049176,5824,raw,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8751256842777746,5768,raw,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7074469539490013,5616,half,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7236683979056105,5616,half,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8344526399366802,5824,half,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8728791988342446,5824,half,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8748314702947696,5768,half,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.6951034662923262,5616,corrected,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7012725614312664,5616,corrected,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.851172374445041,5824,corrected,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8556590897463273,5824,corrected,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8747139515248231,5768,corrected,"ensemble=Afinalized25_B75,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7965307712438788,5616,raw,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.8365974366789615,5616,raw,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8258045118219289,5824,raw,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9646345517298062,5824,raw,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8586220721057404,5768,raw,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7661431908697866,5616,half,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.789344977904778,5616,half,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8120191069016717,5824,half,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8897937336536271,5824,half,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8585287183431727,5768,half,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7454245305504901,5616,corrected,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7601166745823,5616,corrected,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8132204621862897,5824,corrected,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8532849357891626,5824,corrected,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8584360008499088,5768,corrected,"ensemble=Bfinalized_only,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7994713800053147,5616,raw,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.8471039440956399,5616,raw,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8270196862515458,5824,raw,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9725027507723552,5824,raw,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8583683680316375,5768,raw,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7687881568930908,5616,half,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7988622858431726,5616,half,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8130945541101806,5824,half,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8977180528702614,5824,half,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8582486815586875,5768,half,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7483480431087133,5616,corrected,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7681685581161457,5616,corrected,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8137477261734593,5824,corrected,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8596849064830296,5824,corrected,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8580960754794804,5768,corrected,"ensemble=Bfinalized_only,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.730792300052273,5616,raw,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7614179845111173,5616,raw,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8249192798490309,5824,raw,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9282008669403338,5824,raw,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8688515560433955,5768,raw,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.713552252791617,5616,half,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7288891571468774,5616,half,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8215238518172774,5824,half,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8702787354064826,5824,half,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8688189513443696,5768,half,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7054423322757616,5616,corrected,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.713124647182853,5616,corrected,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8317564924772081,5824,corrected,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8466851494014247,5824,corrected,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8688559601839104,5768,corrected,"ensemble=B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7314737785909825,5616,raw,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7706322635868229,5616,raw,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8230168823146389,5824,raw,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9341588743913962,5824,raw,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8670716461150604,5768,raw,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7138417390747737,5616,half,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.73653735283542,5616,half,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8191362579178129,5824,half,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8751458639761672,5824,half,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8670409936073418,5768,half,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7053358621268169,5616,corrected,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7186519556028389,5616,corrected,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.8281556303506639,5824,corrected,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8488978164349745,5824,corrected,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8670550904251499,5768,corrected,"ensemble=B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7571216646800569,5616,raw,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7911725025705709,5616,raw,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7789247166493027,5824,raw,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.9156329994296212,5824,raw,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8223536674631625,5768,raw,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7283144270880214,5616,half,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7449671639961967,5616,half,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7745799509960448,5824,half,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8603121496819383,5824,half,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8222816197542304,5768,half,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7087027711292722,5616,corrected,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.716423701734967,5616,corrected,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7803440994692817,5824,corrected,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8307012159889375,5824,corrected,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8223102740787714,5768,corrected,"ensemble=A_B_Bfinalized,rule=vincent,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7589814352454085,5616,raw,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.8005998686827495,5616,raw,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7756824237845645,5824,raw,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.920232007575317,5824,raw,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8214375517448226,5768,raw,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.730337154808612,5616,half,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7536125875735965,5616,half,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7708666917698334,5824,half,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8653389963993646,5824,half,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8213008581369889,5768,half,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,natural,all,FluSight-ensemble,0.7104779845309618,5616,corrected,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2024-2025,log,all,FluSight-ensemble,0.7231376182662381,5616,corrected,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,natural,all,FluSight-ensemble,0.7754798607914043,5824,corrected,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu hosp,2025-2026,log,all,FluSight-ensemble,0.8337888210365053,5824,corrected,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
+flusight,wk inc flu prop ed visits,2025-2026,natural,all,FluSight-ensemble,0.8212903646669454,5768,corrected,"ensemble=A_B_Bfinalized,rule=mixture,forecast_targets=flu",0
