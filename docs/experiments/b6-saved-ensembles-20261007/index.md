@@ -86,7 +86,7 @@ export PYTHONPATH=src
 sbatch scripts/b6_saved.sbatch
 ```
 
-The scorer is `tapestry.experiment.pilot.rank_pilot`, also used by the shared
+The scorer is `chromantis.experiment.pilot.rank_pilot`, also used by the shared
 manager. Research plan/launch/status/rank commands are in the
 [campaign plan](../b6-forecast-today-plan-20261007.md#execution-update-7-october-1155-edt).
 

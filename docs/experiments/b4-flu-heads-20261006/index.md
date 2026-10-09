@@ -52,19 +52,19 @@ export PYTHONPATH=src
 LANES=4 GPUS=1 sbatch --job-name=b4-flu-heads-check-20261006 --array=0-0 \
   --nodelist=g1803jles02 --cpus-per-task=8 --mem=95G --time=01:00:00 \
   scripts/jlessler.sbatch b4-flu-heads-check-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-heads-check-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-heads-check-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-heads-check-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-heads-check-20261006 --no-plots
 # Full comparison; helper expands the common planner command below:
 .venv/bin/python scripts/plan_b4_heads.py --plan
 # Equivalent plan (use only one, never replan a running experiment):
-.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-heads-20261006 \
+.venv/bin/python -m chromantis.experiment.planner plan -e b4-flu-heads-20261006 \
   -s $(cat docs/experiments/b4-flu-heads-20261006/scenarios.txt) --seeds 42 43 --device cuda
 LANES=4 GPUS=2 sbatch --job-name=b4-flu-heads-20261006 --array=0-1 \
   --dependency=afterok:4006033 --kill-on-invalid-dep=yes \
   --nodelist=g1803jles02 --cpus-per-task=8 --mem=95G --time=04:00:00 \
   scripts/jlessler.sbatch b4-flu-heads-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-heads-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-heads-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-heads-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-heads-20261006 --no-plots
 ```
 
 Exact scenario strings and variant mappings are in design.json and scenarios.txt. Job state and main submission IDs are recorded below once verified. Monitor both this experiment and the earlier ILINet refinement; do not launch duplicates.

@@ -5,8 +5,8 @@ import pytest
 
 pytest.importorskip('torch')
 
-from tapestry.evaluation.standard import METRICS, quantile_scores, season_scores
-from tapestry.evaluation.quantiles import LEVELS
+from chromantis.evaluation.standard import METRICS, quantile_scores, season_scores
+from chromantis.evaluation.quantiles import LEVELS
 
 
 def test_wis_components_match_interval_and_pinball_definitions():
@@ -53,7 +53,7 @@ def test_state_size_and_task_count_do_not_set_jurisdiction_weights():
 
 def test_pairwise_relative_wis_uses_shared_tasks_and_baseline():
     """CDC method: mean WIS ratios on shared tasks, geometric mean over all models, over the baseline."""
-    from tapestry.evaluation.standard import relative_wis
+    from chromantis.evaluation.standard import relative_wis
     scores = pd.DataFrame({'A': [1., 2., 3.], 'B': [2., 4., np.nan], 'base': [4., 4., 4.]})
     got = relative_wis(scores, 'base')
     ab = 1.5 / 3  # A vs B on the two shared tasks
@@ -65,8 +65,8 @@ def test_pairwise_relative_wis_uses_shared_tasks_and_baseline():
 
 
 def test_raw_wis_rejects_invalid_forecasts_instead_of_averaging_them_away():
-    from tapestry.evaluation.standard import check_raw_tasks, transform
-    from tapestry.evaluation.hubs import QCOLS, KEY
+    from chromantis.evaluation.standard import check_raw_tasks, transform
+    from chromantis.evaluation.hubs import QCOLS, KEY
     frame = pd.DataFrame([dict(zip(KEY, ('2025-11-22', '2025-11-22', '37', 0)), **{q: float(i) for i, q in enumerate(QCOLS)},
                                model_original_truth=5.)])
     check_raw_tasks(frame, 'wk inc flu hosp', 'ok')

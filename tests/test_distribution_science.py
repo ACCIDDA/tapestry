@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-from tapestry.model.network import ForecastHead
-from tapestry.experiment.training import four_week_sum_wis, sum_wis_weights
-from tapestry.evaluation.standard import quantile_scores
+from chromantis.model.network import ForecastHead
+from chromantis.experiment.training import four_week_sum_wis, sum_wis_weights
+from chromantis.evaluation.standard import quantile_scores
 
 
 def test_small_quantiles_order_and_two_spreads():

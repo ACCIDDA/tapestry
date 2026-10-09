@@ -1,7 +1,7 @@
 import pytest
 
 torch = pytest.importorskip('torch')
-from tapestry.model.network import COUNT_TRANSFORMS, fair_crps
+from chromantis.model.network import COUNT_TRANSFORMS, fair_crps
 
 
 def test_fair_crps_matches_pairwise_and_excludes_nan_labels():
@@ -17,7 +17,7 @@ def test_fair_crps_matches_pairwise_and_excludes_nan_labels():
 
 
 def test_count_and_ed_transforms_invert_exactly():
-    from tapestry.model.network import invert_counts, transform_counts, transform_proportions
+    from chromantis.model.network import invert_counts, transform_counts, transform_proportions
     counts = torch.tensor([0., 3., 250., 40000.])
     population = torch.tensor([5e5, 5e5, 5e6, 3.3e8])
     for transform in COUNT_TRANSFORMS:

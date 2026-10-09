@@ -204,8 +204,8 @@ export PYTHONPATH="$PWD/src"
 LANES=4 GPUS=6 sbatch --job-name=b2-weekend-20261002 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=8 --mem=100G scripts/jlessler.sbatch b2-weekend-20261002 --retry-failed
 LANES=6 GPUS=6 sbatch --job-name=b2-weekend-20261002 --array=0-1 --nodelist=g1803jles02 --cpus-per-task=12 --mem=160G scripts/jlessler.sbatch b2-weekend-20261002 --retry-failed
 
-.venv/bin/python -m tapestry.experiment.planner status -e b2-weekend-20261002
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-weekend-20261002 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-weekend-20261002
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-weekend-20261002 --allow-incomplete --no-plots
 .venv/bin/python scripts/report_b2_weekend.py -e b2-weekend-20261002
 ```
 

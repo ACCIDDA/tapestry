@@ -1,0 +1,516 @@
+"""Curated acquisition catalog for respiratory surveillance covariates."""
+
+from __future__ import annotations
+
+from .models import DatasetSpec, RevisionMode
+from .lineage import with_lineage
+
+
+def _cdc(
+    key: str,
+    title: str,
+    dataset_id: str,
+    description: str,
+    *,
+    revision_mode: RevisionMode = RevisionMode.SNAPSHOT_ONLY,
+    temporal_resolution: str = "weekly",
+    geographies: tuple[str, ...] = ("state", "nation"),
+    measures: tuple[str, ...],
+    natural_key: tuple[str, ...],
+    event_date_column: str,
+    vintage_column: str | None = None,
+    order_by: str | None = None,
+    groups: tuple[str, ...] = ("all", "cdc"),
+    missing_value_markers: tuple[str, ...] = (),
+) -> DatasetSpec:
+    return DatasetSpec(
+        key=key,
+        title=title,
+        provider="CDC",
+        fetcher="socrata",
+        source_url=f"https://data.cdc.gov/d/{dataset_id}",
+        description=description,
+        revision_mode=revision_mode,
+        temporal_resolution=temporal_resolution,
+        geographic_resolutions=geographies,
+        measures=measures,
+        natural_key=natural_key,
+        event_date_column=event_date_column,
+        vintage_column=vintage_column,
+        vintage_semantics=(
+            "publisher_posted_at" if vintage_column else (
+                "initial_publication" if revision_mode == RevisionMode.INITIAL_RELEASE else None
+            )
+        ),
+        missing_value_markers=missing_value_markers,
+        config={"dataset_id": dataset_id, "order_by": order_by or ",".join(natural_key)},
+        groups=groups,
+    )
+
+
+_SPECS = [
+    _cdc(
+        "cdc_nhsn_final",
+        "NHSN weekly hospital respiratory data, finalized",
+        "ua7e-t2fy",
+        "Current finalized weekly HRD metrics, including admissions and hospital reporting coverage.",
+        measures=("admissions", "hospital_reporting", "capacity", "occupancy"),
+        natural_key=("weekendingdate", "jurisdiction"),
+        event_date_column="weekendingdate",
+        geographies=("state", "territory", "hhs", "nation"),
+        groups=("all", "cdc", "core"),
+    ),
+    _cdc(
+        "cdc_nhsn_preliminary",
+        "NHSN weekly hospital respiratory data, preliminary",
+        "mpgq-jmmr",
+        "Wednesday preliminary HRD release, available before the finalized Friday release.",
+        measures=("admissions", "hospital_reporting", "capacity", "occupancy"),
+        natural_key=("weekendingdate", "jurisdiction"),
+        event_date_column="weekendingdate",
+        geographies=("state", "territory", "hhs", "nation"),
+        groups=("all", "cdc", "core"),
+    ),
+    _cdc(
+        "cdc_nhsn_initial_release",
+        "NHSN weekly HRD at initial publication",
+        "rhwp-grxi",
+        "Historical initial-publication HRD values that CDC does not revise after publication.",
+        revision_mode=RevisionMode.INITIAL_RELEASE,
+        measures=("admissions", "hospital_reporting", "capacity", "occupancy"),
+        natural_key=("weekendingdate", "jurisdiction"),
+        event_date_column="weekendingdate",
+        geographies=("state", "territory", "hhs", "nation"),
+        groups=("all", "cdc", "core"),
+    ),
+    _cdc(
+        "cdc_nssp_daily",
+        "NSSP daily ED respiratory visits by state",
+        "vjzj-u7u8",
+        "Daily percentage of ED visits for ARI, COVID-19, influenza, and RSV.",
+        temporal_resolution="daily",
+        measures=("percent_ed_visits",),
+        natural_key=("date", "pathogen", "geography"),
+        event_date_column="date",
+        groups=("all", "cdc", "core"),
+    ),
+    _cdc(
+        "cdc_nssp_trajectories",
+        "NSSP weekly state and HSA ED trajectories",
+        "rdmq-nq56",
+        "Weekly raw/smoothed ED percentages and trend classifications at state and HSA support.",
+        measures=("percent_ed_visits", "smoothed_percent_ed_visits", "trend"),
+        natural_key=("week_end", "geography", "county"),
+        event_date_column="week_end",
+        geographies=("state", "hsa"),
+    ),
+    _cdc(
+        "cdc_nssp_demographics",
+        "NSSP national ED respiratory visits by demographic group",
+        "7xva-uux8",
+        "National weekly ED percentages stratified by age, race, and sex.",
+        measures=("percent_ed_visits",),
+        natural_key=("week_end", "geography", "pathogen", "demographics_type", "demographics_values"),
+        event_date_column="week_end",
+        geographies=("nation",),
+    ),
+    DatasetSpec(
+        key="delphi_nhsn",
+        title="Delphi NHSN revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://delphi.cmu.edu/epidata/v5/aux_data/",
+        description="Versioned NHSN admissions, reporting coverage, and bed signals.",
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "census_region", "census_division"),
+        measures=("admissions", "hospital_reporting", "beds", "occupancy"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "nhsn",
+            "signals": (
+                "confirmed_admissions_covid_ew", "confirmed_admissions_flu_ew",
+                "confirmed_admissions_rsv_ew", "hosprep_confirmed_admissions_covid_ew",
+                "hosprep_confirmed_admissions_flu_ew", "hosprep_confirmed_admissions_rsv_ew",
+                "inpatient_beds_ew", "inpatient_beds_occupied_pct_ew",
+            ),
+            "geo_types": ("state", "nation", "hhs", "census_region", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_nssp",
+        title="Delphi NSSP ED revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description="Versioned raw and smoothed weekly ED visit proportions.",
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "county", "hsa", "hrr", "msa", "census_region", "census_division"),
+        measures=("percent_ed_visits", "smoothed_percent_ed_visits"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "nssp",
+            "signals": (
+                "pct_ed_visits_ari", "pct_ed_visits_combined", "pct_ed_visits_covid",
+                "pct_ed_visits_influenza", "pct_ed_visits_rsv",
+                "smoothed_pct_ed_visits_combined", "smoothed_pct_ed_visits_covid",
+                "smoothed_pct_ed_visits_influenza", "smoothed_pct_ed_visits_rsv",
+            ),
+            # The source metadata advertises MSA, but every current MSA
+            # snapshot is header-only and an unfiltered archive query does not
+            # begin streaming. It remains available through --geo-type msa for
+            # explicit probes without blocking the reproducible full pull.
+            "geo_types": ("state", "nation", "hhs", "county", "hsa_nci", "hrr", "census_region", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_nwss",
+        title="Delphi NWSS wastewater revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description="Versioned sewershed wastewater concentrations and normalized signals.",
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="sample",
+        geographic_resolutions=("sewershed",),
+        measures=("concentration", "flow_population_normalized", "microbial_normalized"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time", "nwss_source", "sample_index"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "nwss",
+            "signals": (
+                "covid_avg_conc", "covid_avg_conc_lin", "covid_flowpop_lin", "covid_mic_lin",
+                "flu_avg_conc", "flu_avg_conc_lin", "flu_flowpop_lin", "flu_mic_lin",
+                "rsv_avg_conc", "rsv_avg_conc_lin", "rsv_flowpop_lin", "rsv_mic_lin",
+            ),
+            "geo_types": ("sewershed",),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_nwss_aux",
+        title="Delphi NWSS versioned auxiliary data",
+        provider="CMU Delphi",
+        fetcher="delphi_v5_aux",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description=(
+            "Versioned NWSS sample metadata used to join sewersheds to states and "
+            "separate laboratory methods without using future auxiliary rows."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="sample",
+        geographic_resolutions=("sewershed",),
+        measures=("state_territory", "major_lab_method", "population_served"),
+        natural_key=("report_time", "geo_value", "reference_time", "nwss_source",
+                     "sample_index", "pcr_target"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={"source": "nwss", "limit": 100_000_000},
+        groups=("derived",),
+    ),
+    DatasetSpec(
+        key="derived_nwss_state_indices",
+        title="Origin-safe NWSS state indices",
+        provider="Chromantis, derived from CMU Delphi NWSS",
+        fetcher="derived",
+        source_url="https://github.com/ACCIDDA/chromantis/blob/main/docs/data/wastewater.md",
+        description=(
+            "Weekly state and national WVAL-like and within-site percentile-rank "
+            "indices rebuilt at each real Delphi NWSS publisher vintage."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation"),
+        measures=("wval_like", "pct_rank"),
+        natural_key=("pathogen", "report_time", "geo_type", "geo_value", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="derived_at_native_report_time",
+        config={
+            "parent_source": "delphi_nwss",
+            "minimum_group_weeks": 26,
+            "minimum_state_sites": 3,
+            "measures": ("wval_like", "pct_rank"),
+        },
+        groups=("derived",),
+    ),
+    DatasetSpec(
+        key="delphi_claims_inpatient",
+        title="Delphi inpatient claims revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description="Daily trailing seven-day percentages of inpatient claims for flu, COVID-19, and other ARI.",
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="daily",
+        geographic_resolutions=("county", "hrr", "msa", "state", "hhs", "census_division", "census_region", "nation"),
+        measures=("percent_inpatient_claims",),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "claims_inpatient",
+            "signals": (
+                "claims_inpatient_adm_pct_claims_covid",
+                "claims_inpatient_adm_pct_claims_flu",
+                "claims_inpatient_adm_pct_ari_other",
+            ),
+            "geo_types": ("county", "hrr", "msa", "state", "hhs", "census_division", "census_region", "nation"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_claims_outpatient",
+        title="Delphi outpatient claims revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://delphi.cmu.edu/epidata/v5/",
+        description="Daily trailing seven-day percentages of outpatient claims for flu, COVID-19, and other ARI.",
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="daily",
+        geographic_resolutions=("county", "hrr", "msa", "state", "hhs", "census_division", "census_region", "nation"),
+        measures=("percent_outpatient_claims",),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "claims_outpatient",
+            "signals": (
+                "claims_outpatient_ov_pct_claims_covid",
+                "claims_outpatient_ov_pct_claims_flu",
+                "claims_outpatient_ov_pct_ari_other",
+            ),
+            "geo_types": ("county", "hrr", "msa", "state", "hhs", "census_division", "census_region", "nation"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    # FluView and FluSurv moved from the V3 endpoints (pub_fluview,
+    # pub_fluview_clinical, pub_flusurv) to V5 on 2026-09-19 (Delphi email to the
+    # user). V3 fluview_clinical is split into clinical and public-health labs;
+    # the public-health labs (fluview_resp_lab_ph) are not acquired (user decision
+    # 2026-09-22: their state rows are season totals, not weekly values).
+    DatasetSpec(
+        key="delphi_fluview_ilinet",
+        title="Delphi FluView ILINet revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_ilinet.html",
+        description=(
+            "Weekly outpatient influenza-like illness (ILINet): unweighted and weighted ILI "
+            "percentages, ILI and patient visit counts, reporting providers. Weighted ILI is "
+            "suppressed at state level; statewide NY is Delphi's NYC + NY-minus-NYC pool."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "census_division"),
+        measures=("ili_percent", "ili_visits", "patient_visits", "providers"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time", "age_group"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "fluview_ilinet",
+            "signals": ("ili", "wili", "num_ili", "num_patients", "num_providers"),
+            "geo_types": ("state", "nation", "hhs", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_fluview_clinical",
+        title="Delphi FluView clinical laboratory revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/fluview_resp_lab_clinical.html",
+        description=(
+            "Weekly NREVSS clinical laboratory influenza tests: specimens tested, influenza A and "
+            "B positives, and percent positive."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "hhs", "census_division"),
+        measures=("percent_positive", "positive_specimens", "specimens_tested"),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time", "age_group"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "fluview_resp_lab_clinical",
+            "signals": ("pct_positive", "pct_positive_a", "pct_positive_b",
+                        "positive_a", "positive_b", "total_specimens"),
+            "geo_types": ("state", "nation", "hhs", "census_division"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="delphi_flusurv",
+        title="Delphi FluSurv-NET revision archive",
+        provider="CMU Delphi",
+        fetcher="delphi_v5",
+        source_url="https://cmu-delphi.github.io/delphi-epidata/api/v5-signals/flusurv.html",
+        description=(
+            "Weekly laboratory-confirmed influenza hospitalization rates per 100,000 in the "
+            "FluSurv-NET catchment (EIP and IHSP counties, about 9% of the US population), "
+            "overall and by age, race and ethnicity, sex and influenza type."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="weekly",
+        geographic_resolutions=("state", "nation", "msa", "misc"),
+        measures=("hospitalization_rate",),
+        natural_key=("signal", "report_time", "geo_type", "geo_value", "fill_method", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="api_report_time",
+        config={
+            "source": "flusurv",
+            "signals": (
+                "rate_overall", "rate_flu_a", "rate_flu_b",
+                "rate_age_0", "rate_age_0tlt1", "rate_age_1", "rate_age_1t4", "rate_age_2",
+                "rate_age_3", "rate_age_4", "rate_age_5", "rate_age_5t11", "rate_age_6",
+                "rate_age_7", "rate_age_12t17", "rate_age_18t29", "rate_age_30t39",
+                "rate_age_40t49", "rate_age_gte18", "rate_age_gte75", "rate_age_lt18",
+                "rate_race_asian", "rate_race_black", "rate_race_hisp", "rate_race_natamer",
+                "rate_race_white", "rate_sex_female", "rate_sex_male",
+            ),
+            "geo_types": ("state", "nation", "msa", "misc"),
+        },
+        groups=("all", "delphi", "core"),
+    ),
+    DatasetSpec(
+        key="pophive_kinsa_ili",
+        title="PopHIVE Kinsa cough, cold and flu signal",
+        provider="PopHIVE (Kinsa Insights)",
+        fetcher="pophive_git",
+        source_url="https://github.com/PopHIVE/Ingest/tree/main/data/kinsa_ili/standard",
+        description=(
+            "National daily share of Kinsa smart-thermometer users reporting cough, cold or flu "
+            "symptoms. The PopHIVE Git history is the report-time archive: each row's report time "
+            "is the first commit containing it. Commits before 2026-05-04 are a backfill."
+        ),
+        revision_mode=RevisionMode.REPORT_TIME,
+        temporal_resolution="daily",
+        geographic_resolutions=("nation",),
+        measures=("kinsa_cough_cold_flu",),
+        natural_key=("report_time", "geo_type", "geo_value", "reference_time"),
+        event_date_column="reference_time",
+        vintage_column="report_time",
+        vintage_semantics="git_commit_time",
+        config={"repository": "PopHIVE/Ingest", "path": "data/kinsa_ili/standard/data.csv.gz", "branch": "main"},
+        groups=("all", "pophive"),
+    ),
+
+]
+
+
+def _hub(
+    key: str,
+    title: str,
+    url: str,
+    description: str,
+    *,
+    revision_mode: RevisionMode,
+    event_date_column: str,
+    vintage_column: str | None,
+    geographies: tuple[str, ...],
+    measures: tuple[str, ...] = ("hospital_admissions", "ed_visit_proportion"),
+    default_branch: str = "main",
+    archive_paths: tuple[str, ...] = ("target-data", "auxiliary-data", "hub-config"),
+) -> DatasetSpec:
+    return DatasetSpec(
+        key=key,
+        title=title,
+        provider="Hubverse community",
+        fetcher="hubverse",
+        source_url=url,
+        description=description,
+        revision_mode=revision_mode,
+        temporal_resolution="weekly",
+        geographic_resolutions=geographies,
+        measures=measures,
+        natural_key=((vintage_column,) if vintage_column else ()) + ("target", event_date_column, "location"),
+        event_date_column=event_date_column,
+        vintage_column=vintage_column,
+        vintage_semantics="row_snapshot" if vintage_column else "commit_time",
+        config={"remote_url": url, "default_branch": default_branch, "archive_paths": archive_paths},
+        groups=("all", "hubverse", "core"),
+    )
+
+
+_SPECS.extend([
+    _hub(
+        "hub_flusight_current", "Current FluSight target data",
+        "https://github.com/cdcepi/FluSight-forecast-hub.git",
+        "NHSN hospitalization and NSSP ED full snapshots by as_of date.",
+        revision_mode=RevisionMode.AS_OF_COLUMN, event_date_column="target_end_date", vintage_column="as_of",
+        geographies=("state", "nation"), 
+    ),
+    _hub(
+        "hub_covid_current", "Current CDC COVID-19 target data",
+        "https://github.com/CDCgov/covid19-forecast-hub.git",
+        "NHSN hospitalization and NSSP ED full snapshots by as_of date.",
+        revision_mode=RevisionMode.AS_OF_COLUMN, event_date_column="date", vintage_column="as_of",
+        geographies=("state", "nation"), 
+    ),
+    _hub(
+        "hub_rsv_current", "Current CDC RSV target data",
+        "https://github.com/CDCgov/rsv-forecast-hub.git",
+        "NHSN hospitalization and NSSP ED full snapshots by as_of date.",
+        revision_mode=RevisionMode.AS_OF_COLUMN, event_date_column="date", vintage_column="as_of",
+        geographies=("state", "nation"), 
+    ),
+    _hub(
+        "hub_flusight_legacy", "Legacy FluSight hospitalization truth",
+        "https://github.com/cdcepi/Flusight-forecast-data.git",
+        "Operational 2021-22 and 2022-23 HHS Protect-era influenza truth.",
+        revision_mode=RevisionMode.GIT_HISTORY, event_date_column="date", vintage_column=None,
+        geographies=("state", "nation"), 
+        measures=("hospital_admissions",), default_branch="master",
+        archive_paths=("data-truth", "data-locations"),
+    ),
+    _hub(
+        "hub_covid_legacy", "Legacy US COVID-19 Forecast Hub truth",
+        "https://github.com/reichlab/covid19-forecast-hub.git",
+        "Operational cases, deaths, and HHS hospitalization truth through April 2024.",
+        revision_mode=RevisionMode.GIT_HISTORY, event_date_column="date", vintage_column=None,
+        geographies=("county", "state", "nation"), 
+        measures=("cases", "deaths", "hospital_admissions"), default_branch="master",
+        archive_paths=("data-truth", "data-locations"),
+    ),
+    _hub(
+        "hub_rsvnet", "Johns Hopkins RSV Forecast Hub target data",
+        "https://github.com/HopkinsIDD/rsv-forecast-hub.git",
+        "Dated RSV-NET catchment hospitalization snapshots and age strata.",
+        revision_mode=RevisionMode.GIT_HISTORY, event_date_column="date", vintage_column=None,
+        geographies=("catchment", "nation"), 
+        measures=("hospitalization_rate", "hospital_admissions"),
+    ),
+])
+
+
+CATALOG = {spec.key: with_lineage(spec) for spec in _SPECS}
+if len(CATALOG) != len(_SPECS):
+    raise RuntimeError("Duplicate dataset key in acquisition catalog")
+
+
+def get_spec(key: str) -> DatasetSpec:
+    try:
+        return CATALOG[key]
+    except KeyError as error:
+        raise KeyError(f"Unknown dataset {key!r}; choose one of {', '.join(sorted(CATALOG))}") from error
+
+
+def specs_in_group(group: str) -> tuple[DatasetSpec, ...]:
+    return tuple(spec for spec in CATALOG.values() if group in spec.groups)

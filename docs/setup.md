@@ -18,9 +18,9 @@ Run once. If uv is already available, skip the installer commands.
 cd /proj/jlessler/projects/tapestry-all
 git clone https://github.com/ACCIDDA/chromantis.git tapestry
 
-curl -LsSf https://astral.sh/uv/install.sh -o /tmp/tapestry-uv-install.sh
+curl -LsSf https://astral.sh/uv/install.sh -o /tmp/chromantis-uv-install.sh
 env UV_INSTALL_DIR=/proj/jlessler/projects/tapestry-all/.local/bin \
-    UV_NO_MODIFY_PATH=1 sh /tmp/tapestry-uv-install.sh
+    UV_NO_MODIFY_PATH=1 sh /tmp/chromantis-uv-install.sh
 ```
 
 ## Python environment
@@ -47,22 +47,22 @@ the login shell's Anaconda installation.
 ## Download the training sources
 
 ```bash
-uv run python -m tapestry.data --data-root data init
-uv run python -m tapestry.data --data-root data pull \
+uv run python -m chromantis.data --data-root data init
+uv run python -m chromantis.data --data-root data pull \
     delphi_nhsn delphi_nssp delphi_claims_inpatient delphi_claims_outpatient \
     delphi_nwss delphi_nwss_aux hub_flusight_current hub_covid_current \
     hub_rsv_current pophive_kinsa_ili \
     delphi_fluview_ilinet delphi_fluview_clinical delphi_flusurv
 ```
 
-These are the sources `tapestry.dataset.build` reads (targets, claims,
+These are the sources `chromantis.dataset.build` reads (targets, claims,
 wastewater, Kinsa, ILINet, clinical labs, FluSurv-NET; see [the source catalog](data/sources.md)). The
 `cdc_nhsn_*`/`cdc_nssp_*` Socrata specs and the legacy/RSVNet Hub mirrors
 remain in the catalog for comparison and are not required for the training
 panel. Downloading sources does not build them; see
 [the canonical workflow](workflow.md) for that next step.
 
-Scoring is pure Python (`tapestry.evaluation.standard`) -- no R module or
+Scoring is pure Python (`chromantis.evaluation.standard`) -- no R module or
 package setup is needed. Use a Slurm allocation for training and substantial
 evaluation runs; the environment setup above does not request a GPU or submit
 a training job.
@@ -99,8 +99,8 @@ above once every source is already downloaded, then build the one array,
 `data/processed/panel.npz` (about a minute; one process per source):
 
 ```bash
-.venv/bin/python -m tapestry.dataset.build build --data-root data
-.venv/bin/python -m tapestry.dataset.build show
+.venv/bin/python -m chromantis.dataset.build build --data-root data
+.venv/bin/python -m chromantis.dataset.build show
 ```
 
 It holds the truth panel and the exact Wednesday as-of store that both input modes
@@ -145,7 +145,7 @@ paper are rerun from a clean tree.
 
 ## The frozen evaluation denominator
 
-`tapestry.experiment.planner`'s `fit`/`plan`/`rank` score every run against a
+`chromantis.experiment.planner`'s `fit`/`plan`/`rank` score every run against a
 pinned hub-ensemble denominator on the 23-quantile grid,
 `data/evaluation/b0_hub_comparison_q23` (`FROZEN` in `planner.py`). Preserve
 that directory across checkouts -- **there is currently no supported command
@@ -171,7 +171,7 @@ Regular GPU partitions are an alternative when explicitly chosen for a run.
 
 The GitHub repository is `ACCIDDA/chromantis`. Documentation is published at
 [accidda.github.io/chromantis/](https://accidda.github.io/chromantis/); the repository and Pages path are lowercase. GitHub Pages uses the existing Documentation
-Actions workflow on `main`. The Python package remains `tapestry`, and existing
+Actions workflow on `main`. The Python package is `chromantis`; existing
 local and Longleaf checkout paths remain unchanged.
 
 For an existing checkout, update its GitHub remote with:
@@ -182,5 +182,5 @@ git remote set-url origin https://github.com/ACCIDDA/chromantis.git
 
 Hosting migration, 2026-10-09: updated the repository and documentation URLs after
 the GitHub rename to lowercase `chromantis`. Documentation branding is Chromantis;
-the importable package and existing compute paths retain `tapestry`. Historical
+the importable package is `chromantis`, while existing compute paths remain unchanged. Historical
 submitted metadata is preserved as recorded.

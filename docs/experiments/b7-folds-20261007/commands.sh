@@ -6,8 +6,8 @@ LANES=4 GPUS=6 sbatch --job-name=b7-fast-h100 --array=0-1 --nodelist=g1803jles02
 LANES=4 GPUS=6 sbatch --job-name=b7-fast-l40 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=4 --mem=100G --time=00:28:00 scripts/jlessler.sbatch b7-folds-20261007
 
 # Inspection and ranking; these are safe to repeat.
-.venv/bin/python -m tapestry.experiment.planner status -e b7-folds-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b7-folds-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b7-folds-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b7-folds-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/report_b7.py --experiment b7-folds-20261007
 
 # The queued report after the original arrays:
@@ -20,5 +20,5 @@ LANES=4 GPUS=6 sbatch --job-name=b7-fast-l40 --array=0-3 --nodelist=g1803jles01 
 # Uses code-resume: same model and evaluation logic, with saved-fold reuse.
 sbatch --array=0-1 scripts/b7_resume.sbatch b7-folds-20261007
 sbatch --dependency=afterany:4217224 scripts/b7_report.sbatch b7-folds-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b7-folds-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b7-folds-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b7-folds-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b7-folds-20261007 --allow-incomplete --no-plots

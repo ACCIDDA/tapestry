@@ -107,7 +107,7 @@ on validation weeks), `sampled` (corrected with sampled correction errors), `del
 (newest admission week withheld) and `nokinsa` (covariates withheld) views, as
 diagnostics without a rank. Until 9 October 2026 reports showed each configuration at its
 best view after scoring (B7: corrected for all), an extra selection on the evaluation
-data; a release must now use the view of its recipes (`tapestry.production` checks it).
+data; a release must now use the view of its recipes (`chromantis.production` checks it).
 
 ## Labels and folds {#labels-and-folds}
 
@@ -124,8 +124,8 @@ can shorten this). Seasons are treated as exchangeable, so a fold can train on l
 |---|---|---|
 | Fit and evaluate | A–F; ranked in the recipe's F view, other views as diagnostics | `planner plan/run`, `scripts/jlessler.sbatch` |
 | Re-evaluate fitted folds on other inputs, no refit | E switched to `reported` (or `prescribed`) | `planner replay` |
-| Combine saved forecasts, no refit | the members' A–F | `python -m tapestry.evaluation.ensembles` |
-| Production | release recipes; real operational reports; the recipes' forecast view | `python -m tapestry.production run` |
+| Combine saved forecasts, no refit | the members' A–F | `python -m chromantis.evaluation.ensembles` |
+| Production | release recipes; real operational reports; the recipes' forecast view | `python -m chromantis.production run` |
 
 ## What each experiment used {#experiments}
 

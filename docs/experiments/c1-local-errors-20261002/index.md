@@ -112,8 +112,8 @@ pins the dataset, evaluation support, seeds, and code snapshot.
 export PYTHONPATH="$PWD/src"
 .venv/bin/python scripts/plan_c1_local_errors.py -e c1-local-errors-20261002
 LANES=6 GPUS=2 sbatch --job-name=c1-local-errors-20261002 --array=0-1 --nodelist=g1803jles01 --cpus-per-task=8 --mem=64G scripts/jlessler.sbatch c1-local-errors-20261002
-.venv/bin/python -m tapestry.experiment.planner status -e c1-local-errors-20261002
-.venv/bin/python -m tapestry.experiment.planner rank -e c1-local-errors-20261002 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e c1-local-errors-20261002
+.venv/bin/python -m chromantis.experiment.planner rank -e c1-local-errors-20261002 --no-plots
 .venv/bin/python docs/experiments/c1-local-errors-20261002/report.py
 ```
 

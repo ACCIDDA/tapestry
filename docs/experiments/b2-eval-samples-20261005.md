@@ -53,7 +53,7 @@ percentage change. The score weights and scoring support remain unchanged.
 
 Run from `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf.
 The helper validates and pins the four original checkpoints, then prints and
-executes the exact `tapestry.experiment.planner plan` command for each sample
+executes the exact `chromantis.experiment.planner plan` command for each sample
 count. Do not re-plan after launch; use `status` to resume unfinished work.
 
 The manager plan performed inside the helper is the following (the helper must
@@ -62,7 +62,7 @@ also write `replay-source.json` before launch, so use the helper for a new plan)
 ```bash
 scenario='replay_from=data/experiments/b-2-t0,replay_inputs=finalized,ed_transform=logit,spatial=distance,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two'
 for n in 256 2048; do
-  .venv/bin/python -m tapestry.experiment.planner plan \
+  .venv/bin/python -m chromantis.experiment.planner plan \
     -e b2-eval-samples-20261005-n$n -s "$scenario" --seeds 42 43 \
     --device cuda --eval-members "$n" --dataset data/processed/panel.npz \
     --frozen data/evaluation/b0_hub_comparison_q23
@@ -75,12 +75,12 @@ done
 for n in 256 2048; do
   name=b2-eval-samples-20261005-n$n
   LANES=2 GPUS=2 OPENBLAS_NUM_THREADS=1 sbatch --job-name="$name" --array=0-0 --time=01:00:00 scripts/jlessler.sbatch "$name"
-  .venv/bin/python -m tapestry.experiment.planner status -e "$name"
+  .venv/bin/python -m chromantis.experiment.planner status -e "$name"
 done
 
 # After completion:
 for n in 256 2048; do
-  .venv/bin/python -m tapestry.experiment.planner rank -e b2-eval-samples-20261005-n$n
+  .venv/bin/python -m chromantis.experiment.planner rank -e b2-eval-samples-20261005-n$n
 done
 ```
 

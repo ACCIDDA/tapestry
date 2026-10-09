@@ -10,7 +10,7 @@ model_contributors:
 - name: Justin Lessler
   affiliation: University of North Carolina at Chapel Hill
   email: jlessler@unc.edu
-website_url: https://github.com/ACCIDDA/tapestry
+website_url: https://github.com/ACCIDDA/chromantis
 license: CC-BY-4.0
 designated_model: true
 team_funding: J.L. and J.C.L. disclose support from the Insight Net cooperative agreement
@@ -34,4 +34,4 @@ methods_long: Chromantis combines two multilayer-perceptron forecasting recipes 
   to the Hub reference date.
 ensemble_of_models: false
 ensemble_of_hub_models: false
-repo_url: https://github.com/ACCIDDA/tapestry
+repo_url: https://github.com/ACCIDDA/chromantis

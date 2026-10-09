@@ -13,13 +13,13 @@ Remote directory: `/proj/jlessler/projects/tapestry-all/tapestry-b4-flu-600-2026
 ```bash
 cd /proj/jlessler/projects/tapestry-all/tapestry-b4-flu-600-20261005
 export PYTHONPATH=src
-.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-refine-20261006 \
+.venv/bin/python -m chromantis.experiment.planner plan -e b4-flu-refine-20261006 \
   -s $(cat docs/experiments/b4-flu-refine-20261006/scenarios.txt) --seeds 42 43 --device cuda
 LANES=4 GPUS=4 sbatch --job-name=b4-flu-refine-20261006 --array=0-3 \
   --cpus-per-task=8 --mem=95G --time=04:00:00 \
   scripts/jlessler.sbatch b4-flu-refine-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-refine-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-refine-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-refine-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-refine-20261006 --no-plots
 ```
 
 Do not replan or duplicate a submitted batch. Use status for recovery and monitor its job-id.txt plus the execution log below. No additional refinement batch is authorized. Jobs submitted before the cutoff may finish afterward.

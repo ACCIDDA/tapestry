@@ -97,12 +97,12 @@ production/submissions/               submitted CSVs; superseded/ keeps replaced
 
 | Step | Module | Command |
 |---|---|---|
-| Data acquisition, dated panel | `tapestry.data`, `tapestry.dataset` | `python -m tapestry.data pull`, `python -m tapestry.dataset.build build` |
+| Data acquisition, dated panel | `chromantis.data`, `chromantis.dataset` | `python -m chromantis.data pull`, `python -m chromantis.dataset.build build` |
 | Training (one route) | `experiment/fit.py`, `experiment/training.py` | `planner plan --study`, `scripts/jlessler.sbatch`, `planner run` |
 | Evaluate fits on other inputs | `experiment/fit.py` `replay` | `planner replay` |
 | Internal evaluation | `evaluation/standard.py`, `ranking.py`, `report.py` | `planner rank` |
-| Saved-forecast ensembles | `evaluation/ensembles.py` | `python -m tapestry.evaluation.ensembles` |
-| Submission | `tapestry.production` + a release file | `python -m tapestry.production run` |
+| Saved-forecast ensembles | `evaluation/ensembles.py` | `python -m chromantis.evaluation.ensembles` |
+| Submission | `chromantis.production` + a release file | `python -m chromantis.production run` |
 
 About 50 experiment-specific scripts and the training routes no submitted model used were
 deleted; scenario options of the remaining route are all kept. Details, and the checks that the
@@ -131,8 +131,7 @@ errors, Kinsa, ILI pretraining, season boundaries or recipes. For RSV or COVID-1
   fixes the score before screening.
 - **Hub metadata is out of date:** it says two recipes, five seeds and averaged quantiles. Updating
   it is deferred until the recipe settles (decision of 8 October 2026).
-- **Package name:** you said the repo and docs can be renamed (8 October). Whether the Python
-  package `tapestry` is renamed is still open.
+- **Package name:** the repository, documentation, Python package and commands use `chromantis`.
 
 ## History
 

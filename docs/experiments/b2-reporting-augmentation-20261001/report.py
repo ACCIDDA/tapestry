@@ -6,7 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tapestry.model.scenario import Scenario
+from chromantis.model.scenario import Scenario
 
 out = Path(__file__).parent
 root = Path('data/experiments/b2-reporting-augmentation-20261001')

@@ -2,7 +2,7 @@
 
 ## Shared post-intake selection
 
-The selection layer lives in `tapestry.data.selection`, between immutable raw
+The selection layer lives in `chromantis.data.selection`, between immutable raw
 intake and consumers. The explorer uses it directly. Downstream analysis uses the
 same table decisions, measure allowlists, and canonical signal descriptions.
 The first selection step admits only native **state and national** observations.
@@ -179,7 +179,7 @@ retrieve their payloads before those choices can be plotted.
 ### Downstream API
 
 ```python
-from tapestry.data.selection import SelectedData, describe
+from chromantis.data.selection import SelectedData, describe
 
 selected = SelectedData("data")
 print(selected.summary())
@@ -219,13 +219,13 @@ explorer's aggregated state-point cache.
 
 ```bash
 ## Policy counts, grouping, and missing downloads; no raw or index writes.
-PYTHONPATH=src python -m tapestry.data.selection --data-root data
+PYTHONPATH=src python -m chromantis.data.selection --data-root data
 
 ## Rebuild selected explorer data; reads raw snapshots without changing them.
-python -m tapestry.explorer --data-root data index --force
+python -m chromantis.explorer --data-root data index --force
 ```
 
-The installed summary command is `tapestry-select --data-root data`.
+The installed summary command is `chromantis-select --data-root data`.
 `/api/catalog` includes the selection version, logical and indexed source counts,
 canonical signal count, variant count, and unavailable source warnings.
 `SelectedData.audit` records excluded hub files and missing canonical files after
@@ -295,10 +295,10 @@ after deletion, even if that older file remains in the Git tree.
 ordinary Hub pulls also create these histories. No user's worktree is checked out.
 
 ```bash
-.venv/bin/python -m tapestry.data --data-root data hub-history \
+.venv/bin/python -m chromantis.data --data-root data hub-history \
   hub_flusight_current hub_covid_current hub_rsv_current hub_flusight_legacy
-.venv/bin/python -m tapestry.explorer --data-root data index --force
-.venv/bin/python -m tapestry.explorer --data-root data export
+.venv/bin/python -m chromantis.explorer --data-root data index --force
+.venv/bin/python -m chromantis.explorer --data-root data export
 ```
 
 The path policy covers historical current-FluSight admissions and ED files,
@@ -387,7 +387,7 @@ Each snapshot manifest records:
 Verify the latest snapshot with:
 
 ```bash
-python -m tapestry.data --data-root data verify cdc_nhsn_final
+python -m chromantis.data --data-root data verify cdc_nhsn_final
 ```
 
 ### Data lifecycle

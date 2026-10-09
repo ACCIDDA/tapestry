@@ -5,7 +5,7 @@ site_description: Probabilistic epidemic nowcasting and forecasting
 docs_dir: docs
 
 extra_css:
-  - stylesheets/tapestry.css
+  - stylesheets/chromantis.css
 
 extra_javascript:
   - javascripts/explorer-link.js

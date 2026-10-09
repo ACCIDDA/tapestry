@@ -122,7 +122,7 @@ recorded; it completed on its second attempt. No research GPU allocation remains
 - [Integration patch](implementation.patch), [source-copy checksums](reproduction-source-checksums.json), [metadata clarification](reporting-metadata-clarification.json)
 
 The shared source tree was not modified. Private source is in
-`/tmp/tapestry-vintage-overnight-20261005` locally and
+`/tmp/chromantis-vintage-overnight-20261005` locally and
 `/proj/jlessler/projects/tapestry-all/tapestry-vintage-overnight-20261005` remotely.
 The patch contains the learned generator, scenario options and dated research scripts;
 pinned experiment snapshots preserve the exact fitted versions. Focused scientific

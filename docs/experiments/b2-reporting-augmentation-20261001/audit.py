@@ -7,10 +7,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tapestry.dataset.build import load
-from tapestry.dataset import cv
-from tapestry.dataset.reporting_error import ReportingErrors
-from tapestry.model.scenario import Scenario
+from chromantis.dataset.build import load
+from chromantis.dataset import cv
+from chromantis.dataset.reporting_error import ReportingErrors
+from chromantis.model.scenario import Scenario
 
 ROOT = Path(__file__).parent
 panel = load('data/processed/panel.npz')

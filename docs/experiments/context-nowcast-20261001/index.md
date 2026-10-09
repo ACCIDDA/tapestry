@@ -230,8 +230,8 @@ export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-balanced balanced
 sbatch --job-name=context-nowcast-balanced --nodelist=g1803jles02 \
   scripts/finalization.sbatch context-nowcast-balanced
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-balanced
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-balanced
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-balanced
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-balanced
 ```
 
 The completed higher-member forecast confirmation was planned and launched with:
@@ -243,8 +243,8 @@ export PYTHONPATH="$PWD/src"
   --uncertainty 0.5 --seasonal-uncertainty 0.5 --eval-members 2048
 LANES=6 GPUS=2 sbatch --job-name=context-replay-confirm-20261002 --array=0-1 \
   --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-confirm-20261002
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-confirm-20261002
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-confirm-20261002
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-confirm-20261002
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-confirm-20261002
 ```
 
 Use `status` to inspect/resume existing experiments; use a new name for a fresh

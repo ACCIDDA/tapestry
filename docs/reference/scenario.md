@@ -1,6 +1,6 @@
 # Scenario fields
 
-Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapestry.evaluation.report.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. See [the architecture](../architecture.md) and [Workflow](../workflow.md).
+Generated from `chromantis.model.scenario.Scenario` (`CODES`, `MEANING`) by `chromantis.evaluation.report.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. See [the architecture](../architecture.md) and [Workflow](../workflow.md).
 
 | Field | Type | Default | Allowed values | Meaning |
 |---|---|---|---|---|

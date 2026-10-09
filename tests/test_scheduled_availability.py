@@ -1,13 +1,13 @@
 """Scientific checks for the assumed publication lags and fold isolation."""
 import numpy as np
-from tapestry.dataset.episodes import episodes
-from tapestry.dataset.cv import fold, week_roles
-from tapestry.dataset.build import covariate_names_for
-from tapestry.model.scenario import Scenario
+from chromantis.dataset.episodes import episodes
+from chromantis.dataset.cv import fold, week_roles
+from chromantis.dataset.build import covariate_names_for
+from chromantis.model.scenario import Scenario
 
 
 def test_schedule_uses_final_values_at_correct_observation_dates(panel):
-    from tapestry.dataset.episodes import select_covariates
+    from chromantis.dataset.episodes import select_covariates
     names = covariate_names_for('inpatient+outpatient+kinsa+ilinet+clinical_lab+flusurv')
     dates = list(panel['dates'].astype(str))
     locations = list(panel['locations'].astype(str))
@@ -56,7 +56,7 @@ def test_two_fold_schedule_excludes_heldout_values_from_fit():
 
 def test_multiscale_slopes_curvature_and_masked_values():
     import torch
-    from tapestry.model.covariates import multiscale_features
+    from chromantis.model.covariates import multiscale_features
     t = torch.arange(-11., 1.)
     x = (2 + 3*t + .5*t*t)[None, :, None, None]
     mask = torch.ones_like(x, dtype=torch.bool)
@@ -100,7 +100,7 @@ def test_reported_inputs_use_reports_and_star_only_unarchived_cells(panel):
 
 
 def test_hub_deadlines_follow_each_hub_holiday_schedule(panel):
-    from tapestry.dataset.build import deadline, for_hub
+    from chromantis.dataset.build import deadline, for_hub
     eastern = lambda hub, wednesday: deadline(wednesday, hub).strftime('%Y-%m-%d %H:%M %Z')
     assert eastern('flusight', '2024-12-25') == '2024-12-26 23:00 EST'
     assert eastern('covid', '2024-12-25') == '2024-12-26 23:00 EST'
@@ -122,7 +122,7 @@ def test_hub_deadlines_follow_each_hub_holiday_schedule(panel):
 def test_instant_cutoffs_treat_date_labels_as_whole_days():
     from datetime import datetime
     from zoneinfo import ZoneInfo
-    from tapestry.dataset.extract import cutoff_time, end_of_label_day, last_report_day
+    from chromantis.dataset.extract import cutoff_time, end_of_label_day, last_report_day
     deadline = datetime(2025, 12, 24, 23, tzinfo=ZoneInfo('America/New_York'))  # Thursday 04:00 UTC
     labels = end_of_label_day(np.array(['2025-12-24', '2025-12-25', '2025-12-25T03:00'], 'datetime64[ns]'))
     assert list(labels <= cutoff_time(deadline)) == [True, False, True]

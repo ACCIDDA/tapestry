@@ -13,8 +13,8 @@ and connect through sampled reconstructed histories.
 
 ```bash
 uv sync
-.venv/bin/python -m tapestry.dataset.build show
-.venv/bin/python -m tapestry.experiment.planner status -e b-2-t0
+.venv/bin/python -m chromantis.dataset.build show
+.venv/bin/python -m chromantis.experiment.planner status -e b-2-t0
 ```
 
 `planner rank` is the canonical analysis path. Reports live in `docs/experiments/`;

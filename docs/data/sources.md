@@ -2,7 +2,7 @@
 
 The checked-in catalog defines 23 independently retrievable datasets. The table
 below summarizes acquisition and modeling metadata; run
-`python -m tapestry.data catalog` for the complete machine-readable
+`python -m chromantis.data catalog` for the complete machine-readable
 specifications, signals, natural keys, and source URLs.
 
 | Dataset key | Provider | Fetcher | Cadence | Versioned | Native geography |
@@ -162,7 +162,7 @@ pinned to an exact commit; `--hub-as-of` resolves the last first-parent commit a
 or before a historical UTC cutoff.
 
 Canonical target files without row release dates are also exported across their
-first-parent Git history. `tapestry.data hub-history DATASET...` adds that history
+first-parent Git history. `chromantis.data hub-history DATASET...` adds that history
 to a new acquisition at the previously saved commit without refreshing the branch.
 The canonical selector and explorer expose it as Git commit history, with the
 availability assumptions documented in [Vintages and geography](methods.md).
@@ -197,7 +197,7 @@ for these three groups; this is an experimental assumption, not measured archive
 ## Wastewater
 
 The panel uses `derived_nwss_state_indices`, rebuilt from versioned Delphi NWSS
-concentrations and auxiliary metadata by `python -m tapestry.dataset.build nwss-indices`.
+concentrations and auxiliary metadata by `python -m chromantis.dataset.build nwss-indices`.
 These WVAL-like indices are derived predictors, not the published CDC WVAL series.
 
 At each report time, use only positive finite samples and auxiliary metadata
@@ -208,7 +208,7 @@ within-group log-value percentile. Average within a Saturday-ending week, take
 medians across groups at each site, then across sites per state and nationally.
 Each state or national week requires at least three sites. Same-release conflicts
 become missing; disappearing state-weeks receive explicit null statements.
-The formulas and release-boundary handling live in `tapestry.dataset.nwss`.
+The formulas and release-boundary handling live in `chromantis.dataset.nwss`.
 
 The earliest retained Delphi NWSS archive vintage is February 25, 2026.
 Older observation dates do not establish historical as-of availability.

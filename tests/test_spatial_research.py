@@ -2,7 +2,7 @@
 import pytest
 
 torch = pytest.importorskip('torch')
-from tapestry.model.network import Model, PooledMessage, SpatialBlock
+from chromantis.model.network import Model, PooledMessage, SpatialBlock
 
 
 @pytest.mark.parametrize('kind', ['national_broadcast', 'gated_pool'])

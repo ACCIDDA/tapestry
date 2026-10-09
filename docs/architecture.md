@@ -17,7 +17,7 @@ the newest reported weeks before the forecaster sees them ([model choices A–F]
   inject random noise into a network and fit its generated samples with fair
   CRPS. Chromantis adapts that idea to small epidemic forecasting models.
 - **Hub ensembles as the yardstick:** forecasts are scored in pure Python
-  (`tapestry.evaluation.standard`): mean WIS per task, states/DC and US separately,
+  (`chromantis.evaluation.standard`): mean WIS per task, states/DC and US separately,
   plus WIS relative to the Hub ensembles and the CDC pairwise ranking on frozen tasks.
 
 ## The model

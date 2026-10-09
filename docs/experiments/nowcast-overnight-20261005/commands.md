@@ -16,8 +16,8 @@ and the selected three-seed C3 full-error weak-joint condition: 26 runs total.
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan.py -e nowcast-overnight-joint-pilot-20261005 --seeds 42
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-overnight-joint-pilot-20261005 --run-id mlp-target-scheduled_final-7ea1f60d868c --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-joint-pilot --array=0-1 --nodelist=g1803jles02 --time=06:30:00 scripts/jlessler.sbatch nowcast-overnight-joint-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-joint-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-joint-pilot-20261005 --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-joint-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-joint-pilot-20261005 --no-plots
 ```
 
 The second cohort contains 13 seed-42 conditions and eight confirmation runs:
@@ -31,8 +31,8 @@ PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-overnight-trajectory-pilot-20261005 --run-id mlp-target-scheduled_final-f5b499484bba --seeds 42 43 44
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-overnight-trajectory-pilot-20261005 --run-id mlp-target-scheduled_final-1c2e24b26cfe --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-trajectory-pilot --array=0-1 --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --no-plots
 ```
 
 The focused third cohort has C1 half-error joint weight.05 and C3 half-error joint
@@ -41,8 +41,8 @@ weight.01, each with three seeds, for six total runs.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_joint_refine.py -e nowcast-overnight-joint-refine-20261005 --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-joint-refine --array=0-1 --nodelist=g1803jles02 --time=02:30:00 scripts/jlessler.sbatch nowcast-overnight-joint-refine-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-joint-refine-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-joint-refine-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-joint-refine-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-joint-refine-20261005 --allow-incomplete --no-plots
 ```
 
 The fourth cohort isolates joint representation from synthetic reporting-error
@@ -52,8 +52,8 @@ inputs, auxiliary weight .05, and three seeds (six runs).
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_clean_joint.py -e nowcast-overnight-clean-joint-20261005 --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-clean-joint --array=0-1 --nodelist=g1803jles02 --time=02:00:00 scripts/jlessler.sbatch nowcast-overnight-clean-joint-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-clean-joint-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-clean-joint-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-clean-joint-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-clean-joint-20261005 --allow-incomplete --no-plots
 ```
 
 ## Fixed-forecaster CPU cohorts
@@ -80,8 +80,8 @@ cohort's complete command sequence is:
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_uncertainty.py -e nowcast-overnight-uncertainty-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-uncertainty --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=32G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-uncertainty-20261005 --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-uncertainty-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-uncertainty-20261005 --no-plots
 ```
 
 General sequence (the protocol has literal commands for every historical launch):
@@ -89,8 +89,8 @@ General sequence (the protocol has literal commands for every historical launch)
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/PLANNING_SCRIPT -e EXPERIMENT --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=EXPERIMENT --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=32G --time=01:00:00 scripts/jlessler.sbatch EXPERIMENT
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e EXPERIMENT
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e EXPERIMENT --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e EXPERIMENT
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e EXPERIMENT --no-plots
 ```
 
 For resumption, add `--retry-failed` after the experiment name in the launch

@@ -12,8 +12,8 @@ them with the ordinary manager. The `-a` is required for the hidden partition.
 
 ```bash
 for vintage_experiment in vintage-overnight-round1-20261005 vintage-overnight-admissions-focused-20261005 vintage-overnight-c1-diluted-20261005; do
-  PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e "$vintage_experiment"
-  PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e "$vintage_experiment" --no-plots
+  PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e "$vintage_experiment"
+  PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e "$vintage_experiment" --no-plots
 done
 squeue -a -j 3800158,3804709,3818337
 ```
@@ -40,8 +40,8 @@ vintage_round1=vintage-overnight-round1-v1-reproduction
 PYTHONPATH=reproduction-source-v1/src .venv/bin/python scripts/plan_vintage_overnight.py -e "$vintage_round1"
 PYTHONPATH=src .venv/bin/python scripts/vintage_overnight_narrow.py -e "$vintage_round1"
 LANES=4 GPUS=4 sbatch --job-name="$vintage_round1" --array=0-3 --time=06:00:00 scripts/jlessler.sbatch "$vintage_round1"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e "$vintage_round1"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e "$vintage_round1" --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e "$vintage_round1"
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e "$vintage_round1" --no-plots
 ```
 
 Original array 3800158 completed all 78 runs. Idle owners 1/2/3 were released after
@@ -57,8 +57,8 @@ training code, before the later descriptive metadata clarification.
 vintage_admissions=vintage-overnight-admissions-v2-reproduction
 PYTHONPATH=reproduction-source-v2/src .venv/bin/python scripts/plan_vintage_overnight.py -e "$vintage_admissions" --admissions
 LANES=4 GPUS=4 sbatch --job-name="$vintage_admissions" --array=0-3 --time=02:30:00 scripts/jlessler.sbatch "$vintage_admissions"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e "$vintage_admissions"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e "$vintage_admissions" --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e "$vintage_admissions"
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e "$vintage_admissions" --no-plots
 ```
 
 Original array 3804709 completed all 36 runs. It was submitted with a 135-minute
@@ -75,8 +75,8 @@ owners and does not reuse the historical deadline.
 vintage_diluted=vintage-overnight-c1-diluted-v2-reproduction
 PYTHONPATH=reproduction-source-v2/src .venv/bin/python scripts/plan_vintage_overnight.py -e "$vintage_diluted" --diluted
 LANES=3 GPUS=1 sbatch --job-name="$vintage_diluted" --array=0 --time=00:45:00 scripts/jlessler.sbatch "$vintage_diluted"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e "$vintage_diluted"
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e "$vintage_diluted" --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e "$vintage_diluted"
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e "$vintage_diluted" --no-plots
 ```
 
 Original array 3818337 completed all three runs and exited normally. It had the

@@ -40,9 +40,9 @@ completed fits without retraining):
 
 ```bash
 bash scripts/plan_finalization.sh reporting-triangle-v11-20261001
-.venv/bin/python -m tapestry.experiment.planner baseline -e reporting-triangle-v11-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e reporting-triangle-v11-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.experiment.planner baseline -e reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e reporting-triangle-v11-20261001
 .venv/bin/python docs/experiments/reporting-triangle-20261001/baseline_report.py
 ```
 
@@ -183,8 +183,8 @@ baseline. Those sources may still enter as Wednesday-visible predictors.
 ```bash
 bash scripts/plan_finalization.sh reporting-triangle-v11-20261001
 sbatch --job-name=reporting-triangle-v11-20261001 scripts/finalization.sbatch reporting-triangle-v11-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e reporting-triangle-v11-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e reporting-triangle-v11-20261001
 ```
 
 The full-season hierarchical evaluation completed on Longleaf (job 3300106,

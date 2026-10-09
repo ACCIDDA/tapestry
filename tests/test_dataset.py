@@ -7,12 +7,12 @@ import pytest
 torch = pytest.importorskip('torch')
 
 from conftest import LOCATIONS, code, synthetic_panel
-from tapestry.dataset.build import STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, decode, encode
-from tapestry.dataset.cv import SEASONS, fold, season, week_roles
-from tapestry.dataset.episodes import episodes, select_covariates
-from tapestry.experiment.training import model_options, unique_truth
-from tapestry.model.objective import loss_cell_weights, loss_scales
-from tapestry.model.scenario import Scenario
+from chromantis.dataset.build import STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, decode, encode
+from chromantis.dataset.cv import SEASONS, fold, season, week_roles
+from chromantis.dataset.episodes import episodes, select_covariates
+from chromantis.experiment.training import model_options, unique_truth
+from chromantis.model.objective import loss_cell_weights, loss_scales
+from chromantis.model.scenario import Scenario
 
 # Training inputs follow `history_source`: finalized scheduled histories, or actual Wednesday reports.
 SCENARIOS = [Scenario(lookback=6, epochs=3, patience=1),

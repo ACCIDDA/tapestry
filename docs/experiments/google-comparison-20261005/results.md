@@ -40,7 +40,7 @@ With the project's equal-location ensemble-normalized aggregation retained after
 
 ## Reproduction
 
-No training or inference was rerun and no cluster scoring job was launched. This analysis rescored saved quantiles locally using the existing `tapestry.evaluation.totals.quantile_scores` implementation. It asserts exact task alignment, unique keys, finite predictions, and positive common ensemble/Google denominators. The downloaded forecast paths are under `data/analysis/overnight-google-20261005/forecasts/`.
+No training or inference was rerun and no cluster scoring job was launched. This analysis rescored saved quantiles locally using the existing `chromantis.evaluation.totals.quantile_scores` implementation. It asserts exact task alignment, unique keys, finite predictions, and positive common ensemble/Google denominators. The downloaded forecast paths are under `data/analysis/overnight-google-20261005/forecasts/`.
 
 ```bash
 PYTHONPATH=src .venv/bin/python docs/experiments/google-comparison-20261005/compare.py

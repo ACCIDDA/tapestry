@@ -1,12 +1,12 @@
 """Small guards for scientific errors introduced by the exploratory pilot."""
 import numpy as np
 import torch
-from tapestry.model.series import SeriesModel, quantile_loss
-from tapestry.experiment.training import mixture_quantiles
+from chromantis.model.series import SeriesModel, quantile_loss
+from chromantis.experiment.training import mixture_quantiles
 
 
 def test_ordered_quantile_loss_matches_interval_wis():
-    from tapestry.evaluation.standard import quantile_scores
+    from chromantis.evaluation.standard import quantile_scores
     q=np.linspace(0,20,23)
     y=np.array([7.])
     calculated=quantile_loss(torch.tensor(q[:,None]),torch.tensor(y),torch.ones(1)).item()

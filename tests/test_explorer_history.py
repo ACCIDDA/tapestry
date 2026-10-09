@@ -5,8 +5,8 @@ import sqlite3
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from tapestry.explorer.export import compact_history
-from tapestry.explorer.index import ExplorerIndex
+from chromantis.explorer.export import compact_history
+from chromantis.explorer.index import ExplorerIndex
 
 
 def test_compaction_preserves_asof_values_retractions_and_final(tmp_path):

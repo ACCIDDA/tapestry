@@ -61,7 +61,7 @@ live under `nowcast/`; forecasting continues to use its existing evaluation.
 
 Existing attempts lacking baseline artifacts are incomplete under the updated
 manager. Add the comparator without refitting using
-`python -m tapestry.experiment.planner baseline -e NAME`, then run `status` and
+`python -m chromantis.experiment.planner baseline -e NAME`, then run `status` and
 `rank`. The command checks pinned inputs, aligns the saved scored cells, and
 records separate baseline provenance without changing the original fit manifest.
 For new fits, re-plan to refresh pinned source before `run`.

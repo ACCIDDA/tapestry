@@ -61,7 +61,7 @@ Install the Parquet dependency and start the explorer from the repository root:
 
 ```bash
 python -m pip install -e '.[explorer]'
-python -m tapestry.explorer --data-root data serve --no-browser
+python -m chromantis.explorer --data-root data serve --no-browser
 ```
 
 The server defaults to `http://127.0.0.1:8765/`. Omit `--no-browser` to open it
@@ -69,23 +69,23 @@ automatically, or pass `--port 8877` for another port.
 
 ```bash
 # Build without starting the server; reuse a current index.
-python -m tapestry.explorer --data-root data index
+python -m chromantis.explorer --data-root data index
 
 # Force a rebuild, optionally adjusting buffer and SQLite cache sizes.
-python -m tapestry.explorer --data-root data index --force \
+python -m chromantis.explorer --data-root data index --force \
   --batch-rows 100000 --cache-mb 256
 
 # Read saved metadata, source errors, and freshness without rebuilding.
-python -m tapestry.explorer --data-root data status
+python -m chromantis.explorer --data-root data status
 
 # Check SQLite integrity and the Parquet footer.
-python -m tapestry.explorer --data-root data validate
+python -m chromantis.explorer --data-root data validate
 
 # Refuse builds or reuse with source errors.
-python -m tapestry.explorer --data-root data index --strict
+python -m chromantis.explorer --data-root data index --strict
 
 # Serve an existing index without checking the raw inventory.
-python -m tapestry.explorer --data-root data serve --no-index --no-browser
+python -m chromantis.explorer --data-root data serve --no-index --no-browser
 ```
 
 The reproducible B2 wastewater path is three explicit steps: acquire the
@@ -95,12 +95,12 @@ roughly 10 GB; `--import-file` can register a previously downloaded complete
 CSV or CSV.gz while retaining its path and checksum in the immutable manifest.
 
 ```bash
-.venv/bin/python -m tapestry.data --data-root data pull delphi_nwss --mode archive --fill-method source --geo-type sewershed --signal flu_avg_conc_lin --signal covid_avg_conc_lin --signal rsv_avg_conc_lin --workers 3
-.venv/bin/python -m tapestry.data --data-root data pull delphi_nwss_aux
-.venv/bin/python -m tapestry.explorer.cli --data-root data index
+.venv/bin/python -m chromantis.data --data-root data pull delphi_nwss --mode archive --fill-method source --geo-type sewershed --signal flu_avg_conc_lin --signal covid_avg_conc_lin --signal rsv_avg_conc_lin --workers 3
+.venv/bin/python -m chromantis.data --data-root data pull delphi_nwss_aux
+.venv/bin/python -m chromantis.explorer.cli --data-root data index
 ```
 
-Then rebuild the derived indices with `.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data` (`src/tapestry/dataset/nwss.py`)). It registers a new `derived_nwss_state_indices` snapshot, which `tapestry.dataset.build build` and the explorer index read.
+Then rebuild the derived indices with `.venv/bin/python -m chromantis.dataset.build nwss-indices --data-root data` (`src/chromantis/dataset/nwss.py`)). It registers a new `derived_nwss_state_indices` snapshot, which `chromantis.dataset.build build` and the explorer index read.
 
 `--batch-rows` bounds the revision buffer; `--cache-mb` sets the SQLite page-cache
 budget. These are not a total process-memory limit. Every format uses the same
@@ -269,9 +269,9 @@ git push
 ```
 
 The script runs `index` (a no-op when raw data is unchanged) and then
-`python -m tapestry.explorer export --out docs/explorer/data`. On push to `main`,
+`python -m chromantis.explorer export --out docs/explorer/data`. On push to `main`,
 the Documentation workflow builds MkDocs, which copies the committed data, adds
-`index.html`, `app.js`, and `style.css` from `src/tapestry/explorer/static/`, and
+`index.html`, `app.js`, and `style.css` from `src/chromantis/explorer/static/`, and
 deploys the site.
 
 ## History selection

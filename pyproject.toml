@@ -3,7 +3,7 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tapestry"
+name = "chromantis"
 version = "0.1.0"
 description = "Surveillance data, nowcasting, forecasting, evaluation, and exploration"
 readme = "README.md"
@@ -31,7 +31,7 @@ docs = [
 
 [dependency-groups]
 # The default checkout environment covers training, evaluation, exploration and tests.
-dev = ["tapestry[model,explorer,evaluation]", "pytest>=8"]
+dev = ["chromantis[model,explorer,evaluation]", "pytest>=8"]
 
 [tool.uv.sources]
 # Without this mapping torch resolves from PyPI, which now ships CUDA 13 only.
@@ -43,14 +43,14 @@ url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [project.scripts]
-tapestry-dataset = "tapestry.dataset.build:main"
-tapestry-data = "tapestry.data.cli:main"
-tapestry-select = "tapestry.data.selection:main"
-tapestry-explore = "tapestry.explorer:main"
-tapestry-experiment = "tapestry.experiment.planner:main"
+chromantis-dataset = "chromantis.dataset.build:main"
+chromantis-data = "chromantis.data.cli:main"
+chromantis-select = "chromantis.data.selection:main"
+chromantis-explore = "chromantis.explorer:main"
+chromantis-experiment = "chromantis.experiment.planner:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tapestry"]
+packages = ["src/chromantis"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

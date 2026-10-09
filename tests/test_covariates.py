@@ -1,6 +1,6 @@
 """Covariate reduction must respect reporting masks and temporal direction."""
 import torch
-from tapestry.model.covariates import CovariateEncoder, trailing_mean
+from chromantis.model.covariates import CovariateEncoder, trailing_mean
 
 
 def test_smoothing_is_causal_and_ignores_unpublished_values():
@@ -39,7 +39,7 @@ def test_compact_representations_ignore_missing_values_and_preserve_source_order
 
 
 def test_national_pool_keeps_native_us_separate_and_excludes_unobserved_states():
-    from tapestry.model.network import pooled_context
+    from chromantis.model.network import pooled_context
     context = torch.tensor([[[2., 4.], [4., 8.], [900., 900.], [20., 30.]]])
     visible = torch.tensor([[True, True, False, True]])
     result = pooled_context(context, visible, ['NC', 'CA', 'TX', 'US'])
@@ -50,7 +50,7 @@ def test_national_pool_keeps_native_us_separate_and_excludes_unobserved_states()
 
 def test_national_covariate_broadcast_preserves_missingness_without_us_row():
     import numpy as np
-    from tapestry.dataset.episodes import select_covariates
+    from chromantis.dataset.episodes import select_covariates
     values, mask = select_covariates(np.zeros((2, 2, 0)), np.array([[3.], [np.nan]]), [],
                                      ['kinsa_ili'], ['NC', 'CA'], ['kinsa_ili'])
     np.testing.assert_array_equal(values[:, 0], [[3., 3.], [0., 0.]])

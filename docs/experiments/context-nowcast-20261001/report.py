@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from tapestry.model.scenario import Scenario
+from chromantis.model.scenario import Scenario
 
 p=argparse.ArgumentParser();p.add_argument('experiment',nargs='?',default='context-nowcast-v1-20261001')
 p.add_argument('--output',type=Path,default=Path(__file__).parent);a=p.parse_args()

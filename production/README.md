@@ -1,7 +1,7 @@
 # Production: FluSight 2026-27 submissions
 
 Code and records for the real-time weekly submissions to the CDC FluSight
-Forecast Hub. Research code stays in `src/tapestry`; this folder holds only what
+Forecast Hub. Research code stays in `src/chromantis`; this folder holds only what
 turns a trained model into a submitted file.
 
 The [Chromantis submission log](../docs/submissions.md) covers all pathogens and model
@@ -36,19 +36,19 @@ the planned package cleanup.
 - `model-metadata/ACCIDDA-<model>.yml` — our metadata drafts.
 - `output/` (git-ignored) — per-issuance forecasts, CSV, provenance JSON and plots.
 
-The code is `src/tapestry/production/` (`python -m tapestry.production`).
+The code is `src/chromantis/production/` (`python -m chromantis.production`).
 
 ## Weekly submission
 
 ```bash
 # 1. refresh raw sources into an operational data root, then build its panel
 #    (never overwrite the frozen research panel data/processed/panel.npz)
-.venv/bin/python -m tapestry.dataset.build build --data-root data/operational-<date> --workers 2 \
+.venv/bin/python -m chromantis.dataset.build build --data-root data/operational-<date> --workers 2 \
     --output data/operational-<date>/processed/panel.npz
 # 2. refresh merged peer submissions and reported history before plotting
 git -C production/hubs/FluSight-forecast-hub pull --ff-only
 # 3. forecast from the release, export, plot intervals and peer comparison (no fitting; nothing published)
-.venv/bin/python -m tapestry.production run --release production/releases/b7-20261007.json \
+.venv/bin/python -m chromantis.production run --release production/releases/b7-20261007.json \
     --dataset data/operational-<date>/processed/panel.npz --issuance <wednesday>
 # 4. review production/output/<wednesday>/<release>/, then push a safe file before the
 #    deadline (11 PM ET Wednesday) and open the PR
@@ -62,7 +62,7 @@ Then record it (the CSV, its export record, interval PDFs and peer comparison, d
 local Hub clone) and add the issuance to [docs/submissions.md](../docs/submissions.md):
 
 ```bash
-.venv/bin/python -m tapestry.production record production/output/<wednesday>/<release>/<reference>-ACCIDDA-Chromantis.csv
+.venv/bin/python -m chromantis.production record production/output/<wednesday>/<release>/<reference>-ACCIDDA-Chromantis.csv
 ```
 
 A replacement after the deadline is the user's decision; record the replaced file with
@@ -113,7 +113,7 @@ No training, inference or scoring is needed. The standalone command accepts one
 or more local forecast files and can be rerun as peers arrive:
 
 ```bash
-.venv/bin/python -m tapestry.production peers \
+.venv/bin/python -m chromantis.production peers \
     production/submissions/2026-10-10/superseded/2026-10-10-ACCIDDA-EpiLoom.csv \
     output/b7/submission-20261007/2026-10-10-ACCIDDA-EpiLoomB7.csv \
     --labels 'EpiLoom on-time (8 recipes)' 'B7 (3 recipes)' \
@@ -128,14 +128,14 @@ PRs are not downloaded implicitly. If that same model already exists in the pinn
 Hub commit, choose one version explicitly instead of counting it twice.
 
 Two submission files can also be compared task by task (medians, 95% widths, ratios)
-with `python -m tapestry.production diff SUBMITTED.csv NEW.csv OUTDIR --labels A B`, and
-overlaid with `python -m tapestry.production intervals A.csv B.csv --labels A B`.
+with `python -m chromantis.production diff SUBMITTED.csv NEW.csv OUTDIR --labels A B`, and
+overlaid with `python -m chromantis.production intervals A.csv B.csv --labels A B`.
 
 Decision log, 8 October 2026: make the peer comparison a standard final step of
 submission generation; retain the existing uncertainty PDFs. Same day: the production
 scripts (`make_submission.py`, `plot_submission.py`, `compare_submission.py`,
 `scripts/forecast_b6.py`, `export_b6.py`, `compare_submissions.py`) moved into
-`src/tapestry/production/`, and checkpoint globs (`models/*.json`) were replaced by
+`src/chromantis/production/`, and checkpoint globs (`models/*.json`) were replaced by
 release files with checkpoint hashes. Re-exporting the 7 October forecasts through the
 new code reproduced the submitted B7 CSV byte for byte.
 

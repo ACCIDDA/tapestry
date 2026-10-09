@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pytest
 
-from tapestry.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
+from chromantis.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
                                     wednesdays, deadline, utc, HUBS)
 
 LOCATIONS = ('NC', 'US')

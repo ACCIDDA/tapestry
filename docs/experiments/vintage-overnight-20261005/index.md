@@ -125,7 +125,7 @@ models and predictions. It does not replace or modify the official objective.
 
 ## Code and manager commands
 
-Private local source: `/tmp/tapestry-vintage-overnight-20261005`.
+Private local source: `/tmp/chromantis-vintage-overnight-20261005`.
 Private remote project:
 `/proj/jlessler/projects/tapestry-all/tapestry-vintage-overnight-20261005`.
 The shared source tree is not edited. Inputs and the environment link to the
@@ -138,8 +138,8 @@ expanded invocation in each experiment's `manager-plan.txt`.
 cd /proj/jlessler/projects/tapestry-all/tapestry-vintage-overnight-20261005
 PYTHONPATH=src .venv/bin/python scripts/plan_vintage_overnight.py -e vintage-overnight-smoke-20261005 --smoke
 LANES=3 GPUS=1 sbatch --job-name=vintage-overnight-smoke-20261005 --array=0 --time=00:20:00 scripts/jlessler.sbatch vintage-overnight-smoke-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e vintage-overnight-smoke-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e vintage-overnight-smoke-20261005 --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e vintage-overnight-smoke-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e vintage-overnight-smoke-20261005 --no-plots
 ```
 
 The two-epoch execution pilot (job 3800115) checks the learned generator's path,
@@ -172,8 +172,8 @@ six-hour limit, 30 configurations and 90 seed runs (180 outer folds).
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plan_vintage_overnight.py -e vintage-overnight-round1-20261005
 LANES=4 GPUS=4 sbatch --job-name=vintage-overnight-round1-20261005 --array=0-3 --time=06:00:00 scripts/jlessler.sbatch vintage-overnight-round1-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e vintage-overnight-round1-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e vintage-overnight-round1-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e vintage-overnight-round1-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e vintage-overnight-round1-20261005 --allow-incomplete --no-plots
 ```
 
 The outer empirical library contains 34 origins from 23 November 2024 to
@@ -223,8 +223,8 @@ first comparison. Slurm's status, not this protocol, determines actual starts.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plan_vintage_overnight.py -e vintage-overnight-admissions-focused-20261005 --admissions
 LANES=4 GPUS=4 sbatch --job-name=vintage-overnight-admissions-focused-20261005 --array=0-3 --time=02:15:00 --deadline=2026-10-05T08:25:00 scripts/jlessler.sbatch vintage-overnight-admissions-focused-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e vintage-overnight-admissions-focused-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e vintage-overnight-admissions-focused-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e vintage-overnight-admissions-focused-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e vintage-overnight-admissions-focused-20261005 --allow-incomplete --no-plots
 ```
 
 At 02:00 EDT the first completed three-seed arm was the C1 pathogen MLP with
@@ -571,8 +571,8 @@ Plan and manager commands, in the private remote project:
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plan_vintage_overnight.py -e vintage-overnight-c1-diluted-20261005 --diluted
 LANES=3 GPUS=1 sbatch --job-name=vintage-overnight-c1-diluted-20261005 --array=0 --time=00:45:00 --deadline=2026-10-05T08:25:00 scripts/jlessler.sbatch vintage-overnight-c1-diluted-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e vintage-overnight-c1-diluted-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e vintage-overnight-c1-diluted-20261005 --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e vintage-overnight-c1-diluted-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e vintage-overnight-c1-diluted-20261005 --no-plots
 PYTHONPATH=src .venv/bin/python scripts/vintage_overnight_report.py -e vintage-overnight-c1-diluted-20261005 --reference-experiment vintage-overnight-round1-20261005
 ```
 

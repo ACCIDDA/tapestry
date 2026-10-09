@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from tapestry.model.scenario import Scenario
+from chromantis.model.scenario import Scenario
 
 root=Path(__file__).parent
 out=root/'analysis'

@@ -40,10 +40,10 @@ and the `status`/`rank` that follow. They are what the user runs to check on and
 resume the work, so a launch reported without them is incomplete.
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner plan -e NAME -s SCENARIO --seeds 42 43 --device cuda
+.venv/bin/python -m chromantis.experiment.planner plan -e NAME -s SCENARIO --seeds 42 43 --device cuda
 sbatch --job-name=NAME --array=0-3 scripts/jlessler.sbatch NAME
-.venv/bin/python -m tapestry.experiment.planner status -e NAME
-.venv/bin/python -m tapestry.experiment.planner rank -e NAME
+.venv/bin/python -m chromantis.experiment.planner status -e NAME
+.venv/bin/python -m chromantis.experiment.planner rank -e NAME
 ```
 
 One planner and one scorer serve every scenario; `status` prints the exact

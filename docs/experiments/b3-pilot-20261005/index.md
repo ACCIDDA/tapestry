@@ -190,12 +190,12 @@ export PYTHONPATH=src
 # Helper calls the manager plan once with every exact Scenario string and seeds 42 43:
 .venv/bin/python scripts/plan_b3_pilot.py --plan
 # Equivalent manager plan after generating scenarios.txt:
-.venv/bin/python -m tapestry.experiment.planner plan -e b3-pilot-20261005 \
+.venv/bin/python -m chromantis.experiment.planner plan -e b3-pilot-20261005 \
   -s $(cat docs/experiments/b3-pilot-20261005/scenarios.txt) --seeds 42 43 --device cuda
 LANES=4 GPUS=4 sbatch --job-name=b3-pilot-20261005 --array=0-3 \
   --time=04:00:00 scripts/jlessler.sbatch b3-pilot-20261005
-.venv/bin/python -m tapestry.experiment.planner status -e b3-pilot-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b3-pilot-20261005 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b3-pilot-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b3-pilot-20261005 --no-plots
 ```
 
 Plan with either the helper or the equivalent command, not both. Do not replan
@@ -226,14 +226,14 @@ excluded from research rankings. Commands from the cluster directory above:
 .venv/bin/python scripts/plan_b3_pilot.py --experiment b3-pilot-check-20261005 --smoke --plan
 LANES=4 GPUS=2 sbatch --job-name=b3-pilot-check-20261005 --array=0-1 \
   --time=00:30:00 scripts/jlessler.sbatch b3-pilot-check-20261005
-.venv/bin/python -m tapestry.experiment.planner status -e b3-pilot-check-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b3-pilot-check-20261005 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b3-pilot-check-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b3-pilot-check-20261005 --no-plots
 
 .venv/bin/python scripts/plan_b3_pilot.py --experiment b3-pilot-inner-check-20261005 --smoke-inner --plan
 LANES=4 GPUS=2 sbatch --job-name=b3-pilot-inner-check-20261005 --array=0-1 \
   --time=00:30:00 scripts/jlessler.sbatch b3-pilot-inner-check-20261005
-.venv/bin/python -m tapestry.experiment.planner status -e b3-pilot-inner-check-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b3-pilot-inner-check-20261005 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b3-pilot-inner-check-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b3-pilot-inner-check-20261005 --no-plots
 ```
 
 The partial validation ranking is checked with CPU Slurm job 3939274 using

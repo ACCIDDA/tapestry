@@ -1,0 +1,111 @@
+/* Assumption: serif headings only, keeping Material's body font and a plain
+   light cream background; underline content links, keeping navigation uncluttered.
+   Use system fonts so no additional font downloads are needed. */
+:root {
+  --md-default-bg-color: #fdfbf6;
+  --md-primary-fg-color: #10264d;
+  --md-primary-fg-color--light: #263e65;
+  --md-primary-fg-color--dark: #091830;
+  --md-accent-fg-color: #981e32;
+  --md-typeset-a-color: #10264d;
+}
+
+.md-header {
+  background: #3988c8 url("patchwork.svg") repeat;
+  background-size: 192px 72px;
+  color: #10264d;
+}
+
+/* Keep the squares visible across the entire bar, including behind controls. */
+.md-header :is(.md-header__button, .md-header__title, .md-header__source),
+.md-header .md-search__form,
+.md-header .chromantis-explorer-link {
+  background-color: transparent;
+  color: #10264d;
+  text-shadow: 0 1px 2px #fdfbf6;
+}
+
+.md-header .md-search__input,
+.md-header .md-search__icon {
+  color: #10264d;
+}
+
+.md-header .md-search__input::placeholder {
+  color: #10264d;
+}
+
+.md-typeset :is(h1, h2, h3, h4, h5, h6) {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset :is(h1, h2) {
+  text-decoration-line: underline;
+  text-decoration-color: var(--md-accent-fg-color);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.2em;
+}
+
+.md-typeset a:not(.headerlink):not(.md-button) {
+  color: var(--md-typeset-a-color);
+  text-decoration-line: underline;
+  text-decoration-color: var(--md-accent-fg-color);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+/* Header link to the live explorer (added by javascripts/explorer-link.js):
+   a square box centred in the header bar. */
+.md-header__inner {
+  position: relative;
+}
+
+.md-header .chromantis-explorer-link {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  padding: 0.25rem 0.7rem;
+  border: 2px solid currentColor;
+  border-radius: 0;
+  color: #10264d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.md-header .chromantis-explorer-link:hover,
+.md-header .chromantis-explorer-link:focus-visible {
+  background-color: transparent;
+  color: #10264d;
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  text-decoration: none;
+}
+
+/* Narrow screens: keep it in the flow so it never covers the title or search. */
+@media screen and (max-width: 59.984em) {
+  .md-header .chromantis-explorer-link {
+    position: static;
+    margin: 0 0.4rem;
+    transform: none;
+  }
+}
+
+.availability-frame { width: 100%; height: 1050px; border: 1px solid #ddd; background: white; }
+
+/* Original figure files are unchanged. Large plots get a bounded, scrollable viewport. */
+.md-typeset .report-figure { margin: 1.25rem 0; max-width: 100%; }
+.md-typeset .report-figure figcaption { text-align: left; font-style: normal; font-weight: 600; overflow-wrap: anywhere; }
+.md-typeset .report-plot { overflow: auto; max-height: 75vh; border: 1px solid #ddd; background: white; padding: 0.4rem; }
+.md-typeset .report-plot p { margin: 0; }
+.md-typeset .report-plot img { max-width: none; height: auto; display: block; }
+.md-typeset table code { white-space: normal; overflow-wrap: anywhere; }
+body:has(.report-figure) .md-grid { max-width: 88rem; }
+
+.staircase-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+body:has(.staircase-comparison) .md-grid { max-width: 100rem; }
+@media (max-width: 1000px) { .staircase-comparison { grid-template-columns: 1fr; } }

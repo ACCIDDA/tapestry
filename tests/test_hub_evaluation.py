@@ -1,10 +1,10 @@
 import numpy as np
 
-from tapestry.evaluation.quantiles import LEVELS
+from chromantis.evaluation.quantiles import LEVELS
 
 
 def test_export_maps_leads_and_channel_order(tmp_path):
-    from tapestry.evaluation.hubs import export, SEASONS
+    from chromantis.evaluation.hubs import export, SEASONS
     from datetime import date, timedelta
     for i, label in enumerate(SEASONS):
         folder = tmp_path / f'eval_{label}'

@@ -5,8 +5,8 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from tapestry.dataset.build import load
-from tapestry.dataset.cv import season
+from chromantis.dataset.build import load
+from chromantis.dataset.cv import season
 p=load('data/processed/panel.npz');dates=p['dates'].astype('datetime64[D]');issues=p['issuance_dates'].astype('datetime64[D]')
 seasons=np.array([season(str(d)) for d in dates]);out=Path(__file__).parent
 records=[]

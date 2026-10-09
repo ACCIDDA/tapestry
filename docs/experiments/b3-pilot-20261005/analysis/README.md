@@ -124,13 +124,13 @@ The original manager plan and GPU launch, plus status/rank commands, are reprodu
 ```bash
 cd /proj/jlessler/projects/tapestry-all/tapestry-b3-pilot-20261005
 export PYTHONPATH=src
-.venv/bin/python -m tapestry.experiment.planner status -e b3-pilot-20261005
+.venv/bin/python -m chromantis.experiment.planner status -e b3-pilot-20261005
 sbatch --partition=jlessler --nodelist=g1803jles01 \
   --job-name=b3-pilot-analysis --cpus-per-task=2 --mem=16G --time=01:00:00 \
   --output=output/slurm/b3-pilot-analysis-%j.log \
-  --wrap='export PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1; .venv/bin/python -m tapestry.experiment.planner rank -e b3-pilot-20261005 --no-plots'
+  --wrap='export PYTHONPATH=src OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1; .venv/bin/python -m chromantis.experiment.planner rank -e b3-pilot-20261005 --no-plots'
 # Direct reranking alternative, once the existing scoring job finishes:
-.venv/bin/python -m tapestry.experiment.planner rank -e b3-pilot-20261005 --no-plots
+.venv/bin/python -m chromantis.experiment.planner rank -e b3-pilot-20261005 --no-plots
 ```
 
 Ranking output: `data/experiments/b3-pilot-20261005/ranking-b48d88bd15f0/`. No additional model training was submitted for this analysis.

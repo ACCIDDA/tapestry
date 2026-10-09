@@ -5,7 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tapestry.model.scenario import Scenario
+from chromantis.model.scenario import Scenario
 
 out=Path(__file__).parent
 w=pd.read_csv(out/'paired-seed-scores.csv')

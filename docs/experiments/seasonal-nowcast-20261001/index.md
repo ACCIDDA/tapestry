@@ -35,7 +35,7 @@ The full-size view offers point details and CSV/PNG downloads. A
 Regenerate the visualization without fitting or scoring:
 
 ```bash
-.venv/bin/python -m tapestry.explorer.nowcast_ridges
+.venv/bin/python -m chromantis.explorer.nowcast_ridges
 ```
 
 ## Result on the requested reporting conditions
@@ -148,8 +148,8 @@ Run from `/proj/jlessler/projects/tapestry-all/tapestry` on Longleaf:
 ```bash
 bash scripts/plan_seasonal_nowcast.sh seasonal-nowcast-v1-20261001
 sbatch --job-name=seasonal-nowcast-v1-20261001 scripts/finalization.sbatch seasonal-nowcast-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e seasonal-nowcast-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e seasonal-nowcast-v1-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e seasonal-nowcast-v1-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e seasonal-nowcast-v1-20261001
 ```
 
 `plan_seasonal_nowcast.sh` calls the shared manager's `plan` with all three model
@@ -176,8 +176,8 @@ reported corrections in both configurations and keeps ancillary gap models fixed
 ```bash
 bash scripts/plan_seasonal_nowcast.sh seasonal-nowcast-v2-20261001 gaps
 sbatch --job-name=seasonal-nowcast-v2-20261001 scripts/finalization.sbatch seasonal-nowcast-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e seasonal-nowcast-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e seasonal-nowcast-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e seasonal-nowcast-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e seasonal-nowcast-v2-20261001
 ```
 
 ## Reporting-data audit
@@ -243,8 +243,8 @@ held-out season as reports become available. Such updating is intentional.
 ```bash
 bash scripts/plan_seasonal_nowcast.sh seasonal-nowcast-v3-20261001 tuning
 sbatch --job-name=seasonal-nowcast-v3-20261001 scripts/finalization.sbatch seasonal-nowcast-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e seasonal-nowcast-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e seasonal-nowcast-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e seasonal-nowcast-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e seasonal-nowcast-v3-20261001
 ```
 
 The manager now writes `finalization-ranking/target-performance.csv` and
@@ -269,8 +269,8 @@ This is an additional development-data comparison, not a fresh validation set.
 ```bash
 bash scripts/plan_seasonal_nowcast.sh seasonal-nowcast-v4-20261001 robust
 sbatch --job-name=seasonal-nowcast-v4-20261001 scripts/finalization.sbatch seasonal-nowcast-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e seasonal-nowcast-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e seasonal-nowcast-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e seasonal-nowcast-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e seasonal-nowcast-v4-20261001
 ```
 
 ## Selected reproducible configuration
@@ -293,14 +293,14 @@ NHSN reported predictions keep their existing integer resolution.
 ```bash
 bash scripts/plan_seasonal_nowcast.sh seasonal-nowcast-causal-20261001 selected
 sbatch --job-name=seasonal-nowcast-causal-20261001 scripts/finalization.sbatch seasonal-nowcast-causal-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e seasonal-nowcast-causal-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e seasonal-nowcast-causal-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e seasonal-nowcast-causal-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e seasonal-nowcast-causal-20261001
 ```
 
 The same planner can be called directly for the seasonal configuration:
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner plan \
+.venv/bin/python -m chromantis.experiment.planner plan \
   -e seasonal-nowcast-causal-20261001 \
   -s 'task=finalize,input_mode=vintaged,lookback=12,finalization_weeks=8,finalization_model=adaptive_chain,finalization_gap=proxy,finalization_scope=targets,finalization_statistic=median,finalization_quantize=1,finalization_cv=season,evaluation_seasons=recent_two' \
   --seeds 42 --device cpu

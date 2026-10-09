@@ -222,8 +222,8 @@ Admissions native and log relative WIS, ED, coverage, by season and horizon and 
 export PYTHONPATH=src
 .venv/bin/python scripts/plan_b4_polish.py --plan   # = planner plan -e b4-polish-20261006 -s $(cat docs/experiments/b4-polish-20261006/scenarios.txt) --seeds 44 45 46 47 48 --device cuda
 LANES=8 GPUS=1 sbatch --job-name=b4-polish-20261006 --array=0-0 --nodelist=g1803jles02 --cpus-per-task=8 --mem=200G --time=08:00:00 scripts/jlessler.sbatch b4-polish-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b4-polish-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-polish-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-polish-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-polish-20261006 --no-plots
 .venv/bin/python scripts/ensemble_b4.py --set polish --out data/experiments/b4-polish-ensembles
 ```
 
@@ -305,7 +305,7 @@ Submission default from B4.polish: A + B, equal weight per recipe, quantile aver
 export PYTHONPATH=src
 .venv/bin/python scripts/plan_b4_production.py --plan   # = planner plan -e b4-production-20261007 -s $(cat docs/experiments/b4-production-20261007/scenarios.txt) --seeds 44 45 46 47 48 --device cuda
 LANES=10 GPUS=1 sbatch --job-name=b4-production-20261007 --array=0-0 --nodelist=g1803jles02 --cpus-per-task=10 --mem=200G --time=04:00:00 scripts/jlessler.sbatch b4-production-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b4-production-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b4-production-20261007
 ```
 
 Code: `evaluation_seasons=production` in `model/scenario.py` (scored season 2026–27; training = all `TRAINING_SEASONS`), scoring skipped in `planner fit`, nowcast diagnostics skipped when no matured pairs exist (`pilot.fit`). Local 2-epoch check: both recipes fit on the four seasons and forecast 2026–27 inputs.
@@ -347,8 +347,8 @@ Hypothesis: a slope over 12 weeks mostly encodes season shape; a leading indicat
 export PYTHONPATH=src
 .venv/bin/python scripts/plan_b5_covariates.py --plan   # = planner plan -e b5-covariates-20261006 -s $(cat docs/experiments/b5-covariates-20261006/scenarios.txt) --seeds 42 43 44 --device cuda
 LANES=10 GPUS=1 sbatch --job-name=b5-covariates-20261006 --array=0-0 --nodelist=g1803jles02 --cpus-per-task=10 --mem=200G --time=06:00:00 scripts/jlessler.sbatch b5-covariates-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b5-covariates-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b5-covariates-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b5-covariates-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b5-covariates-20261006 --no-plots
 ```
 
 Validation `b5-covariates-check-20261006` Slurm 4053157; main 4053159; rank 4053160.
@@ -438,8 +438,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b5_explore.py --plan   # = planner plan -e b5-explore-20261006 -s $(cat docs/experiments/b5-explore-20261006/scenarios.txt) --seeds 42 43 --device cuda
 LANES=8 GPUS=6 sbatch --job-name=b5-explore-20261006 --array=0-0 --nodelist=g1803jles02 --cpus-per-task=8 --mem=200G --time=2-00:00:00 scripts/jlessler.sbatch b5-explore-20261006
 LANES=4 GPUS=6 sbatch --job-name=b5-explore-l40 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=4 --mem=110G --time=2-00:00:00 scripts/jlessler.sbatch b5-explore-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b5-explore-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b5-explore-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b5-explore-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b5-explore-20261006 --no-plots
 ```
 
 ### Execution notes
@@ -511,8 +511,8 @@ Retrains, on new seeds, the three anchors (B4 leaders A, B, Bs), each anchor plu
 **Execution.** The Slurm controller was unreachable at 07:00, so the queue manager was started directly on g1803jles02 inside the still-running B5 allocation 4047545_0 (one H100, 8 CPUs, 8 workers; owner label `4047545_0` so its runs are not reclaimed). Log: `output/slurm/b5-confirm-manual-h100.log`. Do not cancel 4047545 until this finishes. Script `scripts/plan_b5_confirm.py`; manager experiment `b5-confirm-top-20261007`.
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner status -e b5-confirm-top-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b5-confirm-top-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b5-confirm-top-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b5-confirm-top-20261007 --allow-incomplete --no-plots
 ```
 
 ### Results (all 30 seed-44/45 runs; `ranking-201708e33945`)

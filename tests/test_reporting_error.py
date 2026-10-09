@@ -2,10 +2,10 @@
 from dataclasses import replace
 import numpy as np
 import pytest
-from tapestry.dataset.build import load
-from tapestry.dataset import cv
-from tapestry.dataset.reporting_error import ReportingErrors
-from tapestry.model.scenario import Scenario
+from chromantis.dataset.build import load
+from chromantis.dataset import cv
+from chromantis.dataset.reporting_error import ReportingErrors
+from chromantis.model.scenario import Scenario
 
 @pytest.fixture(scope='module')
 def experiment():
@@ -58,7 +58,7 @@ def test_local_donor_preserves_age_signal_and_location_alignment(experiment):
     bank.errors[:] = np.arange(bank.errors.shape[-1])[None,None,None,:] / 1000
     bank.errors[:] += np.arange(bank.errors.shape[1])[None,:,None,None] / 100
     out = bank.draw(episode, rng)
-    from tapestry.dataset.reporting_error import transport
+    from chromantis.dataset.reporting_error import transport
     expected = transport(episode['values'], bank.errors[0], bank.target_floor(episode))
     bank.errors[:] = original
     expected[:,3:] = np.minimum(1,expected[:,3:])
@@ -66,7 +66,7 @@ def test_local_donor_preserves_age_signal_and_location_alignment(experiment):
 
 
 def test_log_transport_recovers_observed_and_preserves_zero():
-    from tapestry.dataset.reporting_error import transport
+    from chromantis.dataset.reporting_error import transport
     final = np.array([0., 1., 100., .0001, .1])
     observed = np.array([2., 0., 80., .0003, .05])
     floor = np.array([1., 1., 5., .0001, .005])

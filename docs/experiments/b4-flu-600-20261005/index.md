@@ -91,7 +91,7 @@ export PYTHONPATH=src
 # Helper issues the common manager plan with all 600 exact scenarios:
 .venv/bin/python scripts/plan_b4_flu.py --plan
 # Equivalent direct plan (use one method, not both):
-.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-600-20261005 \
+.venv/bin/python -m chromantis.experiment.planner plan -e b4-flu-600-20261005 \
   -s $(cat docs/experiments/b4-flu-600-20261005/scenarios.txt) --seeds 42 43 --device cuda
 # Intended launch: 10 workers per L40, plus 16 per H100 if available; 6 GPUs total.
 LANES=10 GPUS=6 sbatch --job-name=b4-flu-600-20261005 --array=0-3 \
@@ -99,10 +99,10 @@ LANES=10 GPUS=6 sbatch --job-name=b4-flu-600-20261005 --array=0-3 \
 LANES=16 GPUS=6 sbatch --job-name=b4-flu-600-h100 --array=0-1 \
   --nodelist=g1803jles02 --cpus-per-task=16 --mem=180G --time=12:00:00 \
   scripts/jlessler.sbatch b4-flu-600-20261005
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-600-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-600-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-600-20261005 --no-plots
 # While still incomplete (explicitly provisional):
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
 ```
 
 Hardware affects runtime and may cause small numerical differences; scheduling is recorded per run. Begin at the documented concurrency, inspect memory/utilization/failures, and reduce workers if needed. Do not interfere with unrelated GPU work. Main jobs need not stop at 9am, but the monitor must not launch refinements afterward. The native ntfy launcher notifications remain enabled.
@@ -120,12 +120,12 @@ Six scientific checks passed: quantile/WIS mathematics, mixture semantics, flu E
 Local integration manager commands:
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner plan -e b4-flu-localcheck-20261005 \
+.venv/bin/python -m chromantis.experiment.planner plan -e b4-flu-localcheck-20261005 \
   -s $(cat docs/experiments/b4-flu-localcheck-20261005/scenarios.txt) --seeds 42 --device cpu
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TAPESTRY_TORCH_THREADS=1 \
-  .venv/bin/python -m tapestry.experiment.planner run -e b4-flu-localcheck-20261005 --device cpu --fit-workers 2
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-localcheck-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-localcheck-20261005 --no-plots
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 CHROMANTIS_TORCH_THREADS=1 \
+  .venv/bin/python -m chromantis.experiment.planner run -e b4-flu-localcheck-20261005 --device cpu --fit-workers 2
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-localcheck-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-localcheck-20261005 --no-plots
 ```
 
 At 23:50 EDT the user reconnected the VPN, SSH succeeded, and both patron nodes were idle. The isolated remote checkout was created; its processed data, frozen evaluation support, metadata and environment link to the unchanged B3 pilot assets. The new source is copied separately and pinned by each experiment plan.
@@ -163,8 +163,8 @@ LANES=4 GPUS=6 sbatch --job-name=b4-flu-l40-recovery --array=0-3 \
   --cpus-per-task=8 --mem=95G --time=12:00:00 \
   scripts/jlessler.sbatch b4-flu-600-20261005 --retry-failed
 scontrol update JobId=3977479 Dependency=afterany:3981509:3977478
-.venv/bin/python -m tapestry.experiment.planner status -e b4-flu-600-20261005
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-flu-600-20261005
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-flu-600-20261005 --allow-incomplete --no-plots
 ```
 
 Next checks must use `squeue -j 3981509,3977478,3977479` and distinguish historical failed attempts from a run's current/latest attempt. Do not interpret the incomplete ranking as a final scientific result or launch refinement while this recovery is still running.

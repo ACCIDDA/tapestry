@@ -28,7 +28,7 @@ US targets, R=8, newest reconstructed week. The interactive view above covers al
 Regenerate without fitting or scoring:
 
 ```bash
-.venv/bin/python -m tapestry.explorer.revisions --experiment data/experiments/reporting-triangle-v11-20261001
+.venv/bin/python -m chromantis.explorer.revisions --experiment data/experiments/reporting-triangle-v11-20261001
 ```
 
 For the reporting-triangle model these colors describe reference-label calibration and scoring. Development factors are updated each Wednesday using available report pairs, including earlier evaluation-period reports. They are not a depiction of every triangle input.

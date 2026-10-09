@@ -46,8 +46,8 @@ PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan.py -e nowcast-ove
 # This calls the common planner plan -e NAME -s SCENARIOS --seeds 42 43 44 --device cuda.
 # Its exact expanded command is recorded in output/nowcast-joint-plan.log.
 LANES=6 GPUS=2 sbatch --job-name=nowcast-joint-pilot --array=0-1 --nodelist=g1803jles02 --time=06:30:00 scripts/jlessler.sbatch nowcast-overnight-joint-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-joint-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-joint-pilot-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-joint-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-joint-pilot-20261005 --allow-incomplete --no-plots
 ```
 
 A focused numerical check verified that future-label weights sum to 1, recent-label weights sum to their requested 0.25 or 1, changing the latter leaves future weights unchanged, and the US retains 20% of future weight.
@@ -98,8 +98,8 @@ The second cohort is queued as array **3803457**, after the first array. It cont
 cd /proj/jlessler/projects/tapestry-all/tapestry-nowcast-overnight-20261005
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_next.py -e nowcast-overnight-trajectory-pilot-20261005 --seeds 42 --backbones C2 C3
 LANES=6 GPUS=2 sbatch --job-name=nowcast-trajectory-pilot --array=0-1 --nodelist=g1803jles02 --time=04:00:00 --dependency=afterany:3800217 scripts/jlessler.sbatch nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
 ```
 
 A second queue narrowing removed the two not-yet-running interrupted C2 noisy-input seed-43 retries. The first cohort now has exactly 26 runs: 18 seed-42 pilots, six extra clean-control seeds, and two C3 weight-0.05 confirmation seeds. No active or completed fit was removed.
@@ -112,8 +112,8 @@ To reproduce the **actual 26-run first-cohort allocation** in a fresh experiment
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan.py -e NEW_INITIAL_EXPERIMENT --seeds 42
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e NEW_INITIAL_EXPERIMENT --run-id mlp-target-scheduled_final-7ea1f60d868c --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --array=0-1 --nodelist=g1803jles02 scripts/jlessler.sbatch NEW_INITIAL_EXPERIMENT
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e NEW_INITIAL_EXPERIMENT
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e NEW_INITIAL_EXPERIMENT --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e NEW_INITIAL_EXPERIMENT
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e NEW_INITIAL_EXPERIMENT --allow-incomplete --no-plots
 ```
 
 The named confirmation is the C3 target-specific neighbor/Kinsa MLP with full-strength local reporting-error augmentation, final recent-plus-future labels and reconstruction weight 0.05. The archived experiment's own `code/` directory remains the exact source of the already-run first cohort; the recipe allocation above describes reproducing the design with the current code.
@@ -191,8 +191,8 @@ Planner defaults now reproduce that cohort with `--backbones C1 C2 C3`.
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_next.py -e nowcast-overnight-trajectory-pilot-20261005 --seeds 42 --backbones C1 C2 C3
 # Already submitted as array 3803457; do not submit a duplicate:
 LANES=6 GPUS=2 sbatch --job-name=nowcast-trajectory-pilot --dependency=afterany:3800217 --array=0-1 --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
 ```
 
 At 03:15 EDT, with 23/26 initial runs complete, changed the pending second array
@@ -246,8 +246,8 @@ PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_confirm.py -e nowcast-overnight-trajectory-pilot-20261005 --run-id mlp-target-scheduled_final-1c2e24b26cfe --seeds 42 43 44
 # Array3803457 is already running. Resume only if needed:
 LANES=6 GPUS=2 sbatch --array=0-1 --nodelist=g1803jles02 scripts/jlessler.sbatch nowcast-overnight-trajectory-pilot-20261005 --retry-failed
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-trajectory-pilot-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-trajectory-pilot-20261005 --allow-incomplete --no-plots
 ```
 The trajectory cohort now has 17 runs: 13 pilots and four added confirmations.
 
@@ -272,8 +272,8 @@ those attempts once the source files exist. No source model is refitted by repla
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_replay.py -e nowcast-overnight-fixed-replay-v2-20261005 --seeds 42
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-fixed-replay-v2 --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-fixed-replay-v2-20261005 --retry-failed
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-fixed-replay-v2-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-fixed-replay-v2-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-fixed-replay-v2-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-fixed-replay-v2-20261005 --allow-incomplete --no-plots
 ```
 
 The stricter input diagnostic `frozen-support-nowcaster-correction-2025-2026.csv`
@@ -320,8 +320,8 @@ change, not C1 retraining. Matched raw-input CPU replay remains the comparator.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_replay.py -e nowcast-overnight-c1-fixed-replay-20261005 --seeds 42 --c1-only
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-c1-fixed-replay --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-c1-fixed-replay-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-c1-fixed-replay-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-c1-fixed-replay-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-c1-fixed-replay-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-c1-fixed-replay-20261005 --allow-incomplete --no-plots
 ```
 
 ### 04:20 EDT: C1 confirmation and missing-donor-pair ablation
@@ -364,8 +364,8 @@ seeds, plus three raw-input controls. GPU confirmations continue independently.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_pair_support.py -e nowcast-overnight-pair-support-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=6 sbatch --job-name=nowcast-pair-support --array=0-5 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-pair-support-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-pair-support-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-pair-support-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-pair-support-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-pair-support-20261005 --allow-incomplete --no-plots
 ```
 
 ### 04:42 EDT: donor-pair evidence and uncertainty propagation
@@ -412,8 +412,8 @@ Carlo output. Finalized prediction labels, covariates and availability stay fixe
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_uncertainty.py -e nowcast-overnight-uncertainty-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=6 sbatch --job-name=nowcast-uncertainty --array=0-5 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-uncertainty-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-uncertainty-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-uncertainty-20261005 --allow-incomplete --no-plots
 ```
 
 ### 05:08 EDT: replicated mixture result and focused follow-up
@@ -454,8 +454,8 @@ the same fixed seasonal splits. No live snapshot was changed.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_joint_refine.py -e nowcast-overnight-joint-refine-20261005 --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-joint-refine --array=0-1 --dependency=aftercorr:3803457 --nodelist=g1803jles02 --time=02:30:00 scripts/jlessler.sbatch nowcast-overnight-joint-refine-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-joint-refine-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-joint-refine-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-joint-refine-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-joint-refine-20261005 --allow-incomplete --no-plots
 ```
 
 CPU array 3816453 learns uncertainty from permitted synthetic training data. For
@@ -475,8 +475,8 @@ still come only from the one permitted reporting-error donor season in each fold
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_residual_uncertainty.py -e nowcast-overnight-residual-uncertainty-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=6 sbatch --job-name=nowcast-residual-uncertainty --array=0-5 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-residual-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-residual-uncertainty-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-residual-uncertainty-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-residual-uncertainty-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-residual-uncertainty-20261005 --allow-incomplete --no-plots
 ```
 
 The fixed half-error RSV composition is also scored in 2024–25 through the common
@@ -522,8 +522,8 @@ ED donor archives, not an untouched validation result. Forecasters remain fixed.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_admissions_correction.py -e nowcast-overnight-admissions-correction-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=6 sbatch --job-name=nowcast-admissions-correction --array=0-5 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-admissions-correction-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-admissions-correction-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-admissions-correction-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-admissions-correction-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-admissions-correction-20261005 --allow-incomplete --no-plots
 ```
 
 **Kinsa enters through the nonlinear nowcaster even though C1's forecast network
@@ -539,8 +539,8 @@ matrix differs; season and evaluation-alignment assertions remain active.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_covariate_ablation.py -e nowcast-overnight-covariate-ablation-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-covariate-ablation --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-covariate-ablation-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-covariate-ablation-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-covariate-ablation-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-covariate-ablation-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-covariate-ablation-20261005 --allow-incomplete --no-plots
 ```
 
 Repeated choices based on these development-season scores—including correction
@@ -556,8 +556,8 @@ the first cohort. This failure is not a model-performance result.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_covariate_ablation.py -e nowcast-overnight-covariate-ablation-v2-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-covariate-ablation-v2 --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=24G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-covariate-ablation-v2-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-covariate-ablation-v2-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-covariate-ablation-v2-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-covariate-ablation-v2-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-covariate-ablation-v2-20261005 --allow-incomplete --no-plots
 ```
 
 ### 05:26 EDT: larger predictive sample check
@@ -582,8 +582,8 @@ corrected covariate-ablation cohort. All2048-draw effects are paired with the
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_mc_check.py -e nowcast-overnight-mc-check-20261005 --seeds 42 43 44 --eval-members 2048
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-mc-check --array=0-3 --dependency=afterany:3816930 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=32G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-mc-check-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-mc-check-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-mc-check-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-mc-check-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-mc-check-20261005 --allow-incomplete --no-plots
 ```
 
 ### 05:35 EDT: no-Kinsa confirmation and joint controls
@@ -617,8 +617,8 @@ is applied; reporting-error source is therefore marked none for this condition.
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_clean_joint.py -e nowcast-overnight-clean-joint-20261005 --seeds 42 43 44
 LANES=6 GPUS=2 sbatch --job-name=nowcast-clean-joint --array=0-1 --dependency=aftercorr:3815061 --nodelist=g1803jles02 --time=02:00:00 scripts/jlessler.sbatch nowcast-overnight-clean-joint-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-clean-joint-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-clean-joint-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-clean-joint-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-clean-joint-20261005 --allow-incomplete --no-plots
 ```
 
 The C1 RSV composition uses this manager sequence for both seasons:
@@ -654,8 +654,8 @@ Array3818281 runs six CPU evaluations on node2: three seeds of the saved C1 fore
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_mc_complete.py -e nowcast-overnight-no-cov-admissions-20261005 --seeds 42 43 44
 DEVICE=cpu LANES=1 GPUS=4 sbatch --job-name=nowcast-no-cov-admissions --array=0-3 --nodelist=g1803jles02 --gres=gpu:0 --cpus-per-task=2 --mem=32G --time=01:00:00 scripts/jlessler.sbatch nowcast-overnight-no-cov-admissions-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-no-cov-admissions-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-no-cov-admissions-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-no-cov-admissions-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-no-cov-admissions-20261005 --allow-incomplete --no-plots
 ```
 
 No additional model conditions are planned. Consolidation will retain matched hardware and predictive-draw controls.
@@ -684,8 +684,8 @@ Array3822546 started on both node2 H100s at07:13:01; hard allocation end08:23:01
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_c1_pipeline.py -e nowcast-overnight-c1-pipeline-20261005 --seeds 42 43 44
 LANES=3 GPUS=2 sbatch --job-name=nowcast-c1-pipeline --array=0-1 --nodelist=g1803jles02 --time=01:10:00 --deadline=2026-10-05T08:25:00 scripts/jlessler.sbatch nowcast-overnight-c1-pipeline-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-c1-pipeline-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-c1-pipeline-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-c1-pipeline-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-c1-pipeline-20261005 --allow-incomplete --no-plots
 ```
 
 ## 07:29 EDT — same-corrector inference follow-up queued
@@ -697,8 +697,8 @@ To isolate changing evaluation histories from retraining, array3822803 is queued
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_c1_pipeline_replay.py -e nowcast-overnight-c1-pipeline-replay-20261005 --seeds 42 43 44
 LANES=3 GPUS=2 sbatch --job-name=nowcast-c1-pipeline-replay --array=0-1 --nodelist=g1803jles02 --dependency=afterok:3822546 --kill-on-invalid-dep=yes --time=00:15:00 --deadline=2026-10-05T08:25:00 scripts/jlessler.sbatch nowcast-overnight-c1-pipeline-replay-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-c1-pipeline-replay-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-c1-pipeline-replay-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-c1-pipeline-replay-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-c1-pipeline-replay-20261005 --allow-incomplete --no-plots
 ```
 
 The derived `scripts/nowcast_overnight_c1_pipeline_report.py` will score completed outputs through the common scorer and export the paired fixed-versus-retrained comparison. It does not change the official score or prediction files.
@@ -712,8 +712,8 @@ Array3823143 then ran the final no-covariate admission-only mixture versus raw a
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/nowcast_overnight_plan_gpu_mixture.py -e nowcast-overnight-gpu-mixture-check-20261005 --seeds 42 43 44
 LANES=3 GPUS=2 sbatch --job-name=nowcast-gpu-mixture --array=0-1 --nodelist=g1803jles02 --dependency=afterok:3822803 --kill-on-invalid-dep=yes --time=00:20:00 --deadline=2026-10-05T08:25:00 scripts/jlessler.sbatch nowcast-overnight-gpu-mixture-check-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner status -e nowcast-overnight-gpu-mixture-check-20261005
-PYTHONPATH=src .venv/bin/python -m tapestry.experiment.planner rank -e nowcast-overnight-gpu-mixture-check-20261005 --allow-incomplete --no-plots
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner status -e nowcast-overnight-gpu-mixture-check-20261005
+PYTHONPATH=src .venv/bin/python -m chromantis.experiment.planner rank -e nowcast-overnight-gpu-mixture-check-20261005 --allow-incomplete --no-plots
 ```
 
 Final inventory:182 completed two-fold tasks,65 forecaster retrainings and117 replays. Exact recipe/seed/draw/device deduplication gives160 (65+95). Forty-two replays refit only a nowcaster;75 reuse correctors or raw inputs. Eleven obsolete failed replay tasks are excluded, and their replacements completed. Nine component-composition seed evaluations reuse fitted models separately. The principal export contains24 complete three-seed conditions with matched inference controls. No nowcast jobs remain queued or running.

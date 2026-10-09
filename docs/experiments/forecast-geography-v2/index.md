@@ -169,8 +169,8 @@ masking changes; that is part of the training-procedure comparison.
 Reproduce status and ranking on Longleaf:
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner status -e forecast-no-mask-top32-v3
-.venv/bin/python -m tapestry.experiment.planner rank -e forecast-no-mask-top32-v3
+.venv/bin/python -m chromantis.experiment.planner status -e forecast-no-mask-top32-v3
+.venv/bin/python -m chromantis.experiment.planner rank -e forecast-no-mask-top32-v3
 ```
 
 <!-- no-mask-followup:end -->

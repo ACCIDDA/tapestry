@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=tapestry-rank
+#SBATCH --job-name=chromantis-rank
 #SBATCH --partition=jlessler
 #SBATCH --qos=normal
 #SBATCH --nodes=1
@@ -13,5 +13,5 @@ experiment=${1:?usage: sbatch scripts/rank.sbatch EXPERIMENT}
 shift
 export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
 export PYTHONPATH="$PWD/data/experiments/$experiment/code/src${PYTHONPATH:+:$PYTHONPATH}"
-.venv/bin/python -m tapestry.experiment.planner status -e "$experiment"
-.venv/bin/python -m tapestry.experiment.planner rank -e "$experiment" "$@"
+.venv/bin/python -m chromantis.experiment.planner status -e "$experiment"
+.venv/bin/python -m chromantis.experiment.planner rank -e "$experiment" "$@"

@@ -4,7 +4,7 @@ Chromantis records submissions across all pathogens and model recipes. Each date
 
 The Hub model is **ACCIDDA-Chromantis**. It was submitted as ACCIDDA-EpiLoom for the 10 October 2026 round and renamed on the Hub on 8 October 2026 (PR 3774); the file contents did not change. COVID-19, RSV and other pathogens belong in the same log when submissions are recorded; none has been submitted yet.
 
-Each entry must state: the recipe and its exact fitted checkpoints, the training seasons and training-input treatments, the prediction labels, the operational input panel (with hash), the submitted file hash, and the Hub PR, validation and merge record. The local record of each issuance is `production/submissions/<reference date>/`: the submitted CSV under its Hub name, its export record (`.json`: release, sources, hashes), the interval PDFs and the peer-comparison PDF drawn at submission time (`python -m tapestry.production record`); replaced versions are in its `superseded/` subfolder.
+Each entry must state: the recipe and its exact fitted checkpoints, the training seasons and training-input treatments, the prediction labels, the operational input panel (with hash), the submitted file hash, and the Hub PR, validation and merge record. The local record of each issuance is `production/submissions/<reference date>/`: the submitted CSV under its Hub name, its export record (`.json`: release, sources, hashes), the interval PDFs and the peer-comparison PDF drawn at submission time (`python -m chromantis.production record`); replaced versions are in its `superseded/` subfolder.
 
 | Pathogen | Reference date | Public model | Recipe | Recorded status |
 | --- | --- | --- | --- | --- |
@@ -82,7 +82,7 @@ The [merged Hub CSV](https://github.com/cdcepi/FluSight-forecast-hub/blob/1b1688
 cdee271c326437b81049daed50c453d8b5210ebffa9690d8d593b39e06cf607a
 ```
 
-The operational panel SHA256 is `68962ec56c8246469bb71c416f9e2abc593d7b68469dd5f4817caf71743029cc`. The export manifest records all 30 forecast sources and their hashes in `output/b7/submission-20261007/2026-10-10-ACCIDDA-EpiLoomB7.json`. Re-exporting those forecasts with the current code (`tapestry.production`, 8 October) reproduces the submitted CSV byte for byte. The production training design is `docs/experiments/b7-production-20261007/design.json`.
+The operational panel SHA256 is `68962ec56c8246469bb71c416f9e2abc593d7b68469dd5f4817caf71743029cc`. The export manifest records all 30 forecast sources and their hashes in `output/b7/submission-20261007/2026-10-10-ACCIDDA-EpiLoomB7.json`. Re-exporting those forecasts with the current code (`chromantis.production`, 8 October) reproduces the submitted CSV byte for byte. The production training design is `docs/experiments/b7-production-20261007/design.json`.
 
 The superseded on-time CSV is `production/submissions/2026-10-10/superseded/2026-10-10-ACCIDDA-EpiLoom.csv` (as submitted on time), SHA256 `b68b34228bbd4feee5d03fe7ac1e3703f379d4c0dd9cc636f8584b3c7e5f7a70`.
 

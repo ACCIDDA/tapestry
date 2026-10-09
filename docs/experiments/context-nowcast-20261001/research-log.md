@@ -116,8 +116,8 @@ not overwrite the main remote checkout. The manager pins each experiment's code.
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v1-20261001
 sbatch --job-name=context-nowcast-v1-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v1-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v1-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v1-20261001
 ```
 
 Do not re-plan while a job runs. `status` provides the resubmission command;
@@ -178,8 +178,8 @@ Assumptions and fixed choices:
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v2-20261001 residual
 sbatch --job-name=context-nowcast-v2-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v2-20261001
 ```
 
 The development selection averages target-macro trajectory errors with 80%
@@ -260,8 +260,8 @@ secondary retrospective check.
 export PYTHONPATH="$PWD/src"
 .venv/bin/python scripts/plan_context_replay.py -e context-replay-v1-20261001 --nowcaster context_residual --penalty 1000
 LANES=6 GPUS=1 sbatch --job-name=context-replay-v1-20261001 --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-v1-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-v1-20261001 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-v1-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-v1-20261001 --no-plots
 .venv/bin/python docs/experiments/context-nowcast-20261001/forecast_report.py -e context-replay-v1-20261001
 ```
 
@@ -329,8 +329,8 @@ selection on reused seasons, not a new validation sample.
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v3-20261001 trajectory
 sbatch --job-name=context-nowcast-v3-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v3-20261001
 ```
 
 Job 3353468 runs this comparison. No existing forecast or nowcaster default has
@@ -367,12 +367,12 @@ For the selected model alone, an exact fresh plan is:
 
 ```bash
 export PYTHONPATH="$PWD/src"
-.venv/bin/python -m tapestry.experiment.planner plan -e context-nowcast-selected-20261001 \
+.venv/bin/python -m chromantis.experiment.planner plan -e context-nowcast-selected-20261001 \
   -s 'task=finalize,input_mode=vintaged,lookback=12,finalization_weeks=8,finalization_scope=targets,finalization_gap=proxy,finalization_statistic=median,finalization_quantize=1,finalization_cv=season,evaluation_seasons=recent_two,finalization_model=context_residual,finalization_penalty=1000' \
   --seeds 42 --device cpu
 sbatch --job-name=context-nowcast-selected-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-selected-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-selected-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-selected-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-selected-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-selected-20261001
 ```
 
 This last block is a reproduction recipe, **not an additional launched run**.
@@ -415,8 +415,8 @@ sufficient labels mature. Momentum alignment and native rate units are checked.
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v4-20261001 momentum
 sbatch --job-name=context-nowcast-v4-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v4-20261001
 ```
 
 The earlier decision above describes the first three sweeps. Further candidates
@@ -440,8 +440,8 @@ export PYTHONPATH="$PWD/src"
   --reference context-nowcast-v4-20261001 --candidate mlp-all-vintaged-ce82ebe7d71f
 LANES=6 GPUS=1 sbatch --job-name=context-replay-v2-20261001 \
   --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-v2-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-v2-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-v2-20261001
 ```
 
 ## Age-dependent level and slope corrections
@@ -463,8 +463,8 @@ The fifth sweep is job 3357331. Its manager commands are:
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v5-20261001 age
 sbatch --job-name=context-nowcast-v5-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v5-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v5-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v5-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v5-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v5-20261001
 ```
 
 The completed admissions-only C1 replay still worsens WIS by 0.223% on complete
@@ -532,8 +532,8 @@ export PYTHONPATH="$PWD/src"
   --reference context-nowcast-v5-20261001 --candidate mlp-all-vintaged-eb672d2cc4de --uncertainty 0.5 1
 LANES=6 GPUS=1 sbatch --job-name=context-replay-v3-20261001 \
   --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-v3-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-v3-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-v3-20261001
 ```
 
 ## Forecast tradeoff and residual shrinkage
@@ -567,8 +567,8 @@ correction the best point nowcaster merely because it forecasts better.
 export PYTHONPATH="$PWD/src"
 bash scripts/plan_context_nowcast.sh context-nowcast-v6-20261001 strength
 sbatch --job-name=context-nowcast-v6-20261001 --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v6-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v6-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v6-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v6-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v6-20261001
 ```
 
 The [maturity audit](maturity-diagnostic.csv) finds 2025–26 admission reports at
@@ -607,8 +607,8 @@ export PYTHONPATH="$PWD/src"
   --additional-strengths 0.25 1 --uncertainty 0.5 1 --seasonal-uncertainty 0.5 1
 LANES=6 GPUS=1 sbatch --job-name=context-replay-v4-20261001 \
   --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-v4-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-v4-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-v4-20261001
 ```
 
 For forecast uncertainty intervals, resample four consecutive issuance weeks in
@@ -674,8 +674,8 @@ export PYTHONPATH="$PWD/src"
   --uncertainty 0.5 --seasonal-uncertainty 0.5 --eval-members 2048
 LANES=6 GPUS=2 sbatch --job-name=context-replay-confirm-20261002 --array=0-1 \
   --nodelist=g1803jles02 --time=04:00:00 scripts/jlessler.sbatch context-replay-confirm-20261002
-.venv/bin/python -m tapestry.experiment.planner status -e context-replay-confirm-20261002
-.venv/bin/python -m tapestry.experiment.planner rank -e context-replay-confirm-20261002
+.venv/bin/python -m chromantis.experiment.planner status -e context-replay-confirm-20261002
+.venv/bin/python -m chromantis.experiment.planner rank -e context-replay-confirm-20261002
 ```
 
 ## Confirmed result and final diagnostic correction
@@ -735,7 +735,7 @@ Commands supplied with this analysis (existing training complete; not relaunched
 ```bash
 bash scripts/plan_context_nowcast.sh context-nowcast-v6-20261001 strength
 sbatch --nodelist=g1803jles02 scripts/finalization.sbatch context-nowcast-v6-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e context-nowcast-v6-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e context-nowcast-v6-20261001
+.venv/bin/python -m chromantis.experiment.planner status -e context-nowcast-v6-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e context-nowcast-v6-20261001
 PYTHONPATH=src .venv/bin/python docs/experiments/context-nowcast-20261001/report_age_errors.py
 ```

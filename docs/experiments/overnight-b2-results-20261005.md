@@ -74,10 +74,10 @@ Fitted models, predictions, scores, source snapshots and reproduction commands a
 
 Private research directories under `/proj/jlessler/projects/tapestry-all/`:
 
-- `tapestry-vintage-overnight-20261005`
-- `tapestry-nowcast-overnight-20261005`
-- `tapestry-weekend-20261002`
+- `chromantis-vintage-overnight-20261005`
+- `chromantis-nowcast-overnight-20261005`
+- `chromantis-weekend-20261002`
 
 The private directories' `data` links point to shared experiment storage. They must not be treated as disposable copies of the data. Full plan, launch, status and rank commands are saved in the respective private directories under `docs/experiments/vintage-overnight-20261005/manager-commands.md` and `docs/experiments/nowcast-overnight-20261005/commands.md`. Reproductions must use fresh experiment names, rather than overwrite fitted snapshots.
 
-No training or inference jobs remain. Post-run cleanup removed 1,424 cached/temporary files and two unfinished fold checkpoints, freeing 27,228,657 bytes (about 26 MiB). All 2,033 completed run records and their result payloads were preserved, including smoke and historical runs outside the main comparison counts. Completed forecasts, fitted model files, logs and source snapshots remain available. The exact deletion manifest is `tapestry-nowcast-overnight-20261005/docs/experiments/longleaf-cleanup-20261005.json` on Longleaf.
+No training or inference jobs remain. Post-run cleanup removed 1,424 cached/temporary files and two unfinished fold checkpoints, freeing 27,228,657 bytes (about 26 MiB). All 2,033 completed run records and their result payloads were preserved, including smoke and historical runs outside the main comparison counts. Completed forecasts, fitted model files, logs and source snapshots remain available. The exact deletion manifest is `chromantis-nowcast-overnight-20261005/docs/experiments/longleaf-cleanup-20261005.json` on Longleaf.

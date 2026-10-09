@@ -25,7 +25,7 @@ pd.DataFrame(coverage).to_csv(OUTPUT / 'baselinenowcast-coverage.csv', index=Fal
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), squeeze=False)
 for ax, cv in zip(axes[0], ['rolling', 'season']):
     by_age = means.loc[cv].groupby(['age', 'method']).mean().unstack()
-    for method, label in [('prediction', 'Tapestry'), ('baselinenowcast', 'baselinenowcast point'),
+    for method, label in [('prediction', 'Chromantis'), ('baselinenowcast', 'baselinenowcast point'),
                           ('persistence', 'Unchanged report')]:
         ax.plot(by_age.index, by_age[method], marker='o', markersize=3, label=label)
     ax.set(title=cv.capitalize(), xlabel='Weeks behind signal boundary', ylabel='Normalized MAE')

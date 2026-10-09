@@ -1,10 +1,10 @@
 """Scientific guards: flu ED receives loss, excluded pathogen histories cannot leak."""
 import numpy as np
 import torch
-from tapestry.model.network import Model, IndependentBundle
-from tapestry.model.series import SeriesModel
-from tapestry.model.objective import LOSS_WEIGHTS
-from tapestry.model.revision_tree import TrajectoryNowcaster
+from chromantis.model.network import Model, IndependentBundle
+from chromantis.model.series import SeriesModel
+from chromantis.model.objective import LOSS_WEIGHTS
+from chromantis.model.revision_tree import TrajectoryNowcaster
 
 
 def test_ed_correction_preserves_proportions_and_other_channels():
@@ -23,14 +23,14 @@ def test_ed_correction_preserves_proportions_and_other_channels():
 
 
 def test_two_season_extension_is_nested():
-    from tapestry.dataset.cv import training_seasons
-    from tapestry.model.scenario import Scenario
+    from chromantis.dataset.cv import training_seasons
+    from chromantis.model.scenario import Scenario
     assert training_seasons(Scenario(training_window='last2'),'2025-2026')==('2023-2024','2024-2025')
     assert training_seasons(Scenario(training_window='last2'),'2024-2025')==('2023-2024','2025-2026')
 
 
 def test_operational_episode_keeps_unknown_future_labels_masked():
-    from tapestry.dataset.episodes import episodes
+    from chromantis.dataset.episodes import episodes
     panel = dict(dates=np.array(['2026-09-19', '2026-09-26', '2026-10-03']),
                  locations=np.array(['US']), issuance_dates=np.array(['2026-10-07']),
                  targets=np.ones((3, 1, 6), np.float32),
@@ -88,7 +88,7 @@ def test_specialist_excludes_other_signal_values_and_masks():
 
 
 def test_flu_covariate_aliases_do_not_add_other_pathogens():
-    from tapestry.dataset.build import covariate_names_for
+    from chromantis.dataset.build import covariate_names_for
     assert covariate_names_for('ww_flu')==('nwss_flu_wval_like',)
     assert covariate_names_for('outpatient_flu')==('outpatient_flu',)
     assert covariate_names_for('kinsa+ww_flu')==('nwss_flu_wval_like','kinsa_ili')

@@ -95,7 +95,7 @@ Conclusions: **ensembling works and is the largest gain found so far.** Averagin
 
 ## Item 3 — calibration fitted inside the training seasons
 
-New code: `src/tapestry/evaluation/calibration.py`, `pilot.calibrate`. For every run (each fold separately):
+New code: `src/chromantis/evaluation/calibration.py`, `pilot.calibrate`. For every run (each fold separately):
 
 1. The early-stopping model of the inner fit is kept. It was trained without the labels of the inner validation weeks (3 consecutive weeks of every 16 in each training season).
 2. Forecasts are issued with that model for every origin whose 1–4-week targets fall in those validation weeks, using the **evaluation pipeline**: FluSight-deadline Wednesday reports cut from the fold's training-season panel only, with the newest admission weeks corrected by a tree fitted without the validation weeks.
@@ -133,8 +133,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b4_refinetop2.py --plan   # = planner plan -e b4-refinetop2-20261006 -s $(cat docs/experiments/b4-refinetop2-20261006/scenarios.txt) --seeds 42 43 --device cuda
 LANES=6 GPUS=6 sbatch --job-name=b4-refinetop2-20261006 --array=0-1 --nodelist=g1803jles02 --cpus-per-task=8 --mem=180G --time=06:00:00 scripts/jlessler.sbatch b4-refinetop2-20261006
 LANES=4 GPUS=6 sbatch --job-name=b4-refinetop2-l40 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=4 --mem=100G --time=06:00:00 scripts/jlessler.sbatch b4-refinetop2-20261006
-.venv/bin/python -m tapestry.experiment.planner status -e b4-refinetop2-20261006
-.venv/bin/python -m tapestry.experiment.planner rank -e b4-refinetop2-20261006 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b4-refinetop2-20261006
+.venv/bin/python -m chromantis.experiment.planner rank -e b4-refinetop2-20261006 --no-plots
 .venv/bin/python scripts/ensemble_b4.py
 ```
 

@@ -4,13 +4,13 @@
 
 | Directory | Responsibility |
 |---|---|
-| `src/tapestry/data` | Acquisition, snapshots, readers and shared selection |
-| `src/tapestry/dataset` | Panel construction, episodes, folds, reporting-error bootstrap, ILI archive |
-| `src/tapestry/model` | Network, scenarios, objective, correction trees |
-| `src/tapestry/experiment` | The training route (`fit.py`), fitting loop (`training.py`), planner, shared GPU dispatch |
-| `src/tapestry/evaluation` | The scorer (`standard.py`), ranking, saved-forecast ensembles, reports |
-| `src/tapestry/production` | Release replay, Hub export, submission plots and comparisons |
-| `src/tapestry/explorer` | Source indexing, API and interactive browser assets |
+| `src/chromantis/data` | Acquisition, snapshots, readers and shared selection |
+| `src/chromantis/dataset` | Panel construction, episodes, folds, reporting-error bootstrap, ILI archive |
+| `src/chromantis/model` | Network, scenarios, objective, correction trees |
+| `src/chromantis/experiment` | The training route (`fit.py`), fitting loop (`training.py`), planner, shared GPU dispatch |
+| `src/chromantis/evaluation` | The scorer (`standard.py`), ranking, saved-forecast ensembles, reports |
+| `src/chromantis/production` | Release replay, Hub export, submission plots and comparisons |
+| `src/chromantis/explorer` | Source indexing, API and interactive browser assets |
 | `experiments` | Study files (candidates, seeds, protocol) and ensemble groups files |
 | `production` | Releases, submitted files, Hub clones (ignored), metadata |
 | `scripts` | Cluster launch, notifications, explorer publishing and documentation navigation |
@@ -19,7 +19,7 @@
 Each step has one implementation: one training route, one scorer, one ranking, one
 combination rule (shared by research ensembles and the production export). Add a
 candidate to a study file, not a planner script; add an analysis to
-`tapestry.evaluation`, not an experiment-specific script. Replaced code is deleted
+`chromantis.evaluation`, not an experiment-specific script. Replaced code is deleted
 (history: [restructuring log](workflow.md#restructuring-log-8-october-2026)).
 
 ## Research iteration
@@ -29,10 +29,10 @@ silent scientific errors: loss/score mathematics, weighting, leakage and data
 units/alignment. No broad regression suite or plot tests are required. When those
 calculations change, run the relevant focused checks in `tests/`.
 
-Experiment analysis belongs in `tapestry.evaluation`, called by `planner rank` or `evaluation.ensembles`.
+Experiment analysis belongs in `chromantis.evaluation`, called by `planner rank` or `evaluation.ensembles`.
 Use saved canonical ranking tables for written interpretation; keep the prose
 inside report write-up markers. Avoid another experiment-specific scoring or
-report-generation script. Dataset diagnostics use `tapestry.dataset.analyze_dataset`.
+report-generation script. Dataset diagnostics use `chromantis.dataset.analyze_dataset`.
 
 ## Documentation
 
@@ -49,7 +49,7 @@ phase; `scripts/docs_hooks.py` orders the sidebar by the report dates. Sidebar s
 The availability staircase is embedded in a docs page. Its standalone interactive
 view includes a return link. The general source explorer is published separately
 at `/explorer/`, using committed exports under `docs/explorer/data/` and the UI in
-`src/tapestry/explorer/static/`. Refresh that export with
+`src/chromantis/explorer/static/`. Refresh that export with
 `scripts/update_published_explorer.sh`; the docs build does not download sources.
 
 ## Publishing

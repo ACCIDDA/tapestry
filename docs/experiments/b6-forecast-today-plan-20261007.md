@@ -382,8 +382,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6.py --with-specialists --with-historical --experiment b6-search-full-20261007 --plan
 LANES=4 GPUS=6 sbatch --job-name=b6-full-h100 --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --time=04:40:00 scripts/jlessler.sbatch b6-search-full-20261007
 LANES=2 GPUS=6 sbatch --job-name=b6-full-l40 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --time=04:40:00 scripts/jlessler.sbatch b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 ```
 
 These launches are already submitted: do not run them again just to inspect.
@@ -422,8 +422,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1240 --saved-reference --plan
 sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1240 --saved-reference
 squeue -j 4133702
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1240 --rank-only
 ```
 
@@ -451,8 +451,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1255 --saved-reference --plan
 sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1255 --saved-reference
 squeue -j 4136266
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1255 --rank-only
 ```
 
@@ -477,8 +477,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1310 --saved-reference --plan
 sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1310 --saved-reference
 squeue -j 4138206
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1310 --rank-only
 ```
 
@@ -499,8 +499,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1325 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 --plan
 sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1325 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2
 squeue -j 4140207
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1325 --rank-only
 ```
 
@@ -521,8 +521,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1340 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 --plan
 sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1340 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3
 squeue -j 4142372
-.venv/bin/python -m tapestry.experiment.planner status -e b6-search-full-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-search-full-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-search-full-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1340 --rank-only
 ```
 
@@ -569,8 +569,8 @@ Validation commands, already submitted:
 export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6_extension.py --smoke --experiment b6-extension-check-20261007 --plan
 sbatch scripts/b6_extension_check.sbatch
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-check-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-extension-check-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-check-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-extension-check-20261007 --allow-incomplete --no-plots
 ```
 
 Full extension commands, already queued:
@@ -580,8 +580,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6_extension.py --plan
 LANES=4 GPUS=6 sbatch --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --dependency=afterok:4144886,afterany:4129248 --kill-on-invalid-dep=yes scripts/b6_extension.sbatch b6-extension-20261007
 LANES=2 GPUS=6 sbatch --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --dependency=afterok:4144886,afterany:4129249 --kill-on-invalid-dep=yes scripts/b6_extension.sbatch b6-extension-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-extension-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-extension-20261007 --allow-incomplete --no-plots
 ```
 
 The latest-report audit and its units, coverage and maturity limitations are in
@@ -599,8 +599,8 @@ CPU validation 4144886 trained its first two models but full forecast evaluation
 export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6_extension.py --smoke --experiment b6-extension-check-20261007 --plan
 LANES=4 GPUS=1 sbatch --job-name=b6-extension-check-gpu --nodelist=g1803jles02 --cpus-per-task=4 --mem=80G --time=00:30:00 --dependency=afterany:4144886 scripts/jlessler.sbatch b6-extension-check-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-check-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-extension-check-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-check-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-extension-check-20261007 --allow-incomplete --no-plots
 ```
 
 ## 14:18 EDT: extension running and complete core report
@@ -630,7 +630,7 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1430 --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1430
 squeue -j4152428
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1430 --rank-only
 ```
 
@@ -645,7 +645,7 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1445 --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1445
 squeue -j4156204
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1445 --rank-only
 ```
 
@@ -658,7 +658,7 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1500 --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1500
 squeue -j4160803
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1500 --rank-only
 ```
 
@@ -671,7 +671,7 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1515 --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1515
 squeue -j4163123
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1515 --rank-only
 ```
 
@@ -684,7 +684,7 @@ export PYTHONPATH=src
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-complete-1530 --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-complete-1530
 squeue -j4164639
-.venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007
+.venv/bin/python -m chromantis.experiment.planner status -e b6-extension-20261007
 .venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-complete-1530 --rank-only
 ```
 
@@ -697,8 +697,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6_production.py --recipes A B --experiment b6-production-primary-20261007 --plan
 LANES=4 GPUS=6 sbatch --job-name=b6-production-primary --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --time=02:30:00 scripts/jlessler.sbatch b6-production-primary-20261007
 LANES=2 GPUS=6 sbatch --job-name=b6-production-primary --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --time=02:30:00 scripts/jlessler.sbatch b6-production-primary-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b6-production-primary-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-production-primary-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-production-primary-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-production-primary-20261007 --allow-incomplete --no-plots
 .venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-broad-twelve-1550 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_ED_corrected X_A_width256_half_lr_ED_corrected X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture --plan
 sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-broad-twelve-1550 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_ED_corrected X_A_width256_half_lr_ED_corrected X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture
 squeue -j4165916
@@ -730,8 +730,8 @@ export PYTHONPATH=src
 .venv/bin/python scripts/plan_b6_production.py --experiment b6-production-system2-20261007 --recipes A_blocks3 X_B_ED_corrected A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_width256_half_lr_flusurv --plan
 LANES=4 GPUS=6 sbatch --job-name=b6-production-system2 --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --time=03:00:00 scripts/jlessler.sbatch b6-production-system2-20261007
 LANES=2 GPUS=6 sbatch --job-name=b6-production-system2 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --time=03:00:00 scripts/jlessler.sbatch b6-production-system2-20261007
-.venv/bin/python -m tapestry.experiment.planner status -e b6-production-system2-20261007
-.venv/bin/python -m tapestry.experiment.planner rank -e b6-production-system2-20261007 --allow-incomplete --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b6-production-system2-20261007
+.venv/bin/python -m chromantis.experiment.planner rank -e b6-production-system2-20261007 --allow-incomplete --no-plots
 ```
 
 Operational NWSS refreshed; NWSSaux nowactive in separate lane. Outpatientarchive stilldownloading, coordinator45025remainspaused. Audit completionbefore retiringcoordinator.
@@ -757,8 +757,8 @@ All110production fits completed. Horizonreport b6-selected-horizons/index.md sup
 All requiredselectedsources refreshed. NWSSaux committed26,991,849rows; its pausedcoordinator91003retired. Outpatient archivechild64512continues with coordinator45025paused. No selectedrecipe usesoutpatient, so separatebuildroot data/operational-b6-pinned-20261007 locks27snapshotrefs, explicitly retainingunusedSep16outpatient. Acquisitionrootrawsymlink restored/preserved forrunningdownloads; pinnedrootseparate. First oldrootindexbuildcancelledandrestartedonpinnedroot. Buildsession19024 logs output/b6/operational-pinned-build.log, runs NWSSindices thenpanelbuild with2workers. Frozenhistoricalpanelunchanged.
 
 ```bash
-.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data/operational-b6-pinned-20261007
-.venv/bin/python -m tapestry.dataset.build build --data-root data/operational-b6-pinned-20261007 --truth-day 2026-10-07 --workers 2 --output data/operational-b6-pinned-20261007/processed/panel.npz
+.venv/bin/python -m chromantis.dataset.build nwss-indices --data-root data/operational-b6-pinned-20261007
+.venv/bin/python -m chromantis.dataset.build build --data-root data/operational-b6-pinned-20261007 --truth-day 2026-10-07 --workers 2 --output data/operational-b6-pinned-20261007/processed/panel.npz
 ```
 
 ## 17:00 EDT: operational build limited to required inputs
@@ -766,7 +766,7 @@ All requiredselectedsources refreshed. NWSSaux committed26,991,849rows; its paus
 General build spent14minutes rebuildingunused wastewaterindices. Cancelledthatstage and replacedwith samepanelbuilder extracting onlyflu admissions,flu ED,Kinsa,FluSurv. Fullcalendar/schema retained; othercolumns explicitlyNaN, recordedasomittedsources. This is an operationalinputpanel, neverforretraining. Forecastreplay checksrequiredinputscope and rejects omittedsources. No selectedmodelusesothercovariates. Buildsession50899, logoutput/b6/operational-selected-build.log,2workers.
 
 ```bash
-.venv/bin/python -m tapestry.dataset.build build --data-root data/operational-b6-pinned-20261007 --truth-day 2026-10-07 --workers 2 --sources nhsn_flu_admissions nssp_flu_proportion kinsa_ili flusurv_flu_rate --output data/operational-b6-pinned-20261007/processed/panel.npz
+.venv/bin/python -m chromantis.dataset.build build --data-root data/operational-b6-pinned-20261007 --truth-day 2026-10-07 --workers 2 --sources nhsn_flu_admissions nssp_flu_proportion kinsa_ili flusurv_flu_rate --output data/operational-b6-pinned-20261007/processed/panel.npz
 ```
 
 Prepared scripts/replay_b6.py and scripts/b6_replay.sbatch onLongleaf; notlaunched. Next: auditbuiltpanel, copyremote, smokeonecheckpoint, then110replays. Managerplan/status inexecution.json.
@@ -776,7 +776,7 @@ Prepared scripts/replay_b6.py and scripts/b6_replay.sbatch onLongleaf; notlaunch
 Selected-sourcepanel completed41.8seconds,0.9MB. Audit data/operational-b6-pinned-20261007/input-audit.json: Oct7issuance/Oct3context,fluadmissions52/52finite,ED51/52(IAmissing),US3246admissions/.0058ED. No observedfuturelabels. MissingIAremainsmissing. Frozenhistoricalpanelunchanged. Copiedpaneltoidenticalremotepath. CPUAseed42smokereplay succeeded:
 
 ```bash
-PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 TAPESTRY_TORCH_THREADS=1 .venv/bin/python scripts/forecast_b6.py --checkpoint data/experiments/b6-production-primary-20261007/mlp-pathogen-scheduled_final-91f17ac66760/s42/attempt-001/eval_2026-2027 --dataset data/operational-b6-pinned-20261007/processed/panel.npz --issuance 2026-10-07 --output data/experiments/b6-operational-smoke-20261007 --device cpu
+PYTHONPATH=src OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 CHROMANTIS_TORCH_THREADS=1 .venv/bin/python scripts/forecast_b6.py --checkpoint data/experiments/b6-production-primary-20261007/mlp-pathogen-scheduled_final-91f17ac66760/s42/attempt-001/eval_2026-2027 --dataset data/operational-b6-pinned-20261007/processed/panel.npz --issuance 2026-10-07 --output data/experiments/b6-operational-smoke-20261007 --device cpu
 export PYTHONPATH=src
 .venv/bin/python scripts/replay_b6.py --plan
 sbatch scripts/b6_replay.sbatch

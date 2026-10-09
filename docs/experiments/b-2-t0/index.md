@@ -125,8 +125,8 @@ From `/proj/jlessler/projects/tapestry-all/tapestry`:
 .venv/bin/python experiments/b-2.py --plan
 LANES=6 GPUS=6 sbatch --job-name=b-2-t0 --array=0-3 scripts/jlessler.sbatch b-2-t0
 LANES=10 GPUS=6 sbatch --job-name=b-2-t0-h100 --array=0-1 --nodelist=g1803jles02 --mem=180G scripts/jlessler.sbatch b-2-t0
-.venv/bin/python -m tapestry.experiment.planner status -e b-2-t0
-.venv/bin/python -m tapestry.experiment.planner rank -e b-2-t0
+.venv/bin/python -m chromantis.experiment.planner status -e b-2-t0
+.venv/bin/python -m chromantis.experiment.planner rank -e b-2-t0
 ```
 
 The design script invokes `planner plan -e b-2-t0 -s <all generated scenarios>
@@ -255,7 +255,7 @@ The three worst combine pathogen MLP, all covariates, raw covariate encoding and
 - Current and B0 target histories are finalized. Current training adds 2022–23 and changes other training settings; B0 used 2,048 evaluation samples versus 256 here. The B0 reference is a recipe comparison, not an isolated architecture ablation.
 - The metric is the location-relative WIS ratio on frozen identical tasks: US 20%, states/DC 80%; admissions weight 1, ED 0.5; equal season weights. 2024–25 has flu/COVID admissions only; 2025–26 has all six targets. The older three-season B0 average is not compared directly with this two-season average.
 - Complete B0.1 sweep comparison: 114/172 (66.3%) beat the ensemble on the same two-season mean, versus 281/309 (90.9%) here. Different configuration sets and training panels prevent attributing this difference to one change.
-- Reproduce scoring and reports with `.venv/bin/python -m tapestry.experiment.planner rank -e b-2-t0`. The [experiment protocol](#protocol) and [saved design](design.json) describe the grid. Interpretive text is preserved inside the report write-up markers.
+- Reproduce scoring and reports with `.venv/bin/python -m chromantis.experiment.planner rank -e b-2-t0`. The [experiment protocol](#protocol) and [saved design](design.json) describe the grid. Interpretive text is preserved inside the report write-up markers.
 - [Matched effects](sweep_matched_effects.csv), [B0 seed comparisons](b0_seed_comparison.csv), and [named final ranking](named_ranking.csv) accompany this report. No visual inspection of generated plots was performed, following project instructions.
 
 ##### Predictive interval coverage

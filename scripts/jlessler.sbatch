@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=tapestry
+#SBATCH --job-name=chromantis
 #SBATCH --partition=jlessler
 #SBATCH --qos=normal
 #SBATCH --nodelist=g1803jles01
@@ -24,15 +24,15 @@ set -euo pipefail
 experiment=${1:?usage: sbatch --array=0-3 scripts/jlessler.sbatch EXPERIMENT}
 shift
 lanes=${LANES:-8}
-threads=${TAPESTRY_TORCH_THREADS:-1}
+threads=${CHROMANTIS_TORCH_THREADS:-1}
 if (( SLURM_CPUS_PER_TASK < threads * lanes )); then
     echo 'Allocate at least lanes * threads CPUs with --cpus-per-task.' >&2
     exit 1
 fi
-export OPENBLAS_NUM_THREADS="$threads" OMP_NUM_THREADS="$threads" MKL_NUM_THREADS="$threads" TAPESTRY_TORCH_THREADS="$threads" PYTHONUNBUFFERED=1
+export OPENBLAS_NUM_THREADS="$threads" OMP_NUM_THREADS="$threads" MKL_NUM_THREADS="$threads" CHROMANTIS_TORCH_THREADS="$threads" PYTHONUNBUFFERED=1
 export PYTORCH_ALLOC_CONF=expandable_segments:True
 export PYTHONPATH="$PWD/data/experiments/$experiment/code/src${PYTHONPATH:+:$PYTHONPATH}"
-test -s "data/experiments/$experiment/code/src/tapestry/experiment/planner.py"
+test -s "data/experiments/$experiment/code/src/chromantis/experiment/planner.py"
 .venv/bin/python -c 'import torch; assert torch.cuda.is_available(), "CUDA unavailable"; print(torch.cuda.get_device_name(0))'
 
 # Notifications are on by default: the first array element queues a follow-up job
@@ -47,4 +47,4 @@ if [ "${NTFY:-1}" != "0" ] && [ "${SLURM_ARRAY_TASK_ID:-0}" = "${SLURM_ARRAY_TAS
         echo 'warning: could not queue the ntfy summary; training continues' >&2
 fi
 
-.venv/bin/python -m tapestry.experiment.dispatch -e "$experiment" --lanes "$lanes" ${GPUS:+--gpu-count "$GPUS"} "$@"
+.venv/bin/python -m chromantis.experiment.dispatch -e "$experiment" --lanes "$lanes" ${GPUS:+--gpu-count "$GPUS"} "$@"

@@ -96,8 +96,8 @@ Run once on Longleaf from `/proj/jlessler/projects/tapestry-all/tapestry`:
 ```bash
 .venv/bin/python scripts/plan_b2_replay.py -e b2-flag-controls-20261001 --flag-controls
 LANES=6 GPUS=1 sbatch --job-name=b2-flag-controls-20261001 --time=04:00:00 scripts/jlessler.sbatch b2-flag-controls-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e b2-flag-controls-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-flag-controls-20261001 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-flag-controls-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-flag-controls-20261001 --no-plots
 .venv/bin/python docs/experiments/b2-flag-controls-20261001/report.py
 ```
 

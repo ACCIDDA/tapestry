@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from tapestry.model.scenario import Scenario
+from chromantis.model.scenario import Scenario
 p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();out=a.output
 f=pd.read_csv(out/'forecast-seed-scores.csv')
 f=f[f.geography.eq('all')].copy()

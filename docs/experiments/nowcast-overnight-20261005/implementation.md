@@ -1,6 +1,6 @@
 # Private implementation and integration
 
-The research ran from `/tmp/tapestry-nowcast-overnight-20261005` locally and
+The research ran from `/tmp/chromantis-nowcast-overnight-20261005` locally and
 `/proj/jlessler/projects/tapestry-all/tapestry-nowcast-overnight-20261005` remotely.
 Shared source was not overwritten. The parent already integrated the separate
 joint-loss wiring correction from `joint-loss-wiring.patch`.

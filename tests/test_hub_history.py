@@ -2,16 +2,16 @@
 import os
 import subprocess
 
-from tapestry.data.catalog import get_spec
-from tapestry.data.repository import RawDataRepository
-from tapestry.data.selection import SelectedData
-from tapestry.data.sources.hub_history import write_history, HISTORY_FILE
-from tapestry.data.sources.hubverse import HubMirror
-from tapestry.explorer.index import ExplorerIndex
+from chromantis.data.catalog import get_spec
+from chromantis.data.repository import RawDataRepository
+from chromantis.data.selection import SelectedData
+from chromantis.data.sources.hub_history import write_history, HISTORY_FILE
+from chromantis.data.sources.hubverse import HubMirror
+from chromantis.explorer.index import ExplorerIndex
 import numpy as np
 import pandas as pd
 
-from tapestry.dataset.extract import Revisions, _publication_times, resolve, revisions
+from chromantis.dataset.extract import Revisions, _publication_times, resolve, revisions
 
 
 def test_git_committer_cutoff_revisions_and_whole_snapshot_deletion(tmp_path):

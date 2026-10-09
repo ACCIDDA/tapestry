@@ -7,28 +7,28 @@ scorer and one release path. Run commands from the repository root.
 
 | Step | Code | Command |
 |---|---|---|
-| Acquire sources, build the dated panel | `tapestry.data`, `tapestry.dataset` | `python -m tapestry.data pull ...`, `python -m tapestry.dataset.build build` |
+| Acquire sources, build the dated panel | `chromantis.data`, `chromantis.dataset` | `python -m chromantis.data pull ...`, `python -m chromantis.dataset.build build` |
 | Define a study | `experiments/<name>.json` | candidates (name → scenario string), seeds, protocol text |
 | Fit and evaluate each held-out season | `experiment/fit.py` | `planner plan` / `sbatch scripts/jlessler.sbatch` / `planner run` |
 | Evaluate fits on other inputs, no refit | `experiment/fit.py` `replay` | `planner replay` |
 | Rank runs, write the report | `evaluation/ranking.py`, `evaluation/report.py` | `planner rank` |
-| Combine saved forecasts, no refit | `evaluation/ensembles.py` | `python -m tapestry.evaluation.ensembles GROUPS.json --out ...` |
-| Release and weekly forecast | `tapestry.production`, `production/releases/` | `python -m tapestry.production run ...` ([production/README.md](https://github.com/ACCIDDA/chromantis/blob/main/production/README.md)) |
+| Combine saved forecasts, no refit | `evaluation/ensembles.py` | `python -m chromantis.evaluation.ensembles GROUPS.json --out ...` |
+| Release and weekly forecast | `chromantis.production`, `production/releases/` | `python -m chromantis.production run ...` ([production/README.md](https://github.com/ACCIDDA/chromantis/blob/main/production/README.md)) |
 
 ## Acquire and build
 
 Training reads the saved panel; refresh sources only when creating a new dataset.
 
 ```bash
-.venv/bin/python -m tapestry.data --data-root data pull delphi_nhsn delphi_nssp \
+.venv/bin/python -m chromantis.data --data-root data pull delphi_nhsn delphi_nssp \
     delphi_claims_inpatient delphi_claims_outpatient delphi_nwss delphi_nwss_aux \
     hub_flusight_current hub_covid_current hub_rsv_current pophive_kinsa_ili \
     delphi_fluview_ilinet delphi_fluview_clinical delphi_flusurv
-.venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data
-.venv/bin/python -m tapestry.dataset.build build --data-root data
-.venv/bin/python -m tapestry.dataset.build show
-.venv/bin/python -m tapestry.dataset.build check
-.venv/bin/python -m tapestry.dataset.analyze_dataset
+.venv/bin/python -m chromantis.dataset.build nwss-indices --data-root data
+.venv/bin/python -m chromantis.dataset.build build --data-root data
+.venv/bin/python -m chromantis.dataset.build show
+.venv/bin/python -m chromantis.dataset.build check
+.venv/bin/python -m chromantis.dataset.analyze_dataset
 ```
 
 Source query options are documented under [Data](data/index.md). Wastewater index
@@ -57,10 +57,10 @@ covariates retain their native geography.
 A study file lists the candidates and seeds (example: `experiments/b7-folds-20261007.json`):
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner plan -e my-study --study experiments/my-study.json --device cuda
+.venv/bin/python -m chromantis.experiment.planner plan -e my-study --study experiments/my-study.json --device cuda
 sbatch --job-name=my-study --array=0-3 scripts/jlessler.sbatch my-study
-.venv/bin/python -m tapestry.experiment.planner status -e my-study
-.venv/bin/python -m tapestry.experiment.planner rank -e my-study
+.venv/bin/python -m chromantis.experiment.planner status -e my-study
+.venv/bin/python -m chromantis.experiment.planner rank -e my-study
 ```
 
 `plan -s SCENARIO ...` still takes raw strings (named by run id). **Seeds.** Two seeds (42, 43; the `plan` default since 5 October 2026) screen
@@ -82,10 +82,10 @@ scenarios start a new attempt. Resubmit with `status`'s printed command
 
 **Panel.** Plan only against a panel built after 5 October 2026 (per-Hub deadlines);
 older panels are refused at fitting. Rebuild with
-`.venv/bin/python -m tapestry.dataset.build build` and use a new experiment name.
+`.venv/bin/python -m chromantis.dataset.build build` and use a new experiment name.
 
 For local execution, plan with `--device cpu` (or `mps`) and use
-`.venv/bin/python -m tapestry.experiment.planner run -e my-study` as the launch.
+`.venv/bin/python -m chromantis.experiment.planner run -e my-study` as the launch.
 The shared GPU queue fits several runs per GPU. Notifications are enabled by
 default; `NTFY=0` disables them and `NTFY_URL` selects the topic.
 
@@ -139,7 +139,7 @@ rsync -a chadi@longleaf.unc.edu:/proj/jlessler/projects/tapestry-all/tapestry/do
 
 ## Ensembles of saved forecasts
 
-`python -m tapestry.evaluation.ensembles GROUPS.json --out DIR` combines completed runs
+`python -m chromantis.evaluation.ensembles GROUPS.json --out DIR` combines completed runs
 without refitting: equal weight per recipe, equal weight per seed within a recipe,
 quantile averaging (`vincent`) or distribution mixing (`mixture`), view by view. Each
 ensemble is written as a run folder and ranked with the same scorer
@@ -364,7 +364,7 @@ route and one path per step:
   `standard.py`. The B0 80/20 composite ranking and matched-effects tables were removed.
 - **Scripts:** about 50 experiment-specific planners, replays, ensemble scorers and report
   scripts (B4–B7, peak study, audits) were replaced by study files, `planner replay`,
-  `evaluation.ensembles` and `tapestry.production`.
+  `evaluation.ensembles` and `chromantis.production`.
 - **Verification:** re-exporting the 7 October B7 forecasts through the new code reproduced
   the submitted CSV byte for byte (SHA256 `cdee271c…`); replaying one production
   checkpoint per B7 recipe on CPU gave identical forecasts with old and new code; a short
@@ -400,7 +400,7 @@ route and one path per step:
   120 operational manifests parse and point to existing checkpoints; replaying one checkpoint
   per recipe of both releases gives forecasts identical to the pre-migration replays; re-exporting
   the 7 October forecasts reproduces both submitted files byte for byte (B7 `cdee271c…`,
-  System2 `b68b3422…`); `python -m tapestry.production run` completes for B7. Every other
+  System2 `b68b3422…`); `python -m chromantis.production run` completes for B7. Every other
   experiment (B3–B6, older B7 checks) is history: its reports remain, the planner can no longer
   read it, and rerunning means a new experiment. The B4 fallback release was deleted. A System2
   release (`production/releases/system2-20261007.json`, the 80 submitted checkpoints) was added.

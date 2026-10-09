@@ -234,27 +234,27 @@ export PYTHONPATH="$PWD/src"
 .venv/bin/python scripts/plan_b2_augmentation.py -e b2-reporting-augmentation-20261001
 LANES=8 GPUS=4 sbatch --job-name=b2-reporting-augmentation-20261001 --array=0-3 \
   --nodelist=g1803jles01 scripts/jlessler.sbatch b2-reporting-augmentation-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e b2-reporting-augmentation-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-reporting-augmentation-20261001 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-reporting-augmentation-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-reporting-augmentation-20261001 --no-plots
 
 .venv/bin/python scripts/plan_b2_augmentation_controls.py fit
 LANES=8 GPUS=2 sbatch --job-name=b2-reporting-controls-20261001 --array=0-1 \
   --nodelist=g1803jles01 scripts/jlessler.sbatch b2-reporting-controls-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e b2-reporting-controls-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-reporting-controls-20261001 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-reporting-controls-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-reporting-controls-20261001 --no-plots
 
 .venv/bin/python scripts/plan_b2_augmentation_controls.py replay
 LANES=8 GPUS=2 sbatch --job-name=b2-reporting-control-replay-20261001 --array=0-1 \
   --nodelist=g1803jles01 --time=04:00:00 scripts/jlessler.sbatch b2-reporting-control-replay-20261001
-.venv/bin/python -m tapestry.experiment.planner status -e b2-reporting-control-replay-20261001
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-reporting-control-replay-20261001 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-reporting-control-replay-20261001
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-reporting-control-replay-20261001 --no-plots
 
 .venv/bin/python scripts/plan_b2_reporting_values_only.py
 LANES=3 GPUS=2 sbatch --job-name=b2-reporting-values-only-20261002 --array=0-1 \
   --nodelist=g1803jles01 --cpus-per-task=6 --mem=48G \
   scripts/jlessler.sbatch b2-reporting-values-only-20261002
-.venv/bin/python -m tapestry.experiment.planner status -e b2-reporting-values-only-20261002
-.venv/bin/python -m tapestry.experiment.planner rank -e b2-reporting-values-only-20261002 --no-plots
+.venv/bin/python -m chromantis.experiment.planner status -e b2-reporting-values-only-20261002
+.venv/bin/python -m chromantis.experiment.planner rank -e b2-reporting-values-only-20261002 --no-plots
 
 # Regenerate result sections in this order, without training or inference:
 .venv/bin/python docs/experiments/b2-reporting-augmentation-20261001/report.py
