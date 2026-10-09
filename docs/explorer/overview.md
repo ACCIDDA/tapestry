@@ -233,7 +233,7 @@ See the [local API](api.md) for catalog, series, versions, and data endpoints.
 ## Published explorer
 
 A static copy runs on GitHub Pages at
-[accidda.github.io/tapestry/explorer/](https://accidda.github.io/tapestry/explorer/).
+[accidda.github.io/chromantis/explorer/](https://accidda.github.io/chromantis/explorer/).
 It uses the same page as the local server; when `data/catalog.json` sits next to
 the page, the browser answers the catalog, series, versions, and data requests
 itself and reads revisions with [hyparquet](https://github.com/hyparam/hyparquet)

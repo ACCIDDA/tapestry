@@ -41,7 +41,10 @@ def _source_metadata(source: str) -> dict:
     # preserves this project's DELPHI_API_KEY alias without modifying os.environ.
     with Session() as session:
         session.headers.update(_api_headers())
-        return EpiDataContext(session=session, use_cache=False).epidata_meta(source=source)
+        metadata = EpiDataContext(session=session, use_cache=False).epidata_meta(source=source)
+    # epidatpy 0.7 (required by the API since October 2026) returns the source's
+    # entry directly; keep the {source: entry} layout saved by earlier snapshots.
+    return metadata if source in metadata else {source: metadata}
 
 
 def _copy_csv_response_to_gzip_once(client: HttpClient, url: str, destination: Path) -> int:

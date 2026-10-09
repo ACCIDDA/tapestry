@@ -1,0 +1,524 @@
+{
+  "remote_checkout": "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007",
+  "experiment": "b6-search-full-20261007",
+  "validation": {
+    "job": 4128386,
+    "experiment": "b6-check-20261007",
+    "status": "completed all 15 smoke runs"
+  },
+  "research_jobs": [
+    4129248,
+    4129249
+  ],
+  "research_start": "2026-10-07T11:52:29-04:00",
+  "original_search_start": "2026-10-07T11:46:43-04:00",
+  "search_deadline": null,
+  "research_walltime": "04:40:00",
+  "research_expected_end": "2026-10-07T16:32:29-04:00",
+  "superseded": {
+    "experiment": "b6-search-20261007",
+    "jobs": [
+      4128552,
+      4128553
+    ],
+    "reason": "Stopped after about five minutes to include eight historical recipes. Adding an ILI-pretrained B5 candidate changes the pinned ILI input hash from absent to present; manager correctly required a new experiment name."
+  },
+  "saved_ensemble_job": 4128575,
+  "saved_ensemble_status": "completed 12 groups x 2 rules, raw and corrected views",
+  "heartbeat": "finish-b6-five-hour-search-and-forecast-files",
+  "operational_refresh": {
+    "root": "data/operational-b6-20261007",
+    "log": "output/b6/operational-pull-retry.log",
+    "status": "output/b6/operational-pull-status.json",
+    "session": 9231,
+    "note": "CDC finalized NHSN, Delphi NHSN and Delphi NSSP refresh complete. NSSP contains 87,799,871 archived rows in 74 files. Independent-source retry loop now pulling claims inpatient; see status/log for later changes.",
+    "build_commands": [
+      ".venv/bin/python -m tapestry.dataset.build nwss-indices --data-root data/operational-b6-20261007",
+      ".venv/bin/python -m tapestry.dataset.build build --data-root data/operational-b6-20261007 --truth-day 2026-10-07 --workers 2 --output data/operational-b6-20261007/processed/panel.npz"
+    ],
+    "build_note": "Do not run until required source pulls finish. Explicit output avoids overwriting frozen panel. Local machine has 32 GiB RAM; limit workers to 2 and monitor memory; move build to patron host if needed.",
+    "latest_progress": "Remaining-source lane completed NWSS65,128,230rows/14files; NWSSaux active. Outpatient download continues; original coordinator remains paused.",
+    "remaining_lane": {
+      "session": 5541,
+      "script": "tmp/b6_refresh_remaining.py",
+      "log": "output/b6/operational-remaining.log",
+      "status": "output/b6/operational-remaining-status.json",
+      "coordinator_paused_pid": 45025,
+      "outpatient_child_pid": 64512,
+      "note": "Original coordinator SIGSTOP while its outpatient child continues. New lane pulls remaining9sources; never resume original blindly, as it would duplicate remaining downloads. After outpatient finishes, audit committed snapshot and record success before retiring paused coordinator. If fast lane fails, fix failed source independently. No frozen panel changed."
+    },
+    "priority_lane": {
+      "session": 97281,
+      "script": "tmp/b6_refresh_priority.py",
+      "log": "output/b6/operational-priority.log",
+      "status": "output/b6/operational-priority-status.json",
+      "paused_coordinator_pid": 91003,
+      "nwss_aux_child_pid": 91256,
+      "note": "Coordinator91003SIGSTOP; NWSSaux childcontinues. Prioritylane refreshesKinsa,ILINet,clinical,FluSurv,3Hubmirrors. Kinsa complete2835rows snapshot20261007T203026.060076Z. ILINet active. Both paused coordinators must be retired after auditing outstanding archive completion to avoid duplicate downloads. Outpatientchild64512stillactive."
+    },
+    "build": {
+      "session": 50899,
+      "root": "data/operational-b6-pinned-20261007",
+      "log": "output/b6/operational-selected-build.log",
+      "dataset": "data/operational-b6-pinned-20261007/processed/panel.npz",
+      "commands": [
+        ".venv/bin/python -m tapestry.dataset.build build --data-root data/operational-b6-pinned-20261007 --truth-day 2026-10-07 --workers 2 --sources nhsn_flu_admissions nssp_flu_proportion kinsa_ili flusurv_flu_rate --output data/operational-b6-pinned-20261007/processed/panel.npz"
+      ],
+      "note": "Separate raw snapshot refs pinned in pinned-sources.json. All selectedrecipe requiredsources refreshed. Outpatient Sep16snapshot retained explicitly because no selectedrecipe usesit; globaldownloadcontinues. Original acquisitionroot rawsymlink preserved to avoid changingrunningdownload paths. Initial indexing on oldroot wascancelled/restartedonpinnedroot. NWSSaux committedsuccessful26,991,849rows; paused coordinator91003retired. Outpatientcoordinator45025remainspaused pendingchild64512completion audit.",
+      "scope": "Full calendar and schema, but only requiredselected sources extracted; unusedcolumns explicitlyNaN. available_sources/omitted_sources inmetadata. Inferenceguardrejectsomittedmodelinputs. Cancelled priorNWSSindexbuild93088; no selectedrecipe useswastewater. Frozenhistoricalpanelunchanged.",
+      "completion": "Completed41.8seconds,0.9MBpanel,230weeks231issuances. LatestOct3/Oct7. Requiredsourceauditwritteninput-audit.json; latestfluadm52/52finite,fluED51/52missingIA;US3246and.0058. Allfuturelabelmasksfalse."
+    },
+    "outpatient_cleanup": {
+      "checked_at": "2026-10-07T18:16:00-04:00",
+      "result": "Child 64512 no longer exists. No new committed snapshot: latest remains 20260916T142831.880328Z. Log has no completion or error record; exit status unavailable. Do not treat the refresh as successful.",
+      "coordinator": "Verified PID 45025 command and paused state, confirmed no remaining children, sent SIGTERM then SIGCONT, and verified exit. Duplicate source queue was not resumed.",
+      "impact": "Unused covariate. Pinned operational panel and completed forecasts unchanged. No retry planned for this delivery."
+    }
+  },
+  "pending": [
+    "Recover/replay original legacy forecasts where available; current queue includes explicitly documented current-code historical recipe refits.",
+    "Rank completed five-seed blocks and ensemble additions, including joint broad-ensemble and leave-one-out checks.",
+    "Compute coverage and season/horizon tables for mixture tradeoff; plot without visual inspection.",
+    "Refresh/build separate operational panel, verify current Hub target/reference dates and file schema.",
+    "Production refits and ten-seed expansion if justified; produce both model files, do not publish.",
+    "Concurrent production/README.md and Delphi dependency/source updates are external workspace changes; preserve and reuse them, do not overwrite. Production hub clones exist and team abbreviation is ACCIDDA; final model names still undecided."
+  ],
+  "submission_deadline": "2026-10-07T23:00:00-04:00",
+  "forecast_files_target": "2026-10-07T22:30:00-04:00",
+  "deadline_source": "production/hubs/FluSight-forecast-hub/README.md line 14, checked locally; reference date 2026-10-10 in hub-config/tasks.json",
+  "resource_check_1208_EDT": {
+    "workers": 16,
+    "workers_per_H100": 4,
+    "workers_per_L40": 2,
+    "H100_used_MiB": [
+      12938,
+      12970
+    ],
+    "H100_total_MiB": 95830,
+    "H100_utilization_percent": [
+      100,
+      99
+    ],
+    "L40_used_MiB": [
+      4416,
+      24328,
+      19954,
+      18064
+    ],
+    "L40_total_MiB": 46068,
+    "L40_utilization_percent": [
+      81,
+      96,
+      100,
+      100
+    ],
+    "host_available_RAM": "H100 node 1.9 TiB; L40 node 437 GiB",
+    "complete": 15,
+    "running": 16,
+    "pending": 189,
+    "decision": "Keep concurrency unchanged: GPUs busy, memory headroom available; instantaneous memory is not a bound on later larger recipes."
+  },
+  "candidate_ensemble_script": "Remote current script supports saved references matched on every scenario field except post-fit stress_views; target eligibility and float64 averaging. Second scoring job pending/running, see candidate_scoring_jobs.",
+  "progress_1225_EDT": {
+    "completed_at_1218": 34,
+    "running": 16,
+    "failures": 0,
+    "complete_blocks_at_1220": [
+      "A_width256",
+      "B0_separate_target_MLP"
+    ],
+    "candidate_plan": "data/experiments/b6-candidate-ensembles-1220/groups.json on Longleaf",
+    "candidate_scoring": "Not launched yet: A/B reference blocks still incomplete; no selection based on partial seeds."
+  },
+  "operational_inference": "scripts/forecast_b6.py supports A and joint-reconstruction B production checkpoints: cut only four future label dates, then use existing ForecastSlice to select future outputs from the joint head. Noisy-history recipes explicitly unsupported until selected. Not yet replayed on completed operational panel.",
+  "candidate_scoring_jobs": [
+    {
+      "job": 4133702,
+      "out": "data/experiments/b6-candidate-ensembles-1240",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1240 --saved-reference --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1240 --saved-reference",
+      "status": "Completed; superseded for selection by 4136266 after numerical averaging correction.",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1240 --rank-only",
+      "note": "Initial plan has 9 complete blocks (7 new plus saved A/B); 31 groups. Script inventories complete blocks again on job start. Saved references match every scenario field except stress_views, which only requests extra evaluation after training. Build verifies panel hashes, labels and task alignment. Uses common rank_pilot scorer."
+    },
+    {
+      "job": 4136266,
+      "out": "data/experiments/b6-candidate-ensembles-1255",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1255 --saved-reference --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1255 --saved-reference",
+      "status": "squeue -j 4136266",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1255 --rank-only",
+      "note": "Float64 accumulation; flatten equal-sized recipe/seed groups before averaging and integer rounding. First batch had one-count differences at some half-integer boundaries; all labels, context dates and masks match saved reference. Confirm new reference matches old A5+B5 before reporting gains.",
+      "completion": "Completed; both seasons reference admissions and ED quantiles match saved five-seed A+B exactly (maximum difference zero)."
+    },
+    {
+      "job": 4138206,
+      "out": "data/experiments/b6-candidate-ensembles-1310",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1310 --saved-reference --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1310 --saved-reference",
+      "status": "squeue -j 4138206",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1310 --rank-only",
+      "note": "Plan now has 16 complete five-seed blocks and 59 groups; final job-start membership saved in groups.json. Includes width-192 A arms, B3 recipe refit, B5 confirmed candidate 2, and any additional blocks complete at startup.",
+      "completion": "Completed; report docs/experiments/b6-candidate-ensembles-1310/index.md. Width-192 A half learning rate improves ensemble admissions in both seasons; joint broad test pending."
+    },
+    {
+      "job": 4140207,
+      "out": "data/experiments/b6-candidate-ensembles-1325",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1325 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1325 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2",
+      "status": "squeue -j 4140207",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1325 --rank-only",
+      "note": "21 complete blocks, 81 groups at plan. Adds broad A+B+wide192-half+wide256-half+sampled B5 actual25% and leave-one-member-out groups. Includes first admissions-only specialists; target eligibility prevents using their untrained ED output.",
+      "completion": "Completed; broad and first specialists report docs/experiments/b6-candidate-ensembles-1325/index.md. Three new additions jointly useful; original A/B leave-one-out tradeoffs pending final choice."
+    },
+    {
+      "job": 4142372,
+      "out": "data/experiments/b6-candidate-ensembles-1340",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1340 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-candidate-ensembles-1340 --saved-reference --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3",
+      "status": "squeue -j 4142372",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-candidate-ensembles-1340 --rank-only",
+      "note": "28 complete blocks, 108 groups at plan. Adds clinical-on-A, A without Kinsa, B1 and B4 refits; six-recipe broad now also includes B_blocks3, so broad_without_B_blocks3 recovers the earlier five-recipe group. Reference A/B training assumptions unchanged; within-batch comparisons only."
+    },
+    {
+      "job": 4146026,
+      "out": "data/experiments/b6-core-complete-1400",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-core-complete-1400 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-core-complete-1400 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3",
+      "status": "squeue -j 4146026",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-core-complete-1400 --rank-only",
+      "note": "All 44 matched five-seed blocks complete; 162 groups. Fresh A/B references."
+    },
+    {
+      "job": 4147912,
+      "out": "data/experiments/b6-broad-eight-1420",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-broad-eight-1420 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 --broad-only --rules vincent mixture --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --out data/experiments/b6-broad-eight-1420 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 --broad-only --rules vincent mixture",
+      "status": "squeue -j 4147912",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-broad-eight-1420 --rank-only",
+      "note": "Ten groups x two aggregation rules: reference, eight-recipe broad, eight leave-one-out. Uses complete five-seed core blocks."
+    },
+    {
+      "job": 4152428,
+      "out": "data/experiments/b6-extension-score-1430",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1430 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1430",
+      "status": "squeue -j 4152428",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1430 --rank-only",
+      "note": "47 complete five-seed blocks at plan:44core+3extension;163groups. Membership refreshed at startup and recorded in groups.json."
+    },
+    {
+      "job": 4156204,
+      "out": "data/experiments/b6-extension-score-1445",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1445 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1445",
+      "status": "squeue -j4156204",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1445 --rank-only",
+      "note": "49complete five-seed blocks at plan:44core+5extension.171groups. Actual startup inventory in groups.json."
+    },
+    {
+      "job": 4160803,
+      "out": "data/experiments/b6-extension-score-1500",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1500 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1500",
+      "status": "squeue -j4160803",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1500 --rank-only",
+      "note": "51complete five-seed blocks at plan:44core+7extension;179groups."
+    },
+    {
+      "job": 4163123,
+      "out": "data/experiments/b6-extension-score-1515",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1515 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-score-1515",
+      "status": "squeue -j4163123",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-score-1515 --rank-only",
+      "note": "71complete five-seed blocks at plan:44core+27extension;259groups."
+    },
+    {
+      "job": 4164639,
+      "out": "data/experiments/b6-extension-complete-1530",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-complete-1530 --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-extension-complete-1530",
+      "status": "squeue -j4164639",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-extension-complete-1530 --rank-only",
+      "note": "All82complete five-seed blocks;299groups. No incomplete recipe."
+    },
+    {
+      "job": 4165916,
+      "out": "data/experiments/b6-broad-twelve-1550",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-broad-twelve-1550 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_ED_corrected X_A_width256_half_lr_ED_corrected X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-broad-twelve-1550 --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 A_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_ED_corrected X_A_width256_half_lr_ED_corrected X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture",
+      "status": "squeue -j4165916",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-broad-twelve-1550 --rank-only",
+      "note": "14groups x2rules,12recipebroad + leave-one-out + reference."
+    },
+    {
+      "job": 4167254,
+      "out": "data/experiments/b6-system2-nine-1605",
+      "plan": ".venv/bin/python scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 --out data/experiments/b6-system2-nine-1605 --base-a A_blocks3 --base-b X_B_ED_corrected --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture --plan",
+      "launch": "sbatch scripts/b6_candidates.sbatch --additional-experiment b6-extension-20261007 --out data/experiments/b6-system2-nine-1605 --base-a A_blocks3 --base-b X_B_ED_corrected --broad A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_width256_half_lr_flusurv --broad-only --rules vincent mixture",
+      "status": "squeue -j4167254",
+      "rank": ".venv/bin/python scripts/ensemble_b6_candidates.py --out data/experiments/b6-system2-nine-1605 --rank-only",
+      "note": "Nine recipes after jointly removing originalA,B and correctedA256 from12.11groupsx2rules. Reference here is A_blocks3+X_B_ED_corrected, NOT originalA+B."
+    }
+  ],
+  "progress_1233_EDT": {
+    "complete": 49,
+    "running": 16,
+    "pending": 155,
+    "failed": 0,
+    "complete_new_blocks": [
+      "A_width256",
+      "A_width256_half_lr",
+      "B_width192",
+      "B_width192_half_lr",
+      "B_width256",
+      "B_width256_half_lr",
+      "B0_separate_target_MLP"
+    ]
+  },
+  "progress_1248_EDT": {
+    "complete": 67,
+    "running": 16,
+    "pending": 137,
+    "failed": 0
+  },
+  "production_export": "scripts/export_b6.py prepared locally; JSON recipe definition -> equal-recipe target-specific quantiles -> ACCIDDA CSV and provenance. Validates pinned Hub task dates, location allowances, levels, nonnegative integer admissions, bounded ED, monotone quantiles. Not yet validated with actual operational forecasts.",
+  "first_width_report": "docs/experiments/b6-candidate-ensembles-1255/index.md",
+  "progress_1303_EDT": {
+    "complete": 88,
+    "running": 16,
+    "pending": 116,
+    "failed": 0
+  },
+  "progress_1318_EDT": {
+    "complete": 137,
+    "running": 16,
+    "pending": 67,
+    "failed": 0
+  },
+  "resource_check_1320_EDT": {
+    "H100_used_MiB": [
+      23840,
+      17538
+    ],
+    "H100_utilization_percent": [
+      99,
+      99
+    ],
+    "L40_used_MiB": [
+      19914,
+      16210,
+      11804,
+      15544
+    ],
+    "L40_utilization_percent": [
+      100,
+      98,
+      94,
+      79
+    ],
+    "decision": "Keep 4 workers/H100 and 2/L40. Ample GPU memory; high utilization."
+  },
+  "progress_1333_EDT": {
+    "complete": 158,
+    "running": 16,
+    "pending": 46,
+    "failed": 0
+  },
+  "broad_candidate": "A+B+A_width192_half_lr+A_width256_half_lr+B5_confirmed_candidate_2: admissions0.770806 vs reference0.795345; forward0.781176 vs0.839493; log0.802031 vs0.802590. Removing each new addition worsens aggregate admissions. Removing original A improves aggregate native/log slightly; retain for comparison, not a frozen selection.",
+  "first_specialists": "A/B admissions-only models using admissions history alone do not help aggregate A+B admissions. Arms adding ED inputs still pending.",
+  "previous_search_deadline": "2026-10-07T16:46:43-04:00",
+  "search_deadline_reason": "User clarified: no need to freeze, just plan for 5pm. 17:00 is an expected finish target, not a mandatory cutoff. Preserve production and22:30 file target.",
+  "core_completion": "All 220 two-fold runs complete, no failures, checked near 14:00 EDT. Original arrays may still be exiting; never resume superseded arrays.",
+  "extension": {
+    "experiment": "b6-extension-20261007",
+    "design": "docs/experiments/b6-extension-20261007/design.json",
+    "configurations": 38,
+    "runs": 190,
+    "seeds": [
+      44,
+      45,
+      46,
+      47,
+      48
+    ],
+    "validation_job": 4146093,
+    "validation_experiment": "b6-extension-check-20261007",
+    "validation_status": "All six short GPU validation runs completed successfully.",
+    "jobs": [
+      4145165,
+      4145166
+    ],
+    "launch_status": "All190runs complete; arrays exited. Embedded17:00timeout no longer relevant.",
+    "plan": ".venv/bin/python scripts/plan_b6_extension.py --plan",
+    "launch_h100": "LANES=4 GPUS=6 sbatch --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --dependency=afterok:4146093 --kill-on-invalid-dep=yes scripts/b6_extension.sbatch b6-extension-20261007",
+    "launch_l40": "LANES=2 GPUS=6 sbatch --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --dependency=afterok:4146093 --kill-on-invalid-dep=yes scripts/b6_extension.sbatch b6-extension-20261007",
+    "status": ".venv/bin/python -m tapestry.experiment.planner status -e b6-extension-20261007",
+    "rank": ".venv/bin/python -m tapestry.experiment.planner rank -e b6-extension-20261007 --allow-incomplete --no-plots",
+    "notes": "16 wide-source configs (80 runs), 6 nested two-season configs (30), 16 paired ED-error/correction configs (80). Distinguish A training+evaluation correction from B evaluation correction. B ED paired controls both switch to real-tree admissions correction; comparison to original B is not pure ED change. Fit labels remain finalized.",
+    "superseded_validation_job": 4144886,
+    "validation_launch": "LANES=4 GPUS=1 sbatch --job-name=b6-extension-check-gpu --nodelist=g1803jles02 --cpus-per-task=4 --mem=80G --time=00:30:00 --dependency=afterany:4144886 scripts/jlessler.sbatch b6-extension-check-20261007",
+    "legacy_timeout": "Already-running arrays4145165/4145166 retain their embedded17:00 timeout; changing script does not alter running processes. If unfinished near target, handle legacy timeout and resume needed tasks under updated launcher; do not treat as scientific freeze. No new training launched by this clarification."
+  },
+  "reporting_regime": "docs/experiments/b6-reporting-regime-20261007/index.md; newest Hub release 2026-10-07T16:14:28Z covers Oct3; earlier-pulled Delphi snapshot ends Sep30. Six current-season US weeks with four-week follow-up show median ED later/first ratio1.0263, admissions1.0836. Later reports are not asserted final; no blanket multiplier.",
+  "extension_ensemble_command": "scripts/ensemble_b6_candidates.py --additional-experiment b6-extension-20261007 merges completed extension recipes with core anchors; not yet launched for extension.",
+  "production_planner": "scripts/plan_b6_production.py prepared and synced. Requires explicit selected recipe labels; forces all four completed seasons and production evaluation, defaults ten seeds42\u201351, refuses overwriting a different design. Help/import check passed. No production fits launched yet.",
+  "resource_check_1418_EDT": {
+    "sample_H100_used_MiB": 28574,
+    "sample_L40_used_MiB": 28696,
+    "utilization_percent": 100,
+    "note": "One allocated GPU per host sampled; retain four workers/H100 and two/L40."
+  },
+  "core_report": "docs/experiments/b6-core-complete-1400/index.md; all44 recipes evaluated, plus raw ED WIS both seasons and coverage tables, graph generated without inspection.",
+  "actual_report_B_decision": "Not promoted yet: A+actual-report B native admissions0.785649 vs A+B0.793018, but log0.816992 vs0.802390 and 2025\u201326 ED relativeWIS0.864966 vs0.837567. All five seeds, finalized labels, same three-season folds.",
+  "search_target": "2026-10-07T17:00:00-04:00",
+  "progress_1430_EDT": {
+    "extension_complete": 43,
+    "extension_total": 190,
+    "note": "First scoring plan includes three complete extension five-seed blocks; further blocks may enter at job startup. Operational outpatient claims pull still active with about33%CPU,72MBRSS after79minutes."
+  },
+  "broad_eight_report": "docs/experiments/b6-broad-eight-1420/index.md; admissions0.760815 averaged vs0.757421 mixture; reference0.793018 averaged. Removing original A improves native/log/recentED aggregate. Joint further removals not yet evaluated.",
+  "progress_1445_EDT": {
+    "extension_complete": 85,
+    "total": 190,
+    "first_extension_report": "docs/experiments/b6-extension-score-1430/index.md",
+    "finding": "B ED specialist paired evaluation correction modestly improves2025\u201326 but worsens retrospective2024\u201325 alone; neither specialist addition beats A+B ED. Actual-report corrected B has native/log gain but ED loss and unmatched pair incomplete in first scoring inventory."
+  },
+  "progress_1500_EDT": {
+    "extension_complete": 123,
+    "total": 190,
+    "report": "docs/experiments/b6-extension-score-1445/index.md",
+    "finding": "Corrected synthetic-history jointB replacement improves aggregate native/log and recentED, native both seasons, but recentlog worsens0.839304\u21920.859024. Matching ED-errors-only arm pending scoring. Actual-report paired correction small improvement, ED still worse than reference.",
+    "refresh": "Claims outpatient still actively pulling, CPU50%,~47MBRSS at last check, elapsed1h49. Remaining sources and operational build still pending."
+  },
+  "progress_1515_EDT": {
+    "extension_complete": 156,
+    "total": 190,
+    "report": "docs/experiments/b6-extension-score-1500/index.md",
+    "finding": "Nested two versus three seasons strongly favors retaining2022\u201323 for B, including forward season. Does not prove four-season benefit. Revised B matched pair shows small evaluation ED correction gain, most overall gain already present with ED augmentation+real admission tree."
+  },
+  "progress_1530_EDT": {
+    "extension_complete": 190,
+    "total": 190,
+    "complete_five_seed_recipes_total": 82,
+    "report": "docs/experiments/b6-extension-score-1515/index.md",
+    "finding": "All extension fits complete ahead of planning target. Wide-source arms mostly worse; width256 B+FluSurv small admissions and ED gain/log tradeoff worth joint check. A192 training+evaluation ED correction worsens paired metrics. All scored two-v-three season arms favor three.",
+    "production_reuse_audit": "Found five scenario-matching four-season production checkpoints each for A and B, metadata dataset hash b3cb41a0a1a06541221128b9f9e6b21f1456f7836b89f9b5b364d25233de6287. VERIFIED A=91f17ac66760, B=69f21e6aec42; do not rely on earlier reversed informal mapping. Need check frozen dataset/code compatibility before reuse."
+  },
+  "production_primary": {
+    "experiment": "b6-production-primary-20261007",
+    "jobs": [
+      4165848,
+      4165849
+    ],
+    "recipes": [
+      "A",
+      "B"
+    ],
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51
+    ],
+    "plan": ".venv/bin/python scripts/plan_b6_production.py --recipes A B --experiment b6-production-primary-20261007 --plan",
+    "launch_h100": "LANES=4 GPUS=6 sbatch --job-name=b6-production-primary --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --time=02:30:00 scripts/jlessler.sbatch b6-production-primary-20261007",
+    "launch_l40": "LANES=2 GPUS=6 sbatch --job-name=b6-production-primary --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --time=02:30:00 scripts/jlessler.sbatch b6-production-primary-20261007",
+    "status": ".venv/bin/python -m tapestry.experiment.planner status -e b6-production-primary-20261007",
+    "rank": ".venv/bin/python -m tapestry.experiment.planner rank -e b6-production-primary-20261007 --allow-incomplete --no-plots",
+    "note": "20fresh fits on all4completed seasons; finalized future/reconstruction labels. Conservative System1. No checkpoint reused without full compatibility. Production rank is diagnostic, not validation.",
+    "completion": "All20 fits complete, checked16:00 EDT. Operational replay still pending refreshed panel."
+  },
+  "complete_research_report": "docs/experiments/b6-extension-complete-1530/index.md",
+  "broad_twelve_finding": "12recipe mixture native0.758866 log0.793924 recentED0.797959; removaloriginalA improvesall3; correctedA256 native/logcost forEDbenefit; FluSurv loggain/nativecost. Testing assemblednine, not inferring jointremoval benefit.",
+  "production_system2": {
+    "experiment": "b6-production-system2-20261007",
+    "jobs": [
+      4169146,
+      4169147
+    ],
+    "recipes": [
+      "A_blocks3",
+      "X_B_ED_corrected",
+      "A_width192_half_lr",
+      "A_width256_half_lr",
+      "B5_confirmed_candidate_2",
+      "B_blocks3",
+      "B5_confirmed_candidate_1",
+      "X_A_ED_errors_only",
+      "X_B_width256_half_lr_flusurv"
+    ],
+    "seeds": [
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51
+    ],
+    "plan": ".venv/bin/python scripts/plan_b6_production.py --experiment b6-production-system2-20261007 --recipes A_blocks3 X_B_ED_corrected A_width192_half_lr A_width256_half_lr B5_confirmed_candidate_2 B_blocks3 B5_confirmed_candidate_1 X_A_ED_errors_only X_B_width256_half_lr_flusurv --plan",
+    "launch_h100": "LANES=4 GPUS=6 sbatch --job-name=b6-production-system2 --array=0-1 --nodelist=g1803jles02 --cpus-per-task=4 --mem=160G --time=03:00:00 scripts/jlessler.sbatch b6-production-system2-20261007",
+    "launch_l40": "LANES=2 GPUS=6 sbatch --job-name=b6-production-system2 --array=0-3 --nodelist=g1803jles01 --cpus-per-task=2 --mem=100G --time=03:00:00 scripts/jlessler.sbatch b6-production-system2-20261007",
+    "status": ".venv/bin/python -m tapestry.experiment.planner status -e b6-production-system2-20261007",
+    "rank": ".venv/bin/python -m tapestry.experiment.planner rank -e b6-production-system2-20261007 --allow-incomplete --no-plots",
+    "aggregation": "mixture",
+    "report": "docs/experiments/b6-system2-nine-1605/index.md",
+    "note": "90fresh four-season fits, finalized labels. Jointly evaluated nine-recipe selection. Native/log gains in both folds vs originalA+B; retrospective older fold caveat.",
+    "progress_1630": "48 of90complete,42unfinished at16:30; all6GPUallocationsrunning.",
+    "completion": "All90productionfitscomplete,checked16:45EDT;110totalacrosssystems."
+  },
+  "selected_systems": {
+    "system1": "OriginalA+B ten seeds each, quantile averaging, primary. Production20fitscomplete.",
+    "system2": "Nine recipes production90fits submitted, marginal mixture. Keep allnine as jointly evaluated; no untested removals.",
+    "names": "Asked user asynchronously16:15; not yet answered. README still saysnamesundecided.",
+    "remaining": "Finalnames only forsubmissionpackage; unusedacquisitioncleanup. No publishing."
+  },
+  "horizon_scoring": {
+    "job": 4170931,
+    "plan": ".venv/bin/python scripts/score_b6_horizons.py --plan",
+    "launch": "sbatch scripts/b6_horizons.sbatch",
+    "status": "squeue -j4170931",
+    "rank": ".venv/bin/python scripts/score_b6_horizons.py --rank",
+    "out": "data/experiments/b6-selected-horizons",
+    "note": "Sharedstandard.raw_wis gains optionalhorizonfilter; supporthash equality checked acrosssystems. Raw native/logadmissions andED WIS, same windowsasstandard rawWIS. Pinned productioncode unchanged.",
+    "completion": "Completed; docs/experiments/b6-selected-horizons/index.md. Nativeadmissions/ED improveeveryhorizonbothseasons, recentlognear-tie. Graphgenerated."
+  },
+  "operational_replay_prepared": {
+    "script": "scripts/replay_b6.py",
+    "launcher": "scripts/b6_replay.sbatch",
+    "plan": "PYTHONPATH=src .venv/bin/python scripts/replay_b6.py --plan",
+    "launch": "sbatch scripts/b6_replay.sbatch",
+    "status": "PYTHONPATH=src .venv/bin/python scripts/replay_b6.py --status",
+    "note": "110tasksplanned;GPUreplayjob4184437submitted. FourworkersoneH10064GB. Panelcopiedremote, guardpassedoneA. Statusbyoperationalmanifest count. No training oraccuracyrank forunobservedfuture.",
+    "job": 4184437,
+    "smoke": "CPU Aseed42 replay completed successfully withmanifest; data/experiments/b6-operational-smoke-20261007. Command recorded inplan.",
+    "completion": "All110operationalreplayscomplete; copiedforecasts/manifests/tasks locally."
+  },
+  "forecast_files": {
+    "directory": "output/b6/submission-20261007",
+    "system1": "output/b6/submission-20261007/2026-10-10-ACCIDDA-System1.csv",
+    "system2": "output/b6/submission-20261007/2026-10-10-ACCIDDA-System2.csv",
+    "status": "Generated,9,568rowseach,localPythonvalidationpassed. Namesprovisional. Notpublished.",
+    "validation": "output/b6/submission-20261007/validation.json",
+    "readme": "output/b6/submission-20261007/README.md",
+    "adjustment": "OneSystem2HawaiiED99thpercentilehorizon3cappedfrom~.252157toHubmax.25; exactoriginalinprovenanceJSON. Nootherquantilechanges.",
+    "remaining": "Final model names pending user input. Forecasts and metadata drafts ready, not published. Official R hubValidations not installed; local checks documented. Acquisition cleanup complete; unused outpatient refresh did not commit a new snapshot.",
+    "metadata": [
+      "output/b6/submission-20261007/ACCIDDA-System1.yml",
+      "output/b6/submission-20261007/ACCIDDA-System2.yml"
+    ],
+    "metadata_validation": "Both passed Hub Draft202012JSONschema withformatchecks via isolateduv environment; projectdependenciesunchanged.",
+    "national_graph": "output/b6/submission-20261007/national-forecasts.png"
+  }
+}

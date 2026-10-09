@@ -83,7 +83,7 @@ All candidates share identical available forecast labels. Tables use equal locat
 
 
 
-[Recent diagnostics](recent-summary.csv) · [Location diagnostics and denominator flags](recent-by-location.csv)
+[Recent diagnostics](recent-summary.csv) · Location diagnostics and denominator flags (`recent-by-location.csv`, removed 9 October 2026: over 1 MB)
 
 
 Archive dates are accepted availability proxies, with assumed interior completeness; strict provider-publication availability is not independently certified. Finalized values are 28-day-mature cutoff proxies. Four-day NSSP visible correction training begins only June 18, 2025. Older-history fitting uses cutoff-final proxies; deployment uses Wednesday reports. The separate pipeline additionally learns forecasting on exact cutoff-final recent inputs and deploys on estimates; sampling propagates uncertainty but does not eliminate that mismatch. No calibration, artificial masking or test-driven epoch selection was used.
@@ -129,7 +129,7 @@ Missing reports have no report baseline or revision ratio (`nan` in the table me
 
 
 
-[Recent scaled diagnostics](recent-scientific-summary.csv) · [Predeclared ratio flags and location diagnostics](recent-by-location.csv)
+[Recent scaled diagnostics](recent-scientific-summary.csv) · Predeclared ratio flags and location diagnostics (`recent-by-location.csv`, removed 9 October 2026: over 1 MB)
 
 ### What the B1 comparison means
 

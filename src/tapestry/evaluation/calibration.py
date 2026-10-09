@@ -9,7 +9,7 @@ location-relative Hub score. States/DC share 80% of the weight equally and the U
 Center shifts are not fitted."""
 import numpy as np
 from .quantiles import LEVELS
-from .totals import quantile_scores
+from .standard import quantile_scores
 
 GRID = np.exp(np.linspace(np.log(.5), np.log(4), 61))
 FLU_CHANNELS = (0, 3)

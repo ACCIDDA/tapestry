@@ -23,8 +23,8 @@ labels are acceptable only after an unambiguous definition beside the comparison
 do not rely on the reader remembering a run's meaning from earlier conversation.
 
 Do not spend tokens inspecting images or browsing/viewing websites just to check results, except if ask. The user checks. Provide him with the graphs.
-Do not take shortcut or hidden assumptions.  State every material assumption explicitly in your response and add them to the documentation.
-Do not keep stuff around for fear of failure. A rewrote module -> the old one is discarded. even if that creates some problems, everything (calibrations, runs) will anyway be fully rerun with the latest version of the code. In writing and code, do keep track of the history behind a decision. Just describe the things. If something is important add it to the documentation's log.
+State every material assumption explicitly in your response. Add to the documentation only when the user requests it.
+Do not keep stuff around for fear of failure. A rewrote module -> the old one is discarded. even if that creates some problems, everything (calibrations, runs) will anyway be fully rerun with the latest version of the code. In writing and code, do keep track of the history behind a decision. Just describe the things.
 
 When running on longleaf, we have two choices:
 - regular GPUs partitions (you have one example)
@@ -50,6 +50,13 @@ One planner and one scorer serve every scenario; `status` prints the exact
 resubmission command for unfinished tasks. ntfy notifications are on by default:
 `scripts/jlessler.sbatch` queues its own `afterany` summary job, so a timeout or
 cancellation still reports. `NTFY=0` disables it, `NTFY_URL` retargets the topic.
+
+## Reports and docs size
+
+Reports in `docs/` hold the page, its figures and summary tables of at most 1 MB each.
+Never copy raw score dumps (per seed, per location, per input view) into `docs/`; they stay
+in the run caches on Longleaf and `planner rank` regenerates the summaries. Add each new
+report to the hand-curated `docs/experiments/index.md` with one line.
 
 ## Testing scope
 

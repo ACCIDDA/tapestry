@@ -2,19 +2,25 @@
 
 The predictor sees reported histories, their masks, annual phase, and optional
 reported covariates. Finalized histories are labels, never predictors. Tree
-capacity is deliberately small; entire trajectory seasons are cross-fitted by
-the weekend orchestrator before this nowcaster supplies forecaster inputs.
+capacity is deliberately small; `experiment/fit.py` cross-fits origin blocks before
+this nowcaster supplies forecaster inputs.
+
+Saved correctors (`nowcaster.pkl`) are pickles of `TrajectoryNowcaster`: keep this
+module path and class name. Its former base class, the linear `RevisionRegression`
+of the deleted B2 route, was folded in on 2026-10-08 (only `__init__` was inherited).
 """
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from tapestry.dataset.cv import season
 from tapestry.dataset.episodes import calendar
-from tapestry.model.revision_regression import RevisionRegression
 
-class TrajectoryNowcaster(RevisionRegression):
+class TrajectoryNowcaster:
+    def __init__(self, weeks=4, penalty=10., strength=1., features='phase'):
+        self.weeks, self.penalty, self.strength, self.features = weeks, penalty, strength, features
+
     def design(self,e,channel):
         values=e['values'].astype(float); valid=e['available'].copy()
-        channels={'all':range(6),'flu':[0,3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[getattr(self,'pathogen_inputs','all')]
+        channels={'all':range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[getattr(self,'pathogen_inputs','all')]
         valid[:,[c for c in range(6) if c not in channels]]=False
         values=np.where(valid,values,0)
         units=np.array([1.,1.,1.,.0001,.0001,.0001])[:,None]
@@ -43,7 +49,7 @@ class TrajectoryNowcaster(RevisionRegression):
         return np.stack(rows),floor[channel]
 
     def fit(self,examples, pretraining=None, neural=False, seed=42):
-        self.models=[];self.training_cells=[];self.neural=neural;self.pretrained=bool(pretraining)
+        self.models=[];self.training_cells=[];self.training_cells_by_age=[];self.neural=neural;self.pretrained=bool(pretraining)
         self.training_seasons=sorted({season(t['context_dates'][-1]) for _,t in examples})
         def arrays(examples,k):
             xs=[];ys=[]
@@ -56,6 +62,7 @@ class TrajectoryNowcaster(RevisionRegression):
             return np.concatenate(xs),np.concatenate(ys)
         for k in getattr(self,'channels',[0,1,2]):
             x,y=arrays(examples,k);self.training_cells.append(len(y))
+            self.training_cells_by_age.append([int((x[:,0]==age).sum()) for age in range(self.weeks)])
             if len(y)<30:
                 raise ValueError(f'Only {len(y)} real/synthetic admission pairs for channel {k}')
             if neural:
@@ -156,6 +163,7 @@ class TrajectoryNowcaster(RevisionRegression):
         return dict(model=('32-wide residual MLP;200 fine-tuning updates' if self.neural else 'Histogram gradient boosting;100trees;7leaves;minleaf100'),pretrained=self.pretrained,weeks=self.weeks,
             penalty=self.penalty,strength=self.strength,features=self.features,channels=getattr(self,'channels',[0,1,2]),pathogen_inputs=getattr(self,'pathogen_inputs','all'),training_seasons=self.training_seasons,
             observed_donor_pairs_only=getattr(self,'observed_donor_pairs_only',False),training_cells=getattr(self,'training_cells',None),
+            training_cells_by_age=getattr(self,'training_cells_by_age',None),
             features_description='Reported eight-week own trajectory, six-channel multiscale levels, availability, annual phase, location indicators, optional reported covariates; no final predictors')
 
 

@@ -15,6 +15,8 @@ def test_export_maps_leads_and_channel_order(tmp_path):
         np.savez(folder / 'forecasts.npz', quantile_levels=LEVELS, quantiles=q,
                  context_end=[context.isoformat()], target_dates=[targets], locations=['NC'],
                  truth=np.zeros((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), dtype=bool))
+    import json
+    (tmp_path / 'manifest.json').write_text(json.dumps(dict(scenario='', folds=list(SEASONS))))
     frame = export(tmp_path)[('2023-2024', 'wk inc flu prop ed visits')]
     assert frame.reference_date.unique().tolist() == ['2023-10-14']
     assert frame.horizon.tolist() == [0, 1, 2, 3]

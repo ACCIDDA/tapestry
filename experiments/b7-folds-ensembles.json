@@ -1,0 +1,53 @@
+{
+  "description": "Saved-forecast mixtures of the B7-fast recipes (no refitting), as scored on 7 October; prescribed artificial evaluation histories, corrected view and its two extra draws.",
+  "recipes": {
+    "A_blocks3": {
+      "experiment": "b7-folds-20261007",
+      "scenario": "history_source=artificial,history_correction=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_normalization=b0,log_loss_weight=0.5,error_reference=2025-2026,evaluation_inputs=prescribed,evaluation_draws=3",
+      "seeds": [
+        44,
+        45
+      ]
+    },
+    "B5_confirmed_candidate_1": {
+      "experiment": "b7-folds-20261007",
+      "scenario": "history_source=artificial,history_correction=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,ili_units=flu_scaled,ili_steps=1200,correction_weeks=2,correction_ed=1,ili_training=pretrain,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,lookback=10,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,covariate_set=kinsa,input_normalization=b0,correction_realizations=2,uncorrected_share=0.1,log_loss_weight=0.5,error_reference=2025-2026,evaluation_inputs=prescribed,evaluation_draws=3",
+      "seeds": [
+        44,
+        45
+      ]
+    },
+    "B_width256": {
+      "experiment": "b7-folds-20261007",
+      "scenario": "history_source=artificial,reconstruction_labels=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reconstruction_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,log_loss_weight=0.5,error_reference=2025-2026,evaluation_inputs=prescribed,evaluation_draws=3",
+      "seeds": [
+        44,
+        45
+      ]
+    }
+  },
+  "groups": {
+    "A_blocks3 + B5 + B_width256": [
+      "A_blocks3",
+      "B5_confirmed_candidate_1",
+      "B_width256"
+    ],
+    "A_blocks3 + B_width256": [
+      "A_blocks3",
+      "B_width256"
+    ],
+    "B_width256": [
+      "B_width256"
+    ]
+  },
+  "rules": [
+    "mixture",
+    "vincent"
+  ],
+  "views": [
+    "corrected",
+    "draw1_corrected",
+    "draw2_corrected"
+  ],
+  "forecast_view": "corrected"
+}

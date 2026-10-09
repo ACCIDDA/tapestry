@@ -1,6 +1,6 @@
-site_name: Tapestry
-site_url: https://accidda.github.io/tapestry/
-repo_url: https://github.com/ACCIDDA/tapestry
+site_name: Chromantis
+site_url: https://accidda.github.io/chromantis/
+repo_url: https://github.com/ACCIDDA/chromantis
 site_description: Probabilistic epidemic nowcasting and forecasting
 docs_dir: docs
 
@@ -56,6 +56,8 @@ nav:
   - Workflow:
       - Workflow: workflow.md
       - Setup: setup.md
+      - Reusable research workflow: reusable-research-workflow.md
+  - Submissions: submissions.md
   - Experiments:
       - Model runs: experiments/index.md
   - Data:
@@ -69,6 +71,7 @@ nav:
       - Explorer filters: explorer/filters.md
   - Reference:
       - Commands: reference/cli.md
+      - Model choices A–F: reference/model-choices.md
       - Scenario fields: reference/scenario.md
       - Python API: reference/python-api.md
       - Other models: reference/other-models.md

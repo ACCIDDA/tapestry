@@ -2,6 +2,24 @@
 
 The user explicitly requested this additional comparison after the overnight refinement cutoff. It is a new authorized experiment, not another autonomous overnight refinement. The feature encoder is held fixed (existing MLP); “four encoders” is interpreted as the four requested output-distribution variants. There was no exact configuration previously tested with both sampled and direct-quantile heads, so the native-score and log-admissions leaders are both anchors. Eight configurations × seeds 42/43 = 16 runs. Every variant is independently retrained; this is not an input replay.
 
+<!-- model-choices:start -->
+## Model choices
+
+What this report's models were trained on, how errors and corrections were made, what they learned to predict, which seasons they were trained and evaluated on, and what they were scored on, for every configuration (generated 9 October 2026 from the saved scenario strings).
+
+Each heading links to its explanation in [Model choices A–F](../../reference/model-choices.md). One column per group of configurations with identical choices.
+
+| Choice | #1, #2, #3, #4 | #5, #6, #7, #8 |
+|---|---|---|
+| [Training histories (A)](../../reference/model-choices.md#a-training-histories) | final values with artificial reporting errors; corrected by the cross-fitted correction model | final values with artificial reporting errors; plus reconstruction labels |
+| [Error source (B)](../../reference/model-choices.md#b-error-source) | each fold's latest training season | each fold's latest training season |
+| [Error signals (C)](../../reference/model-choices.md#c-error-signals) | admissions | admissions |
+| [Correction model (D)](../../reference/model-choices.md#d-correction-model) | tree on real examples; newest 2 week(s) of admissions | tree on synthetic examples; newest 2 week(s) of admissions |
+| [Evaluation inputs (E)](../../reference/model-choices.md#e-evaluation-inputs) | real archived Wednesday reports | real archived Wednesday reports |
+| [Forecast view (F)](../../reference/model-choices.md#f-input-view) | raw, half, corrected (and calibrated with early stopping) scored; forecast_view was not yet a recipe field (added 9 October 2026): see this page for the view each comparison used | raw, half, corrected (and calibrated with early stopping) scored; forecast_view was not yet a recipe field (added 9 October 2026): see this page for the view each comparison used |
+| [Prediction labels](../../reference/model-choices.md#labels-and-folds) | latest panel values, next 4 weeks | latest panel values, next 4 weeks + last 4 context weeks |
+| [Evaluated season ← training seasons](../../reference/model-choices.md#labels-and-folds) | 2024-25 ← 2022-23, 2023-24, 2025-26; 2025-26 ← 2022-23, 2023-24, 2024-25 | 2024-25 ← 2022-23, 2023-24, 2025-26; 2025-26 ← 2022-23, 2023-24, 2024-25 |
+<!-- model-choices:end -->
 ## Models and objective
 
 1. Existing sampled output head, marginal fair CRPS training.

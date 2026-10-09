@@ -30,7 +30,9 @@ def export(run):
     frames = {}
     manifest = json.loads((Path(run) / 'manifest.json').read_text())
     from tapestry.model.scenario import Scenario
-    flu_only=Scenario.from_string(manifest['scenario']).forecast_targets=='flu'
+    scenario=Scenario.from_string(manifest['scenario'])
+    flu_only=scenario.forecast_targets=='flu'
+    from tapestry.model.objective import LOSS_WEIGHTS
     for held in manifest['folds']:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
             if not np.array_equal(data['quantile_levels'], LEVELS):  # training.evaluate saves exactly LEVELS
@@ -38,6 +40,7 @@ def export(run):
             selected = data['quantiles']
             for target, c in CHANNEL.items():
                 if flu_only and c not in (0,3):continue
+                if flu_only and not LOSS_WEIGHTS[scenario.loss_weights][c]:continue
                 q = selected[:, :, :, c, :]
                 n, h, l = q.shape[1:]
                 reference = [(date.fromisoformat(d) + timedelta(weeks=1)).isoformat() for d in data['context_end']]

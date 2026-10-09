@@ -1,4 +1,4 @@
-"""A small synthetic panel in the `dataset.build` layout, shared by dataset and planner tests."""
+"""A small synthetic panel in the `dataset.build` layout, shared by scientific data checks."""
 from datetime import date, timedelta
 import json
 

@@ -22,7 +22,7 @@ specifications, signals, natural keys, and source URLs.
 | `delphi_nssp` | CMU Delphi | `delphi_v5` | `weekly` | yes | state, nation, hhs, county, hsa, hrr, msa, census region/division |
 | `delphi_nwss` | CMU Delphi | `delphi_v5` | `sample` | yes | sewershed |
 | `delphi_nwss_aux` | CMU Delphi | `delphi_v5_aux` | `sample` | yes | sewershed |
-| `derived_nwss_state_indices` | Tapestry, derived from CMU Delphi NWSS | `derived` | `weekly` | yes | state, nation |
+| `derived_nwss_state_indices` | Chromantis, derived from CMU Delphi NWSS | `derived` | `weekly` | yes | state, nation |
 | `hub_covid_current` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |
 | `hub_covid_legacy` | Hubverse community | `hubverse` | `weekly` | yes | county, state, nation |
 | `hub_flusight_current` | Hubverse community | `hubverse` | `weekly` | yes | state, nation |

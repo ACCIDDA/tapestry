@@ -1,5 +1,4 @@
 """Scientific checks for the assumed publication lags and fold isolation."""
-from dataclasses import replace
 import numpy as np
 from tapestry.dataset.episodes import episodes
 from tapestry.dataset.cv import fold, season, week_roles
@@ -8,22 +7,30 @@ from tapestry.model.scenario import Scenario
 
 
 def test_schedule_uses_final_values_at_correct_observation_dates(panel):
+    from tapestry.dataset.episodes import select_covariates
     names = covariate_names_for('inpatient+outpatient+kinsa+ilinet+clinical_lab+flusurv')
-    final = episodes(panel, 12, 'finalized', names)
-    scheduled = episodes(panel, 12, 'scheduled_final', names)
-    by_date = {e['context_dates'][-1]: e for e in final}
-    for e in scheduled:
-        baseline = by_date[e['context_dates'][-1]]
-        np.testing.assert_array_equal(e['available'], baseline['available'])
-        np.testing.assert_array_equal(e['values'], baseline['values'])
+    dates = list(panel['dates'].astype(str))
+    locations = list(panel['locations'].astype(str))
+    values, available = select_covariates(panel['covariates'], panel['covariates_national'], panel['covariate_names'],
+                                          panel['covariate_national_names'], locations, names)
+    checked = 0
+    for e in episodes(panel, 12, 'scheduled_final', names):
         np.testing.assert_array_equal(e['known_final'], e['available'])
-        np.testing.assert_array_equal(e['Y'], baseline['Y'])
-        for k, name in enumerate(names):
-            if name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'):
-                assert not e['covariates'][-1, k].any()
-                np.testing.assert_array_equal(e['covariates'][:-1, k], baseline['covariates'][:-1, k])
-            else:
-                np.testing.assert_array_equal(e['covariates'][:, k], baseline['covariates'][:, k])
+        for i, day in enumerate(e['context_dates']):
+            if day not in dates:
+                assert not e['available'][i].any()
+                continue
+            t = dates.index(day)
+            truth = np.moveaxis(panel['targets'][t], -1, -2)
+            np.testing.assert_array_equal(e['available'][i], ~np.isnan(truth))  # all six targets through T-0
+            np.testing.assert_array_equal(e['values'][i], np.nan_to_num(truth))
+            for k, name in enumerate(names):
+                lagged = name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate') and i == len(e['context_dates']) - 1
+                expected = available[t, k] & ~lagged
+                np.testing.assert_array_equal(e['covariates'][i, k, 1].astype(bool), expected)
+                np.testing.assert_array_equal(e['covariates'][i, k, 0], np.where(expected, values[t, k], 0))
+        checked += 1
+    assert checked > 100
 
 
 def test_two_fold_schedule_excludes_heldout_values_from_fit(panel):
@@ -31,7 +38,7 @@ def test_two_fold_schedule_excludes_heldout_values_from_fit(panel):
     panel = synthetic_panel(n_weeks=4 * 52 + 10)
     panel['dates'] = panel['dates'] - np.timedelta64(364, 'D')
     panel['issuance_dates'] = panel['issuance_dates'] - np.timedelta64(364, 'D')
-    s = Scenario(input_mode='scheduled_final', evaluation_seasons='recent_two', patience=2, epochs=4,
+    s = Scenario(evaluation_seasons='recent_two', patience=2, epochs=4,
                  covariate_set='kinsa+ilinet')
     assert s.scored_seasons == ('2025-2026', '2024-2025')
     for held in s.scored_seasons:
@@ -69,7 +76,7 @@ def test_multiscale_slopes_curvature_and_masked_values():
 def test_reported_inputs_use_reports_and_star_only_unarchived_cells(panel):
     """Standard evaluation inputs: reports where archived, finalized only where nothing was, labels final."""
     names = covariate_names_for('inpatient+kinsa+ilinet')
-    final = {e['context_dates'][-1]: e for e in episodes(panel, 12, 'finalized', names)}
+    final = {e['context_dates'][-1]: e for e in episodes(panel, 12, 'scheduled_final', names)}
     dates = list(panel['dates'].astype(str))
     reported = episodes(panel, 12, 'reported', names)
     assert reported and any(e['filled'].any() for e in reported)
@@ -121,15 +128,3 @@ def test_instant_cutoffs_treat_date_labels_as_whole_days():
     assert list(labels <= cutoff_time(deadline)) == [True, False, True]
     assert last_report_day(deadline) == '2025-12-24'
     assert cutoff_time('2025-12-24') == np.datetime64('2025-12-24T23:59:59.999999', 'ns')
-
-
-def test_reported_evaluation_keeps_the_trained_meaning_of_the_final_flag(panel):
-    """Vintage-trained models saw non-final flags on their newest as-of weeks; evaluation must too."""
-    from tapestry.dataset.cv import score_episodes
-    vintaged = Scenario(input_mode='vintaged', supplied_final=True, asof_weeks=2)
-    for e in score_episodes(panel, vintaged, '2024-2025', 'covid'):
-        assert not e['known_final'][-2:].any()
-        np.testing.assert_array_equal(e['known_final'][:-2], e['available'][:-2])
-    scheduled = Scenario(input_mode='scheduled_final', supplied_final=True)
-    for e in score_episodes(panel, scheduled, '2024-2025', 'covid'):
-        np.testing.assert_array_equal(e['known_final'], e['available'])

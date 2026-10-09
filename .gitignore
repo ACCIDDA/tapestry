@@ -46,3 +46,7 @@ site/
 docs/experiments/**/distribution-scores.csv
 docs/experiments/**/pilot-raw-wis.csv
 docs/experiments/b4-flu-600-20261005/provisional-analysis/
+
+# Production hub clones (upstream read-only + personal fork for submission PRs)
+/production/hubs/
+/production/output/

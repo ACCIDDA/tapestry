@@ -7,18 +7,18 @@ import pytest
 torch = pytest.importorskip('torch')
 
 from conftest import LOCATIONS, code, synthetic_panel
-from tapestry.dataset.build import COVARIATE_GROUPS, SOURCE_GROUPS, covariate_names_for, decode, encode
+from tapestry.dataset.build import STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, decode, encode
 from tapestry.dataset.cv import SEASONS, fold, season, week_roles
-from tapestry.dataset.episodes import episodes
+from tapestry.dataset.episodes import episodes, select_covariates
 from tapestry.experiment.training import model_options, unique_truth
 from tapestry.model.objective import loss_cell_weights, loss_scales
 from tapestry.model.scenario import Scenario
 
+# Training inputs follow `history_source`: finalized scheduled histories, or actual Wednesday reports.
 SCENARIOS = [Scenario(lookback=6, epochs=3, patience=1),
-             Scenario(lookback=6, epochs=3, patience=1, input_mode='finalized_available',
-                      covariate_set='inpatient+kinsa'),
-             Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', covariate_set='inpatient+kinsa'),
-             Scenario(lookback=6, epochs=3, patience=1, input_mode='vintaged', asof_weeks=6, covariate_set='inpatient',
+             Scenario(lookback=6, epochs=3, patience=1, covariate_set='inpatient+kinsa'),
+             Scenario(lookback=6, epochs=3, patience=1, history_source='reported', covariate_set='inpatient+kinsa'),
+             Scenario(lookback=6, epochs=3, patience=1, history_source='reported', covariate_set='inpatient',
                       validation_weeks=2, validation_spacing=10, validation_offset=1)]
 POPULATIONS = {'NC': 1e7, 'US': 3.3e8}
 
@@ -99,7 +99,7 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
     lookback, names = 6, ('inpatient_flu', 'kinsa_ili')
     start = str(panel['dates'][0])
     nc, us = LOCATIONS.index('NC'), LOCATIONS.index('US')
-    finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'finalized', names)}
+    finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'scheduled_final', names)}
     assert min(finalized) == start  # context before the calendar is padding, not a missing origin
     vintaged = episodes(panel, lookback, 'vintaged', names, asof_weeks=R)
     unpublished = 0
@@ -148,38 +148,16 @@ def test_sparse_as_of_storage_round_trips_exactly():
         np.testing.assert_array_equal(restored[name], panel[name])
 
 
-def test_covariate_names_for_expands_groups_in_fixed_order():
-    assert covariate_names_for('') == ()
-    assert covariate_names_for('inpatient') == COVARIATE_GROUPS['inpatient']
-    # Order follows COVARIATE_GROUPS, not the order named in the string.
-    assert covariate_names_for('kinsa+inpatient') == COVARIATE_GROUPS['inpatient'] + COVARIATE_GROUPS['kinsa']
-    with pytest.raises(ValueError):
-        covariate_names_for('not_a_group')
-    names = [name for group in SOURCE_GROUPS for name in COVARIATE_GROUPS[group]]
-    assert len(names) == len(set(names))
-
-
-def test_finalized_available_uses_final_values_but_only_published_inputs(panel):
-    names = ('inpatient_flu', 'kinsa_ili')
-    panel = {k: v.copy() if isinstance(v, np.ndarray) else v for k, v in panel.items()}
-    panel['asof_covariates'][20, 18, 0, 0] = np.nan
-    panel['asof_covariates_national'][20, 18, 0] = np.nan
-    final = {e['context_dates'][-1]: e for e in episodes(panel, 6, 'finalized', names)}
-    asof = {e['issuance']: e for e in episodes(panel, 6, 'vintaged', names, asof_weeks=6)}
-    checked = 0
-    for e in episodes(panel, 6, 'finalized_available', names):
-        truth = final.get(e['context_dates'][-1])
-        if truth is None:
-            continue
-        seen = asof[e['issuance']]
-        expected = truth['available'] & seen['available']
-        np.testing.assert_array_equal(e['available'], expected)
-        np.testing.assert_array_equal(e['known_final'], expected)
-        np.testing.assert_array_equal(e['values'], np.where(expected, truth['values'], 0))
-        visible_cov = truth['covariates'][..., 1, :].astype(bool) & seen['covariates'][..., 1, :].astype(bool)
-        np.testing.assert_array_equal(e['covariates'][..., 1, :], visible_cov)
-        np.testing.assert_array_equal(e['covariates'][..., 0, :],
-                                      np.where(visible_cov, truth['covariates'][..., 0, :], 0))
-        np.testing.assert_array_equal(e['Y'], truth['Y'])
-        checked += 1
-    assert checked > 100
+def test_covariates_are_read_from_the_correct_axis():
+    panel = synthetic_panel()
+    names = list(STATE_COVARIATE_NAMES[:2]) + list(NATIONAL_COVARIATE_NAMES)
+    values, available = select_covariates(panel['covariates'], panel['covariates_national'], panel['covariate_names'],
+                                          panel['covariate_national_names'], LOCATIONS, names)
+    nc, us = LOCATIONS.index('NC'), LOCATIONS.index('US')
+    for k in range(2):
+        np.testing.assert_array_equal(values[:, k, nc], panel['covariates'][:, nc, k])
+        np.testing.assert_array_equal(values[:, k, us], panel['covariates'][:, us, k])
+    np.testing.assert_array_equal(values[:, 2, us], panel['covariates_national'][:, 0])
+    # A national source (Kinsa) is broadcast to every location with its own availability (dataset/episodes.py).
+    np.testing.assert_array_equal(values[:, 2, nc], values[:, 2, us])
+    np.testing.assert_array_equal(available[:, 2, nc], available[:, 2, us])

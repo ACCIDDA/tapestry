@@ -62,11 +62,11 @@ Use zero-preserving FIPS strings and `US`. A quantile row uses `output_type=quan
 
 Sample IDs identify connected trajectories across horizons. FluSight specifically rejects independently drawing each horizon from marginal quantiles as a substitute for trajectory samples. Seasonal peak targets leave `horizon` and `target_end_date` blank/NA; their probability support or quantile level goes in `output_type_id`.
 
-## Existing Tapestry work and implications
+## Existing Chromantis work and implications
 
 The [earlier FluSight review](flusight-2025-2026-model-review.md) and [Google comparison](../experiments/google-comparison-20261005/results.md) already identify the log-scale issue for the previous season. They do not establish a common current-season scoring protocol for all three hubs. Today's additional finding is the explicit offset of 1 in the two dashboard configurations, with both scales retained.
 
-Tapestry's [current ranking](../workflow.md) scores native-unit predictions relative to the frozen Hub **ensemble**, gives US 20% and equally weighted states/DC 80%, weights admissions 1 and ED 0.5, and averages seasons equally. This is our research objective, not a documented official three-hub ranking. There is no evidence here for a shared official six-target aggregate with those weights.
+Chromantis's [current ranking](../workflow.md) scores native-unit predictions relative to the frozen Hub **ensemble**, gives US 20% and equally weighted states/DC 80%, weights admissions 1 and ED 0.5, and averages seasons equally. This is our research objective, not a documented official three-hub ranking. There is no evidence here for a shared official six-target aggregate with those weights.
 
 For future protocol-matched scoring, keep native and log results explicitly separate; identify the target, evaluation dates, truth vintage, locations, eligible models, and comparator. An offset of 1 is now supported for reproducing the inspected dashboards, but remains unconfirmed for the CDC final FluSight report and for RSV. Rescoring saved quantiles changes evaluation only; it does not retrain a model or change its training labels. This review makes no scoring-code changes.
 

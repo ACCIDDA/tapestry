@@ -8,6 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
   link.className = "tapestry-explorer-link";
   link.href = `${base}/explorer/`;
   link.textContent = "Live explorer";
-  link.title = "Tapestry surveillance data explorer (published snapshot)";
+  link.title = "Chromantis surveillance data explorer (published snapshot)";
   header.insertBefore(link, header.querySelector(".md-search") || null);
 });

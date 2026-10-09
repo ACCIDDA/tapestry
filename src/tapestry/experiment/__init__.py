@@ -1,1 +1,1 @@
-"""Plan, run, and rank fitting experiments over the unified `Scenario` space."""
+"""Plan, fit, replay and rank experiments: one training route (`fit.py`) and one manager (`planner.py`)."""

@@ -1,14 +1,15 @@
-"""The standard evaluation report tables (user specification 2026-10-05).
+"""The scorer: WIS, Hub-relative WIS, pairwise relative WIS and raw WIS (user specification 2026-10-05).
 
 Every forecast run is scored on Wednesday-report inputs (`dataset.episodes`,
 `input_mode='reported'`), each pathogen at its own Hub's deadline, with 512 samples.
 For each run this module writes, on identical tasks:
 
 1. **Hub-relative WIS** (`hub_relative`): where a Hub ran, each location's total WIS
-   divided by the Hub ensemble's on the frozen Hub tasks (`totals.py` rule: states/DC
-   averaged equally, 80%; US 20%). On the natural scale for all targets and on the
-   log scale, log(x + 1), for admission counts only. ED proportions are never
-   transformed (user decision).
+   divided by the Hub ensemble's on the frozen Hub tasks; location ratios averaged
+   equally within states/DC and reported separately for the US (the 80% states / 20% US
+   combination was dropped on 2026-10-08, user decision). On the natural scale for all
+   targets and on the log scale, log(x + 1), for admission counts only. ED proportions
+   are never transformed (user decision).
 2. **Official-style pairwise relative WIS** (`pairwise`), following the CDC FluSight
    2025–26 evaluation: states/DC only (no US, no Puerto Rico); models qualify with
    forecasts for at least 75% of the Hub's tasks; for each pair of qualifying models,
@@ -38,8 +39,7 @@ import numpy as np
 import pandas as pd
 
 from .hubs import CHANNEL, KEY, QCOLS, export
-from .totals import (frozen_cases, match_forecasts, quantile_scores, cells_totals, season_scores,
-                     TARGETS, TARGET_WEIGHTS)
+from .quantiles import LEVELS
 
 HUB_OF = {'flu': 'flusight', 'covid': 'covid', 'rsv': 'rsv'}
 BASELINES = {'flusight': 'FluSight-baseline', 'covid': 'CovidHub-baseline', 'rsv': 'RSVHub-baseline'}
@@ -47,6 +47,85 @@ QUALIFYING_SHARE = .75
 EXCLUDED_FROM_RANKING = ('US', '72')  # national and Puerto Rico, as in the CDC evaluation
 OUR_MODEL = 'Tapestry'
 SCALES = ('natural', 'log')
+COVERAGE = (50, 80, 90, 95)
+METRICS = ['wis', 'dispersion', 'underprediction', 'overprediction', 'ae_median', *[f'covered_{c}' for c in COVERAGE]]
+
+
+def frozen_cases(frozen):
+    """Scored (season, target) cases of the frozen Hub support (tasks, truth, Hub quantiles)."""
+    frozen = Path(frozen)
+    manifest = json.loads((frozen / 'manifest.json').read_text())
+    if manifest.get('quantiles') != QCOLS:
+        raise ValueError(f'{frozen} holds quantiles {manifest.get("quantiles")}; rebuild frozen support for {QCOLS}')
+    return [case for case in manifest['cases'] if case['status'] == 'scored']
+
+
+def match_forecasts(predictions, units, target):
+    """Require one valid forecast for every frozen evaluation task."""
+    wide = units[KEY + ['observed']].merge(predictions[KEY + QCOLS], on=KEY, validate='one_to_one')
+    if len(wide) != len(units):
+        raise ValueError(f'Missing frozen tasks: {target}')
+    q = wide[QCOLS].to_numpy()
+    if wide.duplicated(KEY).any() or not np.isfinite(q).all() or (q < 0).any() or (np.diff(q, axis=1) < 0).any():
+        raise ValueError(f'Invalid forecast units/quantiles: {target}')
+    if 'prop' in target and (q > 1).any():
+        raise ValueError('ED forecasts must be proportions')
+    delta = (pd.to_datetime(wide.target_end_date) - pd.to_datetime(wide.reference_date)).dt.days
+    if not wide.horizon.isin(range(4)).all() or not delta.eq(wide.horizon * 7).all():
+        raise ValueError('Expected hub horizons 0-3 with exact weekly target dates')
+    return wide
+
+
+def quantile_scores(q, y, levels=LEVELS):
+    """Per-task WIS components for quantiles q [tasks, levels], columns in level order.
+
+    WIS = (|y - median| / 2 + sum_k alpha_k / 2 * IS_k) / (K + 1/2) over the K
+    central intervals, which equals twice the mean pinball loss over all levels.
+    """
+    levels = np.asarray(levels, dtype=float)
+    q, y = np.asarray(q, dtype=float), np.asarray(y, dtype=float)
+    k = len(levels) // 2
+    if len(levels) % 2 == 0 or not np.isclose(levels[k], .5) or not np.allclose(levels + levels[::-1], 1):
+        raise ValueError('WIS needs a symmetric quantile grid with a median')
+    alpha = 2 * levels[:k]
+    lower, upper, median = q[:, :k], q[:, ::-1][:, :k], q[:, k]
+    denominator = k + .5
+    # (alpha / 2) * (2 / alpha) * miss leaves the miss itself.
+    result = dict(dispersion=(alpha / 2 * (upper - lower)).sum(1) / denominator,
+                  underprediction=(np.maximum(y[:, None] - upper, 0).sum(1) + np.maximum(y - median, 0) / 2) / denominator,
+                  overprediction=(np.maximum(lower - y[:, None], 0).sum(1) + np.maximum(median - y, 0) / 2) / denominator,
+                  ae_median=np.abs(y - median))
+    result['wis'] = result['dispersion'] + result['underprediction'] + result['overprediction']
+    for coverage in COVERAGE:
+        i = int(np.flatnonzero(np.isclose(levels, (1 - coverage / 100) / 2))[0])
+        result[f'covered_{coverage}'] = ((q[:, i] <= y) & (y <= q[:, -1 - i])).astype(float)
+    return pd.DataFrame(result)
+
+
+def cells_totals(cells):
+    keys = ['target', 'season', 'geography', 'location', 'horizon']
+    metrics = [f'{who}_{m}' for who in ('model', 'ensemble') for m in METRICS]
+    grouped = cells.groupby(keys)
+    result = grouped[metrics].sum()
+    result.insert(0, 'n', grouped.size())
+    return result.reset_index()
+
+
+def season_scores(totals):
+    """Location-relative WIS ratio per target/season: states/DC location ratios averaged equally; US alone."""
+    keys = ['target', 'season']
+    locations = totals.groupby([*keys, 'location'])[['n', 'model_wis', 'ensemble_wis']].sum().reset_index()
+    if ((locations.ensemble_wis <= 0) | ~np.isfinite(locations.ensemble_wis) |
+            ~np.isfinite(locations.model_wis) | (locations.n <= 0)).any():
+        raise ValueError('Relative WIS needs positive finite ensemble total WIS and valid model totals at every location')
+    rows = []
+    for values, part in locations.groupby(keys):
+        for geography in ('states_dc', 'US'):
+            group = part[part.location.eq('US') == (geography == 'US')]
+            if len(group):
+                rows.append(dict(zip(keys, values), geography=geography, n=int(group.n.sum()),
+                                 wis_ratio=float((group.model_wis / group.ensemble_wis).mean())))
+    return pd.DataFrame(rows)
 
 
 def pathogen(target):
@@ -97,7 +176,7 @@ def hub_relative(run, frozen):
                 cells[key] = model[key].to_numpy()
             cells['geography'] = np.where(model.location.eq('US'), 'US', 'states_dc')
             totals = cells_totals(cells.assign(target=case['target'], season=case['season']))
-            ratios = season_scores(totals.assign(config_id='', seed=0))
+            ratios = season_scores(totals)
             for row in ratios.itertuples():
                 rows.append(dict(hub=case['hub'], target=case['target'], season=case['season'], scale=scale,
                                  geography=row.geography, ensemble=case['ensemble'], wis_ratio=row.wis_ratio,
@@ -220,16 +299,19 @@ def check_raw_tasks(frame, target, where):
         raise ValueError(f'ED values must be proportions: {where}')
 
 
-def raw_wis(run, frozen):
-    """Mean WIS per task for all six targets, states/DC and US, natural (and log for admissions)."""
+def raw_wis(run, frozen, horizon=None):
+    """Mean WIS per task, its three components and interval coverage, for every predicted target;
+    states/DC and US, natural (and log for admissions). Coverage is identical on both scales."""
     frames = export(run)
-    windows = hub_windows(frozen)
     rows = []
     for (season, target), frame in frames.items():
+        if horizon is not None:
+            if horizon not in range(4):
+                raise ValueError('Expected horizon 0–3')
+            frame = frame[frame.horizon.eq(horizon)]
         frame = frame[frame.model_original_mask.astype(bool)]
-        window = windows.get((pathogen(target), season))
-        source = 'Hub admissions date range' if window else 'CDC epiweeks 40-20'
-        keep = frame.reference_date.isin(window) if window else frame.reference_date.map(epiweek_window)
+        source = 'Every October-May reference date, independent of Hub forecast support'
+        keep = frame.reference_date.str[5:7].isin(('10','11','12','01','02','03','04','05'))
         frame = frame[keep]
         if frame.empty:
             raise ValueError(f'No raw-WIS tasks for {target} {season}')
@@ -240,11 +322,38 @@ def raw_wis(run, frozen):
             wis = scored(frame[QCOLS].to_numpy(), frame.model_original_truth.to_numpy(), scale)
             us = frame.location.eq('US').to_numpy()
             for geography, part in (('states_dc', ~us), ('US', us)):
+                # WIS = dispersion + underprediction + overprediction (per-task means, same tasks).
+                parts = {f'mean_{c}': float(wis[c][part].mean()) for c in ('dispersion', 'underprediction', 'overprediction')}
+                parts.update({f'covered_{c}': float(wis[f'covered_{c}'][part].mean()) for c in COVERAGE})
                 rows.append(dict(target=target, season=season, scale=scale, geography=geography,
                                  mean_wis=float(wis.wis[part].mean()), tasks=int(part.sum()), window=source,
-                                 support_sha256=support,
+                                 support_sha256=support, **parts,
                                  first_reference=frame.reference_date.min(), last_reference=frame.reference_date.max()))
     return pd.DataFrame(rows)
+
+
+def raw_score_details(run):
+    """October–May WIS/coverage by month, horizon and individual location; no US mixture."""
+    rows=[]
+    for (season,target),frame in export(run).items():
+        frame=frame[frame.model_original_mask.astype(bool) &
+                    frame.reference_date.str[5:7].isin(('10','11','12','01','02','03','04','05'))].copy()
+        check_raw_tasks(frame,target,str(run))
+        for scale in scales_for(target):
+            scores=scored(frame[QCOLS].to_numpy(),frame.model_original_truth.to_numpy(),scale).reset_index(drop=True)
+            scores['geography']=np.where(frame.location.eq('US'),'US','states_dc')
+            scores['month']=frame.reference_date.str[:7].to_numpy()
+            scores['horizon']=frame.horizon.to_numpy()
+            scores['location']=frame.location.to_numpy()
+            metrics=[c for c in scores if c=='wis' or c.startswith('covered_')]
+            for dimension in ('month','horizon','location'):
+                grouped=scores.groupby(['geography',dimension])
+                table=grouped[metrics].mean().reset_index()
+                table['tasks']=grouped.size().to_numpy()
+                table=table.rename(columns={dimension:'value'})
+                table['value']=table.value.astype(str)
+                rows.append(table.assign(season=season,target=target,scale=scale,dimension=dimension))
+    return pd.concat(rows,ignore_index=True)
 
 
 def input_fills(run, frozen):
@@ -286,28 +395,6 @@ def input_fills(run, frozen):
     return pd.DataFrame(rows)
 
 
-def score(runs, frozen, output):
-    """All standard tables for runs [{'config_id', 'seed', 'path'}] into `output`/standard_*.csv."""
-    output = Path(output)
-    tables = {'hub_relative': hub_relative, 'pairwise': pairwise, 'raw_wis': raw_wis}
-    written = {}
-    for name, function in tables.items():
-        frame = pd.concat([function(run['path'], frozen).assign(config_id=run['config_id'], seed=run['seed'])
-                           for run in runs], ignore_index=True)
-        if name == 'raw_wis':  # every run on the same tasks and truth, as the Hub path enforces
-            supports = frame.groupby(['target', 'season']).support_sha256.nunique()
-            if (supports > 1).any() or frame.groupby(['config_id', 'seed']).size().nunique() > 1:
-                raise ValueError('Runs differ in raw-WIS tasks or truth: '
-                                 f'{supports[supports > 1].index.tolist()}; refit on one panel')
-        frame.to_csv(output / f'standard_{name}.csv', index=False)
-        written[name] = frame
-    fills = pd.concat([input_fills(run['path'], frozen).assign(config_id=run['config_id'], seed=run['seed'])
-                       for run in runs], ignore_index=True)
-    fills.to_csv(output / 'standard_input_fills.csv', index=False)
-    written['input_fills'] = fills
-    return written
-
-
 def star_note(fills):
     """One footnote line: the finalized-value shares behind every figure (means over runs)."""
     columns = [c for c in ('newest_week_share', 'all_weeks_share', 'all_targets_share') if c in fills]
@@ -323,65 +410,3 @@ def star_note(fills):
         return '★ No input needed a finalized value: every scheduled input was archived by its Hub deadline.'
     return ('★ Finalized values were supplied where the schedule assumes availability but no report was archived '
             'by the Hub deadline (share of available inputs): ' + '; '.join(parts) + '.')
-
-
-def summary_tables(written, labels):
-    """Markdown tables for the labelled configurations (seed means), plus Google rows."""
-    lines = []
-    keep = set(labels)
-    rel = written['hub_relative']
-    rel = rel[rel.config_id.isin(keep)]
-    if not rel.empty:
-        lines += ['### Relative to the Hub ensemble', '',
-                  'Total WIS divided by the Hub ensemble\'s on identical Hub tasks, per location, then states/DC '
-                  'averaged (80%) and the US (20%). Lower is better; 1 = ensemble. Seed means. '
-                  'Log = log(count + 1), admissions only; ED is never transformed.', '',
-                  '| Config | Target | Season | Scale | States/DC | US | Combined |', '|---|---|---|---|---:|---:|---:|']
-        table = rel.groupby(['config_id', 'target', 'season', 'scale', 'geography']).wis_ratio.mean().unstack('geography')
-        for (config, target, season, scale), row in table.iterrows():
-            lines.append(f'| {labels[config]} | {target.removeprefix("wk inc ")} | {season} | {scale} | '
-                         f'{row.get("states_dc", np.nan):.3f} | {row.get("US", np.nan):.3f} | {row.get("all", np.nan):.3f} |')
-        lines.append('')
-    pair = written['pairwise']
-    if not pair.empty:
-        lines += ['### Official-style ranking among Hub models', '',
-                  'Pairwise relative WIS (CDC FluSight method: states/DC, models with at least 75% of tasks, '
-                  'geometric mean of pairwise mean-WIS ratios, divided by the Hub baseline). Lower is better; '
-                  '1 = baseline. Rank 1 is best. Our value is the seed mean; each seed joins the Hub pool alone. '
-                  'Google rows are its own submissions (mean over our seed pools); a Google model with fewer '
-                  'than 75% of the Hub tasks is listed but, as in the CDC evaluation, not ranked.', '',
-                  '| Target | Season | Scale | Model | Relative WIS | Rank (seeds) | Models |', '|---|---|---|---|---:|---|---:|']
-        ours = pair[pair.ours & pair.config_id.isin(keep)]
-        google = pair[pair.google & pair.config_id.isin(keep)]
-        for (target, season, scale), part in pair.groupby(['target', 'season', 'scale']):
-            rows = []
-            for config in labels:
-                mine = ours[(ours.config_id == config) & (ours.target == target) & (ours.season == season) & (ours.scale == scale)]
-                if len(mine):
-                    rows.append((labels[config], mine.relative_wis.mean(), ', '.join(map(str, mine['rank'])), int(mine.models.iloc[0])))
-            g = google[(google.target == target) & (google.season == season) & (google.scale == scale)]
-            for model, gpart in g.groupby('model'):
-                if gpart.qualifies.astype(bool).all():
-                    rank = ', '.join(sorted({str(int(r)) for r in gpart['rank']}))
-                else:
-                    rank = f'did not qualify ({gpart.tasks.iloc[0] / gpart.hub_tasks.iloc[0]:.1%} of tasks)'
-                rows.append((model, gpart.relative_wis.mean(), rank, int(gpart.models.iloc[0])))
-            for name, value, rank, count in rows:
-                shown = '' if np.isnan(value) else f'{value:.3f}'
-                lines.append(f'| {target.removeprefix("wk inc ")} | {season} | {scale} | {name} | {shown} | {rank} | {count} |')
-        lines.append('')
-    raw = written['raw_wis']
-    raw = raw[raw.config_id.isin(keep)]
-    if not raw.empty:
-        lines += ['### Raw WIS on every target', '',
-                  'Mean WIS per task in native units (admissions counts; ED as a proportion) and, for admissions, '
-                  'on log(count + 1). Seed means. Lower is better; compare configurations within a row group only. '
-                  'Truth: finalized panel values. Window: every Saturday between the season\'s first and last '
-                  'Hub admissions reference dates for the pathogen, otherwise CDC epiweeks 40-20.', '',
-                  '| Config | Target | Season | Scale | States/DC | US | Window |', '|---|---|---|---|---:|---:|---|']
-        table = raw.groupby(['config_id', 'target', 'season', 'scale', 'window', 'geography']).mean_wis.mean().unstack('geography')
-        for (config, target, season, scale, window), row in table.iterrows():
-            lines.append(f'| {labels[config]} | {target.removeprefix("wk inc ")} | {season} | {scale} | '
-                         f'{row.get("states_dc", np.nan):.4g} | {row.get("US", np.nan):.4g} | {window} |')
-        lines.append('')
-    return '\n'.join(lines)

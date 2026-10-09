@@ -2,8 +2,7 @@ import numpy as np
 import torch
 from tapestry.model.network import ForecastHead
 from tapestry.experiment.training import four_week_sum_wis, sum_wis_weights
-from tapestry.evaluation.quantiles import LEVELS
-from tapestry.evaluation.totals import quantile_scores
+from tapestry.evaluation.standard import quantile_scores
 
 
 def test_small_quantiles_order_and_two_spreads():
@@ -47,23 +46,3 @@ def test_sum_weights_equal_seasons_and_geographies():
     assert np.isclose(w[:2].sum(),.5) and np.isclose(w[2:].sum(),.5)
     assert np.isclose(w[:,:,:,2].sum(),.2)
     assert np.isclose(w[:,:,:,:2].sum(),.8)
-
-
-def test_saved_distribution_diagnostics_keep_quantile_axis(tmp_path):
-    import json
-    from tapestry.evaluation.distribution import distribution_scores
-    (tmp_path/'manifest.json').write_text(json.dumps({'folds':['2024-2025']}))
-    folder=tmp_path/'eval_2024-2025';folder.mkdir()
-    (folder/'manifest.json').write_text('{}')
-    q=np.ones((23,3,4,6,2));truth=np.ones((3,4,6,2));mask=np.ones_like(truth,bool)
-    for view in ['', 'half', 'corrected']:
-        out=folder/view;out.mkdir(exist_ok=True)
-        np.savez(out/'forecasts.npz',quantiles=q,truth=truth,mask=mask,locations=['A','US'],flu_admission_sum_quantiles=np.full((23,3,2),4.))
-    t=distribution_scores(tmp_path)
-    assert len(t)==12
-    assert (t.weekly_wis==0).all()
-    assert (t.all_four_weeks_coverage_95==1).all()
-    hosp=t[t.target=='flu_admissions']
-    assert (hosp.four_week_sum_wis==0).all()
-    assert (hosp.four_week_sum_coverage_95==1).all()
-    assert t[t.target=='flu_ed'].four_week_sum_wis.isna().all()

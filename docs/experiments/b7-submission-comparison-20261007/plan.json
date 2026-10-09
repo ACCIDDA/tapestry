@@ -1,0 +1,176 @@
+{
+  "assumptions": [
+    "Seasons exchangeable; 2024-25 fold trains on 2022-23, 2023-24 and 2025-26; 2025-26 fold trains on 2022-23 through 2024-25",
+    "Original archived-input finalized substitutions retained for exact comparison; not an archive-only replay",
+    "Saved B7 correction models retain prescribed 2025-26 revision calibration; this is not fully prospective reporting calibration"
+  ],
+  "dataset": "data/processed/panel.npz",
+  "dataset_sha256": "b3cb41a0a1a06541221128b9f9e6b21f1456f7836b89f9b5b364d25233de6287",
+  "evaluation": "Archived Wednesday reports with the existing finalized substitutions; saved recipe-specific correctors; no artificial evaluation revisions; no retraining",
+  "jobs": [
+    {
+      "name": "new_A_width192_half_lr",
+      "seed": 44,
+      "source": "/proj/jlessler/projects/tapestry-all/tapestry-b7-revisions-20261007/data/experiments/b7-folds-20261007/mlp-pathogen-scheduled_final-6e15ac98ada9/s44/attempt-001"
+    },
+    {
+      "name": "new_A_width192_half_lr",
+      "seed": 45,
+      "source": "/proj/jlessler/projects/tapestry-all/tapestry-b7-revisions-20261007/data/experiments/b7-folds-20261007/mlp-pathogen-scheduled_final-6e15ac98ada9/s45/attempt-001"
+    },
+    {
+      "name": "new_B_width256",
+      "seed": 44,
+      "source": "/proj/jlessler/projects/tapestry-all/tapestry-b7-revisions-20261007/data/experiments/b7-folds-20261007/mlp-pathogen-scheduled_final-ff3d7b5e2286/s44/attempt-001"
+    },
+    {
+      "name": "new_B_width256",
+      "seed": 45,
+      "source": "/proj/jlessler/projects/tapestry-all/tapestry-b7-revisions-20261007/data/experiments/b7-folds-20261007/mlp-pathogen-scheduled_final-ff3d7b5e2286/s45/attempt-001"
+    },
+    {
+      "name": "parity_old_B_blocks3",
+      "parity": true,
+      "seed": 44,
+      "source": "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s44/attempt-001"
+    }
+  ],
+  "old_recipes": {
+    "A_blocks3": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-05bcf14fc8f3/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-05bcf14fc8f3/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-05bcf14fc8f3/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-05bcf14fc8f3/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-05bcf14fc8f3/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "A_width192_half_lr": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-03dd9e9316d2/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-03dd9e9316d2/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-03dd9e9316d2/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-03dd9e9316d2/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-03dd9e9316d2/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=192,epochs=160,patience=25,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "A_width256_half_lr": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-c6fc3529f833/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-c6fc3529f833/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-c6fc3529f833/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-c6fc3529f833/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-c6fc3529f833/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=256,epochs=160,patience=25,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "B5_confirmed_candidate_1": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-26eaf5955bcc/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-26eaf5955bcc/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-26eaf5955bcc/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-26eaf5955bcc/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-26eaf5955bcc/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,ili_units=flu_scaled,ili_steps=1200,correction_weeks=1,ili_training=pretrain,joint_weight=0.05,correction_penalty=30.0,correction_strength=0.75,reporting_strength=2.0,lookback=10,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,correction_realizations=2,uncorrected_share=0.1",
+      "view": "corrected"
+    },
+    "B5_confirmed_candidate_2": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-bdc65b732b26/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-bdc65b732b26/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-bdc65b732b26/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-bdc65b732b26/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-bdc65b732b26/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,reporting_random_strength=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,sum_wis_weight=0.25,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,actual_share=0.25",
+      "view": "corrected"
+    },
+    "B_blocks3": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-search-full-20261007/mlp-pathogen-scheduled_final-f4dd8e226dc1/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,decoder_blocks=3,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "X_A_ED_errors_only": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-25a64b93224b/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-25a64b93224b/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-25a64b93224b/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-25a64b93224b/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-25a64b93224b/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=two_stage,revision_signals=targets,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "X_B_ED_corrected": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-767e7db321f1/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-767e7db321f1/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-767e7db321f1/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-767e7db321f1/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-767e7db321f1/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=joint,revision_signals=targets,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    },
+    "X_B_width256_half_lr_flusurv": {
+      "channels": [
+        0,
+        3
+      ],
+      "members": [
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-7fef3f9036ee/s44/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-7fef3f9036ee/s45/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-7fef3f9036ee/s46/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-7fef3f9036ee/s47/attempt-001",
+        "/proj/jlessler/projects/tapestry-all/tapestry-b6-20261007/data/experiments/b6-extension-20261007/mlp-pathogen-scheduled_final-7fef3f9036ee/s48/attempt-001"
+      ],
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.00025,fit_partition=pathogen,covariate_encoder=summary,covariate_set=flusurv,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "view": "corrected"
+    }
+  },
+  "score": "Frozen FluSight ensemble tasks and frozen observed truth; common reference dates, locations and horizons 0-3; states/DC and US separately"
+}

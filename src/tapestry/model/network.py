@@ -1,4 +1,4 @@
-"""Shared probabilistic network for standalone and composable model stages."""
+"""The probabilistic forecasting network, its transforms and checkpoint format."""
 import torch
 from .geographic import GeographicMessage, COORDINATES
 from .covariates import CovariateEncoder, signed_log, trailing_mean, multiscale_features
@@ -9,7 +9,6 @@ COUNT_TRANSFORMS = ('raw', 'rate', 'sqrt', 'fourth_root', 'log1p')
 ED_TRANSFORMS = ('linear', 'logit', 'fourth_root')
 ED_BOUNDS = (.0001, .9999)
 LOCAL_LATENT = 4
-MASK_SCENARIOS = ('natural', 'recent', 'gap', 'outage')
 
 
 def transform_counts(counts, population, transform):
@@ -176,12 +175,12 @@ class PooledMessage(nn.Module):
 
 class ModulatedDecoder(nn.Module):
     """Two residual blocks, each modulated by the same episode-level latent."""
-    def __init__(self, width, latent, local=0):
+    def __init__(self, width, latent, local=0, blocks=2):
         super().__init__()
-        self.norms = nn.ModuleList([nn.LayerNorm(width) for _ in range(2)])
-        self.modulations = nn.ModuleList([nn.Linear(latent, 2 * width) for _ in range(2)])
+        self.norms = nn.ModuleList([nn.LayerNorm(width) for _ in range(blocks)])
+        self.modulations = nn.ModuleList([nn.Linear(latent, 2 * width) for _ in range(blocks)])
         self.blocks = nn.ModuleList([nn.Sequential(nn.Linear(width, width), nn.SiLU(),
-                                                    nn.Linear(width, width)) for _ in range(2)])
+                                                    nn.Linear(width, width)) for _ in range(blocks)])
         self.output = nn.Linear(width, 1)
         for layer in self.modulations:
             nn.init.normal_(layer.weight, std=.02)
@@ -189,12 +188,12 @@ class ModulatedDecoder(nn.Module):
         nn.init.normal_(self.output.weight, std=.01)
         nn.init.zeros_(self.output.bias)
         if local:
-            self.local_modulations = nn.ModuleList([modulation_layer(local, width) for _ in range(2)])
+            self.local_modulations = nn.ModuleList([modulation_layer(local, width) for _ in range(blocks)])
             self.local_scale = nn.Parameter(softplus_inverse(1))
 
     def forward(self, h, z, local_z=None):
         hidden = h[None]
-        local = getattr(self, 'local_modulations', [None, None])
+        local = getattr(self, 'local_modulations', [None] * len(self.blocks))
         scale = F.softplus(self.local_scale) if hasattr(self, 'local_scale') else None
         for norm, modulation, local_modulation, block in zip(self.norms, self.modulations, local, self.blocks):
             gamma, beta = affine(modulation, z, local_modulation, local_z, scale)
@@ -204,10 +203,15 @@ class ModulatedDecoder(nn.Module):
 
 class ForecastHead(nn.Module):
     """Identical per-group designs; each group learns its own readout and modulation."""
-    def __init__(self, width, latent, local, kind):
+    def __init__(self, width, latent, local, kind, blocks=0):
         super().__init__()
-        self.kind = kind
+        self.kind = 'residual2' if blocks and kind == 'legacy' else kind
+        kind = self.kind
         if kind in ('quantile', 'quantile_small'):
+            if blocks:
+                self.residual_blocks = nn.ModuleList([
+                    nn.Sequential(nn.LayerNorm(width), nn.Linear(width, width), nn.SiLU(), nn.Linear(width, width))
+                    for _ in range(blocks)])
             self.output = nn.Sequential(nn.Linear(width, width), nn.SiLU(), nn.Linear(width, 3 if kind == 'quantile_small' else 23))
             nn.init.normal_(self.output[-1].weight, std=.01)
             nn.init.zeros_(self.output[-1].bias)
@@ -215,7 +219,7 @@ class ForecastHead(nn.Module):
                 # Two shared monotone shapes; only median and two spreads vary by forecast.
                 self.shape_gaps = nn.Parameter(torch.zeros(2, 11))
         elif kind == 'residual2':
-            self.output = ModulatedDecoder(width, latent, local)
+            self.output = ModulatedDecoder(width, latent, local, blocks or 2)
         elif kind == 'legacy':
             self.modulate = modulation_layer(latent, width)
             self.output = nn.Sequential(nn.Linear(width, width), nn.SiLU(), nn.Linear(width, 1))
@@ -228,6 +232,8 @@ class ForecastHead(nn.Module):
             raise ValueError(f'Unknown forecast head: {kind}')
 
     def forward(self, h, z, local_z):
+        for block in getattr(self, 'residual_blocks', []):
+            h = h + block(h)
         if self.kind == 'quantile_small':
             raw = self.output(h)
             shape = F.softplus(self.shape_gaps).cumsum(-1)
@@ -269,51 +275,18 @@ def fair_crps(samples, truth, mask):
     return fair_crps_cells(samples, truth, mask).sum((0, 1, 3)) / mask.sum((0, 1, 3)).clamp_min(1)
 
 
-def draw_dropout(available, rng, probabilities=(.50, .25, .15, .10), scenario=None):
-    """A and returned D are [episode, week, channel, location]; V = A & ~D.
-
-    Recent reports/outages affect all locations; local gaps affect one history.
-    D marks naturally available cells only, and is never supplied to the network.
-    """
-    import numpy as np
-    a = np.asarray(available, dtype=bool)
-    if a.ndim != 4 or a.shape[2] != 6:
-        raise ValueError('Availability must be [episode, week, 6, location]')
-    probabilities = np.asarray(probabilities, float)
-    if probabilities.shape != (4,) or np.any(probabilities < 0) or not np.isclose(probabilities.sum(), 1):
-        raise ValueError('Four masking probabilities must sum to one')
-    if scenario is not None and scenario not in MASK_SCENARIOS:
-        raise ValueError(f'Unknown mask scenario: {scenario}')
-    d = np.zeros_like(a)
-    for n in range(len(a)):
-        kind = scenario or rng.choice(MASK_SCENARIOS, p=probabilities)
-        c = int(rng.integers(6))
-        if kind == 'recent':
-            channels = [c] if rng.random() < .5 else list(range(0, 3) if c < 3 else range(3, 6))
-            weeks = int(rng.integers(1, min(2, a.shape[1]) + 1))
-            d[n, -weeks:, channels, :] = True
-        elif kind == 'gap':
-            length = int(rng.integers(1, min(3, a.shape[1]) + 1))
-            start = int(rng.integers(a.shape[1] - length + 1))
-            d[n, start:start + length, c, int(rng.integers(a.shape[-1]))] = True
-        elif kind == 'outage':
-            d[n, :, c] = True
-    return d & a
-
-
 class Model(nn.Module):
     def __init__(self, lookback=8, horizons=(1, 2, 3, 4), width=64, latent=16, scale=None,
                  count_transform='raw', populations=None, geography=False, dynamics=False, input_scale=None,
                  encoder='mlp', heads='shared', decoder='legacy', ed_transform='linear', spatial='none',
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
-                 annual_calendar=True, location_embedding=0, location_ids=None, supplied_final=False,
+                 annual_calendar=True, location_embedding=0, location_ids=None,
                  covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
-                 supplied_estimated=False, covariate_encoder='raw', coordinates=False, signal_features='none', direct_quantiles=False, pathogen_inputs='all',
-                 growth_anchor=False):
+                 covariate_encoder='raw', coordinates=False, signal_features='none', direct_quantiles=False, pathogen_inputs='all',
+                 growth_anchor=False, decoder_blocks=0):
         super().__init__()
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           supplied_final=supplied_final, supplied_estimated=supplied_estimated, pathogen_inputs=pathogen_inputs,
-                           growth_anchor=growth_anchor)
+                           pathogen_inputs=pathogen_inputs, growth_anchor=growth_anchor, decoder_blocks=decoder_blocks)
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2', 'quantile', 'quantile_small')
                 or spatial not in ('neighbors', 'distance', 'gravity', 'none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
@@ -367,7 +340,7 @@ class Model(nn.Module):
         self.config['covariate_scale'] = self.covariate_scale.tolist()
         self.config['covariate_trained'] = self.covariate_trained.tolist()
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
-        fields_per_cell = 2 + int(supplied_final) + int(supplied_estimated)
+        fields_per_cell = 2  # value and availability
         extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
         if signal_features != 'none':
             extra_width += 18 * (6 + len(covariate_names))
@@ -392,9 +365,9 @@ class Model(nn.Module):
         self.output_groups = ([list(range(6))] if head_sharing == 'shared' else
                               [[0, 3], [1, 4], [2, 5]] if head_sharing == 'pathogen' else [[c] for c in range(6)])
         local = LOCAL_LATENT if noise == 'local' else 0
-        self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+        self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder, decoder_blocks) for _ in self.output_groups])
         if heads == 'state_us':
-            self.us_output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder) for _ in self.output_groups])
+            self.us_output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder, decoder_blocks) for _ in self.output_groups])
         if coordinates:
             self.coordinate_project = nn.Linear(3, width, bias=False)
         if spatial in ('neighbors', 'distance', 'gravity'):
@@ -445,33 +418,16 @@ class Model(nn.Module):
         return {name: float(F.softplus(value.detach())) for name, value in self.named_parameters() if name.endswith('local_scale')}
 
     def forward(self, x=None, calendar=None, members=8, z=None, locations=None, local_z=None, national_z=None,
-                covariates=None, *, values=None, available=None, known_final=None, vintaged=True, estimated=None):
+                covariates=None, *, values=None, available=None):
         """Native samples [member, episode, output week, component target, location].
 
-        Either pass a pre-packed `x` [N,P,C,fields,L] (this model's own format,
-        `fields` = 2 or 3 matching `supplied_final`), or pass `values`/`available`
-        (and, when `vintaged=True`, `known_final`) and let this wrapper pack them:
-        `vintaged=False` treats every visible cell as known-final (a finalized-input
-        scenario); `vintaged=True` uses supplied flags, defaulting to unknown finality when omitted.
-        `estimated`, when enabled by supplied_estimated, is appended as a separate
-        field to either input format; packed x does not include it.
+        Either pass a pre-packed `x` [N,P,C,2,L] (value, availability), or pass
+        `values`/`available` and let this wrapper pack them.
         """
         if x is None:
             if values is None or available is None:
                 raise ValueError('Provide either a packed x tensor, or values and available')
-            available = available.bool()
-            if self.config['supplied_final']:
-                if vintaged:
-                    known_final = torch.zeros_like(available) if known_final is None else known_final.bool() & available
-                else:
-                    known_final = available
-                x = torch.stack((values, available.to(values.dtype), known_final.to(values.dtype)), dim=3)
-            else:
-                x = torch.stack((values, available.to(values.dtype)), dim=3)
-        if self.config['supplied_estimated']:
-            if estimated is None:
-                estimated = torch.zeros_like(x[:, :, :, 1, :], dtype=torch.bool)
-            x = torch.cat((x, estimated.unsqueeze(3).to(x.dtype)), dim=3)
+            x = torch.stack((values, available.bool().to(values.dtype)), dim=3)
         return self._forward(x, calendar, members=members, z=z, locations=locations,
                               local_z=local_z, national_z=national_z, covariates=covariates)
 
@@ -479,7 +435,7 @@ class Model(nn.Module):
                  covariates=None):
         n, p, c, _, l = x.shape
         config = self.config
-        channels = {'all': range(6), 'flu': [0,3], 'flu_covid': [0,1,3,4], 'flu_rsv': [0,2,3,5]}[config.get('pathogen_inputs','all')]
+        channels = {'all': range(6), 'flu': [0,3], 'flu_hosp': [0], 'flu_ed': [3], 'flu_covid': [0,1,3,4], 'flu_rsv': [0,2,3,5]}[config.get('pathogen_inputs','all')]
         keep = x.new_tensor([c in channels for c in range(6)])[None,None,:,None,None]
         x = x * keep
         if config['heads'] == 'state_us' and (locations is None or len(locations) != l):
@@ -501,12 +457,7 @@ class Model(nn.Module):
         if offset is not None:
             transformed = transformed - offset[None, None, :, :]
         values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
-        fields = [values, mask]
-        if config['supplied_final']:
-            fields.append((x[:, :, :, 2, :].bool() & valid).to(values.dtype))
-        if config['supplied_estimated']:
-            fields.append((x[:, :, :, -1, :].bool() & valid).to(values.dtype))
-        fields = torch.stack(fields, dim=-1)
+        fields = torch.stack([values, mask], dim=-1)
         fpc = fields.shape[-1]
         cov_fields = cov_summary = None
         k = len(config['covariate_names'])
@@ -713,25 +664,24 @@ class IndependentBundle(nn.Module):
 def checkpoint(model, metadata):
     import json
     metadata = json.loads(json.dumps(metadata))
-    from .pipeline import NowcastForecast
-    if isinstance(model, NowcastForecast):
-        return dict(nowcaster=checkpoint(model.nowcaster, {}), forecaster=checkpoint(model.forecaster, {}),
-                    metadata=metadata)
     if isinstance(model, IndependentBundle):
         return dict(groups=model.groups, components=[checkpoint(m, {}) for m in model.models], metadata=metadata)
     return dict(config=model.config, state_dict={k: v.cpu() for k, v in model.state_dict().items()}, metadata=metadata)
 
 
 def load_model(saved):
-    if 'nowcaster' in saved:
-        from .pipeline import NowcastForecast
-        return NowcastForecast(load_model(saved['nowcaster']), load_model(saved['forecaster']))
     if 'components' in saved:
         return IndependentBundle([load_model(c) for c in saved['components']], saved['groups'])
+    config = dict(saved['config'])
+    # Input flags removed on 2026-10-08 with the routes that set them; every pilot-route
+    # checkpoint (B3-B7, System2) has both False and loads unchanged.
+    for retired in ('supplied_final', 'supplied_estimated'):
+        if config.pop(retired, False):
+            raise ValueError(f'Checkpoint uses {retired}, removed on 2026-10-08')
     factory = Model
-    if saved['config'].get('encoder') in ('series_mlp', 'series_mixer'):
+    if config.get('encoder') in ('series_mlp', 'series_mixer'):
         from .series import SeriesModel
         factory = SeriesModel
-    model = factory(**saved['config'])
+    model = factory(**config)
     model.load_state_dict(saved['state_dict'])
     return model

@@ -7,13 +7,13 @@ import numpy as np
 
 from tapestry.dataset.build import CHANNELS
 from tapestry.dataset.cv import season
-from tapestry.evaluation.totals import ADMISSIONS_WEIGHT, ED_WEIGHT, US_SCORE_WEIGHT
 
-# Loss defaults = the score's default weights (defined once in evaluation/totals.py).
-# They are separate choices: the loss's channel weights are a scenario option
-# (`loss_weights`), the score's weights rank-time options.
-TARGET_WEIGHTS = (ADMISSIONS_WEIGHT,) * 3 + (ED_WEIGHT,) * 3  # CHANNELS order: 3 admissions, 3 ED
-US_WEIGHT = US_SCORE_WEIGHT
+# Training-loss weights. They equalled the B0 ranking score's weights (admissions 1,
+# ED .5; states/DC 80%, US 20%); that composite score was retired on 2026-10-08
+# (`evaluation/ranking.py`), the loss weights did not change. Channel weights are the
+# scenario option `loss_weights`; the US share is fixed.
+TARGET_WEIGHTS = (1.,) * 3 + (.5,) * 3  # CHANNELS order: 3 admissions, 3 ED
+US_WEIGHT = .2
 SCALE_MIN_WEEKS = 26
 SCALE_FLOORS = (1., 1., 1., .001, .001, .001)
 LOSS_DEFINITION = ('Native-unit fair CRPS / training channel-location Q95; equal seasons by target date; '
@@ -26,6 +26,7 @@ LOSS_WEIGHTS = {
     'influenza_first': [1, .1, .1, .1, .1, .1],
     'balanced_admissions': [1, 1, 1, .1, .1, .1],
     'flu_only': [1, 0, 0, 0, 0, 0],
+    'flu_ed': [0, 0, 0, 1, 0, 0],
     'flu_hosp_ed': [1, 0, 0, .5, 0, 0],
     'objective': list(TARGET_WEIGHTS),
 }

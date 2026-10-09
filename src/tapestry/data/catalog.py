@@ -225,7 +225,7 @@ _SPECS = [
         title="Origin-safe NWSS state indices",
         provider="Tapestry, derived from CMU Delphi NWSS",
         fetcher="derived",
-        source_url="https://github.com/ACCIDDA/tapestry/blob/main/docs/data/wastewater.md",
+        source_url="https://github.com/ACCIDDA/chromantis/blob/main/docs/data/wastewater.md",
         description=(
             "Weekly state and national WVAL-like and within-site percentile-rank "
             "indices rebuilt at each real Delphi NWSS publisher vintage."

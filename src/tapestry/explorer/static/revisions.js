@@ -28,6 +28,7 @@ if (typeof document !== 'undefined') (async () => {
   const fetchJSON = async path => {const r=await fetch(path); if(!r.ok) throw Error(`${path}: ${r.status}`); return r.json();};
   const decode = text => {const bytes=Uint8Array.from(atob(text),c=>c.charCodeAt(0)), view=new DataView(bytes.buffer); return Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(i*4,true));};
   const m = await fetchJSON('manifest.json'); let data, revisionHits=[], splitHits=[], generation=0;
+  if (!m.cv.length) $('split-section').hidden = true;  // no finalization calendars exported (route deleted 2026-10-08)
   const option = (select,value,label=value) => select.add(new Option(label,value));
   m.series.forEach(s=>option($('signal'),s.name));
   [...new Set(m.cv.map(d=>d.weeks))].sort((a,b)=>a-b).forEach(n=>option($('weeks'),n)); $('weeks').value=String(Math.max(...m.cv.map(d=>d.weeks)));

@@ -14,8 +14,8 @@ well-configured or default upstream baseline.
 
 The stored v11 evaluations now include an independent
 [baselinenowcast point comparator](../../reference/baselinenowcast.md), added
-without refitting Tapestry. On **reported cells**, normalized MAE is 22.5% lower
-for Tapestry in recent rolling evaluation and 10.1% lower in seasonal evaluation.
+without refitting Chromantis. On **reported cells**, normalized MAE is 22.5% lower
+for Chromantis in recent rolling evaluation and 10.1% lower in seasonal evaluation.
 These summaries average folds within signal/age, then weight signals and ages
 equally. They include ancillary signals; they are not the six-target forecasting
 objective. They compare point estimates, not upstream probabilistic forecasts.

@@ -114,10 +114,21 @@ NHSN measure allowlist size, Delphi/CDC crosswalks, and missing downloads. See
 [Shared selection](../data/methods.md) for the downstream interface.
 
 
-## Nowcasting and forecasting
+## Experiments, evaluation and production
 
-One manager serves `task=nowcast`, `task=forecast`, and `task=pipeline`:
-`python -m tapestry.experiment.planner`. Use `nowcast.<field>` and
-`forecast.<field>` for stage-specific settings. The current
-[training guide](../workflow.md#plan-launch-and-resume) gives plan,
-launch, status and rank commands, including Longleaf.
+| Command | What it does |
+|---|---|
+| `python -m tapestry.experiment.planner plan -e NAME --study experiments/NAME.json` | Plan a study (or `-s SCENARIO ...`) |
+| `sbatch --job-name=NAME --array=0-3 scripts/jlessler.sbatch NAME` | Fit on the patron GPUs (shared queue) |
+| `python -m tapestry.experiment.planner run -e NAME` | Fit locally |
+| `python -m tapestry.experiment.planner status -e NAME` | Completion and the exact resubmission command |
+| `python -m tapestry.experiment.planner rank -e NAME` | Score, rank and write the report |
+| `python -m tapestry.experiment.planner replay -e NAME --inputs reported` | Evaluate completed fits on other inputs, no refit |
+| `python -m tapestry.evaluation.ensembles GROUPS.json --out DIR` | Combine and rank saved forecasts, no refit |
+| `python -m tapestry.production run --release R --dataset P --issuance D` | Weekly forecast from a release: replay, export, plots |
+| `python -m tapestry.production intervals\|peers\|diff ...` | Submission check plots and comparisons |
+| `python -m tapestry.dataset.ili` | Rebuild the pre-2022 historical ILI archive |
+
+The [workflow](../workflow.md) describes each step; the
+[production README](https://github.com/ACCIDDA/chromantis/blob/main/production/README.md)
+the weekly submission.

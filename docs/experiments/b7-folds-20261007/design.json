@@ -1,0 +1,133 @@
+{
+  "configurations": 10,
+  "seeds": [
+    44,
+    45
+  ],
+  "rows": [
+    {
+      "label": "A_blocks3",
+      "anchor": "A_blocks3",
+      "factor": "individual model",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "A_width192_half_lr",
+      "anchor": "A_width192_half_lr",
+      "factor": "individual model",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=192,epochs=160,patience=25,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "B_width192_half_lr",
+      "anchor": "B_width192_half_lr",
+      "factor": "individual model",
+      "scenario": "pilot_method=joint,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=192,epochs=240,patience=25,lr=0.00025,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial preliminary admission/ED histories; no auxiliary covariates; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED; recent-history reconstruction",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "B_width256",
+      "anchor": "B_width256",
+      "factor": "individual model",
+      "scenario": "pilot_method=joint,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial preliminary admission/ED histories; no auxiliary covariates; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED; recent-history reconstruction",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "B_blocks3",
+      "anchor": "B_blocks3",
+      "factor": "individual model",
+      "scenario": "pilot_method=joint,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,decoder_blocks=3,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial preliminary admission/ED histories; no auxiliary covariates; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED; recent-history reconstruction",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "B5_confirmed_candidate_1",
+      "anchor": "B5_confirmed_candidate_1",
+      "factor": "individual model",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,ili_units=flu_scaled,ili_steps=1200,correction_weeks=2,correction_ed=1,ili_training=pretrain,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,lookback=10,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,correction_realizations=2,uncorrected_share=0.1,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained; two corrected realizations and 10% raw artificial inputs",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "A_blocks3_calendar_off",
+      "anchor": "A_blocks3",
+      "factor": "calendar",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,annual_calendar=0,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "B_width192_half_lr_calendar_off",
+      "anchor": "B_width192_half_lr",
+      "factor": "calendar",
+      "scenario": "pilot_method=joint,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=192,epochs=240,patience=25,lr=0.00025,annual_calendar=0,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial preliminary admission/ED histories; no auxiliary covariates; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED; recent-history reconstruction",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "A_blocks3_correct_4_weeks",
+      "anchor": "A_blocks3",
+      "factor": "nowcast window",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=4,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    },
+    {
+      "label": "A_blocks3_nowcast_MLP",
+      "anchor": "A_blocks3",
+      "factor": "nowcast estimator",
+      "scenario": "pilot_method=two_stage,revision_signals=targets,pilot_nowcaster=synthetic_mlp,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,log_loss_weight=0.5,revision_reference=2025-2026,evaluation_vintaging=1,evaluation_replicates=3",
+      "training_inputs": "Artificial admission/ED revisions followed by cross-fitted nowcast correction; Kinsa unchanged; prescribed masks retained",
+      "prediction_labels": "September 2026 research latest future flu admissions and ED",
+      "evaluation_inputs": "Three fixed independent artificial reporting draws per issuance, shared across models and seeds; raw, corrected and 50/50 predictive-mixture replays"
+    }
+  ],
+  "training_seasons": "Each of 2023\u201324, 2024\u201325 and 2025\u201326 held out in turn; train on the other three of four completed seasons, including 2022\u201323",
+  "revision_calibration": "The empirical 2025\u201326 reporting process is prescribed in every fold; it is separate from the epidemic training seasons",
+  "evaluation": "All October\u2013May reference dates, horizons 0\u20133; admissions and ED in every season; states/DC pooled equally per forecast task and US separate",
+  "selection": "States/DC mean log-admission WIS, equal season weights; native admissions and ED reported separately; no US-weighted composite",
+  "loss": "Existing native Q95-normalized predictive loss plus 0.5 times log(1+admissions) predictive loss; ED native loss. Same native-plus-log criterion selects epochs.",
+  "donor_matching": "Default: one joint donor release across all locations, matched on flu admission/ED levels and two-week changes, without calendar; alternatives retain calendar or use local donors",
+  "donor_exclusion": "Exclude the closest seasonal donor release in every recipient season (47 of 48 retained). Overlapping reference weeks in adjacent error windows are allowed because the 2025\u201326 reporting process is prescribed separately; donor epidemic trajectories and future labels are never transported. Missing cells use genuinely observed age-aligned residuals",
+  "nowcasting": "Tree fitted on synthetic preliminary histories with latest training histories as labels; both admissions and ED at every corrected age. Two weeks default; four weeks and a residual MLP on the three-block A only.",
+  "score_views": "Raw artificial histories, point-corrected histories and 50/50 marginal distribution mixture; these are input replays of each fitted individual model",
+  "fixed_evaluation_draw": "Three independent calendar-derived input draws shared across models and model seeds, scored separately and averaged; a common twelve-week history is cropped for the ten-week ILI model",
+  "runtime": "Target 30 minutes after launch including scoring, using all six GPUs with four workers each; full inherited epoch caps and early stopping retained; two seeds screen rather than establish tiny differences",
+  "assumptions": [
+    "Prescribed T-X masks",
+    "Kinsa values unchanged",
+    "FluSurv omitted",
+    "Epidemic seasons treated exchangeably; no chronological preference",
+    "Future labels remain the existing research latest values; no 2024 coverage mask in this experiment",
+    "No interval calibration or production submission changes",
+    "Training geographic and admission/ED objective weights retain their existing values; reporting separates US from states/DC"
+  ],
+  "decision_log": [
+    "2026-10-07: Took over stopped Audit training chat. The seven original two-epoch checks fitted but scoring failed with missing Scenario import. Import repaired.",
+    "Balanced candidate screen: six strong architectures plus matched calendar removal on sampled and quantile leaders, four-week correction and neural correction on sampled leader; two seeds; full epoch budgets retained.",
+    "Replaced absolute-date donor-window purge by excluding the closest seasonal release in every recipient season. Retains 47/48 donor origins including winter. Adjacent windows may overlap by reference week; calibration process is prescribed, distinct from epidemic holdout.",
+    "Added three common reporting draws, individual-location/month/horizon scores and coverage, matched support validation, and separate US/state headline results."
+  ],
+  "budget_decision": {
+    "stopped_configurations": [
+      "A_blocks3_calendar_off",
+      "A_blocks3_correct_4_weeks"
+    ],
+    "reason": "Stopped by runtime cost before examining comparative accuracy, to preserve the 30-minute budget for the six base configurations plus B calendar removal and A neural nowcasting. Full epoch caps, training objectives and evaluation draws remain unchanged for continuing fits."
+  },
+  "continuation": "After the original 28-minute allocations timed out, user authorized 20 more minutes. Seven partial attempts resumed on two H100s. Saved models and valid forecasts reused; folds without saved models restart from their original seed and complete training settings. Optional A calendar and four-week comparisons remain stopped."
+}

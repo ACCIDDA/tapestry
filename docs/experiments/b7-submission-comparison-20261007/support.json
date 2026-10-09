@@ -1,0 +1,26 @@
+[
+  {
+    "first": "2024-11-23",
+    "last": "2025-05-31",
+    "season": "2024-2025",
+    "support_sha256": "ef90aa5403c769995d20c678700a15e1cd2c0b80f1e9aa51e67e3f39de383b85",
+    "target": "wk inc flu hosp",
+    "tasks": 5616
+  },
+  {
+    "first": "2025-11-22",
+    "last": "2026-05-30",
+    "season": "2025-2026",
+    "support_sha256": "b829659bc0af1112b1f7aa9342d3a9689e3e314272178c6b056c4edb0924039a",
+    "target": "wk inc flu hosp",
+    "tasks": 5824
+  },
+  {
+    "first": "2025-11-22",
+    "last": "2026-05-30",
+    "season": "2025-2026",
+    "support_sha256": "333e3a9741e6ce905d00d1546118981f6c4bb5d4389e510f125e67c8da134a08",
+    "target": "wk inc flu prop ed visits",
+    "tasks": 5768
+  }
+]

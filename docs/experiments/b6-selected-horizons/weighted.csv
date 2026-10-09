@@ -1,0 +1,49 @@
+system,target,season,scale,horizon,weighted_wis
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,log,0,0.1747838708633386
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,log,1,0.2256949133050849
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,log,2,0.2774896939133018
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,log,3,0.33808082809668816
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,natural,0,384.17820107173304
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,natural,1,628.9526729996346
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,natural,2,867.0821565582756
+System1_A_B_quantile_average,wk inc flu hosp,2024-2025,natural,3,1119.3629293630497
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,log,0,0.17429416889381158
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,log,1,0.24263028595229383
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,log,2,0.2893960597789378
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,log,3,0.32579531683935903
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,natural,0,260.4284878821093
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,natural,1,482.3346178297406
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,natural,2,625.7284034222383
+System1_A_B_quantile_average,wk inc flu hosp,2025-2026,natural,3,692.5895582145903
+System1_A_B_quantile_average,wk inc flu prop ed visits,2024-2025,natural,0,0.0031691314203571427
+System1_A_B_quantile_average,wk inc flu prop ed visits,2024-2025,natural,1,0.0052646560599723105
+System1_A_B_quantile_average,wk inc flu prop ed visits,2024-2025,natural,2,0.006992087116049987
+System1_A_B_quantile_average,wk inc flu prop ed visits,2024-2025,natural,3,0.007923448107989162
+System1_A_B_quantile_average,wk inc flu prop ed visits,2025-2026,natural,0,0.0031167336640845703
+System1_A_B_quantile_average,wk inc flu prop ed visits,2025-2026,natural,1,0.004983884628169712
+System1_A_B_quantile_average,wk inc flu prop ed visits,2025-2026,natural,2,0.006042309277080155
+System1_A_B_quantile_average,wk inc flu prop ed visits,2025-2026,natural,3,0.006809967627440264
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,log,0,0.17175037407916244
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,log,1,0.21794259798694937
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,log,2,0.26769806143539027
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,log,3,0.3279932652890085
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,natural,0,364.09678717573985
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,natural,1,581.7689134088417
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,natural,2,810.1165040798929
+System2_nine_recipe_mixture,wk inc flu hosp,2024-2025,natural,3,1053.7981164291803
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,log,0,0.1747487289229314
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,log,1,0.243007399578256
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,log,2,0.2892991377974146
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,log,3,0.3246189302660055
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,natural,0,236.4776424917794
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,natural,1,442.276287114846
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,natural,2,556.8059538424066
+System2_nine_recipe_mixture,wk inc flu hosp,2025-2026,natural,3,586.240801364024
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2024-2025,natural,0,0.003096741096167842
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2024-2025,natural,1,0.005135837845329095
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2024-2025,natural,2,0.006803543798544416
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2024-2025,natural,3,0.0077206734471138615
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2025-2026,natural,0,0.003044928648227718
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2025-2026,natural,1,0.0048228806301484125
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2025-2026,natural,2,0.005713787658027337
+System2_nine_recipe_mixture,wk inc flu prop ed visits,2025-2026,natural,3,0.006319086051210552

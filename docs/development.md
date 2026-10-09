@@ -5,14 +5,22 @@
 | Directory | Responsibility |
 |---|---|
 | `src/tapestry/data` | Acquisition, snapshots, readers and shared selection |
-| `src/tapestry/dataset` | Panel construction, episodes and scientific partitions |
-| `src/tapestry/model` | Network, scenarios, objective and sampled-history handoff |
-| `src/tapestry/experiment` | Planner, independent/two-stage fitting, shared GPU dispatch |
-| `src/tapestry/evaluation` | Canonical WIS scoring, matched effects, plots and dated reports |
+| `src/tapestry/dataset` | Panel construction, episodes, folds, reporting-error bootstrap, ILI archive |
+| `src/tapestry/model` | Network, scenarios, objective, correction trees |
+| `src/tapestry/experiment` | The training route (`fit.py`), fitting loop (`training.py`), planner, shared GPU dispatch |
+| `src/tapestry/evaluation` | The scorer (`standard.py`), ranking, saved-forecast ensembles, reports |
+| `src/tapestry/production` | Release replay, Hub export, submission plots and comparisons |
 | `src/tapestry/explorer` | Source indexing, API and interactive browser assets |
-| `experiments` | Scenario-grid definitions that call the shared planner |
+| `experiments` | Study files (candidates, seeds, protocol) and ensemble groups files |
+| `production` | Releases, submitted files, Hub clones (ignored), metadata |
 | `scripts` | Cluster launch, notifications, explorer publishing and documentation navigation |
 | `docs/experiments` | Completed experiment reports and their evidence |
+
+Each step has one implementation: one training route, one scorer, one ranking, one
+combination rule (shared by research ensembles and the production export). Add a
+candidate to a study file, not a planner script; add an analysis to
+`tapestry.evaluation`, not an experiment-specific script. Replaced code is deleted
+(history: [restructuring log](workflow.md#restructuring-log-8-october-2026)).
 
 ## Research iteration
 
@@ -21,7 +29,7 @@ silent scientific errors: loss/score mathematics, weighting, leakage and data
 units/alignment. No broad regression suite or plot tests are required. When those
 calculations change, run the relevant focused checks in `tests/`.
 
-Experiment analysis belongs in `tapestry.evaluation`, called by `planner rank`.
+Experiment analysis belongs in `tapestry.evaluation`, called by `planner rank` or `evaluation.ensembles`.
 Use saved canonical ranking tables for written interpretation; keep the prose
 inside report write-up markers. Avoid another experiment-specific scoring or
 report-generation script. Dataset diagnostics use `tapestry.dataset.analyze_dataset`.
@@ -35,8 +43,8 @@ uv run --no-dev --extra docs mkdocs build --strict
 
 The site builds without training data or model execution. Each experiment has
 `report.json` with an ISO report date, a title and `stage` (`nowcast` or `forecast`).
-The reporting module writes the model-runs index, and `scripts/docs_hooks.py`
-orders the sidebar by the same dates. Sidebar subsections are expanded.
+The model-runs index (`docs/experiments/index.md`) is curated by hand, one line per
+phase; `scripts/docs_hooks.py` orders the sidebar by the report dates. Sidebar subsections are expanded.
 
 The availability staircase is embedded in a docs page. Its standalone interactive
 view includes a return link. The general source explorer is published separately

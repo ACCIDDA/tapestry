@@ -1,4 +1,5 @@
-"""Shared tensor preparation, fitting and scoring. No job management or pipeline orchestration."""
+"""Tensor preparation, the fitting loop and forecast evaluation. No job management (planner) or
+training-history treatment (fit.py)."""
 import csv
 import json
 
@@ -8,10 +9,8 @@ import torch
 from tapestry.dataset.build import CHANNELS, covariate_names_for
 from tapestry.dataset.episodes import calendar
 from tapestry.evaluation.quantiles import LEVELS
-from tapestry.model.network import Model, fair_crps_cells, draw_dropout, IndependentBundle
-from tapestry.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scales, LOSS_DEFINITION
-from tapestry.model.pipeline import HistorySamples, CovariateHistory, forecast_histories, NowcastForecast
-from .provenance import save
+from tapestry.model.network import Model, fair_crps_cells, IndependentBundle
+from tapestry.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scales
 
 GROUPS = {'all': [list(range(len(CHANNELS)))], 'pathogen': [[0, 3], [1, 4], [2, 5]],
           'target': [[i] for i in range(len(CHANNELS))]}
@@ -32,13 +31,12 @@ def populations(path, locations):
 def to_tensors(batch, device):
     values = torch.as_tensor(np.stack([e['values'] for e in batch]), device=device)
     available = torch.as_tensor(np.stack([e['available'] for e in batch]), device=device)
-    known_final = torch.as_tensor(np.stack([e['known_final'] for e in batch]), device=device)
     y = torch.as_tensor(np.stack([e['target_values'] for e in batch]), device=device)
     y_mask = torch.as_tensor(np.stack([e['target_available'] for e in batch]), device=device)
     cal = torch.as_tensor(calendar([e['context_dates'][-1] for e in batch]), device=device)
     covariates = (torch.as_tensor(np.stack([e['covariates'] for e in batch]), device=device)
                   if 'covariates' in batch[0] else None)
-    return values, available, known_final, y, y_mask, cal, covariates
+    return values, available, y, y_mask, cal, covariates
 
 
 def covariate_scales(batch):
@@ -63,39 +61,14 @@ def model_options(batch, scenario, pop):
     if scenario.input_normalization == 'b0':
         normalization = [dict(e, X=np.stack((e['values'], e['available']), axis=2)) for e in batch]
         options.update(input_scales(normalization, scenario.count_transform, scenario.ed_transform, pop))
-    if 'history_samples' in batch[0]:
-        options['supplied_estimated'] = True
     if covariate_names:
         offset, scale, trained = covariate_scales(batch)
         options.update(covariate_offset=offset, covariate_scale=scale, covariate_trained=trained)
     return options
 
 
-def covariate_history(batch, values, names):
-    if values is None:
-        return None
-    return CovariateHistory(values, tuple(names), tuple(batch[0]['locations']),
-                            tuple(e['context_dates'] for e in batch), tuple(e['issuance'] for e in batch))
-
-
-def training_samples(model, episodes_, ids, values, available, known_final, cal, cov, members, vintaged):
-    if 'history_samples' not in episodes_[0]:
-        return model(values=values, available=available, known_final=known_final, calendar=cal,
-                     covariates=cov, locations=list(episodes_[0]['locations']), members=members, vintaged=vintaged)
-    batch = [episodes_[i] for i in ids.tolist()]
-    bank = torch.as_tensor(np.stack([e['history_samples'] for e in batch]), device=values.device)
-    # Independent choices for each predictive member and episode; never shuffle cells.
-    choices = torch.randint(bank.shape[1], (members, len(batch)), device=values.device)
-    draws = bank[torch.arange(len(batch), device=values.device)[None], choices]
-    estimated = torch.as_tensor(np.stack([e['estimated'] for e in batch]), device=values.device)
-    histories = HistorySamples(draws, available, known_final & available, estimated & available,
-                               tuple(episodes_[0]['locations']), tuple(e['context_dates'] for e in batch),
-                               tuple(e['issuance'] for e in batch))
-    return forecast_histories(model, histories, cal, covariate_history(batch, cov, model.config['covariate_names']))
-
-
 def objective_weights(batch, scenario, channels):
-    if scenario.weekend_family != 'joint' and scenario.pilot_method != 'joint':
+    if not scenario.reconstruction_labels:
         return loss_cell_weights(batch, LOSS_WEIGHTS[scenario.loss_weights])[:, :, channels]
     # Normalize the two objectives separately, so adding reconstruction ages does
     # not silently reduce the forecast objective or change its season weights.
@@ -170,14 +143,13 @@ def fit_component(train, validation, channels, component, options, scenario, see
         if scenario.ili_training == 'pretrain':
             ili.pretrain(model, seed)
             torch.manual_seed(seed)  # Match modern minibatch ordering after transfer initialization.
-    weights_by_channel = LOSS_WEIGHTS[scenario.loss_weights]
-    values, available, known_final, y, y_mask, cal, cov = to_tensors(train, device)
+    values, available, y, y_mask, cal, cov = to_tensors(train, device)
     weights = torch.as_tensor(objective_weights(train, scenario, channels), device=device)
     total_weights = torch.as_tensor(sum_wis_weights(train, scenario.horizons), device=device) if scenario.sum_wis_weight and 0 in channels else None
     if selecting:
-        vvalues, vavailable, vknown_final, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
+        vvalues, vavailable, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
         vweights = torch.as_tensor(objective_weights(validation, scenario, channels), device=device)
-        if scenario.weekend_family == 'joint' or scenario.pilot_method == 'joint':
+        if scenario.reconstruction_labels:
             # Select epochs on finalized future labels; reconstruction is auxiliary.
             vweights[:, np.asarray(scenario.horizons) <= 0] = 0
         if not float(vweights.sum()) > 0:
@@ -187,28 +159,6 @@ def fit_component(train, validation, channels, component, options, scenario, see
     best, best_state, best_epoch = float('inf'), None, 0
     history = []
     for epoch in range(budget):
-        dropout = None
-        a = available.cpu().numpy()
-        if scenario.mask_rate and scenario.input_mode != 'scheduled_final':
-            dropout = torch.as_tensor(draw_dropout(a, rng, scenario.mask_probabilities), device=device)
-        epoch_cov = cov
-        if scenario.mask_rate and scenario.input_mode == 'scheduled_final':
-            dropout = torch.zeros_like(available)
-            epoch_cov = None if cov is None else cov.clone()
-            state_ids = [i for i, loc in enumerate(train[0]['locations']) if loc != 'US']
-            for n in range(len(train)):
-                if rng.random() >= scenario.mask_rate:
-                    continue
-                loc = int(rng.choice(state_ids))
-                whole = rng.random() < .25
-                recent = int(rng.integers(1, 3))
-                weeks = slice(None) if whole else slice(-recent, None)
-                dropout[n, weeks, :, loc] = True
-                if epoch_cov is not None:
-                    for k, name in enumerate(covariate_names_for(scenario.covariate_set)):
-                        lag = int(name in ('ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'))
-                        window = slice(None) if whole else slice(-recent - lag, -lag if lag else None)
-                        epoch_cov[n, window, k, :, loc] = 0
         model.train()
         total = 0.
         # Large members x batch products are split into gradient-accumulation chunks of at most
@@ -222,23 +172,21 @@ def fit_component(train, validation, channels, component, options, scenario, see
             first = chunks[0]
             for ids in chunks:
                 scale = len(train) / len(batch_ids)
-                batch_values, batch_available, batch_final = values[ids], available[ids], known_final[ids]
-                batch_cov = None if epoch_cov is None else epoch_cov[ids]
+                batch_values, batch_available = values[ids], available[ids]
+                batch_cov = None if cov is None else cov[ids]
                 if augmenter is not None:
                     batch = augmenter.batch([train[i] for i in ids.tolist()], augmentation_rng)
-                    batch_values, batch_available, batch_final, _, _, _, batch_cov = to_tensors(batch, device)
-                    if batch_cov is not None and epoch_cov is not None:
-                        cov_visible = batch_cov[..., 1, :].bool() & epoch_cov[ids][..., 1, :].bool()
+                    batch_values, batch_available, _, _, _, batch_cov = to_tensors(batch, device)
+                    if batch_cov is not None and cov is not None:
+                        cov_visible = batch_cov[..., 1, :].bool() & cov[ids][..., 1, :].bool()
                         batch_cov[..., 0, :] *= cov_visible
                         batch_cov[..., 1, :] = cov_visible
                 if scenario.covariate_dropout and batch_cov is not None:
                     # Whole-episode covariate outage (e.g. Kinsa feed missing), values and masks.
                     hidden = torch.as_tensor(rng.random(len(ids)) < scenario.covariate_dropout, device=device)
                     batch_cov = torch.where(hidden[:, None, None, None, None], torch.zeros_like(batch_cov), batch_cov)
-                visible = batch_available if dropout is None else batch_available & ~dropout[ids]
-                samples = training_samples(model, train, ids, batch_values, visible, batch_final, cal[ids],
-                                           batch_cov, scenario.members,
-                                           scenario.input_mode == 'vintaged')
+                samples = model(values=batch_values, available=batch_available, calendar=cal[ids],
+                                covariates=batch_cov, locations=list(train[0]['locations']), members=scenario.members)
                 score = prediction_loss(model, samples[:, :, :, channels], y[ids][:, :, channels], y_mask[ids][:, :, channels])
                 loss = (weights[ids] * score / model.scale[channels]).sum() * scale
                 admissions = [i for i, c in enumerate(channels) if c < 3]
@@ -268,11 +216,17 @@ def fit_component(train, validation, channels, component, options, scenario, see
             with torch.no_grad(), torch.random.fork_rng(devices=[torch.device(device)] if str(device).startswith("cuda") else []):
                 torch.manual_seed(seed + 900000)
                 for ids in torch.arange(len(validation), device=device).split(scenario.batch_size):
-                    samples = training_samples(model, validation, ids, vvalues[ids], vavailable[ids],
-                                               vknown_final[ids], vcal[ids], None if vcov is None else vcov[ids],
-                                               scenario.validation_members, scenario.input_mode == 'vintaged')
+                    samples = model(values=vvalues[ids], available=vavailable[ids], calendar=vcal[ids],
+                                    covariates=None if vcov is None else vcov[ids],
+                                    locations=list(validation[0]['locations']), members=scenario.validation_members)
                     score = prediction_loss(model, samples[:, :, :, channels], vy[ids][:, :, channels], vy_mask[ids][:, :, channels])
                     val += float((vweights[ids] * score / model.scale[channels]).sum())
+                    admissions = [i for i,c in enumerate(channels) if c < 3]
+                    if scenario.log_loss_weight and admissions:
+                        chosen=[channels[i] for i in admissions]
+                        log_score=prediction_loss(model,torch.log1p(samples[:,:,:,chosen].clamp_min(0)),
+                            torch.log1p(vy[ids][:,:,chosen].clamp_min(0)),vy_mask[ids][:,:,chosen])
+                        val += scenario.log_loss_weight * float((vweights[ids][:,:,admissions] * log_score).sum())
             if not np.isfinite(val):
                 raise ValueError(f'Nonfinite validation loss at epoch {epoch + 1}, component {component}')
             if val < best:
@@ -350,9 +304,9 @@ def pretrain_historical_panel(model, train, scenario, channels, seed, device):
         batch_ids = torch.as_tensor(rng.choice(len(hist), min(scenario.batch_size, len(hist)), replace=False), device=device)
         optimizer.zero_grad()
         for ids in batch_ids.split(max(1, 1024 // scenario.members)):  # same accumulation as modern training
-            values, available, known_final, y, y_mask, cal, cov = to_tensors([hist[i] for i in ids.tolist()], device)
-            samples = model(values=values, available=available, known_final=known_final, calendar=cal, covariates=cov,
-                            locations=list(hist[0]['locations']), members=scenario.members, vintaged=False)
+            values, available, y, y_mask, cal, cov = to_tensors([hist[i] for i in ids.tolist()], device)
+            samples = model(values=values, available=available, calendar=cal, covariates=cov,
+                            locations=list(hist[0]['locations']), members=scenario.members)
             score = prediction_loss(model, samples[:, :, :, channels], y[:, :, channels], y_mask[:, :, channels])
             loss = (weights[ids] * score / model.scale[channels]).sum() * len(hist) / len(batch_ids)
             if not torch.isfinite(loss):
@@ -421,25 +375,19 @@ def fit_models(train, validation, full_train, scenario, seed, device, pop, augme
     return model, records
 
 
-def evaluate(model, eps, eval_members, device, output, panel=None):
+def evaluate(model, eps, eval_members, device, output):
     """Held-out quantiles from `eval_members` draws (in chunks of EVAL_CHUNK) per episode.
 
     Admission quantiles (channels 0-2) are rounded to integers (counts); ED proportions
     are not rounded."""
     model.eval()
-    quantiles, truths, masks, crps = [], [], [], []
+    quantiles, truths, masks = [], [], []
     sum_quantiles = []
-    nowcasting = max(model.config['horizons']) <= 0
     for e in eps:
         values = torch.as_tensor(e['values'][None], device=device)
         available = torch.as_tensor(e['available'][None], device=device)
-        known_final = torch.as_tensor(e['known_final'][None], device=device)
         cal = torch.as_tensor(calendar([e['context_dates'][-1]]), device=device)
         cov = torch.as_tensor(e['covariates'][None], device=device) if 'covariates' in e else None
-        metadata = {}
-        if isinstance(model, NowcastForecast):
-            metadata = dict(context_dates=(e['context_dates'],), issuances=(e['issuance'],))
-            cov = covariate_history([e], cov, model.config['covariate_names'])
         initial_rng=torch.get_rng_state()
         initial_cuda=torch.cuda.get_rng_state(device) if str(device).startswith('cuda') else None
         with torch.no_grad():
@@ -448,38 +396,31 @@ def evaluate(model, eps, eval_members, device, output, panel=None):
                 bank = torch.as_tensor(e['history_samples'], device=device)
                 m = len(bank)
                 repeat = lambda x: None if x is None else x.expand(m, *x.shape[1:])
-                each = model(values=bank, available=repeat(available), calendar=repeat(cal), known_final=repeat(known_final),
+                each = model(values=bank, available=repeat(available), calendar=repeat(cal),
                              covariates=repeat(cov), locations=list(e['locations'])).cpu().numpy()
                 direct = mixture_many(each)
                 samples = None
             elif model.config.get('direct_quantiles'):
-                direct = model(values=values, available=available, calendar=cal, known_final=known_final, covariates=cov, locations=list(e['locations']))[:, 0].cpu().numpy()
+                direct = model(values=values, available=available, calendar=cal, covariates=cov, locations=list(e['locations']))[:, 0].cpu().numpy()
                 samples = None
             elif 'history_samples' in e:
-                # One conditional future per intact history. Keep the normal
-                # member/episode latent ordering and the episode's input encoding.
+                # One conditional future per intact history (correction_noise > 0).
                 bank=e['history_samples']
                 if len(bank)!=eval_members:
                     raise ValueError('Evaluation history bank must match eval_members')
-                estimated=torch.as_tensor(e.get('estimated',np.zeros_like(e['available']))[None],device=device)
                 chunks=[]
                 for j in range(0,eval_members,EVAL_CHUNK):
                     history=torch.as_tensor(bank[j:j+EVAL_CHUNK],device=device)
                     m=len(history)
                     repeat=lambda x: None if x is None else x.expand(m,*x.shape[1:])
                     chunks.append(model(values=history,available=repeat(available),calendar=repeat(cal),
-                        members=1,known_final=repeat(known_final),covariates=repeat(cov),
-                        estimated=repeat(estimated),
-                        locations=list(e['locations']),vintaged=True)[0].cpu())
+                        members=1,covariates=repeat(cov),locations=list(e['locations']))[0].cpu())
                 samples=torch.cat(chunks).numpy()
             else:
                 samples = torch.cat([model(values=values, available=available, calendar=cal,
-                                       members=min(EVAL_CHUNK, eval_members - j), known_final=known_final,
-                                       covariates=cov, locations=list(e['locations']), vintaged=True, **metadata).cpu()
+                                       members=min(EVAL_CHUNK, eval_members - j),
+                                       covariates=cov, locations=list(e['locations'])).cpu()
                                  for j in range(0, eval_members, EVAL_CHUNK)], dim=0).numpy()[:, 0]
-        if nowcasting:
-            crps.append(fair_crps_cells(torch.as_tensor(samples[:, None]), torch.as_tensor(e['target_values'][None]),
-                                        torch.as_tensor(e['target_available'][None]))[0].numpy())
         q = direct if model.config.get('direct_quantiles') else np.quantile(samples, LEVELS, axis=0)
         if 'mixture_episode' in e:
             other=e['mixture_episode']
@@ -493,11 +434,11 @@ def evaluate(model, eps, eval_members, device, output, panel=None):
                     q=mixture_quantiles(q,oq)
                 else:
                     draws=torch.cat([model(values=ov,available=oa,calendar=cal,members=min(EVAL_CHUNK,eval_members-j),
-                        known_final=torch.zeros_like(oa),covariates=cov,locations=list(e['locations']),vintaged=True).cpu()
+                        covariates=cov,locations=list(e['locations'])).cpu()
                         for j in range(0,eval_members,EVAL_CHUNK)]).numpy()[:,0]
                     samples=np.concatenate((samples[:eval_members//2],draws[eval_members//2:]))
                     q=np.quantile(samples,LEVELS,axis=0)
-        if samples is not None and len(e['target_dates']) == 4 and not nowcasting:
+        if samples is not None and len(e['target_dates']) == 4:
             sum_quantiles.append(np.quantile(samples[:, :, 0].sum(axis=1), LEVELS, axis=0))
         q[:, :, :3] = np.floor(q[:, :, :3] + .5)
         quantiles.append(q)
@@ -518,13 +459,6 @@ def evaluate(model, eps, eval_members, device, output, panel=None):
     np.savez_compressed(output / 'forecasts.npz', quantiles=q, quantile_levels=LEVELS,
                         truth=y, mask=mask, context_end=[e['context_dates'][-1] for e in eps],
                         target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'], **inputs)
-    if nowcasting:
-        scales = (model.models[0].scale if isinstance(model, IndependentBundle) else model.scale).detach().cpu().numpy()
-        score = float((np.stack(crps) * loss_cell_weights(eps) / scales).sum())
-        save(output / 'nowcast_scores.json', dict(normalized_crps=score, definition=LOSS_DEFINITION))
-        if panel is not None:
-            from .nowcast_baseline import evaluate as evaluate_baseline
-            evaluate_baseline(panel, eps, scales, output)
     return [dict(context_end=e['context_dates'][-1]) for e in eps]
 
 

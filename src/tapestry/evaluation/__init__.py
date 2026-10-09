@@ -1,1 +1,1 @@
-"""Pinned-hub comparison and pure-Python WIS evaluation."""
+"""The scorer, ranking, saved-forecast ensembles and experiment reports."""

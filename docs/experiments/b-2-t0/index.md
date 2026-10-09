@@ -410,7 +410,7 @@ Protocol distinction: the current sweep is B-2 T-0, not the earlier availability
 
 Single-field changes with every other scenario field fixed, paired on identical seeds. Positive changes worsen relative WIS. Intervals use seed averages, not contexts as independent replicates; they describe fitting randomness on fixed tasks, not new-season uncertainty. Blank intervals mean fewer than two seeds. [Method](../../workflow.md#analyze-a-run).
 
-[All effects](matched_effects.csv) · [Seed pairs](matched_pairs.csv)
+[All effects](matched_effects.csv) · Seed pairs (`matched_pairs.csv`, removed 9 October 2026: over 1 MB)
 
 | Field | Reference → value | Contexts | Seeds | Mean Δ WIS ratio | 95% seed-only interval | Improved |
 |---|---|---:|---|---:|---|---:|

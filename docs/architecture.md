@@ -1,10 +1,10 @@
 # Architecture and reflection
 
-Tapestry fits a nowcaster and a forecaster independently, using the same network
-building blocks. The nowcaster reconstructs recent completed weeks from as-of
-reports; each sampled history conditions a sampled four-week future. Both stages
-also work independently. The [pipeline contract](workflow.md#two-stage-models) defines
-configuration, masks, date alignment, training partitions and runnable commands.
+Chromantis fits one probabilistic forecaster per configuration and seed. Its training
+histories can be made artificially preliminary with an empirical reporting-error
+bootstrap, and small correction trees fitted on those artificial histories correct
+the newest reported weeks before the forecaster sees them ([model choices A–F](reference/model-choices.md)). The
+[workflow](workflow.md) defines the training route, evaluation and commands.
 
 ## Where the ideas come from {#2-what-is-borrowed-from-each-paper}
 
@@ -12,13 +12,13 @@ configuration, masks, date alignment, training partitions and runnable commands.
   signals and locations, with useful transforms and recent-history residuals.
 - **[InfluPaint](https://arxiv.org/abs/2604.24913v1):** the modeling background,
   simulation infrastructure, and Slurm job management used as a starting point.
-  Tapestry uses observed data and a direct sample generator.
+  Chromantis uses observed data and a direct sample generator.
 - **[DeepMind's Functional Generative Networks](https://arxiv.org/abs/2506.10772v1):**
   inject random noise into a network and fit its generated samples with fair
-  CRPS. Tapestry adapts that idea to small epidemic forecasting models.
+  CRPS. Chromantis adapts that idea to small epidemic forecasting models.
 - **Hub ensembles as the yardstick:** forecasts are scored in pure Python
-  (`tapestry.evaluation.totals`) as location-relative WIS ratios to the hub
-  ensembles on frozen tasks.
+  (`tapestry.evaluation.standard`): mean WIS per task, states/DC and US separately,
+  plus WIS relative to the Hub ensembles and the CDC pairwise ranking on frozen tasks.
 
 ## The model
 
@@ -84,24 +84,27 @@ not reveal a masked observation. Masking arbitrary sources and adding new
 covariates still require evaluation; having mask arrays alone is not evidence
 that all missing-data patterns work well.
 
-## Nowcasting and forecasting
+## Training histories and correction
 
-`task=nowcast` predicts the last `nowcast_weeks` completed weeks; `task=forecast`
-predicts the next four weeks. `task=pipeline` fits both using cross-fitted
-reconstructions for forecaster training. The pipeline uses as-of inputs throughout
-its history; unpublished cells are unavailable, never filled with later truth.
+Six separate choices define a model; [Model choices A–F](reference/model-choices.md)
+explains each and what every experiment used. In short, choice A decides what the
+forecaster learns from: `history_source` is final reference histories, the actual archived
+Wednesday reports, or artificial preliminary histories drawn from an empirical bootstrap of
+reporting errors (`dataset/reporting_error.py`; age, signal and location aligned; labels
+never change). `history_correction=1` corrects artificial histories with small
+gradient-boosted trees (`model/revision_tree.py`), cross-fitted by origin block so a
+history is never corrected by trees that saw it. `reconstruction_labels=1` adds the reference
+values of the newest `reconstruction_weeks` as extra labels. At evaluation the same
+fitted model is scored on the reported (or prescribed artificial) inputs as they are
+(`raw`), with the newest weeks corrected by the fold's trees (`corrected`), or as a
+50/50 predictive mixture of the two (`half`).
 
-`HistorySamples` connects the stages with joint samples, masks, dates and location
-identifiers. `CovariateHistory` supplies named and dated predictors. Reconstructed
-cells are marked estimated, not known-final. Each stage uses its own trailing
-history window and its own covariate selection. The saved reference truth supplies
-labels only. See [the complete interface](workflow.md#explicit-handoff).
-
-## Wednesday finalization model
-
-`task=finalize` reconstructs recent target/covariate reference values ending at each source's T-X boundary. The selected six-target statistical nowcaster uses seasonally weighted, partially pooled median development factors, updated causally each Wednesday. It treats 12-week reports as approximately mature and bridges target outages with visible national pathogen proxies. NSSP point outputs respect the observed 0.0001 proportion grid. Its prescribed scenario reconstructs eight weeks; the newest week is the primary evaluation.
-
-The [selected model, assumptions, replay results and manager commands](experiments/seasonal-nowcast-20261001/index.md) describe the recommended research configuration. The [original triangle/ridge formulation](experiments/reporting-triangle-20261001/index.md) remains an explicit comparator and the backward-compatible scenario default. The selected finalizer does not silently replace forecast inputs; a downstream forecasting benefit has not been established.
+History: until 8 October 2026 the package also contained a standalone nowcaster
+(`task=nowcast`), a nowcast-to-forecast pipeline with sampled history handoff
+(`task=pipeline`), per-signal Wednesday finalizers (`task=finalize`; see the
+[seasonal nowcast report](experiments/seasonal-nowcast-20261001/index.md)), and
+finality-flag inputs. None was used by a submitted model and all were deleted
+([restructuring log](workflow.md#restructuring-log-8-october-2026)).
 
 ## Fitting with CRPS
 
@@ -225,5 +228,5 @@ seed-only intervals crossing zero. See the [dated report](experiments/b-2-t0/ind
 
 WIS, interval coverage and target/season results answer different questions.
 Strong marginal scores do not establish calibrated joint epidemic trajectories.
-Only forecasting experiments are listed so far; nowcasting and the composed
-pipeline remain implemented and available for evaluation.
+The standalone nowcasting and pipeline code that earlier reports describe was deleted on
+8 October 2026; those reports remain as dated results.

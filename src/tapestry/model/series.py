@@ -71,7 +71,7 @@ class SeriesModel(nn.Module):
         return q.permute(4,0,1,2,3)
 
     def forward(self, values, available, calendar, **kwargs):
-        channels={'all': range(6),'flu':[0,3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[self.config.get('pathogen_inputs','all')]
+        channels={'all': range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[self.config.get('pathogen_inputs','all')]
         keep=values.new_tensor([c in channels for c in range(6)],dtype=torch.bool)[None,None,:,None]
         available=available & keep
         values=torch.where(available,values,0)

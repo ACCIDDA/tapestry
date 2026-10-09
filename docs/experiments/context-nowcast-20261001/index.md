@@ -99,7 +99,7 @@ uses the 2,048-member confirmation.
 [NC level and growth with revision draws](quarter-correction/history-intervals-NC.png) ·
 [Point score components](strength-ablation/trajectory-summary.csv) ·
 [Target-specific WIS](confirmation/forecast-target-scores.csv.gz) ·
-[Horizon-specific WIS](confirmation/forecast-horizon-target-scores.csv.gz).
+Horizon-specific WIS (`forecast-horizon-target-scores.csv.gz`, removed 9 October 2026: over 1 MB).
 
 ## Model and training
 

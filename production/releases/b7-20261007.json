@@ -1,0 +1,138 @@
+{
+  "name": "b7-20261007",
+  "model_abbr": "Chromantis",
+  "hub": "flusight",
+  "rule": "mixture",
+  "view": "corrected",
+  "description": "B7 three-recipe mixture, submitted for reference date 2026-10-10 (see docs/submissions.md). A_blocks3: width-96 sampled MLP, three-block decoder, Kinsa; B5_confirmed_candidate_1: width-96 sampled MLP, Kinsa, pre-August-2022 state ILI pretraining; B_width256: width-256 direct-quantile MLP with neighbouring-location exchange, no Kinsa. Each recipe retrained on 2022-23 through 2025-26 (no held-out season), seeds 42-51. Training admission and ED histories artificially revised with the prescribed 2025-26 reporting errors; sampled recipes learn on histories corrected by cross-fitted trees, the quantile recipe on raw artificial histories plus recent-week reconstruction labels. Labels: latest future flu admissions and ED (September 2026 panel). Loss: native loss plus 0.5 x log-admission loss. Operational inputs: reported Wednesday data with the newest two admission/ED weeks corrected by each fit's saved trees. Equal weight per recipe and per seed; predictive distributions mixed.",
+  "training_design": "docs/experiments/b7-production-20261007/design.json",
+  "checkpoints_from": "longleaf:/proj/jlessler/projects/tapestry-all/tapestry-b7-revisions-20261007/data/experiments/b7-production-20261007",
+  "recipes": {
+    "A_blocks3": [
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s42/attempt-001/eval_2026-2027",
+        "sha256": "ee1e7195c89e5464e8acae32550922c0c2105381c5e43d187e8881a814952301"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s43/attempt-001/eval_2026-2027",
+        "sha256": "c99900613fb2b1ae65a4579d55ed1fe03c511c07fb180f072dc74dad04e9e046"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s44/attempt-001/eval_2026-2027",
+        "sha256": "80c275c4620c5ce5b906f813cb458b02eb8ad0480c92356fa6c6302291e02b79"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s45/attempt-001/eval_2026-2027",
+        "sha256": "681e2be7df4a54d140b63f58bb757d3e0ceed64a1082f9aec510539b8381eaef"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s46/attempt-001/eval_2026-2027",
+        "sha256": "4a43e5bad195e64f4470dec34f696df2d7216acfc0611ade6672675d3c582372"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s47/attempt-001/eval_2026-2027",
+        "sha256": "8122981090278e022bc4312be46f1044cc3865b9b154d316a8224562c0cb6757"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s48/attempt-001/eval_2026-2027",
+        "sha256": "5810478896132e2d027db7062f4fe074ffe7ebdc5700f77ffb952eeafecba842"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s49/attempt-001/eval_2026-2027",
+        "sha256": "b43e9732a4f637690f70d5646505f00c0e680ec8f781585775482463d94dcf3d"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s50/attempt-001/eval_2026-2027",
+        "sha256": "6cee47e14a57a1041ea7814aa2bddba2e5912b6a4ad7d4d06cf25064dd234ee1"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-e60aa9e03e00/s51/attempt-001/eval_2026-2027",
+        "sha256": "00c6a2415827a3d7d70298d65e67dadcd3795bb83303f7f0498e3277717acf43"
+      }
+    ],
+    "B5_confirmed_candidate_1": [
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s42/attempt-001/eval_2026-2027",
+        "sha256": "2d6aa82a315868e62cc13205ba0dd271900b3c0150cbd31a0ec4f106ec408794"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s43/attempt-001/eval_2026-2027",
+        "sha256": "6ed30a4ad59420508c0a5b12d92c84c5c3881ebdd190a0c463a57dff58610bfc"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s44/attempt-001/eval_2026-2027",
+        "sha256": "61615afe2e78dad957463f56c92cb151a2a08b0d1244f07ec8abfaf2c4fa4f10"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s45/attempt-001/eval_2026-2027",
+        "sha256": "3f146dae275836a66e8fac5af707a4686d5f69af7a0cbb37fddab114fc326342"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s46/attempt-001/eval_2026-2027",
+        "sha256": "9d958f4843e7252cf493c49feee21373f0a67166a140e3c90cbd3db96f1a43ea"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s47/attempt-001/eval_2026-2027",
+        "sha256": "3d058ac1ab073108b9ec3301819a9d6cf356923aa08f544f1f52ac253ea39ecc"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s48/attempt-001/eval_2026-2027",
+        "sha256": "59e636d659e86ab56d7bb359767ebac0f997f7e48c2a2ee187f0ce7b61d288af"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s49/attempt-001/eval_2026-2027",
+        "sha256": "96d8fb18d03f016249ef04a47bc65c44be83070538f37cfd9cc16c4fb6547ade"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s50/attempt-001/eval_2026-2027",
+        "sha256": "d1026ba1f0c07790611818976e8258bcace8b2ead00f09e339eb7ce58ec95129"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-c2af77a5341a/s51/attempt-001/eval_2026-2027",
+        "sha256": "50120717e750341058c73d81e04a731aecbe409f4ebf66e1f5ec05c06bb1bf91"
+      }
+    ],
+    "B_width256": [
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s42/attempt-001/eval_2026-2027",
+        "sha256": "5cbe2a6ca3b71f7a0e500eaedcaf3053f42e87d23d94ea425e9718094414ba0a"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s43/attempt-001/eval_2026-2027",
+        "sha256": "6587e9722a4a23e0022dcaa42097947f5afd4c1f4ec9a545b415bc3d4c1ef520"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s44/attempt-001/eval_2026-2027",
+        "sha256": "f564987f10a218ac7a3facc031f3c74e22d562be33d105c5d8e1cb6361467cb3"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s45/attempt-001/eval_2026-2027",
+        "sha256": "ae6b8f74967732f693e153cc58f75afbc778ae8056c32b604a3919ac174e033f"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s46/attempt-001/eval_2026-2027",
+        "sha256": "7a915f8194c08ffb5797954551fc4a9c612a7dfe39974bf7d461a9e4e8fc89ec"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s47/attempt-001/eval_2026-2027",
+        "sha256": "fcc22e7fcae3bf5a052253b5dc159d8faa9409095ed6785fb59ef95b0122302c"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s48/attempt-001/eval_2026-2027",
+        "sha256": "79c702ca8689b79d5f3d01812041a338db67b5c2a5b935bfa0500b2e62d63e3c"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s49/attempt-001/eval_2026-2027",
+        "sha256": "21755339e2311597011df67bfc9814281587e535e9444991c8e719e4237fb1c3"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s50/attempt-001/eval_2026-2027",
+        "sha256": "353415014bfb82753a6b500c39f16e4dea5d72e2006e911a13ebef90f1ca2cae"
+      },
+      {
+        "checkpoint": "data/production-fits/b7-production-20261007/mlp-pathogen-scheduled_final-ffdcc78fdeae/s51/attempt-001/eval_2026-2027",
+        "sha256": "a12d847fd0ee2f68ddc1b6698017dcb4c7ad82ab05fd428a6dcb318265976397"
+      }
+    ]
+  }
+}

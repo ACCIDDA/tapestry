@@ -1,8 +1,19 @@
 # Workflow
 
-Use one panel, one scenario interface and one experiment manager for nowcasting,
-forecasting and their composition. Run commands from the repository root.
-[Environment and Longleaf setup](setup.md) · [Scenario fields](reference/scenario.md).
+One panel, one scenario interface, one training route, one experiment manager, one
+scorer and one release path. Run commands from the repository root.
+[Environment and Longleaf setup](setup.md) · [Scenario fields](reference/scenario.md) ·
+[Reusable research workflow](reusable-research-workflow.md) · [Submissions](submissions.md).
+
+| Step | Code | Command |
+|---|---|---|
+| Acquire sources, build the dated panel | `tapestry.data`, `tapestry.dataset` | `python -m tapestry.data pull ...`, `python -m tapestry.dataset.build build` |
+| Define a study | `experiments/<name>.json` | candidates (name → scenario string), seeds, protocol text |
+| Fit and evaluate each held-out season | `experiment/fit.py` | `planner plan` / `sbatch scripts/jlessler.sbatch` / `planner run` |
+| Evaluate fits on other inputs, no refit | `experiment/fit.py` `replay` | `planner replay` |
+| Rank runs, write the report | `evaluation/ranking.py`, `evaluation/report.py` | `planner rank` |
+| Combine saved forecasts, no refit | `evaluation/ensembles.py` | `python -m tapestry.evaluation.ensembles GROUPS.json --out ...` |
+| Release and weekly forecast | `tapestry.production`, `production/releases/` | `python -m tapestry.production run ...` ([production/README.md](https://github.com/ACCIDDA/chromantis/blob/main/production/README.md)) |
 
 ## Acquire and build
 
@@ -25,42 +36,34 @@ construction is separate because it changes only when its input snapshots change
 Pin the reference resolution day with `build --truth-day`. A dataset rebuild
 requires a new experiment name: planned runs verify the recorded input hashes.
 
-## Choose the prediction task
+## Scenarios
 
-| Setting | Meaning |
-|---|---|
-| `task=forecast` | Fit a standalone four-week forecaster |
-| `task=nowcast` | Reconstruct recent completed weeks |
-| `task=finalize` | Estimate final target/covariate values over a recent window ending at T-X; [selected seasonal model and commands](experiments/seasonal-nowcast-20261001/index.md) |
-| `task=pipeline` | Fit independent nowcaster and forecaster with cross-fitted histories |
-| `input_mode=finalized` | Use frozen reference histories; retrospective benchmark |
-| `input_mode=scheduled_final` | Use final values subject to explicit source-lag assumptions |
-| `input_mode=vintaged` | Use reported values at the issuance for the configured recent target window; covariates are as-of throughout |
-
-For standalone vintaged models, `asof_weeks` controls the recent target window;
-older target context uses reference values. Set it at least as large as `lookback`
-for an entirely as-of standalone history. The coupled pipeline uses as-of inputs
-throughout. Missing input values and missing labels have separate masks.
-
-A scenario string contains comma-separated `key=value` fields. Omitted fields
-use the current `Scenario` defaults. National Kinsa is broadcast with its reporting
-mask; state covariates retain their native geography. Artificial training masking
-is configured separately from actual reporting gaps and scheduled source lags.
+A scenario string contains comma-separated `key=value` fields; omitted fields use the
+`Scenario` defaults ([field key](reference/scenario.md)). Six separate choices define a
+model, explained in [Model choices A–F](reference/model-choices.md): A the training
+histories (`history_source`: finalized, actual reports or artificial errors;
+`history_correction`: corrected by cross-fitted trees; `reconstruction_labels`), B where the
+artificial errors come from (`error_seasons`, `error_reference`), C which signals get them
+(`error_signals`), D what the correction model learns from (`corrector_examples`,
+`corrector_model`), E the evaluation inputs (`evaluation_inputs`: real Wednesday reports, or
+`prescribed` artificial histories), and F the forecast view (`forecast_view`, default
+`corrected`): the view a configuration is ranked and deployed in. Every fit is also scored in
+the other views as diagnostics: `raw`, `corrected`, `half` and optional `calibrated`,
+`sampled`, `delayed`, `nokinsa` (`experiment/fit.py`). National Kinsa is broadcast with its reporting mask; state
+covariates retain their native geography.
 
 ## Plan, launch and resume
 
-Example standalone forecasting experiment, using a new name:
+A study file lists the candidates and seeds (example: `experiments/b7-folds-20261007.json`):
 
 ```bash
-.venv/bin/python -m tapestry.experiment.planner plan -e my-experiment \
-    -s 'task=forecast,input_mode=scheduled_final,evaluation_seasons=recent_two' \
-    --seeds 42 43 --device cuda
-sbatch --job-name=my-experiment --array=0-3 scripts/jlessler.sbatch my-experiment
-.venv/bin/python -m tapestry.experiment.planner status -e my-experiment
-.venv/bin/python -m tapestry.experiment.planner rank -e my-experiment
+.venv/bin/python -m tapestry.experiment.planner plan -e my-study --study experiments/my-study.json --device cuda
+sbatch --job-name=my-study --array=0-3 scripts/jlessler.sbatch my-study
+.venv/bin/python -m tapestry.experiment.planner status -e my-study
+.venv/bin/python -m tapestry.experiment.planner rank -e my-study
 ```
 
-**Seeds.** Two seeds (42, 43; the `plan` default since 5 October 2026) screen
+`plan -s SCENARIO ...` still takes raw strings (named by run id). **Seeds.** Two seeds (42, 43; the `plan` default since 5 October 2026) screen
 configurations; confirm the 3–5 finalists in a new experiment with five seeds
 (`--seeds 42 43 44 45 46`) before choosing a model. In the B2 T-0 sweep (309
 configurations, three seeds), one seed's per-configuration score varied by about
@@ -70,67 +73,79 @@ configurations like three (Spearman 0.95), always picked a configuration within
 effects larger than 0.01. One seed could pick the 99th configuration. Neither two
 nor three seeds separates configurations within about 0.01.
 
-**Removed, 5 October 2026.** The experiment-specific forecast planners and report
-jobs that used their own evaluation inputs or sample counts were deleted:
-`plan_b2_replay.py`, `plan_b2_augmentation.py`, `plan_b2_augmentation_controls.py`,
-`plan_b2_reporting_values_only.py`, `plan_b2_weekend.py`, `plan_c1_local_errors.py`,
-`plan_context_replay.py`, `report_b2_weekend.py` and their `*_report.sbatch` /
-`context_report.sbatch` / `b2_reporting_controls_followup.sbatch` jobs. Their
-experiment pages keep the commands as a historical record; recover the scripts from
-Git history (commit `c03fcae` or earlier) only to reproduce those old results. New
-forecast experiments plan with `planner plan` and report with `planner rank`.
+**Resuming.** A seed whose last attempt stopped (time limit, cancellation, failure)
+after saving some fold models is continued in the same attempt when its scenario uses
+prescribed evaluation histories: completed folds and forecast views are reused, and
+`run.json` records `resumed`, `resumed_after` and the exact `resume_command`. Other
+scenarios start a new attempt. Resubmit with `status`'s printed command
+(`--retry-failed`). This replaced the one-off `scripts/resume_b7.py` (8 October 2026).
 
 **Panel.** Plan only against a panel built after 5 October 2026 (per-Hub deadlines);
 older panels are refused at fitting. Rebuild with
 `.venv/bin/python -m tapestry.dataset.build build` and use a new experiment name.
 
 For local execution, plan with `--device cpu` (or `mps`) and use
-`.venv/bin/python -m tapestry.experiment.planner run -e my-experiment` as the launch.
-`status` prints the exact resubmission command for unfinished work.
-The shared GPU queue can fit multiple jobs per GPU. Notifications are enabled by
+`.venv/bin/python -m tapestry.experiment.planner run -e my-study` as the launch.
+The shared GPU queue fits several runs per GPU. Notifications are enabled by
 default; `NTFY=0` disables them and `NTFY_URL` selects the topic.
 
-`plan` saves the scenarios, seeds, dataset/support hashes and a source snapshot
-under `data/experiments/<name>/`. Cluster jobs use that pinned code. Replanning
+`plan` saves the scenarios, seeds, the study file, dataset/support hashes and a source
+snapshot under `data/experiments/<name>/`. Cluster jobs use that pinned code. Replanning
 repins it, so use `status` to resume an existing experiment. Local `run` uses the
 working tree. A rebuilt panel or changed scientific protocol needs a new name.
 
+## Replay fitted models on other inputs
+
+`planner replay -e NAME --inputs reported` evaluates every completed fit, fold by fold,
+on archived Wednesday reports without refitting (`--inputs synthetic`: the prescribed
+artificial histories). Results go to `data/experiments/NAME/replay-<inputs>/`, mirroring
+the attempts, each with a manifest stating `refit: false`. Rank them with
+`planner rank -e NAME --inputs reported`; they never replace the fits' own ranking.
+
 ## Analyze a run
 
-**`planner rank` is the canonical analysis command.** It calls the shared Python
-scorer, computes seed-paired matched effects, generates figures and writes the
-report under `docs/experiments/<name>/`. No experiment-specific analysis wrapper
-is needed. Default fans and heatmaps show the three best configurations, each
-at its lowest seed for fans; heatmaps average seeds.
+**`planner rank` is the canonical analysis command.** It scores every run once
+(cached as `scores-*.csv` in the run folder) and writes `ranking-<hash>/`:
+`headline-rankings.csv` (every configuration and input view, mean and SD over seeds; only the
+rows of each recipe's own `forecast_view` are ranked, `deployed=True`; other views are
+diagnostics),
+`headline-seed-scores.csv`, `metric-seed-scores.csv` (WIS, its dispersion/under/overprediction
+components and 50–95% coverage per seed), and compact tables averaged over seeds and artificial
+draws: `headline-season-scores.csv` (per season), `score-details.csv` (by month, horizon and
+location, own view only), `hub-relative-scores.csv`, `hub-pairwise-scores.csv` (ours and every
+Hub model) and `distribution-scores.csv` (coverage, own view, states/DC and US). Only
+`headline-rankings.csv` carries the full scenario strings; the others name configurations.
+**Size rule (user decision, 9 October 2026):** reports hold summaries, not raw score dumps.
+Per-seed, per-location and per-view detail stays in each run's `scores-*.csv` cache on Longleaf;
+`docs/` gets the page, its figures and tables of at most 1 MB (`planner rank` warns about a larger
+table, and the report names it without copying it). Do not commit raw score tables to `docs/`.
+Every run must be scored on identical tasks and truth, in every evaluated season, or
+ranking stops. For a complete experiment it writes `docs/experiments/<name>/index.md`
+with a model-choices table describing every configuration (grouped when identical: choices
+A–F, labels, training seasons per fold and evaluated seasons, each linked to
+[Model choices A–F](reference/model-choices.md)), the ranking table (each configuration in
+its own forecast view), model-comparison bars, a seaborn
+PairGrid dot plot per target (WIS states/DC and US, WIS components, coverage; every
+configuration, seeds and seed mean), monthly WIS, Hub pairwise rankings, forecast fans and the fold layout
+(`evaluation/report.py`). Text between the write-up markers is kept across
+regenerations; a page without the markers is never overwritten.
 
-The ranking directory contains `season_scores.csv`, `season_composite_scores.csv`,
-`run_scores.csv`, `configuration_ranking.csv`, `matched_pairs.csv`,
-`matched_effects.csv`, a manifest and plots. The score is the location-relative WIS
-ratio to the frozen Hub ensemble, with US 20%, equally weighted states/DC 80%,
-admissions weight 1, ED weight 0.5, and equal season weights. Only available
-support contributes. Lower is better; one means ensemble parity.
-
-Matched effects change one scenario field at a time, holding every other field
-fixed. Each context uses the same seeds on both sides, and contexts in a summary
-use the same seed set. Deltas are averaged within each seed before a Student-t
-interval is computed across seeds. Contexts are not independent replicates.
-Intervals describe fitting randomness on fixed evaluation tasks, not uncertainty
-for new seasons or multiple model selection. Fewer than two seeds give no interval.
-Nowcasts are ranked separately by normalized CRPS, not Hub-relative forecast WIS.
-
-`--allow-incomplete`, `--seeds`, and alternative score weights produce exploratory
-rankings; only a complete default-weight ranking publishes a report. `--no-plots`
-writes analysis tables without plotting or publishing. Use `rank --configs ...`
-to choose report configurations or `plots --configs ... --dates ...` to redraw.
-
-The report preserves text inside its write-up markers. Its adjacent `report.json`
-records a stable report date, title and stage; the model-runs index and sidebar
-order reports by that date, newest first. Dates describe the report, not necessarily
-the last training job. Bring reports generated on Longleaf back with:
+`--allow-incomplete` and `--seeds` produce exploratory rankings without a report;
+`--no-report` writes tables only. Bring reports generated on Longleaf back with:
 
 ```bash
 rsync -a chadi@longleaf.unc.edu:/proj/jlessler/projects/tapestry-all/tapestry/docs/experiments/ docs/experiments/
 ```
+
+## Ensembles of saved forecasts
+
+`python -m tapestry.evaluation.ensembles GROUPS.json --out DIR` combines completed runs
+without refitting: equal weight per recipe, equal weight per seed within a recipe,
+quantile averaging (`vincent`) or distribution mixing (`mixture`), view by view. Each
+ensemble is written as a run folder and ranked with the same scorer
+(`DIR/ranking/`). The groups file names recipes by experiment, scenario and seeds (or
+explicit run folders, or `"inputs": "reported"` for replays). Example:
+`experiments/b7-folds-ensembles.json`. The production export uses the same `combine`.
 
 ## Standard evaluation
 
@@ -158,27 +173,27 @@ from the finalized data stay unavailable.
 **Samples.** 512 forecast samples per forecast for every reported score
 (`planner.EVAL_MEMBERS`; `plan` no longer takes `--eval-members`).
 
-**Scores** (`evaluation/standard.py`, written by `planner rank` next to the ranking):
+**Scores** (`evaluation/standard.py`; cached per run, collected by `planner rank`):
 
 | Table | What it compares | Scales |
 |---|---|---|
-| `standard_hub_relative.csv` | Where a Hub ran: each location's total WIS divided by the Hub ensemble's on identical Hub tasks; states/DC averaged (80%) and US (20%) | natural; log(x + 1) for admissions |
-| `standard_pairwise.csv` | Where a Hub ran: CDC FluSight 2025–26 method. States/DC only, models with at least 75% of the Hub's tasks, geometric mean of pairwise mean-WIS ratios on shared tasks, divided by the Hub baseline. Rank among all qualifying Hub models, with Google's models (`Google_*`) flagged; a Google model below 75% of the tasks is listed as not qualifying (2024–25 flu and COVID, 2025–26 COVID at 74.7%). Each seed joins the Hub pool alone. | natural; log(x + 1) for admissions |
-| `standard_raw_wis.csv` | All six targets in both seasons, with or without a Hub: mean WIS per forecast task, states/DC and US separately, against the finalized panel. Window: every Saturday from the season's first to last Hub admissions reference date for that pathogen, otherwise CDC epiweeks 40–20. | natural; log(x + 1) for admissions |
-| `standard_input_fills.csv` | Share of available inputs that received a finalized value, per season and target: its own history (newest week, all weeks) and all six target histories read at its Hub's deadline; covariates per Hub deadline | — |
+| `headline-*.csv` (from raw WIS) | **The ranking.** Every predicted target in every held-out season, with or without a Hub: mean WIS per forecast task, states/DC and US separately, against the research latest panel. Window: every October–May reference date, horizons 0–3. | natural; log(x + 1) for admissions |
+| `hub-relative-scores.csv` | Where a Hub ran: each location's total WIS divided by the Hub ensemble's on identical frozen Hub tasks; states/DC location ratios averaged equally, US separate | natural; log(x + 1) for admissions |
+| `hub-pairwise-scores.csv` | Where a Hub ran: CDC FluSight 2025–26 method. States/DC only, models with at least 75% of the Hub's tasks, geometric mean of pairwise mean-WIS ratios on shared tasks, divided by the Hub baseline. Rank among all qualifying Hub models, with Google's models (`Google_*`) flagged; a Google model below 75% of the tasks is listed as not qualifying (2024–25 flu and COVID, 2025–26 COVID at 74.7%). Each seed joins the Hub pool alone. | natural; log(x + 1) for admissions |
+| `score-details.csv`, `distribution-scores.csv` | WIS and interval coverage by month, horizon and location; weekly and four-week coverage | as above |
+| ★ input fills (report footnote) | Share of available inputs that received a finalized value, per season and target: its own history (newest week, all weeks) and all six target histories read at its Hub's deadline; covariates per Hub deadline | — |
 
 ED proportions are never transformed. Lower is better everywhere; 1 is the ensemble
-(Hub-relative) or the Hub baseline (pairwise). The main ranking score (`totals.py`,
-natural scale, ensemble-relative, admissions 1 / ED 0.5) is unchanged and still orders
-configurations. The report's "Standard evaluation" section shows C1–C3 and a ranking
-figure per season (`standard-ranking-<season>.png`).
+(Hub-relative) or the Hub baseline (pairwise). The primary ordering is states/DC
+log-admission WIS (user decisions 5 and 8 October 2026). Until 8 October 2026 the
+ranking was the B0 composite (`totals.py`: location-relative ratio to the Hub ensemble,
+states/DC 80% and US 20%, admissions 1 / ED 0.5); it was deleted on the user's
+instruction to score like FluSight with US and states reported separately.
 
 Assumptions: the CDC report does not state its log offset; we use log(x + 1), as the
 FluSight and COVID dashboards do. Applying the FluSight pairwise method to the COVID and
 RSV Hubs is our choice. Pairwise rankings use the frozen Hub truth; raw WIS uses the
-finalized panel truth. Runs fitted before this change (or replaying old inputs with
-`replay_from`, or two-stage pipelines, which nowcast their own dated inputs) are not
-scored by the standard tables; `rank` says so and they must be refitted.
+finalized panel truth. Runs fitted before this change must be refitted.
 
 ### Audit log, 5 October 2026
 
@@ -281,191 +296,126 @@ performance). Fixed:
 and unused reference weeks are masked before constructing fitting inputs, labels,
 scales and covariate statistics. Validation weeks are hidden inside the fitting
 partition; refitting uses all permitted training weeks. Scoring labels stay inside
-the held-out season. The scenario selects evaluation seasons and the pinned panel
-supplies the training calendar. These retrospective folds can train on seasons
+the held-out season. The scenario selects evaluation seasons (`evaluation_seasons`) and the pinned panel
+supplies the training calendar; `production` fits every completed season and scores nothing. These retrospective folds can train on seasons
 later than the scored season; they are not forward deployment simulations.
 
-## Two-stage models
+## Protocol of the B7 relaunch (7 October 2026)
 
-One observation panel, independently fitted models, and an explicit history handoff.
-Use `task=nowcast`, `task=forecast`, or `task=pipeline` through the same experiment
-manager. No gradients flow between the stages.
+On 7 October 2026, the individual-model relaunch adopted a prescribed 2025–26
+reporting process in every held-out season (`error_reference=2025-2026`,
+`evaluation_inputs=prescribed`; then named `revision_reference` and `evaluation_vintaging=1`). Training and evaluation admission and ED histories
+are artificially revised throughout their lookback, including histories with
+real archived reports. Future prediction labels remain the September research
+latest values. Kinsa is unchanged, and FluSurv is omitted. The epidemic folds
+remain exchangeable leave-one-season-out folds, evaluating 2023–24, 2024–25 and
+2025–26 and training on the other three completed seasons including 2022–23.
 
-### Module responsibilities
+Revision donors match only the permitted flu admission/ED signals. By default
+one donor release is shared across locations and matched on normalized level
+and recent change without calendar. The closest seasonal donor release is
+excluded in every recipient season. Adjacent error windows may share reference
+weeks: the 2025–26 reporting process is prescribed separately, and only errors,
+not donor epidemic trajectories or future labels, are transported. This rule
+replaced the absolute-date full-window exclusion on 7 October 2026 because that
+exclusion removed winter donors only when evaluating 2025–26. Missing donor residuals
+use genuine age-aligned evidence at the same location, then national/native
+location pools; they do not default to unrevised later values. The prescribed
+revision calibration is separate from the epidemic training-season mask.
 
-| Module | Responsibility |
-|---|---|
-| `dataset/episodes.py`, `dataset/cv.py` | Dates, as-of observations, labels and scientific partitions |
-| `model/network.py` | Shared network architecture and checkpoint serialization |
-| `model/scenario.py` | Configuration parsing and independent stage settings |
-| `model/pipeline.py` | Dated history/covariate objects and model composition |
-| `experiment/training.py` | Tensor preparation, preprocessing, fitting and evaluation |
-| `experiment/two_stage.py` | Cross-fitting and composing the two training stages |
-| `experiment/fitting.py` | Select the standalone or coupled fold workflow |
-| `experiment/planner.py` | Plan jobs, launch, track completion and rank results |
+The default nowcaster is a small tree trained on synthetic preliminary
+histories, with research latest training histories as reconstruction labels.
+It corrects two admission and ED weeks. The focused 30-minute screen compares
+four weeks and a residual MLP on the three-block sampled MLP, plus removal of
+forecaster calendar inputs on sampled and direct-quantile leaders. A is trained behind its
+cross-fitted corrector; B retains raw synthetic-history joint reconstruction
+training, so its correction-estimator/window comparisons change its scoring
+inputs without changing the neural fitting treatment. All forecasters are
+refitted. Their modern training and epoch selection use the existing
+Q95-normalized native loss plus 0.5 times log(1 + admissions) loss; ED stays
+native. Historical ILI initialization and the existing training geography
+weights are retained.
 
-Dependencies go from planner to fitting/orchestration to shared training and models.
-Training and pipeline modules do not import the planner.
+## Restructuring log, 8 October 2026
 
-### Data and prediction boundary
+Every submitted model (System2, B7) and every experiment since B3 used one training
+route, the former B3 "pilot" route. On the user's instruction ("each thing done once
+and well"; delete unused code rather than store it), the package was reduced to that
+route and one path per step:
 
-The shared [data panel](data/index.md#current-dataset) supplies as-of inputs and separately frozen reference labels.
-
-Let `t` be the Saturday four days before the Wednesday issuance.
-
-| | Nowcaster | Forecaster |
-|---|---|---|
-| Inputs | As-of target reports and selected covariates | Sampled reconstructed histories and optional as-of covariates |
-| Labels | Reference outcomes for completed weeks `t-R+1` through `t` | Reference outcomes for `t+1` through `t+4` |
-| Outputs | Joint samples of all six targets for the reconstruction window | Joint samples of all six targets for four future weeks |
-
-Defaults are `R=2` and four forecast weeks. Both stages use entirely as-of history
-in the coupled pipeline. Older weeks pass through with their original missingness;
-the last `R` weeks are reconstructed, including provisional reports and unpublished
-cells. Two weeks is a configurable research choice, not a claim that older reports
-are mature. Kinsa is stored nationally and broadcast to every location during episode construction.
-Covariates are predictors, not additional reconstruction targets.
-
-### Independent configuration
-
-A pipeline has ordinary shared defaults plus `nowcast.<field>` and
-`forecast.<field>` overrides. Every override is validated as an ordinary model
-setting. Python uses mappings or immutable key/value pairs:
-
-```python
-from tapestry.model import Scenario
-
-scenario = Scenario(
-    task="pipeline", input_mode="vintaged",
-    nowcast={"lookback": 12, "encoder": "mlp", "epochs": 50,
-             "covariate_set": "inpatient+ilinet"},
-    forecast={"lookback": 8, "encoder": "conv", "epochs": 100,
-              "patience": 5},
-)
-nowcast_settings = scenario.stage("nowcast")
-forecast_settings = scenario.stage("forecast")
-print(scenario.scenario_string)
-```
-
-The corresponding string uses comma-separated fields such as
-`task=pipeline,input_mode=vintaged,nowcast.lookback=12,forecast.lookback=8`.
-Each stage can independently choose architecture, target grouping, covariates,
-transforms, epoch budget, early stopping and missingness augmentation. Unprefixed
-model/training settings supply defaults to both stages. `epochs` and `patience`
-have the same meaning in each stage: select an epoch if requested, then refit.
-`nowcast_weeks` controls the reconstruction window; `nowcast_members=16` controls
-the finite history bank used for forecaster training. These are pipeline settings,
-not stage overrides.
-
-A longer input history covers `max(nowcast.lookback, forecast.lookback)` weeks.
-Each stage consumes its own trailing window. The nowcaster must have at least
-`nowcast_weeks` context weeks. Locations and target order must match between stages.
-
-### Training and evaluation
-
-1. For each outer fold, mask all held-out and unused reference weeks before
-   constructing fitting inputs, labels, loss scales or covariate statistics.
-2. Within the permitted training partition, fit a nowcaster for each prediction
-   season using other seasons only. Also exclude reconstructed and forecast label
-   dates crossing its boundaries. Generate joint reconstructed histories.
-3. Train the forecaster on these out-of-fold histories. If it uses early stopping,
-   repeat cross-fitting inside its inner fitting partition. Its validation weeks
-   cannot train any nowcaster used for that selection.
-4. Fit the final nowcaster on the outer fitting partition and refit the forecaster
-   after epoch selection. Evaluate their composition on the held-out season.
-
-Nowcaster early stopping also stays inside its permitted fitting partition.
-When both stages use early stopping, their validation schedules must leave
-nowcaster validation labels after forecaster validation weeks have been excluded.
-For example, use `nowcast.validation_offset=8` and `forecast.validation_offset=4`.
-An empty fitting/validation partition raises an error; no validation fallback is used.
-
-Training samples a whole history independently from the cached bank for each
-predictive member, then draws one conditional future. This finite bank is a
-Monte Carlo approximation. Evaluation draws fresh histories and conditional
-futures. Never substitute the nowcast mean or shuffle its cells independently.
-Native-unit fair CRPS and the existing season/target/location weighting remain
-unchanged. Estimated cells never become reference-truth observations for scales.
-
-Each pipeline fold saves `nowcaster.pt`, `forecaster.pt` and combined `model.pt`,
-with resolved stage settings and fitting provenance in the manifest. Forecast
-quantiles remain in `forecasts.npz` for hub-relative WIS. Separate nowcast quantiles
-and normalized fair CRPS are in `nowcast/`. Standalone nowcasts place these at the
-fold root, and `rank` writes `nowcast-ranking.csv`. Rank standalone nowcasts and
-forecasts in separate experiments because they measure different tasks.
-
-Season-held-out evaluation is retrospective. Operational historical performance
-also requires chronological fitting and training labels available at that cutoff.
-Recent reference labels may be immature. Propagating samples does not establish
-calibrated dependence or interval coverage. An oracle-history benchmark is a
-separate finalized forecast experiment; it is not fitted automatically.
-
-### Explicit handoff
-
-`HistorySamples` holds native-unit samples `[member, episode, week, target, location]`,
-boolean availability/finality/estimated masks, target/location identifiers, context
-dates, issuances and optional provenance. Counts remain counts; ED values remain
-0–1 proportions. Calendar features are derived from context dates; any supplied
-calendar must agree. Estimated and known-final masks cannot overlap.
-
-`CovariateHistory` holds values `[episode, week, covariate, value_or_mask, location]`
-with names, locations, dates and issuances. Names are reordered to each stage's
-configuration. Date or issuance mismatches, wrong location order, missing covariates,
-short histories and mismatched mask shapes raise errors. Raw unnamed covariate
-tensors are not accepted at the public pipeline handoff. These checks establish
-alignment, not the authenticity of an external caller's claimed as-of cutoff.
-
-```python
-import torch
-from tapestry.model.network import load_model
-from tapestry.model import CovariateHistory, reconstruct, forecast_histories
-
-nowcaster = load_model(torch.load("nowcaster.pt", map_location="cpu", weights_only=False)).eval()
-forecaster = load_model(torch.load("forecaster.pt", map_location="cpu", weights_only=False)).eval()
-
-## One tuple of consecutive Saturday dates per episode; one Wednesday issuance per episode.
-## values/available/known_final: [episode, context_week, 6, location].
-## The named covariate object may contain the union needed by both stages.
-covariates = CovariateHistory(covariate_values, covariate_names, locations,
-                              context_dates, issuances)
-with torch.no_grad():
-    histories = reconstruct(
-        nowcaster, values=values, available=available, known_final=known_final,
-        locations=locations, context_dates=context_dates, issuances=issuances,
-        covariates=covariates, members=256,
-    )
-    futures = forecast_histories(forecaster, histories, covariates=covariates)
-## futures: [member, episode, 4, 6, location]
-```
-
-Use `None` for covariates when neither model needs them. A loaded combined
-`model.pt` is callable with the same dated inputs as `reconstruct` and returns
-future samples. The stages can also be loaded and used independently.
-
-
-
-## Documentation scope
-
-The documentation describes the current implementation. Completed forecasting
-results remain as dated scientific reports; archived scientific reports have their own Archive folder. Retired workflow
-instructions, preliminary analyses and smoke reports are excluded. Only `docs/experiments/` holds model-run
-reports. Runtime artifacts under `data/experiments/` and scenario grids under
-`experiments/` serve different purposes. Documentation organization does not change
-saved models, raw data, score values or the two-stage model implementation.
-
-## Report organization
-
-Each experiment keeps its protocol on the report page. Reports begin with the
-three best configurations (or all when fewer exist), season means versus the Hub
-ensemble, and an explicitly identified B0 reference. A comparison across different
-input/training protocols is contextual; it is not a paired feature effect.
-Missing scores, season diagrams and other outputs are labelled **No known**.
-The common order is season comparison, protocol, season splits, findings,
-forecast fans, score diagnostics, matched comparisons, full ranking and appendix.
-Original plot files are displayed in scrollable frames; layout changes do not
-regenerate or alter plots. Archive dates mean first recorded publication in Git.
-
-Only the main report for each experiment is retained. Supporting audits, checks,
-reproductions and overview pages are excluded from the archive. The B0 comparison
-uses the saved stage09 season scores in `docs/experiments/b0-reference.csv`;
-keeping these numeric reference values does not require a separate report page.
+- **Deleted training routes:** plain finalized/vintaged fits, B2 "weekend" revision
+  experiments, fixed-checkpoint replay with nowcast inputs (`replay_from`), standalone
+  nowcasting, nowcast-to-forecast pipelines and per-signal finalizers, with their
+  modules (`experiment/{fitting,weekend,replay,finalization,two_stage,baseline,nowcast_baseline,augmentation}.py`,
+  `model/{finalization,context_nowcast,revision_uncertainty,baselinenowcast,pipeline,revision_regression}.py`,
+  `dataset/finalization.py`), their scenario fields and the `finalized`/`finalized_available`
+  episode modes. Strings naming those fields now raise. The finality-flag and
+  estimated-input network channels went with them. Their experiment pages remain as
+  dated reports. To reproduce them, use git history (last commit before the restructuring:
+  `8616acc`) or the `src/` snapshot stored with each Longleaf experiment
+  (`data/experiments/<name>/code`). The B3–B7 changes and scripts that were never committed
+  are not kept elsewhere: the local backup archive was deleted on 9 October 2026 at the
+  user's request.
+- **Renamed:** `experiment/pilot.py` → `experiment/fit.py`; its scoring and ranking moved
+  to `evaluation/ranking.py`; the reporting-error scoping (`ScopedErrors`) merged into
+  `dataset/reporting_error.py`.
+- **Evaluation:** `totals.py`, `plots.py`, `report_layout.py`, `effects.py`, `reports.py`
+  replaced by `ranking.py` and `report.py`; the WIS and Hub-relative helpers moved into
+  `standard.py`. The B0 80/20 composite ranking and matched-effects tables were removed.
+- **Scripts:** about 50 experiment-specific planners, replays, ensemble scorers and report
+  scripts (B4–B7, peak study, audits) were replaced by study files, `planner replay`,
+  `evaluation.ensembles` and `tapestry.production`.
+- **Verification:** re-exporting the 7 October B7 forecasts through the new code reproduced
+  the submitted CSV byte for byte (SHA256 `cdee271c…`); replaying one production
+  checkpoint per B7 recipe on CPU gave identical forecasts with old and new code; a short
+  fit of each B7 recipe gave identical training losses. All tests pass.
+- **Renamed (same day, user decision):** `pilot_method` → `training_histories`
+  (`two_stage` → `corrected`), `pilot_nowcaster` → `corrector_examples` + `corrector_model`,
+  `evaluation_vintaging` → `evaluation_inputs`, `revision_*`/`vintage_seasons` → `error_*`,
+  `evaluation_replicates` → `evaluation_draws`, `nowcast_weeks` → `reconstruction_weeks`,
+  `nowcast_noise*` → `correction_noise*`. Every report from B3 on now has a model-choices
+  A–F table linked to [the explanation](reference/model-choices.md).
+- **Review, 9 October 2026 (user agreed):** `training_histories` bundled three choices and was
+  split into `history_source`, `history_correction` and `reconstruction_labels`; the forecast
+  view became a recipe field (`forecast_view`, default `corrected`), and ranking, reports and
+  production use only that view (previously each configuration's best view was picked after
+  scoring); protocol tables describe every configuration with its training seasons per fold,
+  evaluated seasons and labels; ensembles record their own `forecast_view`, and scoring no
+  longer assumes a `raw` forecast file exists (ensembles may hold only `corrected`).
+- **Old names dropped, 9 October 2026 (user decision):** instead of translating old field names
+  forever, the records still in use were rewritten to the current names and the translation
+  code was removed. Rewritten, on Longleaf and in the local copies: the B7 folds
+  (`b7-folds-20261007`), B7 production fits and operational forecasts
+  (`b7-production-20261007`, `b7-operational-20261007`), and the System2 production fits and
+  operational forecasts (`b6-production-system2-20261007`, `b6-operational-20261007/system2`):
+  scenario strings in `jobs.csv`, `runs.csv`, run and fold manifests and operational manifests;
+  run folders renamed to the current run ids (e.g. B7 production
+  `…-8561787f0cec` → `…-e60aa9e03e00`, `…-5af694f72554` → `…-ffdcc78fdeae`,
+  `…-d29b75ad47f9` → `…-c2af77a5341a`); ranking folders and view symlinks deleted (regenerated by
+  `planner rank`). `model.pt`, correction trees and pinned code snapshots were not touched, so
+  checkpoint hashes are unchanged; the metadata inside `model.pt` keeps the old string as
+  provenance, so `fit --resume` cannot continue these (all are complete). The pre-migration
+  record backups were deleted after the checks, at the user's request. Checks: the planner reads
+  all three experiments (B7 folds 16 complete / 4 stopped, as before; B7 production 30; System2 90); all
+  120 operational manifests parse and point to existing checkpoints; replaying one checkpoint
+  per recipe of both releases gives forecasts identical to the pre-migration replays; re-exporting
+  the 7 October forecasts reproduces both submitted files byte for byte (B7 `cdee271c…`,
+  System2 `b68b3422…`); `python -m tapestry.production run` completes for B7. Every other
+  experiment (B3–B6, older B7 checks) is history: its reports remain, the planner can no longer
+  read it, and rerunning means a new experiment. The B4 fallback release was deleted. A System2
+  release (`production/releases/system2-20261007.json`, the 80 submitted checkpoints) was added.
+  Docs cleanup (9 October 2026, user decision): deleted interim B6 snapshot pages
+  (`b6-extension-score-*`, `b6-candidate-ensembles-*`, `b6-broad-*`), settings-only folders
+  linked from nowhere (`b6-search`, `b6-extension-check`, `b6-matched`, `b6-specialists`,
+  `b7-revisions*`), `b7-plan` (never run), `training-audit` (tables without a page),
+  `submission-peer-review`, `b3-vintage-flu-1000-design`, `performance-ideas`,
+  `flusight-selection-review` (superseded by the submission choice review), and the root
+  notes `implementation-plan.md`, `icare.md`, `todo.md`. Report folders keep their page,
+  figures and tables up to 1 MB; larger tables stay in the ranking folder (`report.py`). The
+  runs index is curated by hand.
+  The B7 fold experiment was then renamed `b7-fast-20261007` → `b7-folds-20261007` (Longleaf
+  folder and its records, the report folder `docs/experiments/b7-folds-20261007/`, the study
+  files `experiments/b7-folds-20261007.json` and `experiments/b7-folds-ensembles.json`); the planner
+  and the ensembles file read it. Its report pages keep the label "B7-fast" in their text.
+- **Unchanged:** defaults, the saved correction-tree pickles, the WIS mathematics and the
+  mixture rule. Run folders are named by `Scenario.run_id`.

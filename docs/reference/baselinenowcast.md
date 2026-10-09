@@ -19,7 +19,7 @@ or learned correction-strength selection.
 - Fit separately by signal, location and issuance using the latest 52 event weeks
   whose scheduled initial report date has passed. Delay 12 approximates maturity;
   these settings are fixed, not selected on evaluation scores. The window differs
-  from Tapestry's 52 eligible pairs per delay.
+  from Chromantis's 52 eligible pairs per delay.
 - Only scheduled vintages available at issuance enter the fit, including causally
   available reports during held-out seasons. Reference truth never enters delay
   estimation. The current event week's visible reports may enter the triangle.

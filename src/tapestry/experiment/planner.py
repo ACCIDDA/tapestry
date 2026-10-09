@@ -1,9 +1,13 @@
-"""Plan, run, status, rank and compare experiments for the unified `Scenario`.
+"""Plan, run, resume, replay and rank experiments: one manager for every scenario.
 
-A shared manager fits standalone nowcasters, standalone forecasters and a
-cross-fitted two-stage pipeline. The `plan`, `run`, `status` and `rank` commands
-serve all three tasks. Forecast ranking uses hub-relative WIS; standalone
-nowcasting uses its training-normalized native-unit fair CRPS.
+`plan` takes scenario strings (`-s`) or a study file (`--study experiments/<name>.json`:
+{"description": ..., "candidates": {name: scenario}, "seeds": [...]}). `run` fits each
+scenario/seed with `experiment/fit.py` across its held-out seasons; a seed whose last
+attempt stopped (time limit, failure) with saved fold models is continued in that attempt
+(`fit --resume`), and the continuation command is recorded in its `run.json`. `replay`
+evaluates completed fits on other inputs without refitting. `rank` scores runs with
+`evaluation/ranking.py` and, for a complete experiment, writes the report page
+(`evaluation/report.py`).
 
 `plan` records in `experiment.json` the dataset path, the frozen-support path and
 the sha256 of `panel.npz`, of the frozen manifest and of the one population file
@@ -26,10 +30,8 @@ import time
 
 import numpy as np
 from tapestry.dataset.build import PANEL_DATASET
-from tapestry.dataset.cv import SEASONS
-from tapestry.evaluation.totals import US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT
 from tapestry.model.scenario import Scenario
-from .fitting import fit, LOCATIONS
+from .fit import fit, replay, LOCATIONS
 from .provenance import save, now, environment, git_state, sha256
 
 # Forecast samples per episode for every reported score (user decision 2026-10-05), so
@@ -104,6 +106,12 @@ def snapshot_code(folder):
     save(destination / 'git.json', git_state())
 
 
+def read_study(path):
+    """{name: Scenario} and seeds from a study file; the file is copied into the experiment."""
+    study = json.loads(Path(path).read_text())
+    return {name: Scenario.from_string(value) for name, value in study['candidates'].items()}, study.get('seeds')
+
+
 def plan(folder, scenarios, seeds, settings):
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / 'experiment.json'
@@ -136,22 +144,9 @@ def complete_artifacts(output):
         seasons = Scenario.from_string(manifest.get('scenario', '')).scored_seasons
     except (OSError, ValueError, TypeError):
         return False
-    task = Scenario.from_string(manifest.get('scenario', '')).task
-    predictions = 'finalizations.csv.gz' if task == 'finalize' else 'forecasts.npz'
-    required = ['manifest.json'] + [f'eval_{s}/model.pt' for s in seasons] + [f'eval_{s}/{predictions}' for s in seasons]
-    if not all((output / n).is_file() and (output / n).stat().st_size for n in required):
-        return False
-    try:
-        manifest = json.loads((output / 'manifest.json').read_text())
-        task = Scenario.from_string(manifest.get('scenario', '')).task
-        extra = (['finalization_scores.json', 'finalization-metrics.csv', 'baselinenowcast_scores.json'] if task == 'finalize' else
-                 ['nowcast_scores.json', 'baselinenowcast.npz'] if task == 'nowcast' else
-                 ['nowcaster.pt', 'forecaster.pt', 'nowcast/forecasts.npz', 'nowcast/nowcast_scores.json', 'nowcast/baselinenowcast.npz']
-                 if task == 'pipeline' else [])
-        return (sorted(manifest.get('folds', [])) == sorted(seasons)
-                and all((output / f'eval_{season}' / name).is_file() for season in seasons for name in extra))
-    except (KeyError, ValueError, TypeError):
-        return False
+    required = ['manifest.json'] + [f'eval_{s}/{n}' for s in seasons for n in ('model.pt', 'nowcaster.pkl', 'forecasts.npz')]
+    return (all((output / n).is_file() and (output / n).stat().st_size for n in required)
+            and sorted(manifest.get('folds', [])) == sorted(seasons))
 
 
 def seed_state(folder, scenario, seed):
@@ -167,24 +162,39 @@ def seed_state(folder, scenario, seed):
     return found[-1] + (False,) if found else (None, dict(status='planned'), False)
 
 
+def resumable(attempt, scenario):
+    """An unfinished attempt with at least one saved fold model (prescribed-revision fits only)."""
+    return (attempt is not None and Scenario.from_string(scenario).evaluation_inputs == 'prescribed'
+            and any((attempt / f'eval_{s}' / 'model.pt').exists() for s in Scenario.from_string(scenario).scored_seasons))
+
+
 def run_seed(folder, job, seed, settings):
-    if seed_state(folder, job['scenario'], seed)[2]:
+    attempt, record, done = seed_state(folder, job['scenario'], seed)
+    if done:
         print(f'Reusing {job["name"]}, seed {seed}', flush=True)
         return True
     check_pinned_inputs(settings)
-    number = len(attempts(folder, job['scenario'], seed)) + 1
-    attempt = folder / scenario_directory(job['scenario']) / f's{seed}' / f'attempt-{number:03d}'
-    attempt.mkdir(parents=True, exist_ok=False)
-    command = [sys.executable, '-m', 'tapestry.experiment.planner', 'fit', '--scenario', job['scenario'],
-               '--seed', str(seed), '--device', settings['device'],
-               '--eval-members', str(settings['eval_members']), '--dataset', settings['dataset'],
-               '--frozen', settings['frozen'], '--output', str(attempt)]
-    record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
-                 settings=settings, command=command, started=now(), **environment())
+    if resumable(attempt, job['scenario']):
+        # Continue the stopped attempt: saved fold models and complete forecast views are reused.
+        command = record['command'] + ['--resume']
+        record = dict(record, status='running', resumed=now(), resume_command=command,
+                      resumed_after=record.get('status'))
+        log_name = 'resume.log'
+    else:
+        number = len(attempts(folder, job['scenario'], seed)) + 1
+        attempt = folder / scenario_directory(job['scenario']) / f's{seed}' / f'attempt-{number:03d}'
+        attempt.mkdir(parents=True, exist_ok=False)
+        command = [sys.executable, '-m', 'tapestry.experiment.planner', 'fit', '--scenario', job['scenario'],
+                   '--seed', str(seed), '--device', settings['device'],
+                   '--eval-members', str(settings['eval_members']), '--dataset', settings['dataset'],
+                   '--frozen', settings['frozen'], '--output', str(attempt)]
+        record = dict(status='running', name=job['name'], scenario=job['scenario'], seed=seed,
+                      settings=settings, command=command, started=now(), **environment())
+        log_name = 'run.log'
     save(attempt / 'run.json', record)
     print(f'Running {job["name"]}, seed {seed}: {attempt}', flush=True)
     try:
-        with (attempt / 'run.log').open('w') as log:
+        with (attempt / log_name).open('a') as log:
             subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=True)
         if not complete_artifacts(attempt):
             raise RuntimeError('Run exited without complete fitted/scored artifacts')
@@ -255,102 +265,62 @@ def completed_runs(folder, allow_incomplete=False, seeds=None):
     return done, len(done) == len(planned)
 
 
-def rank(folder, allow_incomplete=False, seeds=None, us_weight=US_SCORE_WEIGHT,
-         admissions_weight=ADMISSIONS_WEIGHT, ed_weight=ED_WEIGHT, make_plots=True, configs=None):
-    """Score completed runs into `ranking-<hash>/` (hash of the runs and the score weights), then plot.
+def replay_folder(folder, attempt, inputs):
+    """Where `planner replay` writes the replay of one completed attempt."""
+    return Path(folder) / f'replay-{inputs}' / Path(attempt).relative_to(folder)
 
-    The report page (`docs/experiments/<experiment>/index.md`) is written only for the
-    complete ranking: every planned run complete and included, default score weights.
-    A subset (`--seeds`, `--allow-incomplete` with missing runs) or non-default weights
-    still gets its ranking folder and figures, not the report."""
-    from tapestry.evaluation.totals import rank as rank_runs
-    from tapestry.evaluation.plots import plot_experiment, write_report
-    if not 0 <= us_weight <= 1 or min(admissions_weight, ed_weight) < 0 or not admissions_weight + ed_weight:
-        raise ValueError('Need 0 <= us_weight <= 1 and nonnegative target weights, not both zero')
+
+def ranking_runs(folder, allow_incomplete=False, seeds=None, inputs=None):
+    """Completed runs as ranking rows, and whether they are every planned run."""
     done, every_run = completed_runs(folder, allow_incomplete, seeds)
-    finalizers = [r for r in done if Scenario.from_string(r['scenario']).task == 'finalize']
-    if finalizers:
-        if len(finalizers) != len(done):
-            raise ValueError('Rank finalization separately from forecast/nowcast experiments')
-        from .finalization import rank as rank_finalization
-        return rank_finalization(folder, finalizers, make_plots)
-    nowcasts = [r for r in done if Scenario.from_string(r['scenario']).task == 'nowcast']
-    if nowcasts:
-        if len(nowcasts) != len(done):
-            raise ValueError('Rank nowcasts and forecasts in separate experiments: their scores differ')
-        if (us_weight, admissions_weight, ed_weight) != (US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT):
-            raise ValueError('Nowcast ranking uses the fixed scientific objective weights')
-        rows = []
-        for row in nowcasts:
-            scores = [json.loads((folder / row['attempt'] / f'eval_{s}' / 'nowcast_scores.json').read_text())
-                      for s in Scenario.from_string(row['scenario']).scored_seasons]
-            model_score = float(np.mean([s['normalized_crps'] for s in scores]))
-            baseline_score = float(np.mean([s.get('baselinenowcast_normalized_mae', np.nan) for s in scores]))
-            rows.append(dict(scenario=row['scenario'], seed=row['seed'], normalized_crps=model_score,
-                             baselinenowcast_normalized_mae=baseline_score,
-                             baselinenowcast_point_crps_ratio=model_score/baseline_score if baseline_score > 0 else np.nan))
-        rows.sort(key=lambda r: r['normalized_crps'])
-        destination = folder / 'nowcast-ranking.csv'
-        write_csv(destination, rows, list(rows[0]))
-        print(json.dumps(rows, indent=2), flush=True)
-        return destination
-    key = dict(attempts=sorted(r['attempt'] for r in done), us_weight=us_weight,
-               admissions_weight=admissions_weight, ed_weight=ed_weight)
-    destination = folder / f"ranking-{hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:12]}"
     runs = [dict(config_id=row['scenario'], name=row['name'], seed=row['seed'], path=folder / row['attempt'])
             for row in sorted(done, key=lambda r: r['attempt'])]
-    ranking = rank_runs(runs, destination, us_weight, admissions_weight, ed_weight)
-    pilot_runs=[r for r in runs if Scenario.from_string(r['config_id']).pilot_method != 'none']
-    if pilot_runs:
-        from .pilot import rank_pilot
-        rank_pilot(pilot_runs, json.loads((folder/'experiment.json').read_text())['frozen'], destination)
-    print(ranking.head(20).to_string(index=False), flush=True)
-    standard_runs = [run for run in runs if Scenario.from_string(run['config_id']).task == 'forecast']
-    if standard_runs and not all(Scenario.from_string(r['config_id']).forecast_targets=='flu' for r in standard_runs) and all(standard_inputs(run['path']) for run in standard_runs):
-        from tapestry.evaluation.standard import score as score_standard
-        settings = json.loads((folder / 'experiment.json').read_text())
-        score_standard(standard_runs, settings['frozen'], destination)
-        print(f'Standard evaluation tables written to {destination}', flush=True)
-    elif standard_runs and all(Scenario.from_string(r['config_id']).forecast_targets=='flu' for r in standard_runs):
-        print('Flu-only sweep: cached common Hub-relative and full-window raw WIS tables written; optional pairwise Hub export omitted.',flush=True)
-    else:
-        print('Standard evaluation skipped: some runs were not scored on standard reported inputs '
-              '(fitted before 2026-10-05 or replaying old inputs); refit them.', flush=True)
-    from tapestry.evaluation.effects import write_effects
-    write_effects(destination)
-    if not make_plots:
-        return destination
-    for path in plot_experiment(folder, destination, configs=configs):
-        print(path, flush=True)
-    default_weights = (us_weight, admissions_weight, ed_weight) == (US_SCORE_WEIGHT, ADMISSIONS_WEIGHT, ED_WEIGHT)
-    if every_run and default_weights:
-        print(write_report(folder, destination), flush=True)
-    else:
-        print('Report not written: ' + ' and '.join(
-            reason for reason, applies in (('not every planned run is ranked (--seeds subset or incomplete runs)',
-                                            not every_run),
-                                           ('score weights differ from the defaults', not default_weights)) if applies),
-              flush=True)
+    if inputs:
+        runs = [dict(r, path=replay_folder(folder, r['path'], inputs)) for r in runs]
+        missing = [str(r['path']) for r in runs if not (r['path'] / 'manifest.json').exists()]
+        if missing:
+            raise ValueError(f'{len(missing)} runs not replayed on {inputs} inputs; run planner replay first')
+    return runs, every_run
+
+
+def rank(folder, allow_incomplete=False, seeds=None, inputs=None, report=True):
+    """Score completed runs into `ranking-<hash>/` (`evaluation/ranking.py`).
+
+    The report page (`docs/experiments/<experiment>/index.md`) is written only for the
+    complete ranking of the fitted runs: every planned run complete and included."""
+    from tapestry.evaluation.ranking import rank as rank_runs
+    runs, every_run = ranking_runs(folder, allow_incomplete, seeds, inputs)
+    key = dict(attempts=sorted(str(r['path'].relative_to(folder)) for r in runs), score='headline-v1')
+    destination = folder / f"ranking-{hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:12]}"
+    settings = json.loads((folder / 'experiment.json').read_text())
+    rank_runs(runs, settings['frozen'], destination)
+    if report and every_run and not inputs:
+        from tapestry.evaluation.report import write_report
+        print(write_report(folder, destination, runs), flush=True)
+    elif report:
+        print('Report not written: ' + ('replayed inputs are ranked in their own folder' if inputs else
+                                        'not every planned run is ranked (--seeds subset or incomplete runs)'), flush=True)
     return destination
 
 
-def standard_inputs(path):
-    """True when every season of a run was scored on standard reported inputs at 512 samples."""
-    manifest = json.loads((Path(path) / 'manifest.json').read_text())
-    for season in manifest['folds']:
-        with np.load(Path(path) / f'eval_{season}' / 'forecasts.npz', allow_pickle=False) as data:
-            if 'filled_covid' not in data.files or 'forecast_cutoff_utc_covid' not in data.files:
-                return False
-        fold = json.loads((Path(path) / f'eval_{season}' / 'manifest.json').read_text())
-        if fold.get('eval_members') != EVAL_MEMBERS:
-            return False
-    return True
+def replay_runs(folder, inputs, device, seeds=None):
+    """Evaluate every completed run on `inputs` without refitting (`fit.replay`), fold by fold."""
+    settings = json.loads((folder / 'experiment.json').read_text())
+    runs, _ = ranking_runs(folder, allow_incomplete=True, seeds=seeds)
+    for run in runs:
+        target = replay_folder(folder, run['path'], inputs)
+        manifest = json.loads((run['path'] / 'manifest.json').read_text())
+        for season in manifest['folds']:
+            if not (target / f'eval_{season}' / 'manifest.json').exists():
+                replay(run['path'] / f'eval_{season}', target / f'eval_{season}', inputs, settings['dataset'], device)
+        save(target / 'manifest.json', dict(manifest, replay_of=str(run['path']), inputs=inputs, refit=False))
+        print(f'Replayed {run["name"]}, seed {run["seed"]} on {inputs} inputs: {target}', flush=True)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
-    fit_parser = sub.add_parser('fit', help='Fit and evaluate one scenario/seed across all three seasons')
+    fit_parser = sub.add_parser('fit', help='Fit and evaluate one scenario/seed across its held-out seasons')
     fit_parser.add_argument('--scenario', required=True)
     fit_parser.add_argument('--seed', type=int, default=42)
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
@@ -358,14 +328,16 @@ def main(argv=None):
     fit_parser.add_argument('--dataset', default=PANEL_DATASET)
     fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
-    for name in ('plan', 'run', 'baseline', 'status', 'rank', 'plots'):
+    fit_parser.add_argument('--resume', action='store_true', help='Reuse saved prescribed-revision fold models and completed forecast views')
+    for name in ('plan', 'run', 'status', 'rank', 'replay'):
         p = sub.add_parser(name)
         p.add_argument('-e', '--experiment', required=True)
         p.add_argument('--root', default='data/experiments')
         if name == 'plan':
-            p.add_argument('-s', '--scenario', nargs='+', required=True, help='Full scenario strings to plan')
-            p.add_argument('--seeds', nargs='+', type=int, default=[42, 43],
-                           help='Two seeds screen (default, 2026-10-05); confirm finalists with more, e.g. 42 43 44 45 46')
+            p.add_argument('-s', '--scenario', nargs='+', help='Full scenario strings to plan (named by run id)')
+            p.add_argument('--study', help='Study file: {"candidates": {name: scenario}, "seeds": [...]}')
+            p.add_argument('--seeds', nargs='+', type=int, default=None,
+                           help='Default: the study file\'s seeds, else 42 43 (two-seed screen, 2026-10-05)')
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
             p.add_argument('--dataset', default=PANEL_DATASET)
             p.add_argument('--frozen', default=FROZEN)
@@ -374,53 +346,52 @@ def main(argv=None):
             p.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default=None)
             p.add_argument('--keep-going', action='store_true')
             p.add_argument('--fit-workers', type=int, default=1)
+        if name in ('run', 'rank', 'status', 'replay'):
             p.add_argument('--seeds', nargs='+', type=int, default=None)
-        if name in ('rank', 'status'):
-            p.add_argument('--seeds', nargs='+', type=int, default=None)
+        if name in ('rank', 'replay'):
+            p.add_argument('--inputs', choices=['reported', 'synthetic'], default=None if name == 'rank' else 'reported',
+                           help='replay: evaluation inputs; rank: rank those replays instead of the fits')
+        if name == 'replay':
+            p.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default='cpu')
         if name == 'rank':
             p.add_argument('--allow-incomplete', action='store_true')
-            p.add_argument('--no-plots', action='store_true', help='Write score tables only, without plots or a report')
-            p.add_argument('--us-weight', type=float, default=US_SCORE_WEIGHT,
-                           help='US share of the score (states/DC share the rest equally)')
-            p.add_argument('--admissions-weight', type=float, default=ADMISSIONS_WEIGHT)
-            p.add_argument('--ed-weight', type=float, default=ED_WEIGHT)
-        if name in ('rank', 'plots'):
-            p.add_argument('--configs', nargs='+', help='Scenario strings for fans/heatmaps; default: top three')
-        if name == 'plots':
-            p.add_argument('--ranking', help='Ranking folder (default: the most recent ranking-*)')
-            p.add_argument('--dates', nargs='+', help='Fan reference dates (default: every 4 weeks of each held-out season)')
+            p.add_argument('--no-report', action='store_true', help='Write score tables only')
     args = parser.parse_args(argv)
     if args.command == 'fit':
         scenario = Scenario.from_string(args.scenario)
         output = Path(args.output)
         for held_out in scenario.scored_seasons:
-            fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}', args.dataset)
+            fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}',
+                args.dataset, resume=args.resume)
         folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in scenario.scored_seasons}
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
                                             seed=args.seed, folds=list(scenario.scored_seasons), fold_manifests=folds,
                                             eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
-        if scenario.task not in ('nowcast', 'finalize') and scenario.evaluation_seasons != 'production':
-            from tapestry.evaluation.totals import score_run
-            score_run(output, args.frozen)
-            if scenario.pilot_method != 'none' and scenario.forecast_targets == 'flu':
-                from .pilot import cache_pilot_scores
-                cache_pilot_scores(output,args.frozen)
+        if scenario.evaluation_seasons != 'production':
+            from tapestry.evaluation.ranking import cache_scores
+            cache_scores(output, args.frozen)
         return
     folder = Path(args.root) / args.experiment
     if args.command == 'plan':
-        scenarios = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}
-        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset,
-                        frozen=args.frozen)
-        ili_paths={s.ili_path for s in scenarios.values() if s.ili_training != 'none'}
-        if len(ili_paths)>1:raise ValueError('One historical ILI dataset per experiment')
-        if ili_paths:settings['ili_path']=next(iter(ili_paths))
+        if bool(args.scenario) == bool(args.study):
+            parser.error('Give either --scenario strings or one --study file')
+        if args.study:
+            scenarios, study_seeds = read_study(args.study)
+        else:
+            scenarios, study_seeds = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}, None
+        seeds = args.seeds or study_seeds or [42, 43]
+        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset, frozen=args.frozen)
+        ili_paths = {s.ili_path for s in scenarios.values() if s.ili_training != 'none'}
+        if len(ili_paths) > 1:
+            raise ValueError('One historical ILI dataset per experiment')
+        if ili_paths:
+            settings['ili_path'] = next(iter(ili_paths))
         settings.update(pinned_inputs(settings))
-        jobs = plan(folder, scenarios, args.seeds, settings)
-        print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(args.seeds),
-                              runs=len(jobs) and len(scenarios) * len(args.seeds))))
-    elif args.command == 'baseline':
-        from .baseline import run as run_baseline
-        run_baseline(folder)
+        jobs = plan(folder, scenarios, seeds, settings)
+        if args.study:
+            shutil.copy2(args.study, folder / 'study.json')
+        print(json.dumps(dict(experiment=str(folder), configurations=len(scenarios), seeds=len(seeds),
+                              runs=len(jobs) and len(scenarios) * len(seeds))))
     elif args.command == 'run':
         if run(folder, args.task, args.device, args.keep_going, args.fit_workers, args.seeds):
             raise SystemExit(1)
@@ -433,23 +404,14 @@ def main(argv=None):
         unfinished = sum(row['status'] != 'complete' for row in rows)
         if unfinished:
             root = '' if args.root == 'data/experiments' else f' --root {args.root}'
-            cpu_finalization = all(Scenario.from_string(row['scenario']).task == 'finalize' for row in rows) and json.loads((folder / 'experiment.json').read_text())['device'] == 'cpu'
-            launcher = (f'scripts/finalization.sbatch {args.experiment}' if cpu_finalization else
-                        f'--array=0-3 scripts/jlessler.sbatch {args.experiment} --retry-failed')
-            print(f'{unfinished} of {len(rows)} runs not complete. Resume on Longleaf: sbatch --job-name={args.experiment} '
-                  f'{launcher}\n'
+            print(f'{unfinished} of {len(rows)} runs not complete. Resume on Longleaf (stopped prescribed-revision '
+                  f'runs continue from their saved folds): sbatch --job-name={args.experiment} '
+                  f'--array=0-3 scripts/jlessler.sbatch {args.experiment} --retry-failed\n'
                   f'or locally: .venv/bin/python -m tapestry.experiment.planner run -e {args.experiment}{root}')
     elif args.command == 'rank':
-        print(rank(folder, args.allow_incomplete, args.seeds, args.us_weight, args.admissions_weight, args.ed_weight,
-                   make_plots=not args.no_plots, configs=args.configs))
-    elif args.command == 'plots':
-        from tapestry.evaluation.plots import plot_experiment
-        rankings = sorted(folder.glob('ranking-*'), key=lambda p: p.stat().st_mtime)
-        ranking = Path(args.ranking) if args.ranking else rankings[-1] if rankings else None
-        if ranking is None:
-            parser.error(f'No ranking-* folder in {folder}; run rank first')
-        for path in plot_experiment(folder, ranking, args.configs, args.dates):
-            print(path)
+        print(rank(folder, args.allow_incomplete, args.seeds, args.inputs, report=not args.no_report))
+    elif args.command == 'replay':
+        replay_runs(folder, args.inputs, args.device, args.seeds)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,20 @@
+{
+  "complete_configurations": 8,
+  "complete_seeds": 16,
+  "model_folds": 48,
+  "reporting_draws_per_issuance": 3,
+  "headline_rows": 2592,
+  "same_truth_and_task_support": true,
+  "no_duplicate_score_cells": true,
+  "all_draws_present": true,
+  "detail_aggregation_max_error": {
+    "month": 1.3642420526593924e-12,
+    "horizon": 1.8189894035458565e-12,
+    "location": 1.8189894035458565e-12
+  },
+  "run_status": {
+    "failed": 4,
+    "complete": 16
+  },
+  "scientific_tests": "3 passed: ED units, model signal scope, nowcaster signal scope"
+}

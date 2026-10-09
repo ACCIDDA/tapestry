@@ -1,0 +1,294 @@
+{
+  "configurations": 44,
+  "seeds": [
+    44,
+    45,
+    46,
+    47,
+    48
+  ],
+  "rows": [
+    {
+      "label": "A",
+      "anchor": "A",
+      "factor": "reference",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_width192",
+      "anchor": "A",
+      "factor": "width",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=192,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_width192_half_lr",
+      "anchor": "A",
+      "factor": "width_lr",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=192,epochs=160,patience=25,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_width256",
+      "anchor": "A",
+      "factor": "width",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=256,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_width256_half_lr",
+      "anchor": "A",
+      "factor": "width_lr",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=256,epochs=160,patience=25,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_blocks2",
+      "anchor": "A",
+      "factor": "depth",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=2,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_blocks3",
+      "anchor": "A",
+      "factor": "depth",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_blocks4",
+      "anchor": "A",
+      "factor": "depth",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=4,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_add_ww_flu",
+      "anchor": "A",
+      "factor": "source",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+ww_flu,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_add_clinical_lab",
+      "anchor": "A",
+      "factor": "source",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+clinical_lab,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_add_flusurv",
+      "anchor": "A",
+      "factor": "source",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+flusurv,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_add_outpatient_flu",
+      "anchor": "A",
+      "factor": "source",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa+outpatient_flu,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B",
+      "anchor": "B",
+      "factor": "reference",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_width192",
+      "anchor": "B",
+      "factor": "width",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=192,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_width192_half_lr",
+      "anchor": "B",
+      "factor": "width_lr",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=192,epochs=240,patience=25,lr=0.00025,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_width256",
+      "anchor": "B",
+      "factor": "width",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_width256_half_lr",
+      "anchor": "B",
+      "factor": "width_lr",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.00025,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_blocks2",
+      "anchor": "B",
+      "factor": "depth",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,decoder_blocks=2,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_blocks3",
+      "anchor": "B",
+      "factor": "depth",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,decoder_blocks=3,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_blocks4",
+      "anchor": "B",
+      "factor": "depth",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,decoder_blocks=4,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_add_ww_flu",
+      "anchor": "B",
+      "factor": "source",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=ww_flu,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_add_clinical_lab",
+      "anchor": "B",
+      "factor": "source",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=clinical_lab,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_add_flusurv",
+      "anchor": "B",
+      "factor": "source",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=flusurv,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_add_outpatient_flu",
+      "anchor": "B",
+      "factor": "source",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=outpatient_flu,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_actual_half",
+      "anchor": "A",
+      "factor": "actual_reports",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,actual_share=0.5"
+    },
+    {
+      "label": "B_actual_all",
+      "anchor": "B",
+      "factor": "actual_reports",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,actual_share=1.0"
+    },
+    {
+      "label": "A_without_kinsa",
+      "anchor": "A",
+      "factor": "kinsa",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_with_kinsa",
+      "anchor": "B",
+      "factor": "kinsa",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_hosp_inputs_flu_hosp",
+      "anchor": "A",
+      "factor": "specialist",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu_hosp,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_only,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_hosp_inputs_flu",
+      "anchor": "A",
+      "factor": "specialist",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_only,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_ed_inputs_flu_ed",
+      "anchor": "A",
+      "factor": "specialist",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu_ed,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "A_ed_inputs_flu",
+      "anchor": "A",
+      "factor": "specialist",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,count_transform=sqrt,ed_transform=logit,loss_weights=flu_ed,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_hosp_inputs_flu_hosp",
+      "anchor": "B",
+      "factor": "specialist",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu_hosp,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_only,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_hosp_inputs_flu",
+      "anchor": "B",
+      "factor": "specialist",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_only,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_ed_inputs_flu_ed",
+      "anchor": "B",
+      "factor": "specialist",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu_ed,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B_ed_inputs_flu",
+      "anchor": "B",
+      "factor": "specialist",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_ed,spatial=neighbors,decoder=quantile,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two"
+    },
+    {
+      "label": "B0_separate_target_MLP",
+      "anchor": "B0",
+      "factor": "historical",
+      "scenario": "ed_transform=logit,epochs=100,patience=30,fit_partition=target,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "archive/b0-1-crosses/configuration_ranking.csv",
+      "note": "Saved B0.1 flu-admission leader. Current-code refit on finalized six-target histories/labels; current reported-input evaluation. Original head, width64, no spatial exchange/covariates. Older score not reused."
+    },
+    {
+      "label": "B1_pathogen_flags_mixed_mask",
+      "anchor": "B1",
+      "factor": "historical",
+      "scenario": "ed_transform=logit,epochs=300,patience=30,fit_partition=pathogen,supplied_final=1,mask_rate=0.5,input_mode=vintaged,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "archive/b1-overnight/epoch300/configuration-ranking.csv",
+      "note": "Saved 300-epoch flu-admission leader, finalized six-target labels. Refit using vintage inputs and finality flags, 50% training masking; natural reported-input evaluation, no outage evaluation."
+    },
+    {
+      "label": "B2_target_distance_ILINet",
+      "anchor": "B2",
+      "factor": "historical",
+      "scenario": "ed_transform=logit,spatial=distance,epochs=300,patience=30,fit_partition=target,supplied_final=1,mask_rate=0.2,covariate_encoder=summary,covariate_set=ilinet,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "b-2-t0/named_ranking.csv",
+      "note": "Saved flu-admission leader. Preserve finalized/scheduled training inputs, six-target labels, ILINet and target fits; evaluate reported inputs on current common folds."
+    },
+    {
+      "label": "B3_target_neighbors_Kinsa_real_tree",
+      "anchor": "B3",
+      "factor": "historical",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,reporting_missingness=0,reporting_strength=0.5,ed_transform=logit,spatial=neighbors,epochs=120,patience=15,fit_partition=target,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "b3-pilot-20261005/design.json",
+      "note": "Saved flu-admission native/log leader, six finalized future labels, artificial training reports corrected by real-pair trees; original correction window retained."
+    },
+    {
+      "label": "B4_B_sampled_cumulative",
+      "anchor": "B4",
+      "factor": "historical",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,sum_wis_weight=0.25,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "b4-flu-heads-20261006/scenarios.txt",
+      "note": "B with sampled forecasts and auxiliary four-week admission-total loss; finalized future flu admissions/ED labels."
+    },
+    {
+      "label": "B4_additional_log_leader",
+      "anchor": "B4",
+      "factor": "historical",
+      "scenario": "pilot_method=corrected,forecast_targets=flu,pathogen_inputs=flu_rsv,correction_weeks=4,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_strength=0.75,nowcast_weeks=4,lookback=16,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=distance,epochs=160,patience=25,fit_partition=target,weight_decay=0.0001,covariate_encoder=summary,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two",
+      "source": "b4-flu-600-20261005/final-analysis/pilot-rankings.csv",
+      "note": "Best distinct saved log-admission recipe; refit current code, same B4 folds and finalized flu labels."
+    },
+    {
+      "label": "B5_confirmed_candidate_1",
+      "anchor": "B5",
+      "factor": "historical",
+      "scenario": "pilot_method=two_stage,pilot_nowcaster=real_tree,forecast_targets=flu,pathogen_inputs=flu,ili_units=flu_scaled,ili_steps=1200,correction_weeks=1,ili_training=pretrain,joint_weight=0.05,correction_penalty=30.0,correction_strength=0.75,reporting_strength=2.0,lookback=10,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,covariate_set=kinsa,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,correction_realizations=2,uncorrected_share=0.1",
+      "source": "b5-confirm-top-20261007/analysis/labeled-summary.csv",
+      "note": "Candidate A B5 best 0.7764; selected using two-seed confirmation, now refit across five seeds. Finalized flu labels, B4 folds."
+    },
+    {
+      "label": "B5_confirmed_candidate_2",
+      "anchor": "B5",
+      "factor": "historical",
+      "scenario": "pilot_method=joint,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,reporting_random_strength=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,nowcast_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,sum_wis_weight=0.25,width=96,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,input_mode=scheduled_final,input_normalization=b0,evaluation_seasons=recent_two,actual_share=0.25",
+      "source": "b5-confirm-top-20261007/analysis/labeled-summary.csv",
+      "note": "Candidate Bs B5 best 0.7682; selected using two-seed confirmation, now refit across five seeds. Finalized flu labels, B4 folds."
+    }
+  ],
+  "protocol": "B4 folds, finalized future flu admissions/ED, corrected reported evaluation inputs",
+  "note": "Half learning rate is crossed with widths 192 and 256 on A/B; no outage experiments."
+}

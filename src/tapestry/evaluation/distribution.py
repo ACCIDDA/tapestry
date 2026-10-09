@@ -4,19 +4,23 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from .quantiles import LEVELS
-from .totals import quantile_scores, COVERAGE
+from .standard import quantile_scores, COVERAGE
 
 
 def distribution_scores(run):
-    from tapestry.experiment.pilot import evaluation_views
+    from .ranking import views
+    from tapestry.model.scenario import Scenario
+    from tapestry.model.objective import LOSS_WEIGHTS
+    scenario = Scenario.from_string(json.loads((Path(run)/'manifest.json').read_text())['scenario'])
     rows = []
-    for history, view in evaluation_views(run).items():
+    for history, view in views(run).items():
         for season in json.loads((view/'manifest.json').read_text())['folds']:
             with np.load(view/f'eval_{season}'/'forecasts.npz') as f:
                 q, y, mask = f['quantiles'], f['truth'], f['mask'].astype(bool)
                 if y.shape[1] != 4:
                     raise ValueError('Distribution diagnostics require four future weeks')
                 for channel, target in [(0, 'flu_admissions'), (3, 'flu_ed')]:
+                    if not LOSS_WEIGHTS[scenario.loss_weights][channel]:continue
                     for li, loc in enumerate(f['locations']):
                         valid = mask[:, :, channel, li].all(1)
                         if not valid.any():

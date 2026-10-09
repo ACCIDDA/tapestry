@@ -1,41 +1,49 @@
 # Scenario fields
 
-Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapestry.evaluation.plots.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. "Design" = [the architecture](../architecture.md); execution is described in [Workflow](../workflow.md).
+Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapestry.evaluation.report.write_scenario_key`, rewritten by every report; do not edit by hand. A scenario string names only the fields that differ from these defaults, as `key=value` tokens joined by `,`; booleans are written `0`/`1`. See [the architecture](../architecture.md) and [Workflow](../workflow.md).
 
 | Field | Type | Default | Allowed values | Meaning |
 |---|---|---|---|---|
-| `task` | str | `'forecast'` | `finalize`, `forecast`, `nowcast`, `pipeline` | forecast, nowcast, an independently fitted nowcast-to-forecast pipeline, or per-signal boundary-week finalization. |
-| `reporting_augmentation` | str | `'none'` | `none`, `vintage`, `nowcast` | Stochastic joint training-season reporting-error windows, raw or after causal nowcasting; real-vintage scoring. Requires scheduled-final forecasting without a finality channel. |
-| `reporting_missingness` | bool | `True` | `0`, `1` | Transport donor missingness with reporting augmentation; false retains native input availability while transporting numerical errors. |
-| `replay_from` | str | `''` | any str (checked in `Scenario.__post_init__`) | Completed experiment supplying fixed CV checkpoints for inference-only input replay. |
-| `replay_inputs` | str | `'none'` | `finalized`, `none`, `nowcast`, `vintage` | Fixed-checkpoint replay: finalized B2 inputs, full vintage history, or vintage plus eight-week seasonal target nowcasts. |
-| `replay_flags` | str | `'native'` | `available`, `native`, `off` | Diagnostic finality encoding: native semantics, available to reproduce B2 training encoding, or off. Available does not claim that revisions are final. |
-| `finalization_cv` | str | `'rolling'` | `rolling`, `season` | finalize only: three recent four-Wednesday rolling holdouts, or forward season holdouts. |
-| `finalization_loss` | str | `'mae'` | `mae` | finalize only: triangle calibration minimizes normalized native-unit MAE, equally weighted by location. |
-| `finalization_model` | str | `'triangle'` | `adaptive`, `adaptive_chain`, `seasonal`, `triangle` | Reported-value curve: robust triangle, seasonal direct, adaptive direct, or adaptive weekly chain. |
-| `finalization_gap` | str | `'ridge'` | `proxy`, `ridge`, `seasonal`, `trend` | Missing targets: ridge, historical seasonal growth, damped trend, or observable national proxy growth. |
-| `finalization_scope` | str | `'all'` | `all`, `targets` | Fit all supported signals or only the six NHSN/NSSP targets. |
-| `finalization_halflife` | float | `8.0` | any float (checked in `Scenario.__post_init__`) | Adaptive curve recent-pair half-life in weeks. |
-| `finalization_pool` | float | `4.0` | any float (checked in `Scenario.__post_init__`) | Adaptive/seasonal local state pooling strength in effective weeks. |
-| `finalization_statistic` | str | `'mean'` | `mean`, `median` | Mean ratio of weighted totals or exposure-weighted median development ratio. |
-| `finalization_quantize` | bool | `0` | `0`, `1` | Round NSSP point predictions and point comparators to the archived 0.0001 proportion grid. |
-| `finalization_maturity` | int | `4` | any int (checked in `Scenario.__post_init__`) | finalize only: minimum reference age and training-label gap, in weeks; not a guarantee of finality. |
-| `finalization_weeks` | int | `1` | any int (checked in `Scenario.__post_init__`) | finalize only: reconstruct this many completed weeks ending at each signal's T-X boundary. |
-| `nowcast_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Completed weeks reconstructed, ending at the context Saturday. |
-| `nowcast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as nowcast.<field>=value; unprefixed fields supply defaults. |
-| `forecast.<field>` | stage override | inherit | Model/training fields | Pipeline stage overrides written as forecast.<field>=value; unprefixed fields supply defaults. |
-| `nowcast_members` | int | `16` | any int (checked in `Scenario.__post_init__`) | Cached out-of-fold history draws per training episode. |
+| `history_source` | str | `'finalized'` | `artificial`, `finalized`, `reported` | Choice A1, where the network's training histories come from: final reference histories (finalized), actual archived Wednesday reports (reported), or final histories made preliminary with artificial reporting errors (artificial; choices B and C). Was part of pilot_method. |
+| `history_correction` | bool | `0` | `0`, `1` | Choice A2: correct the artificial training histories with the cross-fitted correction model (choice D) before the network learns from them (was pilot_method=two_stage/corrected). |
+| `reconstruction_labels` | bool | `0` | `0`, `1` | Choice A3: also learn the final values of the last reconstruction_weeks context weeks (was pilot_method=joint). Labels, not inputs. |
+| `error_scope` | str | `'all'` | `all`, `early_actual` | Apply artificial reporting errors in all training seasons, or early two with actual/proxy recent-season reports. |
+| `error_signals` | str | `'admissions'` | `admissions`, `all`, `targets` | Choice C: admissions perturbs counts only; targets also perturbs ED but keeps covariates unchanged; all perturbs both targets and covariates. |
+| `corrector_examples` | str | `'synthetic'` | `real`, `synthetic`, `synthetic_then_real` | Choice D, what the correction trees (the nowcaster) learn from: artificial errors paired with final values (synthetic), real archived reports paired with their mature values (real), or synthetic pretraining then real (synthetic_then_real, MLP only). Was pilot_nowcaster. |
+| `corrector_model` | str | `'tree'` | `mlp`, `tree` | Correction model: gradient-boosted trees (tree) or a residual MLP (mlp). Was pilot_nowcaster. |
+| `forecast_targets` | str | `'all'` | `all`, `flu` | All six targets or flu admissions + ED only; exported forecasts and scoring follow this scope. |
+| `pathogen_inputs` | str | `'all'` | `all`, `flu`, `flu_covid`, `flu_ed`, `flu_hosp`, `flu_rsv` | Allowed admissions/ED input pathogens in both forecaster and nowcaster; excluded values and masks are removed. |
+| `ili_units` | str | `'own'` | `flu_scaled`, `own` | Own-source ILI proportions or auxiliary flu-head pseudo-tasks rescaled by fitting-only modern Q95 / historical ILI Q95. |
+| `ili_steps` | int | `200` | any int (checked in `Scenario.__post_init__`) | Historical forecasting pretraining updates; each uses 64 auxiliary examples (series models) or batch_size historical panel episodes (flu MLP). |
+| `correction_weeks` | int | `8` | any int (checked in `Scenario.__post_init__`) | Recent admissions ages corrected by the nowcaster, clipped to lookback. |
+| `correction_ed` | bool | `0` | `0`, `1` | Also fit/apply report-to-mature ED correction on the recent correction_weeks, restricted to allowed input channels; future labels unchanged. |
+| `ili_training` | str | `'none'` | `joint`, `none`, `pretrain` | No historical transfer, forecasting pretraining, or joint forecasting on the pinned pre-2022 ILI archive. |
+| `ili_path` | str | `'data/processed/historical_ili.npz'` | any str (checked in `Scenario.__post_init__`) | Historical ILI auxiliary dataset; its hash is pinned by the experiment manager. |
+| `ili_weight` | float | `0.25` | any float (checked in `Scenario.__post_init__`) | Historical ILI loss weight for joint training after within-history normalization. |
+| `growth_anchor` | bool | `0` | `0`, `1` | Add damped observed two-week transformed growth to the level anchor. |
+| `reporting_probability` | float | `1.0` | any float (checked in `Scenario.__post_init__`) | Probability a training episode receives artificial reporting errors. |
+| `reporting_random_strength` | bool | `0` | `0`, `1` | Scale each drawn error window by a uniform(0, 1) multiplier. |
+| `reporting_recent` | int | `0` | any int (checked in `Scenario.__post_init__`) | Perturb only this many most recent context weeks; 0 = all. |
+| `joint_weight` | float | `1.0` | any float (checked in `Scenario.__post_init__`) | joint only: weight of the reconstruction loss relative to the forecast loss. |
+| `correction_penalty` | float | `10.0` | any float (checked in `Scenario.__post_init__`) | Ridge penalty of the correction trees' linear leaves. |
+| `correction_strength` | float | `1.0` | any float (checked in `Scenario.__post_init__`) | Multiplier of the fitted correction, 1 = full. |
+| `reporting_missingness` | bool | `1` | `0`, `1` | Transfer donor reporting masks with the errors; false transports numerical errors only and retains native input availability. |
+| `reporting_method` | str | `'local_log'` | `calendar_log`, `local_additive`, `local_log`, `phase_log`, `synchronous_log`, `synchronous_phase_log` | Donor matching of artificial reporting errors; see dataset/reporting_error.py. |
+| `reporting_strength` | float | `1.0` | any float (checked in `Scenario.__post_init__`) | Multiplier of drawn log reporting errors. |
+| `reconstruction_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | joint only: recent context weeks whose final values are reconstruction labels. |
 | `lookback` | int | `12` | any int (checked in `Scenario.__post_init__`) | Context weeks per episode (the history the network sees). |
 | `count_transform` | str | `'fourth_root'` | `fourth_root`, `log1p`, `rate`, `raw`, `sqrt` | Admissions in model space: raw counts, rate per 100,000, or its sqrt / fourth root / log1p (`model/network.py` `transform_counts`). |
 | `ed_transform` | str | `'linear'` | `fourth_root`, `linear`, `logit` | ED proportions in model space (`model/network.py`); scores stay in native units. |
 | `geography` | bool | `1` | `0`, `1` | Adds log population and a native-US flag per location as features. |
 | `coordinates` | bool | `0` | `0`, `1` | Census state internal-point latitude/longitude and non-US indicator. |
 | `dynamics` | bool | `1` | `0`, `1` | Recent-dynamics feature block (30 slope/acceleration/age/validity features); see architecture.md. |
-| `loss_weights` | str | `'objective'` | `balanced_admissions`, `flu_only`, `influenza_first`, `objective` | Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the score's target weights. |
-| `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv` | Temporal context encoder; see architecture.md. |
+| `loss_weights` | str | `'objective'` | `balanced_admissions`, `flu_ed`, `flu_hosp_ed`, `flu_only`, `influenza_first`, `objective` | Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the score's target weights. |
+| `encoder` | str | `'mlp'` | `conv`, `mlp`, `multiscale_conv`, `series_mixer`, `series_mlp` | Temporal context encoder; see architecture.md. |
 | `spatial` | str | `'none'` | `attention`, `distance`, `gated_pool`, `gravity`, `joint_location_target`, `national_broadcast`, `neighbors`, `none`, `pathogen_spatial`, `pooled`, `target_spatial` | Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); see architecture.md. |
 | `heads` | str | `'shared'` | `shared`, `state_us` | State and US output heads shared or separate (`state_us`). |
-| `decoder` | str | `'legacy'` | `legacy`, `residual2` | Horizon decoder: existing modulated residual (`legacy`) or `residual2`; see architecture.md. |
+| `decoder` | str | `'legacy'` | `legacy`, `quantile`, `quantile_small`, `residual2` | Horizon decoder: existing modulated residual (`legacy`), `residual2`, or direct ordered quantiles; see architecture.md. |
+| `decoder_blocks` | int | `0` | any int (checked in `Scenario.__post_init__`) | Residual decoder depth (0 = original head). |
+| `sum_wis_weight` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Auxiliary four-week flu admission sum WIS weight; sampled heads only; normalized by four times training-only admission Q95. |
 | `noise` | str | `'global'` | `global`, `local` | Global latent noise, or global plus a per-location latent (`local`). |
 | `us_error` | str | `'none'` | `none`, `shared_factor` | Extra common noise factor (`shared_factor`); see architecture.md. |
 | `latent` | int | `16` | any int (checked in `Scenario.__post_init__`) | Global latent (noise) dimension. |
@@ -51,53 +59,26 @@ Generated from `tapestry.model.scenario.Scenario` (`CODES`, `MEANING`) by `tapes
 | `fit_partition` | str | `'all'` | `all`, `pathogen`, `target` | One model for all six targets, or separately fitted models per pathogen / target group (each sees all six inputs); see architecture.md. |
 | `validation_members` | int | `256` | any int (checked in `Scenario.__post_init__`) | Members drawn for the early-stopping validation loss. |
 | `weight_decay` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Adam weight decay. |
-| `supplied_final` | bool | `0` | `0`, `1` | The network receives a known-final flag channel per cell; see architecture.md. |
-| `mask_rate` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability an episode receives an artificial missingness pattern in training (not a fraction of cells); see architecture.md. |
-| `mask_recent` | float | `0.5` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern hides recent reports (with mask_gap, mask_outage sums to 1). |
-| `mask_gap` | float | `0.3` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a local gap in one location history. |
-| `mask_outage` | float | `0.2` | any float (checked in `Scenario.__post_init__`) | Share of masked episodes whose pattern is a whole-channel outage. |
-| `covariate_encoder` | str | `'raw'` | `raw`, `shared`, `smooth`, `summary` | Raw standardized history, signed-log trailing-three-week smoothing, six summaries, or a shared 4-dimensional encoder plus coverage/age. |
+| `covariate_encoder` | str | `'raw'` | `growth`, `raw`, `shared`, `smooth`, `summary` | Raw standardized history, signed-log trailing-three-week smoothing, six summaries, a shared 4-dimensional encoder, or recent growth (level, 1/2-week log growth, acceleration) plus coverage/age. |
 | `signal_features` | str | `'none'` | `multiscale`, `none`, `smooth_multiscale` | Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing. |
 | `covariate_set` | str | `''` | `+`-joined subset of `inpatient`, `outpatient`, `ww_wval_like`, `ww_pct_rank`, `kinsa`, `ilinet`, `clinical_lab`, `flusurv` | `+`-joined covariate source groups fed to the context encoder; '' = none; see workflow.md and experiments/b-2-t0/index.md#protocol. |
-| `input_mode` | str | `'finalized'` | `finalized`, `finalized_available`, `scheduled_final`, `vintaged` | scheduled_final supplies T-0 final targets and source-specific T-0/T-1 covariates; finalized truth, finalized_available (final truth masked by Wednesday reporting availability), or Wednesday-vintage context (design §3). |
-| `training_inputs` | str | `'same'` | `finalized`, `same` | same as forecasting, or complete finalized target and covariate histories during fitting only. |
 | `input_normalization` | str | `'none'` | `b0`, `none` | none, or B0 per-location transformed target scales fitted on training contexts only. |
 | `validation_calendar` | str | `'season'` | `b0`, `season` | season-relative blocks, or B0 blocks counted from the first stored week of each season. |
-| `evaluation_seasons` | str | `'all'` | `all`, `recent_two` | all three held-out seasons, or recent_two (2025-26 and 2024-25). |
-| `asof_weeks` | int | `2` | any int (checked in `Scenario.__post_init__`) | Standalone forecast only (nowcast/pipeline use all-as-of history): most recent context weeks whose targets are as visible at the issuance; older weeks take final truth (design §3). |
+| `evaluation_seasons` | str | `'all'` | `all`, `production`, `recent_two` | all three held-out seasons, recent_two (2025-26 and 2024-25), or production (fit on all four seasons 2022-23 to 2025-26; forecast 2026-27 inputs, unscored). |
 | `validation_weeks` | int | `3` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: consecutive early-stopping weeks hidden per block (design §4). |
 | `validation_spacing` | int | `16` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: one validation block every this many weeks of a training season. |
 | `validation_offset` | int | `4` | any int (checked in `Scenario.__post_init__`) | patience > 0 only: week of each training season where the first block starts (0-based, counted from the season's first epiweek, CDC week 31). |
-
-### Historical reporting-error training
-
-`reporting_augmentation=nowcast,reporting_missingness=0` perturbs finalized
-training inputs with historical nowcast errors while retaining native input
-availability and finalized future labels. `reporting_method` selects
-`local_log` (default), `calendar_log`, or `local_additive`.
-`reporting_strength` in (0, 1] scales the signed error before transport.
-Local matching uses the same location's seasonal timing, recent levels and
-changes; calendar matching uses timing alone. Each location draws its own
-joint age/signal window. [Exact assumptions and two-season C1 protocol](../experiments/c1-local-errors-20261002/index.md).
-
-### Context nowcaster extensions
-
-`finalization_model=conditional_chain` (or `conditional`) conditions the seasonal
-fit on growth/holiday context; `finalization_growth` controls its bandwidth.
-`finalization_model=context_residual` trains a causal trajectory residual with
-`finalization_penalty` ridge shrinkage and requires at least four output weeks.
-Replay supports `replay_nowcaster`, `replay_growth`, `replay_penalty`, and
-`replay_schedule=1` for the documented availability hypothesis with explicit
-frozen-final proxies. [Protocol and assumptions](../experiments/context-nowcast-20261001/index.md).
-
-`finalization_features=age` gives growth, holiday and local effects separate
-smooth level/slope age profiles; `momentum` adds observable vintage-to-vintage
-changes, and `age_momentum` combines them. `finalization_gate=admissions` retains
-the seasonal ED estimates; `causal` selects residual strength using previously
-matured trajectory errors. Matching `replay_features` and `replay_gate` options
-replay these exact nowcasts. `replay_uncertainty` adds causal joint-history
-bootstrap uncertainty (0 = deterministic; experimental strengths 0.5 and 1).
-Residual calibration currently requires `finalization_scope=targets`; its count
-and ED-fraction conventions have not been extended to ancillary source units.
-`finalization_strength` (and `replay_strength`) scales the additional residual
-between zero and one before output rounding. The seasonal base remains intact.
+| `error_seasons` | str | `'latest'` | `all`, `latest` | Choice B: archived seasons supplying artificial reporting errors and real correction pairs: latest permitted training season, or every archived training season with recency weights 1, 1/2, 1/4. |
+| `actual_share` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability a training episode uses the actual archived report (finalized fill where none) instead of an artificial-error draw. |
+| `correction_realizations` | int | `1` | any int (checked in `Scenario.__post_init__`) | Independent artificial-report-then-correction realizations per training episode; one is drawn per minibatch. |
+| `uncorrected_share` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability a corrected-history training episode is shown uncorrected instead (robustness to correction failure). |
+| `correction_noise` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Scale of sampled out-of-fold correction residuals added to corrected admissions; 0 = point correction. Evaluation uses 16 sampled histories per issuance. |
+| `correction_noise_train` | bool | `0` | `0`, `1` | Also add sampled correction residuals to corrected training histories each minibatch. |
+| `log_loss_weight` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Weight of an extra weekly flu-admission loss on the log(1 + count) scale, added to the native-scale loss. |
+| `covariate_dropout` | float | `0.0` | any float (checked in `Scenario.__post_init__`) | Probability a training episode has all covariates (e.g. Kinsa) hidden. |
+| `training_window` | str | `'all'` | `all`, `last2`, `recent2` | all = every non-held-out season; recent2 = two preceding seasons; last2 = latest two permitted non-held-out seasons (nested removal of oldest training season). |
+| `stress_views` | bool | `0` | `0`, `1` | Also evaluate delayed-admission and covariate-missing input views of the same fitted model. |
+| `error_reference` | str | `''` | any str (checked in `Scenario.__post_init__`) | Choice B: prescribed reporting-error season for training errors and prescribed evaluation inputs, independent of the held-out epidemic season; empty = the fold's own seasons. |
+| `evaluation_inputs` | str | `'reported'` | `prescribed`, `reported` | Choice E: evaluate on real archived Wednesday reports (reported) or on final histories made preliminary by the prescribed error process of error_reference (prescribed). Was evaluation_vintaging. |
+| `evaluation_draws` | int | `1` | any int (checked in `Scenario.__post_init__`) | Independent artificial evaluation histories (1, 3 or 5) when evaluation_inputs=prescribed. |
+| `forecast_view` | str | `'corrected'` | `corrected`, `half`, `raw` | Choice F, how the fitted pair is used at forecast time, part of the recipe: inputs as given (raw), newest weeks corrected by the fold's correction model (corrected), or the 50/50 mixture of those two forecast distributions (half). Ranking and production use this view; the others are diagnostics. |

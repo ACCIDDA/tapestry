@@ -1,7 +1,6 @@
 """Scientific invariants for the reporting-window bootstrap."""
 from dataclasses import replace
 import numpy as np
-import pandas as pd
 import pytest
 from tapestry.dataset.build import load
 from tapestry.dataset import cv
@@ -11,8 +10,8 @@ from tapestry.model.scenario import Scenario
 @pytest.fixture(scope='module')
 def experiment():
     panel = load('data/processed/panel.npz')
-    s = replace(Scenario.from_string(pd.read_csv('docs/experiments/b-2-t0/named_ranking.csv').iloc[1].config_id),
-                supplied_final=False, reporting_augmentation='vintage')
+    # Artificial errors on every signal (the unscoped bootstrap), with early stopping for an inner fold.
+    s = Scenario(history_source='artificial', error_signals='all', covariate_set='inpatient+kinsa', epochs=50, patience=10)
     keep = cv.week_roles(panel['dates'], s, '2025-2026') == 'fit'
     bank = ReportingErrors(panel, s, '2025-2026', keep)
     fold = cv.fold(panel, s, '2025-2026', inner=True)

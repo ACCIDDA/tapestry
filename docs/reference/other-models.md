@@ -31,7 +31,7 @@ Flusion's [published formulation][flusion-paper] pools source-specific forecasti
 
 Scenario libraries are a third case: NEU_ISI and Scenariocast use **projected trajectories as a reference library**, with recent observations selecting compatible futures. These trajectories are model outputs, not additional surveillance measurements. Scenariocast's use of growth rates is particularly relevant when comparing epidemic curves with different absolute scales.
 
-## What this means for Tapestry
+## What this means for Chromantis
 
 The clearest documented additional current signals in this comparison are **ED activity for CMU**, **weather and laboratory positivity for OHT**, and **Google Trends for MIGHTE-Joint**. Other states' recent admission histories provide spatial information for MIGHTE-Nsemble. Population and calendar can enter through normalization, offsets, stratification or latent structure rather than as ordinary regression columns.
 
@@ -40,7 +40,7 @@ Two distinct experiments follow from this evidence:
 - **More historical supervision:** use older ILI, FluSurv or simulated curves to learn transferable dynamics.
 - **More current information:** condition forecasts on recent ED activity, positivity, weather or other signals available at issuance.
 
-Evaluate these separately. Success from historical transfer does not establish the value of a new live covariate, and a richer live input set does not replace a longer training history. This is a research interpretation, not evidence that either change will improve Tapestry.
+Evaluate these separately. Success from historical transfer does not establish the value of a new live covariate, and a richer live input set does not replace a longer training history. This is a research interpretation, not evidence that either change will improve Chromantis.
 
 ## Scope and version limitations
 

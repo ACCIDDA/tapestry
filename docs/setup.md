@@ -16,7 +16,7 @@ Run once. If uv is already available, skip the installer commands.
 
 ```bash
 cd /proj/jlessler/projects/tapestry-all
-git clone https://github.com/ACCIDDA/tapestry.git
+git clone https://github.com/ACCIDDA/chromantis.git tapestry
 
 curl -LsSf https://astral.sh/uv/install.sh -o /tmp/tapestry-uv-install.sh
 env UV_INSTALL_DIR=/proj/jlessler/projects/tapestry-all/.local/bin \
@@ -40,7 +40,7 @@ Install or update the default research environment:
 uv sync --python-preference only-managed
 ```
 
-This creates `.venv`, installs Tapestry in editable mode, and includes training,
+This creates `.venv`, installs Chromantis in editable mode, and includes training,
 evaluation, explorer, and test dependencies. Managed Python avoids inheriting
 the login shell's Anaconda installation.
 
@@ -62,7 +62,7 @@ remain in the catalog for comparison and are not required for the training
 panel. Downloading sources does not build them; see
 [the canonical workflow](workflow.md) for that next step.
 
-Scoring is pure Python (`tapestry.evaluation.totals`) -- no R module or
+Scoring is pure Python (`tapestry.evaluation.standard`) -- no R module or
 package setup is needed. Use a Slurm allocation for training and substantial
 evaluation runs; the environment setup above does not request a GPU or submit
 a training job.
@@ -166,3 +166,21 @@ Use the [workflow's complete manager commands](workflow.md#plan-launch-and-resum
 for planning, launching, checking and ranking. `scripts/jlessler.sbatch` and the
 shared dispatcher control fitting concurrency; use `LANES` for processes per GPU.
 Regular GPU partitions are an alternative when explicitly chosen for a run.
+
+## Documentation hosting
+
+The GitHub repository is `ACCIDDA/chromantis`. Documentation is published at
+[accidda.github.io/chromantis/](https://accidda.github.io/chromantis/); the repository and Pages path are lowercase. GitHub Pages uses the existing Documentation
+Actions workflow on `main`. The Python package remains `tapestry`, and existing
+local and Longleaf checkout paths remain unchanged.
+
+For an existing checkout, update its GitHub remote with:
+
+```bash
+git remote set-url origin https://github.com/ACCIDDA/chromantis.git
+```
+
+Hosting migration, 2026-10-09: updated the repository and documentation URLs after
+the GitHub rename to lowercase `chromantis`. Documentation branding is Chromantis;
+the importable package and existing compute paths retain `tapestry`. Historical
+submitted metadata is preserved as recorded.

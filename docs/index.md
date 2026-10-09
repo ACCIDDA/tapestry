@@ -1,6 +1,6 @@
-# Tapestry
+# Chromantis
 
-Tapestry studies probabilistic nowcasting and four-week forecasting of influenza,
+Chromantis studies probabilistic nowcasting and four-week forecasting of influenza,
 COVID-19 and RSV admissions and emergency-department visits across US states,
 DC and the native national series.
 
@@ -11,4 +11,4 @@ DC and the native national series.
 - [Interactive availability staircase](data/staircase.md): inspect reporting evidence by week and location.
 - [Data explorer](explorer/overview.md): inspect source series and revisions.
 - [Setup](setup.md): local and Longleaf environments.
-- [Repository](https://github.com/ACCIDDA/tapestry).
+- [Repository](https://github.com/ACCIDDA/chromantis).

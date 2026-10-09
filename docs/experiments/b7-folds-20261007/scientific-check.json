@@ -1,0 +1,248 @@
+{
+  "checks": "labels, masks, Kinsa unchanged; values finite and in units; same donor count in every season; winter retained",
+  "rows": [
+    {
+      "season": "2023-2024",
+      "context_end": "2023-10-07",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 102,
+      "changed_ED_cells": 93
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2023-10-07",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 105,
+      "changed_ED_cells": 86
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2023-10-07",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 105,
+      "changed_ED_cells": 85
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-01-06",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 199,
+      "changed_ED_cells": 222
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-01-06",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 253,
+      "changed_ED_cells": 308
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-01-06",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 253,
+      "changed_ED_cells": 306
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-03-02",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 253,
+      "changed_ED_cells": 308
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-03-02",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 258,
+      "changed_ED_cells": 316
+    },
+    {
+      "season": "2023-2024",
+      "context_end": "2024-03-02",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 266,
+      "changed_ED_cells": 310
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2024-10-05",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 77,
+      "changed_ED_cells": 104
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2024-10-05",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 79,
+      "changed_ED_cells": 102
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2024-10-05",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 97,
+      "changed_ED_cells": 95
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-01-04",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 220,
+      "changed_ED_cells": 220
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-01-04",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 258,
+      "changed_ED_cells": 256
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-01-04",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 172,
+      "changed_ED_cells": 180
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-03-01",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 263,
+      "changed_ED_cells": 257
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-03-01",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 256,
+      "changed_ED_cells": 323
+    },
+    {
+      "season": "2024-2025",
+      "context_end": "2025-03-01",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 255,
+      "changed_ED_cells": 324
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2025-10-04",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 130,
+      "changed_ED_cells": 117
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2025-10-04",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 130,
+      "changed_ED_cells": 112
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2025-10-04",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 20,
+      "changed_admission_cells": 86,
+      "changed_ED_cells": 102
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-01-03",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 224,
+      "changed_ED_cells": 220
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-01-03",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 266,
+      "changed_ED_cells": 310
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-01-03",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 202,
+      "changed_ED_cells": 223
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-03-07",
+      "draw": 0,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 250,
+      "changed_ED_cells": 283
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-03-07",
+      "draw": 1,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 250,
+      "changed_ED_cells": 282
+    },
+    {
+      "season": "2025-2026",
+      "context_end": "2026-03-07",
+      "draw": 2,
+      "eligible_donors": 47,
+      "winter_donors": 19,
+      "changed_admission_cells": 253,
+      "changed_ED_cells": 301
+    }
+  ]
+}

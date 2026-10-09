@@ -105,7 +105,7 @@ can exclude substantial portions of the season. All models share identical
 stratum membership. Missing-case improvements do not determine model choice.
 
 [Continuity summaries](stable-summary.csv) ·
-[Target scores and coverage](stable-target-scores.csv) ·
+Target scores and coverage (`stable-target-scores.csv`, removed 9 October 2026: over 1 MB) ·
 [Weekly continuity diagnostics](stable-weekly.csv.gz).
 
 ## Assumptions and protocol
@@ -367,10 +367,10 @@ figures locally (these commands do not fit any model):
 .venv/bin/python docs/experiments/seasonal-nowcast-20261001/maturity_audit.py
 ```
 
-[All model summaries](summary.csv) · [Target-level diagnostics](target-scores.csv) ·
+[All model summaries](summary.csv) · Target-level diagnostics (`target-scores.csv`, removed 9 October 2026: over 1 MB) ·
 [Selected target scores](selected-target-scores.csv) ·
 [Four-week block bootstrap](block-bootstrap.csv) ·
-[Weekly errors](weekly-scores.csv.gz) · [Learned factors](learned-curves.csv.gz).
+[Weekly errors](weekly-scores.csv.gz) · Learned factors (`learned-curves.csv.gz`, removed 9 October 2026: over 1 MB).
 
 
 The manager's target-ranking files now include `stratum`: `all`, `reported`,

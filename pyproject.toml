@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "ACCIDDA" }]
-dependencies = ["epidatpy>=0.6.0,<0.7"]
+dependencies = ["epidatpy>=0.7.0,<0.8"]
 
 [project.optional-dependencies]
 dataset = ["numpy>=1.24", "pandas>=2"]

@@ -1,0 +1,205 @@
+{
+  "definition": {
+    "model_abbr": "EpiLoomB7",
+    "rule": "mixture",
+    "recipes": {
+      "A_blocks3": [
+        "data/experiments/b7-operational-20261007/A_blocks3/s42",
+        "data/experiments/b7-operational-20261007/A_blocks3/s43",
+        "data/experiments/b7-operational-20261007/A_blocks3/s44",
+        "data/experiments/b7-operational-20261007/A_blocks3/s45",
+        "data/experiments/b7-operational-20261007/A_blocks3/s46",
+        "data/experiments/b7-operational-20261007/A_blocks3/s47",
+        "data/experiments/b7-operational-20261007/A_blocks3/s48",
+        "data/experiments/b7-operational-20261007/A_blocks3/s49",
+        "data/experiments/b7-operational-20261007/A_blocks3/s50",
+        "data/experiments/b7-operational-20261007/A_blocks3/s51"
+      ],
+      "B5_confirmed_candidate_1": [
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s42",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s43",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s44",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s45",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s46",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s47",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s48",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s49",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s50",
+        "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s51"
+      ],
+      "B_width256": [
+        "data/experiments/b7-operational-20261007/B_width256/s42",
+        "data/experiments/b7-operational-20261007/B_width256/s43",
+        "data/experiments/b7-operational-20261007/B_width256/s44",
+        "data/experiments/b7-operational-20261007/B_width256/s45",
+        "data/experiments/b7-operational-20261007/B_width256/s46",
+        "data/experiments/b7-operational-20261007/B_width256/s47",
+        "data/experiments/b7-operational-20261007/B_width256/s48",
+        "data/experiments/b7-operational-20261007/B_width256/s49",
+        "data/experiments/b7-operational-20261007/B_width256/s50",
+        "data/experiments/b7-operational-20261007/B_width256/s51"
+      ]
+    },
+    "name_status": "provisional",
+    "note": "B7 three-recipe mixture: A_blocks3 (sampled MLP, Kinsa, three-block decoder), B5_confirmed_candidate_1 (sampled MLP, Kinsa, state ILI pretraining), B_width256 (neighbor-sharing direct-quantile MLP). Each trained on 2022-23 through 2025-26 with admission and ED histories artificially revised using 2025-26 reporting errors, latest future labels, ten seeds 42-51. Equal recipe weight, equal seed weight, predictive distributions mixed. Replayed on the same pinned 7 October 2026 panel as the submitted System2."
+  },
+  "sources": [
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s42",
+      "forecast_sha256": "ac2e40189352d16454a5a5dae1d7c0e38d6cc1040243e35d4267694a59af1178"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s43",
+      "forecast_sha256": "24d84400c6efe9c046fe0d6118f861e524dcc849ffdbf9a3a79049a359736ed2"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s44",
+      "forecast_sha256": "a12ab252dc51404803b032fd28356b68237c518179c45d9d9dc034ea7a851bc5"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s45",
+      "forecast_sha256": "73c0d11b708021b7e4574f7cd401d3f058da26b8ba9f37c98923baf58f190ce5"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s46",
+      "forecast_sha256": "e40775095997e14118005e6b0407a470bd7ec98d44dea99248d30635c5eb5f3d"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s47",
+      "forecast_sha256": "470149ebe92a6baeda1b1d51c7373e00c0a9437a3facf072a4eee27c3095b8b2"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s48",
+      "forecast_sha256": "6958882e8b4b317241390e69899828d7f30f972f350c7b6bd3f27459d686f12b"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s49",
+      "forecast_sha256": "a88e78c8a1dd3259810895d9fe70bba043133d155538de2a122169d16851a6cd"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s50",
+      "forecast_sha256": "247e4903d4112675ba1c4fb070c0629f6d0555b3960519cc7210fba1440717cf"
+    },
+    {
+      "recipe": "A_blocks3",
+      "directory": "data/experiments/b7-operational-20261007/A_blocks3/s51",
+      "forecast_sha256": "be68568ace711fbc99d8270892239de63a7f30151328be856ff2ca998e6a8219"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s42",
+      "forecast_sha256": "5bac992ecb6bc41e8b13344fba15f1be70c892cb39786de686abb37d34903624"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s43",
+      "forecast_sha256": "a415b50feaa8f5813e45ff771fe829157e47664390cb216c1c31ac312f6eae9b"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s44",
+      "forecast_sha256": "2d1445d5b8e6f0153d25e2fde3c5a941c35d1cca720691e18925d88534c21078"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s45",
+      "forecast_sha256": "eb193accad0913887fdb295d52e3c0e6a72d6b23c5ba3b7b2e92c6a0b3cd58b0"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s46",
+      "forecast_sha256": "d6335a8e0cffec2c69619a49facdf5e00952b9a32b63aa550d8b426ec14ed054"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s47",
+      "forecast_sha256": "6542446dcae6f1ab9738121e4b6e547a222deeef6543a6d4e98f5527a8c1aa97"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s48",
+      "forecast_sha256": "0a7c6d37c2353e6cea0e914d87b64a35e14971871894466e109eee05785ef889"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s49",
+      "forecast_sha256": "7e6eb414903b3c82925daa01e3d791fe902d269d5fd25da6dbbb9bdf677073e9"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s50",
+      "forecast_sha256": "b80829f325e53240b4c878b6222f01a0499ff289ccd971cca9900f3825396d2c"
+    },
+    {
+      "recipe": "B5_confirmed_candidate_1",
+      "directory": "data/experiments/b7-operational-20261007/B5_confirmed_candidate_1/s51",
+      "forecast_sha256": "8a77e411e98f2360c5497815949fa796945dd6a539065a0931f87875cbe899da"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s42",
+      "forecast_sha256": "f8d110e9df0ec67b9373d009640d82ba110346b5f63c15b852355f47fb601578"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s43",
+      "forecast_sha256": "151e52af70021e7f1a88a35410ced9284ecd0c7a553383a680be9b625bb3725e"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s44",
+      "forecast_sha256": "6fc882253f107580f664f7e3e6becbb95d188b11c43684401860b019ac0809c3"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s45",
+      "forecast_sha256": "ce4b4b89764474e2999577e3662aa5e86d894a288ae85f8f96eea603202f1268"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s46",
+      "forecast_sha256": "518f1e392dfff408b14bdd3efcf49d2480893ea757c4727db9c2913425fc1be9"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s47",
+      "forecast_sha256": "06360326bc777dbf9b4336f18d5c26e0fe78b393c473f7ec555d35105986763c"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s48",
+      "forecast_sha256": "a681a2139f0cc8d75e8c626eeca7afcee67c5b027ba57a4ad36d56785e34e179"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s49",
+      "forecast_sha256": "a7bf7b30a8fccdf1297d60a3ccdf2b1b5f1c991172e7f7daeab034a5940c139f"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s50",
+      "forecast_sha256": "c34f264158e3c863bdc3748201fab9ba39688d14d44e890cfe9f668339e17627"
+    },
+    {
+      "recipe": "B_width256",
+      "directory": "data/experiments/b7-operational-20261007/B_width256/s51",
+      "forecast_sha256": "7369825ca34b2371c6b77735b9f40aa9dea15a669d2e390d71c03a2f15ee546c"
+    }
+  ],
+  "adjustments": [],
+  "rows": 9568,
+  "issuance": "2026-10-07",
+  "operational_panel_sha256": "68962ec56c8246469bb71c416f9e2abc593d7b68469dd5f4817caf71743029cc",
+  "hub_tasks_sha256": "1d24e40548e1b4ab09743f9e205dd665060abd011f6ad6544acc757cf5321fa3",
+  "output_sha256": "cdee271c326437b81049daed50c453d8b5210ebffa9690d8d593b39e06cf607a",
+  "published": false
+}

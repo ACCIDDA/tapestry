@@ -1,0 +1,32 @@
+{
+  "description": "B7 production fits: the three selected recipes retrained on all four completed seasons 2022-23 to 2025-26, ten seeds each, for 2026-27 forecasts (release production/releases/b7-20261007.json). Reconstructed from docs/experiments/b7-production-20261007/design.json on 2026-10-08.",
+  "protocol": {
+    "training_seasons": [
+      "2022-2023",
+      "2023-2024",
+      "2024-2025",
+      "2025-2026"
+    ],
+    "training_inputs": "Admission and ED histories artificially revised with the 2025-26 reporting process (as in B7-fast)",
+    "labels": "Latest future flu admissions and ED",
+    "combination": "Equal weight per recipe and per seed; predictive distributions mixed",
+    "selection": "Chosen on B7-fast artificial-revision scores and the real-report Hub-grid comparison (docs/experiments/b7-folds-20261007/vs-system2)"
+  },
+  "candidates": {
+    "A_blocks3": "history_source=artificial,history_correction=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,decoder_blocks=3,width=96,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_normalization=b0,evaluation_seasons=production,log_loss_weight=0.5,error_reference=2025-2026",
+    "B5_confirmed_candidate_1": "history_source=artificial,history_correction=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,ili_units=flu_scaled,ili_steps=1200,correction_weeks=2,correction_ed=1,ili_training=pretrain,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,lookback=10,count_transform=sqrt,ed_transform=logit,loss_weights=flu_hosp_ed,width=96,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,signal_features=multiscale,covariate_set=kinsa,input_normalization=b0,evaluation_seasons=production,correction_realizations=2,uncorrected_share=0.1,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_width256": "history_source=artificial,reconstruction_labels=1,error_signals=targets,forecast_targets=flu,pathogen_inputs=flu,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reconstruction_weeks=4,ed_transform=logit,loss_weights=flu_hosp_ed,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,evaluation_seasons=production,log_loss_weight=0.5,error_reference=2025-2026"
+  },
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51
+  ]
+}
