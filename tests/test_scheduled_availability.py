@@ -1,7 +1,7 @@
 """Scientific checks for the assumed publication lags and fold isolation."""
 import numpy as np
 from tapestry.dataset.episodes import episodes
-from tapestry.dataset.cv import fold, season, week_roles
+from tapestry.dataset.cv import fold, week_roles
 from tapestry.dataset.build import covariate_names_for
 from tapestry.model.scenario import Scenario
 
@@ -33,7 +33,7 @@ def test_schedule_uses_final_values_at_correct_observation_dates(panel):
     assert checked > 100
 
 
-def test_two_fold_schedule_excludes_heldout_values_from_fit(panel):
+def test_two_fold_schedule_excludes_heldout_values_from_fit():
     from conftest import synthetic_panel
     panel = synthetic_panel(n_weeks=4 * 52 + 10)
     panel['dates'] = panel['dates'] - np.timedelta64(364, 'D')

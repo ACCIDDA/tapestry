@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 from tapestry.model.network import Model, IndependentBundle
-from tapestry.model.series import SeriesModel, HistoricalILI
+from tapestry.model.series import SeriesModel
 from tapestry.model.objective import LOSS_WEIGHTS
 from tapestry.model.revision_tree import TrajectoryNowcaster
 

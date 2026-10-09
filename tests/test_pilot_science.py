@@ -2,7 +2,6 @@
 import numpy as np
 import torch
 from tapestry.model.series import SeriesModel, quantile_loss
-from tapestry.evaluation.quantiles import LEVELS
 from tapestry.experiment.training import mixture_quantiles
 
 

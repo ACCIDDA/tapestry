@@ -20,15 +20,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 import hashlib
 import json
-import os
 import shutil
 from pathlib import Path
 import subprocess
 import sys
 import threading
-import time
 
-import numpy as np
 from tapestry.dataset.build import PANEL_DATASET
 from tapestry.model.scenario import Scenario
 from .fit import fit, replay, LOCATIONS

@@ -18,7 +18,6 @@ superseded/ subfolder, for a file that was replaced). The PDFs are drawn from th
 Hub clone, so refresh it before submitting and record right after.
 """
 import argparse
-import json
 import shutil
 import sys
 import tempfile

@@ -9,7 +9,6 @@ History: scripts/compare_submissions.py (2026-10-07); its figure duplicated `int
 import argparse
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 def main(argv=None):

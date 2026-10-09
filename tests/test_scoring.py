@@ -53,7 +53,6 @@ def test_state_size_and_task_count_do_not_set_jurisdiction_weights():
 
 def test_pairwise_relative_wis_uses_shared_tasks_and_baseline():
     """CDC method: mean WIS ratios on shared tasks, geometric mean over all models, over the baseline."""
-    import pandas as pd
     from tapestry.evaluation.standard import relative_wis
     scores = pd.DataFrame({'A': [1., 2., 3.], 'B': [2., 4., np.nan], 'base': [4., 4., 4.]})
     got = relative_wis(scores, 'base')
@@ -66,7 +65,6 @@ def test_pairwise_relative_wis_uses_shared_tasks_and_baseline():
 
 
 def test_raw_wis_rejects_invalid_forecasts_instead_of_averaging_them_away():
-    import pandas as pd
     from tapestry.evaluation.standard import check_raw_tasks, transform
     from tapestry.evaluation.hubs import QCOLS, KEY
     frame = pd.DataFrame([dict(zip(KEY, ('2025-11-22', '2025-11-22', '37', 0)), **{q: float(i) for i, q in enumerate(QCOLS)},

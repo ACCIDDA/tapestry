@@ -16,7 +16,7 @@ import subprocess
 import threading
 import time
 
-from .planner import scenario_directory, read_jobs, run_seed, save, seed_state
+from .planner import read_jobs, run_seed, save, seed_state
 
 
 @contextmanager
@@ -35,11 +35,7 @@ def initialize(folder, retry_failed=False):
         path = folder / 'dispatch.json'
         state = json.loads(path.read_text()) if path.exists() else {'tasks': {}}
         for job in jobs:
-            entry = state['tasks'].setdefault(str(job['task']), dict(active={}, seconds=[], seeds={}))
-            active = entry.get('active') or {}
-            if 'seed' in active:
-                active = {str(active['seed']): active}
-            entry['active'] = active
+            entry = state['tasks'].setdefault(str(job['task']), dict(active={}, seeds={}))
             for seed in job['seeds']:
                 if str(seed) in entry['active']:
                     continue
@@ -111,15 +107,13 @@ class Queue:
             save(self.folder / 'dispatch.json', state)
             return (task, int(seed)), True
 
-    def finish(self, task, seed, success, seconds):
+    def finish(self, task, seed, success):
         with self.local, queue_lock(self.folder):
             state = json.loads((self.folder / 'dispatch.json').read_text())
             entry = state['tasks'][task]
             entry['active'].pop(str(seed))
             entry.update(last_owner=self.owner, finished=time.time())
             entry['seeds'][str(seed)] = 'complete' if success else 'failed'
-            if success:
-                entry['seconds'].append(seconds)
             save(self.folder / 'dispatch.json', state)
 
     def reclaim(self):
@@ -180,12 +174,12 @@ def main():
                 stop.wait(5)
                 continue
             task, seed = claimed
-            started, success = time.perf_counter(), False
+            success = False
             print(json.dumps(dict(lane=lane, task=int(task), seed=seed)), flush=True)
             try:
                 success = run_seed(folder, queue.jobs[task], seed, settings)
             finally:
-                queue.finish(task, seed, success, time.perf_counter() - started)
+                queue.finish(task, seed, success)
             failures += not success
         return failures
 

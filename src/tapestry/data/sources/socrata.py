@@ -5,7 +5,6 @@ from __future__ import annotations
 import gzip
 import json
 import os
-from typing import Any
 
 from ..http import HttpClient, with_query
 from ..columns import cdc_columns
