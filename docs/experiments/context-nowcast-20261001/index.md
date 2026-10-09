@@ -56,8 +56,7 @@ For example, state flu-admission MAE is 16.52→11.61 admissions at t−0,
 state flu ED t−1 MAE worsens from 0.02855 to 0.03247 percentage points.
 
 [Age-specific summary](age-error-summary.csv) ·
-[Per-target MAE, signed bias, and percentage errors](age-error-by-target.csv) ·
-[Reproduction script](report_age_errors.py).
+[Per-target MAE, signed bias, and percentage errors](age-error-by-target.csv).
 
 ### Incremental improvement over the seasonal nowcaster
 

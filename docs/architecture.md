@@ -46,7 +46,7 @@ blocks, not a temporal-transformer encoder.
 Independent fits can specialize by pathogen or target while still consuming all
 six local histories. Encoder complexity, covariate representations and spatial
 sharing are scenario options; compare them with matched configurations in the
-[forecasting experiments](experiments/index.md#forecasting).
+[forecasting experiments](experiments/index.md).
 
 A member is a sampled future, not a predicted mean with an interval added
 later. Shared noise can connect its outputs, but good marginal CRPS or WIS

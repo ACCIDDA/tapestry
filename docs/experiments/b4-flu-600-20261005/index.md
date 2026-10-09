@@ -201,7 +201,7 @@ Old `attempt-001/run.json` files still contain the previous memory failures for 
 
 ## User-requested provisional analysis — October 6, about 07:25 EDT
 
-The requested interim analysis is in [provisional-analysis/README.md](provisional-analysis/README.md). The view snapshot contains 1,059 completed runs, including 506 complete two-seed configurations and 123 fully matched four-input recipes. The leading flu-input model improves on the B3 reference across native/log admissions and forward ED. Added COVID generally worsens matched results; RSV is mixed, with modest retrospective ED benefit but no consistent composite benefit. These are provisional development comparisons, not final sweep selection. Common manager ranking completed in `ranking-2e1b9626ed8a`. Main training continues; no refinement launched.
+This interim review predates the [completed sweep analysis](final-analysis/README.md). The view snapshot contains 1,059 completed runs, including 506 complete two-seed configurations and 123 fully matched four-input recipes. The leading flu-input model improves on the B3 reference across native/log admissions and forward ED. Added COVID generally worsens matched results; RSV is mixed, with modest retrospective ED benefit but no consistent composite benefit. These are provisional development comparisons, not final sweep selection. Common manager ranking completed in `ranking-2e1b9626ed8a`. Main training continues; no refinement launched.
 
 ## Hourly review — October 6, 07:59 EDT
 

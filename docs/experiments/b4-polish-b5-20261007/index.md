@@ -389,7 +389,7 @@ Launched 6 October 2026 from the merged [B5 plan](../b5-plan-20261006.md) and th
 
 ### Design
 
-Each configuration starts from one B4 leader and independently redraws every factor below; the leader's own value is the most frequent level, so configurations stay near a leader and main effects can be estimated by regression (as in [B4.refineTop2 item 1](../b4-refinetop2-20261006/index.md#item-1--which-sweep-settings-mattered)). The three anchors themselves are included unmodified.
+Each configuration starts from one B4 leader and independently redraws every factor below; the leader's own value is the most frequent level, so configurations stay near a leader and main effects can be estimated by regression (as in [B4.refineTop2 item 1](../b4-refinetop2-20261006/index.md#item-1-which-sweep-settings-mattered)). The three anchors themselves are included unmodified.
 
 | Anchor | Share | Definition |
 |---|---:|---|
