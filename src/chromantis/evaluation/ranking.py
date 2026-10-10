@@ -186,13 +186,19 @@ def rank(runs, frozen, destination):
     # Only each recipe's own view competes; other views are diagnostics without a rank.
     summary['rank'] = summary[summary.deployed].groupby(['target', 'scale', 'geography'])['mean'].rank(method='min')
     summary = summary.sort_values(['target', 'scale', 'geography', 'rank'])
+    # October WIS (user request 2026-10-10): reference dates in October, horizons 0-3, mean over
+    # seeds and reporting draws, then seasons equally. Reported next to the headline; it does not rank.
+    details = read('scores-details.csv')
+    october = details[details.dimension.eq('month') & details.value.astype(str).str[5:7].eq('10')]
+    october = october.groupby(['name', 'history', 'season', 'target', 'scale', 'geography']).wis.mean() \
+        .groupby(['name', 'history', 'target', 'scale', 'geography']).mean().rename('october').reset_index()
+    summary = summary.merge(october, on=['name', 'history', 'target', 'scale', 'geography'], how='left')
     summary.to_csv(destination / 'headline-rankings.csv', index=False, float_format='%.6g')
     # Compact tables only (user rule, 2026-10-09): seed and draw averages; per-location and
     # per-seed detail stays in each run's cached scores-*.csv.
     config = ['name', 'history', 'deployed']
     raw.groupby([*config, 'season', 'target', 'scale', 'geography'])[METRICS].mean().reset_index() \
         .to_csv(destination / 'headline-season-scores.csv', index=False, float_format='%.6g')
-    details = read('scores-details.csv')
     details = details[details.deployed]
     measures = [c for c in details if c == 'wis' or c.startswith('covered_')]
     details.groupby([*config, 'season', 'target', 'scale', 'geography', 'dimension', 'value'])[measures + ['tasks']] \
@@ -230,5 +236,5 @@ def rank(runs, frozen, destination):
     window = 'October-May, seasons equal' if problem.fold_kind == 'leave_one_season_out' else f'whole {problem.fold_kind} folds, folds equal'
     print(f'Headline: {window}; states/DC and US separate; lower WIS is better.', flush=True)
     print(summary[summary.deployed & (summary.target == headline_name) & (summary.scale == problem.headline_scale) & (summary.geography == problem.headline_geography)]
-          .sort_values('rank')[['name', 'history', 'mean', 'std', 'count', 'rank']].head(20).to_string(index=False), flush=True)
+          .sort_values('rank')[['name', 'history', 'mean', 'std', 'october', 'count', 'rank']].head(20).to_string(index=False), flush=True)
     return summary
