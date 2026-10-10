@@ -348,8 +348,9 @@ class Problem:
             return self.horizons
         return tuple(range(1 - scenario.reconstruction_weeks, 1)) + self.horizons
 
-    def future_indices(self, scenario) -> tuple[int, ...]:
-        return tuple(i for i, h in enumerate(self.model_horizons(scenario)) if h > 0)
+    def future_indices(self, scenario) -> list[int]:
+        # A list, not a tuple: numpy reads a tuple index as one index per array axis.
+        return [i for i, h in enumerate(self.model_horizons(scenario)) if h > 0]
 
     def validate_panel(self, panel: dict[str, Any]) -> None:
         names = tuple(map(str, panel["target_names"]))
