@@ -29,8 +29,17 @@ A problem, not a pathogen, is the unit of comparison: four-week COVID-19 admissi
   with prescribed artificial evaluation inputs (`us-flu-short-term-prescribed.json`), all
   six targets jointly, flu production (no held-out season), and a flu rolling-origin
   example (`us-flu-rolling-origin.json`).
-- **Planner:** `plan` requires `--problem` and copies the problem and dataset files into the
-  experiment folder, so a run stays tied to the exact definition it was trained under.
+- **Panel and locations per problem.** Each problem names its panel (`panel`) and its
+  location file with populations (`locations`), both repository-relative and git-ignored.
+  Problems may share a panel: the FluSight, COVID-19 and RSV problems all use
+  `data/processed/panel.npz` and `data/metadata/locations.csv`. A problem on other
+  locations (e.g. Flu MetroCast metro areas) points to its own panel and location file, so
+  building it never touches another problem's panel.
+- **Planner:** `plan` requires `--problem`, copies the problem and dataset files into the
+  experiment folder, and pins the hashes of the problem's panel (or `--dataset`), location
+  file and frozen Hub support. Slurm fits run the code copied at plan time and refuse to
+  start if a pinned file changed. `planner rank` uses the current code (user decision
+  9 October).
 - **Production:** a release names a problem; a checkpoint is replayed only under the problem
   whose hash it recorded. Checkpoints trained before 9 October have no problem hash and must
   be retrained (the B7 production fits will be retrained, user decision 9 October).
@@ -100,8 +109,9 @@ breakdowns; the Hub-relative and pairwise tables are empty.
   Hub quantile grid, headline on horizons 0–3. Peak timing, peak size or cumulative
   incidence for full-season models, and an outbreak evaluator for Ebola, need a new
   evaluator kind declared in the problem.
-- **Named dataset builds.** The respiratory panel stays at `data/processed/panel.npz`; a
-  second dataset (Ebola) needs its own source adapters and build output.
+- **Builds for other location sets.** `dataset.build` only builds the US state panel
+  (its location list is fixed in `dataset/extract.py`); MetroCast or Ebola need their own
+  source adapters and a build to their problem's panel path.
 - **Reporting-error stage for non-season folds.** It would need donor errors defined per
   period rather than per CDC season.
 - Ebola itself: outbreaks, case definition, geography, folds and primary score are not yet

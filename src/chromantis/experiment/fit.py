@@ -35,7 +35,6 @@ from chromantis.problem import Problem
 from . import training
 from .provenance import save, sha256, environment
 
-LOCATIONS = 'data/metadata/locations.csv'  # populations; pinned by the planner
 
 
 def subset_labels(e, indices):
@@ -288,7 +287,7 @@ def fit(problem,scenario,seed,held_out,members,device,output,dataset,resume=Fals
             if scenario.correction_realizations>1 or scenario.uncorrected_share or scenario.correction_noise_train:
                 augmentation=CorrectedHistories(scenario,corrector)
                 selection_augmentation=CorrectedHistories(scenario,validation_corrector) if inner else None
-        pop=training.populations(LOCATIONS,full.train[0]['locations'])
+        pop=problem.populations(full.train[0]['locations'])
         model,records,selector=training.fit_models(inner.train if inner else full.train,inner.validation if inner else None,
             full.train,problem,scenario,seed,device,pop,augmenter=augmentation,selection_augmenter=selection_augmentation,keep_selection=True)
     prescribed=evaluation_bank(panel,problem,scenario,held_out,keep)

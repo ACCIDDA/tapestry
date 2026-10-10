@@ -10,8 +10,8 @@ evaluates completed fits on other inputs without refitting. `rank` scores runs w
 (`evaluation/report.py`).
 
 `plan` records in `experiment.json` the dataset path, the frozen-support path and
-the sha256 of `panel.npz`, of the frozen manifest and of the one population file
-(`LOCATIONS`); `run` (and the Slurm dispatcher) refuse to fit when any hash no
+the sha256 of the problem's panel (`panel` in the problem file, unless `--dataset` overrides
+it), of the frozen manifest and of the problem's location file (`locations`); `run` (and the Slurm dispatcher) refuse to fit when any hash no
 longer matches. The Slurm launcher runs the code snapshot pinned by `plan`
 (`<experiment>/code`); a local `planner run` runs the working tree.
 """
@@ -26,10 +26,9 @@ import subprocess
 import sys
 import threading
 
-from chromantis.dataset.build import PANEL_DATASET
 from chromantis.model.scenario import Scenario
 from chromantis.problem import Problem
-from .fit import fit, replay, LOCATIONS
+from .fit import fit, replay
 from .provenance import save, now, environment, git_state, sha256
 
 # Forecast samples per episode for every reported score (user decision 2026-10-05), so
@@ -41,21 +40,23 @@ FROZEN = 'data/evaluation/b0_hub_comparison_q23'
 
 
 def pinned_inputs(settings):
-    """Hashes of the dataset, frozen-support manifest and population file an experiment was planned against.
+    """Hashes of the panel, frozen-support manifest and location file an experiment was planned against.
 
-    The population file (`LOCATIONS`) and the frozen support are git-ignored, not
-    synced with the code: copy them to the cluster (docs/longleaf-setup.md)."""
+    The panel, location file and frozen support are git-ignored, not synced with the
+    code: copy them to the cluster (docs/longleaf-setup.md)."""
+    problem = Problem.load(settings['problem'])
     return dict(ili_sha256=sha256(settings['ili_path']) if settings.get('ili_path') else None, dataset_sha256=sha256(settings['dataset']),
-                problem_sha256=Problem.load(settings['problem']).hash,
+                problem_sha256=problem.hash,
                 frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'),
-                population_sha256=sha256(LOCATIONS))
+                population_sha256=sha256(problem.locations))
 
 
 def check_pinned_inputs(settings):
     current = pinned_inputs(settings)
     changed = [k for k, v in current.items() if settings.get(k) != v]
     if changed:
-        raise ValueError(f'{changed} differ from plan time ({settings["dataset"]}, {settings["frozen"]}, {LOCATIONS}); '
+        raise ValueError(f'{changed} differ from plan time ({settings["dataset"]}, {settings["frozen"]}, '
+                         f'{Problem.load(settings["problem"]).locations}); '
                          'rebuilding data, frozen support or populations needs a new experiment name')
 
 
@@ -341,7 +342,7 @@ def main(argv=None):
     fit_parser.add_argument('--seed', type=int, default=42)
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
     fit_parser.add_argument('--eval-members', type=int, default=EVAL_MEMBERS)
-    fit_parser.add_argument('--dataset', default=PANEL_DATASET)
+    fit_parser.add_argument('--dataset', help="Panel; default: the problem's panel")
     fit_parser.add_argument('--frozen', default=FROZEN)
     fit_parser.add_argument('--output', required=True)
     fit_parser.add_argument('--resume', action='store_true', help='Reuse saved prescribed-revision fold models and completed forecast views')
@@ -356,7 +357,7 @@ def main(argv=None):
             p.add_argument('--seeds', nargs='+', type=int, default=None,
                            help='Default: the study file\'s seeds, else 42 43 (two-seed screen, 2026-10-05)')
             p.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
-            p.add_argument('--dataset', default=PANEL_DATASET)
+            p.add_argument('--dataset', help="Panel; default: the problem's panel")
             p.add_argument('--frozen', default=FROZEN)
         if name == 'run':
             p.add_argument('-t', '--task', nargs='+', type=int, default=None)
@@ -378,6 +379,7 @@ def main(argv=None):
         scenario = Scenario.from_string(args.scenario)
         problem = Problem.load(args.problem)
         problem.validate_scenario(scenario)
+        args.dataset = args.dataset or problem.panel
         output = Path(args.output)
         for held_out in problem.folds:
             fit(problem, scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}',
@@ -405,7 +407,7 @@ def main(argv=None):
         problem = snapshot_problem(folder, source_problem)
         for scenario in scenarios.values():
             problem.validate_scenario(scenario)
-        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset,
+        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset or problem.panel,
                         frozen=args.frozen, problem=problem.reference, source_problem_sha256=source_problem.hash)
         ili_paths = {s.ili_path for s in scenarios.values() if s.ili_training != 'none'}
         if len(ili_paths) > 1:

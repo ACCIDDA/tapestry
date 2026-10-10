@@ -114,6 +114,8 @@ class Problem:
     headline_geography: str
     comparison: dict[str, Any]
     production: bool
+    panel: str
+    locations: str
 
     @classmethod
     def load(cls, path: str | Path) -> "Problem":
@@ -153,6 +155,10 @@ class Problem:
             headline_geography=str(headline["geography"]),
             comparison=dict(value.get("comparison", {"kind": "none"})),
             production=bool(value.get("production", False)),
+            # Repository-relative data files (git-ignored, copied to the cluster). Several problems
+            # may share one panel; each experiment pins the hashes of both at plan time.
+            panel=str(value["panel"]),
+            locations=str(value["locations"]),
         )
         if problem.fold_kind not in FOLD_KINDS:
             raise ValueError(f"Unsupported fold kind: {problem.fold_kind}")
@@ -350,6 +356,23 @@ class Problem:
         unknown = set(self.dataset.by_name) - set(names)
         if unknown:
             raise ValueError(f"Panel lacks dataset signals: {sorted(unknown)}")
+
+    def populations(self, locations) -> dict[str, float]:
+        """Population of each panel location, from the problem's location file."""
+        import csv
+        import math
+
+        values = {}
+        with open(self.locations) as stream:
+            for row in csv.DictReader(stream):
+                loc, value = row.get("abbreviation") or row["location"], float(row["population"])
+                if loc in values or not math.isfinite(value) or value <= 0:
+                    raise ValueError(f"Invalid or duplicate population for {loc} in {self.locations}")
+                values[loc] = value
+        missing = [loc for loc in locations if loc not in values]
+        if missing:
+            raise ValueError(f"{self.locations} lacks populations for {missing}")
+        return {loc: values[loc] for loc in locations}
 
     def validate_scenario(self, scenario) -> None:
         inputs = self.input_names(scenario.input_set)

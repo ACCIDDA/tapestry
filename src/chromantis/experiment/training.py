@@ -1,6 +1,5 @@
 """Tensor preparation, the fitting loop and forecast evaluation. No job management (planner) or
 training-history treatment (fit.py)."""
-import csv
 import json
 
 import numpy as np
@@ -12,17 +11,6 @@ from chromantis.model.network import Model, fair_crps_cells, IndependentBundle
 from chromantis.model.objective import loss_cell_weights, loss_scales
 
 EVAL_CHUNK = 32
-
-
-def populations(path, locations):
-    values = {}
-    with open(path) as stream:
-        for row in csv.DictReader(stream):
-            loc, value = row.get('abbreviation') or row['location'], float(row['population'])
-            if loc in values or not np.isfinite(value) or value <= 0:
-                raise ValueError(f'Invalid or duplicate population for {loc}')
-            values[loc] = value
-    return {loc: values[loc] for loc in locations}
 
 
 def to_tensors(batch, device):
@@ -281,7 +269,7 @@ def historical_panel(path, train, problem, scenario):
                 panel_channel = dataset_names.index(signal.name)
                 targets[:, li, panel_channel] = np.clip(pseudo, 0, 1) if signal.unit == 'proportion' else pseudo
     names = problem.covariate_names(scenario.covariate_set)
-    with np.load('data/processed/panel.npz') as p:
+    with np.load(problem.panel) as p:
         state_names, national_names = p['covariate_names'], p['covariate_national_names']
     panel = dict(dates=dates, locations=np.array(locations), target_names=np.array(dataset_names), targets=targets,
                  covariates=np.full((len(dates), len(locations), len(state_names)), np.nan, dtype=np.float32),

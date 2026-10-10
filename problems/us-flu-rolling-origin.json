@@ -2,8 +2,12 @@
   "schema_version": 1,
   "id": "us-flu-rolling-origin",
   "dataset": "../datasets/respiratory-us-weekly.json",
+  "panel": "data/processed/panel.npz",
+  "locations": "data/metadata/locations.csv",
   "targets": ["nhsn_flu_admissions", "nssp_flu_proportion"],
-  "forecast": {"horizons": [1, 2, 3, 4]},
+  "forecast": {
+    "horizons": [1, 2, 3, 4]
+  },
   "folds": {
     "kind": "rolling_origin",
     "ids": ["2024-25-winter", "2025-26-winter"],
@@ -16,7 +20,13 @@
     "kind": "weekly_quantile_wis",
     "inputs": "finalized",
     "draws": 1,
-    "primary": {"target": "nhsn_flu_admissions", "scale": "log", "geography": "states_dc"}
+    "primary": {
+      "target": "nhsn_flu_admissions",
+      "scale": "log",
+      "geography": "states_dc"
+    }
   },
-  "comparison": {"kind": "none"}
+  "comparison": {
+    "kind": "none"
+  }
 }

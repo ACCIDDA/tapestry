@@ -2,8 +2,12 @@
   "schema_version": 1,
   "id": "us-flu-short-term-prescribed",
   "dataset": "../datasets/respiratory-us-weekly.json",
+  "panel": "data/processed/panel.npz",
+  "locations": "data/metadata/locations.csv",
   "targets": ["nhsn_flu_admissions", "nssp_flu_proportion"],
-  "forecast": {"horizons": [1, 2, 3, 4]},
+  "forecast": {
+    "horizons": [1, 2, 3, 4]
+  },
   "folds": {
     "kind": "leave_one_season_out",
     "ids": ["2023-2024", "2024-2025", "2025-2026"],
@@ -13,7 +17,14 @@
     "kind": "weekly_quantile_wis",
     "inputs": "prescribed",
     "draws": 3,
-    "primary": {"target": "nhsn_flu_admissions", "scale": "log", "geography": "states_dc"}
+    "primary": {
+      "target": "nhsn_flu_admissions",
+      "scale": "log",
+      "geography": "states_dc"
+    }
   },
-  "comparison": {"kind": "hub", "hub": "flusight"}
+  "comparison": {
+    "kind": "hub",
+    "hub": "flusight"
+  }
 }
