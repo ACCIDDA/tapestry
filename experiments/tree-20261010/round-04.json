@@ -1,0 +1,36 @@
+{
+  "description": "Tree search round 4. Same problem and score as rounds 1-3 (see protocol.json).",
+  "round": 4,
+  "parents": {
+    "B_width256.actual_1+es1.5+log_loss_0.75": "B_width256.actual_1+es1.5",
+    "B_width256.actual_1+es1.5+correct_3_weeks": "B_width256.actual_1+es1.5",
+    "B_width256.actual_1+log_loss_0.75+correct_3_weeks": "B_width256.actual_1+log_loss_0.75",
+    "B_width256.actual_1+es1.75": "B_width256.actual_1",
+    "B_width256.error_strength_1.75": "B_width256.error_strength_1.5",
+    "B_width256.error_strength_1.5+actual_0.5": "B_width256.error_strength_1.5",
+    "B_width256.error_strength_1.5+correct_3_weeks+normalization_none": "B_width256.error_strength_1.5+correct_3_weeks",
+    "B_blocks3.log_loss_1+lr_double+es1.5": "B_blocks3.log_loss_1+lr_double",
+    "B_blocks3.log_loss_1+lr_double+actual_1": "B_blocks3.log_loss_1+lr_double",
+    "A_width192_half_lr.log_loss_1+count_fourth_root+batch_16": "A_width192_half_lr.log_loss_1+count_fourth_root",
+    "A_width192_half_lr.log_loss_1+count_fourth_root+lr_double": "A_width192_half_lr.log_loss_1+count_fourth_root"
+  },
+  "candidates": {
+    "B_width256.actual_1+es1.5+log_loss_0.75": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=1.0,log_loss_weight=0.75,error_reference=2025-2026",
+    "B_width256.actual_1+es1.5+correct_3_weeks": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=3,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=1.0,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_width256.actual_1+log_loss_0.75+correct_3_weeks": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=3,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=1.0,log_loss_weight=0.75,error_reference=2025-2026",
+    "B_width256.actual_1+es1.75": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.75,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=1.0,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_width256.error_strength_1.75": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.75,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_width256.error_strength_1.5+actual_0.5": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=0.5,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_width256.error_strength_1.5+correct_3_weeks+normalization_none": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=3,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,log_loss_weight=0.5,error_reference=2025-2026",
+    "B_blocks3.log_loss_1+lr_double+es1.5": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,decoder_blocks=3,width=96,epochs=240,patience=25,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,log_loss_weight=1.0,error_reference=2025-2026",
+    "B_blocks3.log_loss_1+lr_double+actual_1": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,decoder_blocks=3,width=96,epochs=240,patience=25,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,actual_share=1.0,log_loss_weight=1.0,error_reference=2025-2026",
+    "A_width192_half_lr.log_loss_1+count_fourth_root+batch_16": "history_source=artificial,history_correction=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,ed_transform=logit,width=192,epochs=160,patience=25,batch_size=16,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_normalization=b0,log_loss_weight=1.0,error_reference=2025-2026",
+    "A_width192_half_lr.log_loss_1+count_fourth_root+lr_double": "history_source=artificial,history_correction=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.05,correction_penalty=30.0,reporting_missingness=0,reporting_method=synchronous_phase_log,ed_transform=logit,width=192,epochs=160,patience=25,lr=0.002,fit_partition=pathogen,covariate_encoder=summary,covariate_set=kinsa,input_normalization=b0,log_loss_weight=1.0,error_reference=2025-2026"
+  },
+  "seeds": [
+    44,
+    45,
+    46,
+    47
+  ]
+}

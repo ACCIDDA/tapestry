@@ -1,0 +1,11 @@
+{
+  "description": "Tree search round 4. Same problem and score as rounds 1-3 (see protocol.json). Six-seed leader on seeds 50-51.",
+  "round": 4,
+  "candidates": {
+    "B_width256.error_strength_1.5": "history_source=artificial,reconstruction_labels=1,error_signals=targets,input_set=target,correction_weeks=2,correction_ed=1,joint_weight=0.1,correction_penalty=3.0,reporting_missingness=0,reporting_method=synchronous_phase_log,reporting_strength=1.5,reconstruction_weeks=4,ed_transform=logit,spatial=neighbors,decoder=quantile,width=256,epochs=240,patience=25,lr=0.0005,fit_partition=pathogen,covariate_encoder=summary,input_normalization=b0,log_loss_weight=0.5,error_reference=2025-2026"
+  },
+  "seeds": [
+    50,
+    51
+  ]
+}
