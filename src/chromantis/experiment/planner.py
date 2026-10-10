@@ -28,6 +28,7 @@ import threading
 
 from chromantis.dataset.build import PANEL_DATASET
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
 from .fit import fit, replay, LOCATIONS
 from .provenance import save, now, environment, git_state, sha256
 
@@ -45,6 +46,7 @@ def pinned_inputs(settings):
     The population file (`LOCATIONS`) and the frozen support are git-ignored, not
     synced with the code: copy them to the cluster (docs/longleaf-setup.md)."""
     return dict(ili_sha256=sha256(settings['ili_path']) if settings.get('ili_path') else None, dataset_sha256=sha256(settings['dataset']),
+                problem_sha256=Problem.load(settings['problem']).hash,
                 frozen_manifest_sha256=sha256(Path(settings['frozen']) / 'manifest.json'),
                 population_sha256=sha256(LOCATIONS))
 
@@ -109,6 +111,20 @@ def read_study(path):
     return {name: Scenario.from_string(value) for name, value in study['candidates'].items()}, study.get('seeds')
 
 
+def snapshot_problem(folder, source):
+    """Copy the problem and dataset contracts into the experiment so runs and reports are portable."""
+    folder.mkdir(parents=True, exist_ok=True)
+    problem_path, dataset_path = folder / 'problem.json', folder / 'dataset.json'
+    previous = json.loads((folder / 'experiment.json').read_text()) if (folder / 'experiment.json').exists() else {}
+    if previous.get('source_problem_sha256') not in (None, source.hash):
+        raise ValueError('Problem specification changed; use a new experiment name')
+    value = json.loads(source.path.read_text())
+    value['dataset'] = 'dataset.json'
+    save(problem_path, value)
+    shutil.copy2(source.dataset.path, dataset_path)
+    return Problem.load(problem_path)
+
+
 def plan(folder, scenarios, seeds, settings):
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / 'experiment.json'
@@ -138,7 +154,7 @@ def attempts(folder, scenario, seed):
 def complete_artifacts(output):
     try:
         manifest = json.loads((output / 'manifest.json').read_text())
-        seasons = Scenario.from_string(manifest.get('scenario', '')).scored_seasons
+        seasons = tuple(manifest['folds'])
     except (OSError, ValueError, TypeError):
         return False
     required = ['manifest.json'] + [f'eval_{s}/{n}' for s in seasons for n in ('model.pt', 'nowcaster.pkl', 'forecasts.npz')]
@@ -159,19 +175,20 @@ def seed_state(folder, scenario, seed):
     return found[-1] + (False,) if found else (None, dict(status='planned'), False)
 
 
-def resumable(attempt, scenario):
+def resumable(attempt, scenario, problem):
     """An unfinished attempt with at least one saved fold model (prescribed-revision fits only)."""
-    return (attempt is not None and Scenario.from_string(scenario).evaluation_inputs == 'prescribed'
-            and any((attempt / f'eval_{s}' / 'model.pt').exists() for s in Scenario.from_string(scenario).scored_seasons))
+    return (attempt is not None and problem.evaluation_inputs == 'prescribed'
+            and any((attempt / f'eval_{s}' / 'model.pt').exists() for s in problem.folds))
 
 
 def run_seed(folder, job, seed, settings):
+    problem = Problem.load(settings['problem'])
     attempt, record, done = seed_state(folder, job['scenario'], seed)
     if done:
         print(f'Reusing {job["name"]}, seed {seed}', flush=True)
         return True
     check_pinned_inputs(settings)
-    if resumable(attempt, job['scenario']):
+    if resumable(attempt, job['scenario'], problem):
         # Continue the stopped attempt: saved fold models and complete forecast views are reused.
         command = record['command'] + ['--resume']
         record = dict(record, status='running', resumed=now(), resume_command=command,
@@ -182,6 +199,7 @@ def run_seed(folder, job, seed, settings):
         attempt = folder / scenario_directory(job['scenario']) / f's{seed}' / f'attempt-{number:03d}'
         attempt.mkdir(parents=True, exist_ok=False)
         command = [sys.executable, '-m', 'chromantis.experiment.planner', 'fit', '--scenario', job['scenario'],
+                   '--problem', settings['problem'],
                    '--seed', str(seed), '--device', settings['device'],
                    '--eval-members', str(settings['eval_members']), '--dataset', settings['dataset'],
                    '--frozen', settings['frozen'], '--output', str(attempt)]
@@ -319,6 +337,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest='command', required=True)
     fit_parser = sub.add_parser('fit', help='Fit and evaluate one scenario/seed across its held-out seasons')
     fit_parser.add_argument('--scenario', required=True)
+    fit_parser.add_argument('--problem', required=True)
     fit_parser.add_argument('--seed', type=int, default=42)
     fit_parser.add_argument('--device', default='cpu', choices=['cpu', 'mps', 'cuda'])
     fit_parser.add_argument('--eval-members', type=int, default=EVAL_MEMBERS)
@@ -331,6 +350,7 @@ def main(argv=None):
         p.add_argument('-e', '--experiment', required=True)
         p.add_argument('--root', default='data/experiments')
         if name == 'plan':
+            p.add_argument('--problem', required=True)
             p.add_argument('-s', '--scenario', nargs='+', help='Full scenario strings to plan (named by run id)')
             p.add_argument('--study', help='Study file: {"candidates": {name: scenario}, "seeds": [...]}')
             p.add_argument('--seeds', nargs='+', type=int, default=None,
@@ -356,15 +376,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.command == 'fit':
         scenario = Scenario.from_string(args.scenario)
+        problem = Problem.load(args.problem)
+        problem.validate_scenario(scenario)
         output = Path(args.output)
-        for held_out in scenario.scored_seasons:
-            fit(scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}',
+        for held_out in problem.folds:
+            fit(problem, scenario, args.seed, held_out, args.eval_members, args.device, output / f'eval_{held_out}',
                 args.dataset, resume=args.resume)
-        folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in scenario.scored_seasons}
+        folds = {held: json.loads((output / f'eval_{held}' / 'manifest.json').read_text()) for held in problem.folds}
         save(output / 'manifest.json', dict(scenario=scenario.scenario_string, run_id=scenario.run_id,
-                                            seed=args.seed, folds=list(scenario.scored_seasons), fold_manifests=folds,
+                                            problem=problem.reference, problem_id=problem.id,
+                                            problem_sha256=problem.hash, seed=args.seed,
+                                            folds=list(problem.folds), fold_manifests=folds,
                                             eval_members=args.eval_members, dataset=args.dataset, frozen=args.frozen))
-        if scenario.evaluation_seasons != 'production':
+        if not problem.production:
             from chromantis.evaluation.ranking import cache_scores
             cache_scores(output, args.frozen)
         return
@@ -377,7 +401,12 @@ def main(argv=None):
         else:
             scenarios, study_seeds = {Scenario.from_string(s).run_id: Scenario.from_string(s) for s in args.scenario}, None
         seeds = args.seeds or study_seeds or [42, 43]
-        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset, frozen=args.frozen)
+        source_problem = Problem.load(args.problem)
+        problem = snapshot_problem(folder, source_problem)
+        for scenario in scenarios.values():
+            problem.validate_scenario(scenario)
+        settings = dict(device=args.device, eval_members=EVAL_MEMBERS, dataset=args.dataset,
+                        frozen=args.frozen, problem=problem.reference, source_problem_sha256=source_problem.hash)
         ili_paths = {s.ili_path for s in scenarios.values() if s.ili_training != 'none'}
         if len(ili_paths) > 1:
             raise ValueError('One historical ILI dataset per experiment')

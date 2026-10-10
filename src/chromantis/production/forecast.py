@@ -23,50 +23,55 @@ from pathlib import Path
 
 import torch
 
-from chromantis.dataset.build import load, for_hub, covariate_names_for, context_end
+from chromantis.dataset.build import load, for_hub, context_end
 from chromantis.dataset.episodes import episodes
 from chromantis.experiment.fit import ForecastSlice
 from chromantis.experiment.provenance import sha256
 from chromantis.experiment.training import evaluate
 from chromantis.model.network import load_model
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
 
 MEMBERS = 512
 
 
 def read_release(path):
     release = json.loads(Path(path).read_text())
-    for key in ('name', 'model_abbr', 'hub', 'rule', 'view', 'description', 'recipes'):
+    for key in ('name', 'model_abbr', 'hub', 'problem', 'rule', 'view', 'description', 'recipes'):
         if key not in release:
             raise ValueError(f'{path}: release lacks {key!r}')
     return release
 
 
-def forecast_checkpoint(checkpoint, dataset, issuance, output, view='corrected', members=MEMBERS, device='cpu',
-                        expected_sha256=None):
+def forecast_checkpoint(checkpoint, problem, dataset, issuance, output, view='corrected', members=MEMBERS,
+                        device='cpu', expected_sha256=None):
     checkpoint, output = Path(checkpoint), Path(output)
     if expected_sha256 and sha256(checkpoint / 'model.pt') != expected_sha256:
         raise ValueError(f'{checkpoint}/model.pt differs from the released checkpoint')
     metadata = json.loads((checkpoint / 'manifest.json').read_text())
     scenario = Scenario.from_string(metadata['scenario'])
-    if scenario.evaluation_seasons != 'production' or metadata['held_out_season'] != '2026-2027':
+    if not problem.production or metadata['held_out_season'] not in problem.folds:
         raise ValueError('Use a production fit trained through 2025-26')
+    if metadata.get('problem_sha256') != problem.hash:
+        raise ValueError(f'{checkpoint}: checkpoint and release use different problems')
+    problem.validate_scenario(scenario)
     if scenario.correction_noise:
         raise ValueError('Operational replay does not implement noisy-history recipes')
-    panel = for_hub(load(dataset), 'flusight')
+    panel = for_hub(load(dataset), release_hub := next((h for h in problem.target_hubs if h), 'flusight'))
+    problem.validate_panel(panel)
     panel_meta = json.loads(str(panel['metadata']))
     if panel_meta.get('omitted_sources'):
-        if scenario.pathogen_inputs != 'flu':
-            raise ValueError('Source-restricted operational panel requires audited flu input scope')
-        required = {'nhsn_flu_admissions', 'nssp_flu_proportion'}
-        required.update('nwss' if n.startswith('nwss_') else n for n in covariate_names_for(scenario.covariate_set))
+        required = set(problem.input_names(scenario.input_set))
+        required.update('nwss' if n.startswith('nwss_') else n
+                        for n in problem.covariate_names(scenario.covariate_set))
         missing = required - set(panel_meta['available_sources'])
         if missing:
             raise ValueError(f'Operational panel omits model inputs: {sorted(missing)}')
     if issuance not in map(str, panel['issuance_dates']):
         raise ValueError('Requested issuance absent from refreshed panel')
-    eps = episodes(panel, scenario.lookback, 'reported', covariate_names_for(scenario.covariate_set),
-                   horizons=(1, 2, 3, 4), require_labels=False)
+    eps = episodes(panel, problem, problem.input_names(scenario.input_set), scenario.lookback, 'reported',
+                   problem.covariate_names(scenario.covariate_set), horizons=problem.model_horizons(scenario),
+                   require_labels=False)
     eps = [e for e in eps if e['issuance'] == issuance]
     if len(eps) != 1 or eps[0]['context_dates'][-1] != context_end(issuance):
         raise ValueError('Operational issuance/context alignment failed')
@@ -82,20 +87,26 @@ def forecast_checkpoint(checkpoint, dataset, issuance, output, view='corrected',
         raise ValueError('Operational views are raw or corrected (half is not implemented in production)')
     model = load_model(torch.load(checkpoint / 'model.pt', map_location='cpu', weights_only=False)).to(device)
     if scenario.reconstruction_labels:
-        model = ForecastSlice(model, scenario.future)
+        model = ForecastSlice(model, problem.future_indices(scenario))
     output.mkdir(parents=True, exist_ok=True)
     torch.manual_seed(metadata['seed'] + 1000)
     evaluate(model, eps, members, device, output)
     record = dict(checkpoint=str(checkpoint.resolve()), checkpoint_sha256=sha256(checkpoint / 'model.pt'),
                   operational_dataset=str(Path(dataset).resolve()), operational_dataset_sha256=sha256(dataset),
                   issuance=issuance, input_view=view, seed=metadata['seed'], scenario=metadata['scenario'],
-                  training_fold=metadata['fold'], members=members, future_labels_used=False)
+                  problem=problem.reference, problem_id=problem.id, problem_sha256=problem.hash,
+                  forecast_hub=release_hub, training_fold=metadata['fold'], members=members,
+                  future_labels_used=False)
     (output / 'operational-manifest.json').write_text(json.dumps(record, indent=2) + '\n')
     return output
 
 
 def forecast_release(release, dataset, issuance, out, device='cpu', jobs=4):
     """Replay every checkpoint of a release into `out/<recipe>/s<seed>/`; finished members are reused."""
+    problem = Problem.load(release['problem'])
+    hubs = {hub for hub in problem.target_hubs if hub}
+    if hubs != {release['hub']}:
+        raise ValueError(f'Release hub {release["hub"]!r} does not match problem target hubs {sorted(hubs)}')
     tasks = []
     for recipe, members in release['recipes'].items():
         for member in members:
@@ -104,8 +115,8 @@ def forecast_release(release, dataset, issuance, out, device='cpu', jobs=4):
             if not (target / 'operational-manifest.json').exists():
                 tasks.append((member['checkpoint'], target, member['sha256']))
     print(f'{sum(map(len, release["recipes"].values()))} members; {len(tasks)} to forecast', flush=True)
-    run = lambda task: forecast_checkpoint(task[0], dataset, issuance, task[1], release['view'], device=device,
-                                           expected_sha256=task[2])
+    run = lambda task: forecast_checkpoint(task[0], problem, dataset, issuance, task[1], release['view'],
+                                           device=device, expected_sha256=task[2])
     with ThreadPoolExecutor(jobs) as pool:
         list(pool.map(run, tasks))
     return {recipe: [Path(out) / recipe / f's{json.loads((Path(m["checkpoint"]) / "manifest.json").read_text())["seed"]}'

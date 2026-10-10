@@ -10,7 +10,6 @@ import warnings
 import numpy as np
 
 from . import cv
-from .build import covariate_names_for
 from .episodes import episodes, select_covariates
 
 
@@ -28,7 +27,9 @@ def archived_report(episode, panel, covariate_names):
     ti = np.searchsorted(dates, episode['context_dates'])
     if (ti >= len(dates)).any() or not np.array_equal(dates[ti], episode['context_dates']):
         raise ValueError('Report context does not align to panel dates')
-    values = np.moveaxis(panel['asof_targets'][wi, ti].copy(), -1, -2)
+    names = list(map(str, panel['target_names']))
+    indices = [names.index(name) for name in episode['input_names']]
+    values = np.moveaxis(panel['asof_targets'][wi, ti][..., indices].copy(), -1, -2)
     result = dict(episode, values=np.nan_to_num(values), available=np.isfinite(values),
                   known_final=np.zeros_like(values, dtype=bool), issuance=issue)
     if covariate_names:
@@ -39,7 +40,7 @@ def archived_report(episode, panel, covariate_names):
     return result
 
 
-def peak_scales(panel, keep):
+def peak_scales(panel, keep, target_indices):
     """Season/location/signal peaks from permitted fitting dates only."""
     labels = np.array([cv.season(d) for d in panel['dates']])
     result = {}
@@ -47,7 +48,7 @@ def peak_scales(panel, keep):
         warnings.simplefilter('ignore', RuntimeWarning)
         for label in sorted(set(labels[keep])):
             use = keep & (labels == label)
-            target = np.nanmax(panel['targets'][use], axis=0).T
+            target = np.nanmax(panel['targets'][use][..., target_indices], axis=0).T
             state = np.nanmax(panel['covariates'][use], axis=0).T
             national = np.nanmax(panel['covariates_national'][use], axis=0)
             result[label] = (np.nan_to_num(target), np.nan_to_num(state), np.nan_to_num(national))
@@ -58,7 +59,7 @@ def phase(episode, peak, channels=None):
     """Per-signal, per-location recent log level and two-week log change."""
     values, valid = episode['values'], episode['available'].copy()
     if channels is not None:
-        valid[:, [c for c in range(6) if c not in channels]] = False
+        valid[:, [c for c in range(values.shape[1]) if c not in channels]] = False
     scale = np.maximum(peak, 1e-8)
     def mean(start, end):
         ok = valid[start:end]
@@ -89,19 +90,24 @@ class ReportingErrors:
     `actual_share` uses the actual archived report instead of an artificial draw,
     `error_scope=early_actual` uses actual reports in the donor season, and
     `error_signals` limits which signals are perturbed."""
-    def __init__(self, panel, scenario, held_out, keep):
+    def __init__(self, panel, problem, scenario, held_out, keep):
         self.scenario = scenario
-        self.names = list(covariate_names_for(scenario.covariate_set))
+        self.problem = problem
+        self.names = list(problem.covariate_names(scenario.covariate_set))
+        self.input_names = problem.input_names(scenario.input_set)
+        panel_names = list(map(str, panel['target_names']))
+        self.input_indices = [panel_names.index(name) for name in self.input_names]
+        self.input_units = tuple(problem.dataset.by_name[name].unit for name in self.input_names)
+        self.proportion_channels = [i for i, unit in enumerate(self.input_units) if unit == 'proportion']
         self.probability = scenario.reporting_probability
         self.random_strength = scenario.reporting_random_strength
         self.recent = scenario.reporting_recent
         self.method = scenario.reporting_method
         self.strength = scenario.reporting_strength
         self.transport_missingness = scenario.reporting_missingness
-        self.peaks = peak_scales(panel, keep)
+        self.peaks = peak_scales(panel, keep, self.input_indices)
         self.reference = scenario.error_reference
-        self.channels = list({'all':range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],
-                              'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[scenario.pathogen_inputs])
+        self.channels = list(range(len(self.input_names)))
         self.default_peaks = tuple(np.maximum.reduce([p[i] for p in self.peaks.values()]) for i in range(3))
         self.donor_season = max(self.peaks)
         # Donor seasons (2026-10-06): the latest permitted season only, or every
@@ -113,19 +119,19 @@ class ReportingErrors:
             # Reporting calibration is prescribed separately from epidemic fitting.
             # No held-out epidemic trajectory is added to the forecaster's train set.
             keep = np.array([cv.season(d) == self.reference for d in panel['dates']])
-            self.reference_peaks = peak_scales(panel, keep)
+            self.reference_peaks = peak_scales(panel, keep, self.input_indices)
             self.donor_season = self.reference
             self.season_weight = {self.reference: 1.}
         else:
             self.reference_peaks = self.peaks
         self.state_names = list(panel['covariate_names'])
         self.national_names = list(panel['covariate_national_names'])
-        self.unit_floor = np.array([1. if str(n).startswith('nhsn_') else .0001
-                                   for n in panel['target_names']], np.float32)[:, None]
+        self.unit_floor = np.array([1. if unit == 'count' else .0001
+                                   for unit in self.input_units], np.float32)[:, None]
         # Mask before extracting errors, matching features, or nowcast residuals.
         masked = cv.masked(panel, keep)
         allowed = set(panel['dates'][keep].astype(str))
-        final = episodes(masked, scenario.lookback, 'scheduled_final', self.names)
+        final = episodes(masked, problem, self.input_names, scenario.lookback, 'scheduled_final', self.names)
         self.donors, features, errors, supports, visible, cov_errors, cov_supports, cov_visible = [], [], [], [], [], [], [], []
         donor_weights = []
         self.error_dates = set()
@@ -133,7 +139,7 @@ class ReportingErrors:
         # Only reports issued during that season count (later issuances also revise its weeks).
         labels = np.array([cv.season(d) for d in panel['dates'].astype(str)])
         issued = np.array([cv.season(d) for d in panel['issuance_dates'].astype(str)])
-        archived = {label: np.isfinite(masked['asof_targets'][issued == label][:, labels == label]).any(axis=(0, 1, 2))
+        archived = {label: np.isfinite(masked['asof_targets'][issued == label][:, labels == label][..., self.input_indices]).any(axis=(0, 1, 2))
                     for label in self.season_weight}
         first_date = str(panel['dates'][0])
         for e in final:
@@ -143,10 +149,10 @@ class ReportingErrors:
                 continue
             raw = archived_report(e, masked, self.names)
             # Exclude pre-archive/onboarding windows, not ordinary latest-week delays.
-            # Seasons archiving all six signals keep the original rule (every signal reported in
-            # the last four weeks); partially archived seasons (2023-24) need flu admissions only.
+            # Fully archived seasons require every selected input to have a recent report;
+            # partially archived seasons require only the inputs that exist in that archive.
             recent = raw['available'][-4:].any(axis=(0, 2))
-            if not (recent.all() if archived[origin_season].all() else recent[0]):
+            if not recent[archived[origin_season]].all():
                 continue
             observed = raw
             # Error reference weeks must also belong to the donor season; an
@@ -206,7 +212,8 @@ class ReportingErrors:
             labels='unchanged', finality_channel=False, signals=scenario.error_signals, scope=scenario.error_scope)
         # Actual archived reports by origin (finalized value where nothing was archived).
         self.reported = {e['context_dates'][-1]: e for e in episodes(
-            masked, scenario.lookback, 'reported', self.names, horizons=tuple(range(1 - scenario.lookback, 5)))}
+            masked, problem, self.input_names, scenario.lookback, 'reported', self.names,
+            horizons=tuple(range(1 - scenario.lookback, max(problem.horizons) + 1)))}
 
     def target_floor(self, episode, reference=False):
         # Context may straddle seasons: use the reference week's season, not
@@ -231,8 +238,8 @@ class ReportingErrors:
                                     if k in report})
         out = self.artificial(episode, rng)
         if scenario.error_signals == 'admissions':
-            out['values'][:, 3:] = episode['values'][:, 3:]
-            out['available'][:, 3:] = episode['available'][:, 3:]
+            out['values'][:, self.proportion_channels] = episode['values'][:, self.proportion_channels]
+            out['available'][:, self.proportion_channels] = episode['available'][:, self.proportion_channels]
         if scenario.error_signals in ('admissions', 'targets') and 'covariates' in episode:
             out['covariates'] = episode['covariates']
         return out
@@ -311,9 +318,9 @@ class ReportingErrors:
                         residual = rng.choice(pool)
                 target_errors[age,channel,location] = residual * multiplier
             # Donor matching and transport use only the configured pathogen inputs.
-            target_errors[:,[c for c in range(6) if c not in self.channels]] = 0
+            target_errors[:,[c for c in range(len(self.input_names)) if c not in self.channels]] = 0
         values = self.apply(episode['values'], target_errors, self.target_floor(episode))
-        values[:, 3:] = np.minimum(1, values[:, 3:])
+        values[:, self.proportion_channels] = np.minimum(1, values[:, self.proportion_channels])
         available = episode['available'].copy()
         if self.transport_missingness:
             available &= ~local(self.support) | local(self.visible)

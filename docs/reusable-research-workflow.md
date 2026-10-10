@@ -1,7 +1,8 @@
 # Reusable research and submission workflow
 
 How we went from data to the B7 influenza submission, and how to repeat it for another pathogen.
-This is a **proposal**. Nothing below is implemented yet unless it says so.
+The shared dataset/problem pipeline described below is implemented. Scientific choices
+for a new pathogen still have to be defined before running it.
 
 "Tree search" here means the branching sequence of experiments (B0 → B7) that produced a submitted
 recipe. It has nothing to do with the regression trees that correct preliminary reports. B7 is one
@@ -83,11 +84,11 @@ production/submissions/               submitted CSVs; superseded/ keeps replaced
   - who proposed it and who decided it;
   - why a branch stopped: time, failure, or poor results.
 - **No separate issuance record.** The submission log entry and the committed CSV are the record.
-- **No pathogen file yet.** Write `pathogens/<name>.json` when the second pathogen starts. It should
-  hold targets, units, geography, horizons, the Hub contract and target types: quantile, peak, rate
-  change, samples. Target types matter because only sampled recipes can be chained week to week to
-  produce peaks, and CDC may not accept categorical targets derived from trajectories. Until then the
-  flu settings stay in code.
+- **Dataset and problem files.** The concrete migration is defined in the
+  [multi-pathogen pipeline](multipathogen-pipeline.md). A named dataset describes stored
+  signals, units, geography, vintages, and covariates. A problem selects targets and inputs and fixes
+  horizons, folds, truth, output type, and one primary evaluation. This replaces the earlier proposal
+  for one pathogen file: a pathogen can have several scientifically different forecasting problems.
 - **Git.** When committing, include `experiments/`, the release JSONs, the submission log and the
   submitted CSVs. Checkpoints, `output/` and Hub clones stay out. As of 8 October all of
   `production/` and `experiments/` are untracked (nothing committed yet, by the user's choice).
@@ -98,7 +99,7 @@ production/submissions/               submitted CSVs; superseded/ keeps replaced
 | Step | Module | Command |
 |---|---|---|
 | Data acquisition, dated panel | `chromantis.data`, `chromantis.dataset` | `python -m chromantis.data pull`, `python -m chromantis.dataset.build build` |
-| Training (one route) | `experiment/fit.py`, `experiment/training.py` | `planner plan --study`, `scripts/jlessler.sbatch`, `planner run` |
+| Training (one route) | `experiment/fit.py`, `experiment/training.py` | `planner plan --problem ... --study ...`, `scripts/jlessler.sbatch`, `planner run` |
 | Evaluate fits on other inputs | `experiment/fit.py` `replay` | `planner replay` |
 | Internal evaluation | `evaluation/standard.py`, `ranking.py`, `report.py` | `planner rank` |
 | Saved-forecast ensembles | `evaluation/ensembles.py` | `python -m chromantis.evaluation.ensembles` |
@@ -107,19 +108,18 @@ production/submissions/               submitted CSVs; superseded/ keeps replaced
 About 50 experiment-specific scripts and the training routes no submitted model used were
 deleted; scenario options of the remaining route are all kept. Details, and the checks that the
 new code reproduces the submitted B7 file and B7 training exactly:
-[restructuring log](workflow.md#restructuring-log-8-october-2026). Still to do for a second
-pathogen: read target names from the pathogen file instead of the flu channel positions and
-flu-only conditions in the model, objective and export code.
+[restructuring log](workflow.md#restructuring-log-8-october-2026). Target and input names,
+units, horizons, folds, and evaluation now come from a required problem file; flu, COVID-19,
+RSV, and joint-respiratory problem files use the same implementation.
 
-## Another pathogen
+## Another problem or pathogen
 
 Reuse the procedure and the code; rerun the science. Do not carry over influenza's reporting
-errors, Kinsa, ILI pretraining, season boundaries or recipes. For RSV or COVID-19:
-1. Write the pathogen file (see Files).
-2. Check sources and their revision histories.
-3. Estimate that pathogen's reporting errors.
-4. Run steps 1–5 above.
-5. Issue an unpublished forecast as the acceptance test.
+errors, Kinsa, ILI pretraining, season boundaries, recipes, or evaluation weights. Follow the
+[multi-pathogen pipeline](multipathogen-pipeline.md): add or reuse a named dataset, write a problem
+that fixes targets, inputs, horizons, folds and the primary score, check source revision histories,
+then run steps 1–5 above. An unpublished forecast evaluated under that problem is the acceptance
+test.
 
 ## Open gaps from B7
 
@@ -150,6 +150,10 @@ errors, Kinsa, ILI pretraining, season boundaries or recipes. For RSV or COVID-1
 - **8 October, second cut (user decision).** Replaced `decisions.jsonl` with a decision list on the
   study's report page and dropped the per-issuance JSON; the submission log plus the CSV is the
   record. The pathogen file is deferred until the second pathogen starts.
+- **9 October, multi-pathogen plan (user decision).** Replaced the proposed pathogen file with
+  separate dataset and problem contracts. Raw acquisition remains shared; dataset building creates
+  named panels with covariates; each problem fixes targets, inputs, horizons, folds, and one primary
+  evaluation; model recipes contain only training and model choices.
 - **Evidence.** Claude sessions under `~/.claude/projects/-Users-chadi-Research-Tapestry/`
   (`eac542c9`, `bb6f8636`, `bd6c581f`, `6f220c65`, `2f2e91bb`, `dc5f13dc`, `1586eaad`, `73b3b686`,
   `fb4d71df`, `17ba82cf`) and Codex sessions under `~/.codex/sessions/2026/10/` (`5f6f69deae1c`,

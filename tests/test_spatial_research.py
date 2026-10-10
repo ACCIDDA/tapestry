@@ -35,7 +35,11 @@ def test_attention_excludes_missing_senders_and_has_no_all_missing_message():
 @pytest.mark.parametrize('spatial', ['target_spatial', 'joint_location_target'])
 def test_covariate_at_remote_location_reaches_local_forecast(spatial):
     torch.manual_seed(31)
-    model = Model(lookback=3, width=8, latent=4, spatial=spatial, covariate_names=['kinsa_ili'])
+    names=('fa','ca','ra','fe','ce','re');units=('count',)*3+('proportion',)*3
+    groups=('flu','covid','rsv')*2
+    model = Model(lookback=3, width=8, latent=4, spatial=spatial, covariate_names=['kinsa_ili'],
+                  input_names=names,input_units=units,input_groups=groups,target_names=names,
+                  target_units=units,target_groups=groups,target_input_indices=range(6))
     values = torch.rand(1, 3, 6, 2)
     covariates = torch.zeros(1, 3, 1, 2, 2)
     covariates[:, :, :, 0, 1] = 2

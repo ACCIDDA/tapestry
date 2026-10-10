@@ -16,7 +16,10 @@ def test_ordered_quantile_loss_matches_interval_wis():
 
 def test_series_head_units_order_and_masked_inputs():
     torch.manual_seed(42)
-    m=SeriesModel(lookback=8,width=16)
+    names=('fa','ca','ra','fe','ce','re');units=('count',)*3+('proportion',)*3
+    groups=('flu','covid','rsv')*2
+    m=SeriesModel(lookback=8,width=16,input_names=names,input_units=units,input_groups=groups,
+                  target_names=names,target_units=units,target_groups=groups,target_input_indices=range(6))
     x=torch.rand(2,8,6,3);mask=torch.rand(x.shape)>.2;cal=torch.zeros(2,3)
     a=m(x,mask,cal)
     b=m(torch.where(mask,x,x+10000),mask,cal)

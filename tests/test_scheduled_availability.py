@@ -4,6 +4,9 @@ from chromantis.dataset.episodes import episodes
 from chromantis.dataset.cv import fold, week_roles
 from chromantis.dataset.build import covariate_names_for
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
+
+PROBLEM = Problem.load('problems/us-respiratory-all-short-term.json')
 
 
 def test_schedule_uses_final_values_at_correct_observation_dates(panel):
@@ -14,7 +17,7 @@ def test_schedule_uses_final_values_at_correct_observation_dates(panel):
     values, available = select_covariates(panel['covariates'], panel['covariates_national'], panel['covariate_names'],
                                           panel['covariate_national_names'], locations, names)
     checked = 0
-    for e in episodes(panel, 12, 'scheduled_final', names):
+    for e in episodes(panel, PROBLEM, PROBLEM.input_names('all'), 12, 'scheduled_final', names):
         np.testing.assert_array_equal(e['known_final'], e['available'])
         for i, day in enumerate(e['context_dates']):
             if day not in dates:
@@ -38,16 +41,14 @@ def test_two_fold_schedule_excludes_heldout_values_from_fit():
     panel = synthetic_panel(n_weeks=4 * 52 + 10)
     panel['dates'] = panel['dates'] - np.timedelta64(364, 'D')
     panel['issuance_dates'] = panel['issuance_dates'] - np.timedelta64(364, 'D')
-    s = Scenario(evaluation_seasons='recent_two', patience=2, epochs=4,
-                 covariate_set='kinsa+ilinet')
-    assert s.scored_seasons == ('2025-2026', '2024-2025')
-    for held in s.scored_seasons:
-        roles = week_roles(panel['dates'], s, held)
+    s = Scenario(patience=2, epochs=4, covariate_set='kinsa+ilinet')
+    for held in PROBLEM.folds:
+        roles = week_roles(panel['dates'], PROBLEM, s, held)
         changed = dict(panel)
         for name in ('targets', 'covariates', 'covariates_national'):
             changed[name] = panel[name].copy()
             changed[name][~np.isin(roles, ['fit'])] = 999
-        a, b = fold(panel, s, held, inner=True), fold(changed, s, held, inner=True)
+        a, b = fold(panel, PROBLEM, s, held, inner=True), fold(changed, PROBLEM, s, held, inner=True)
         assert len(a.train) == len(b.train)
         for x, y in zip(a.train, b.train):
             for name in ('values', 'available', 'known_final', 'covariates', 'Y'):
@@ -76,9 +77,9 @@ def test_multiscale_slopes_curvature_and_masked_values():
 def test_reported_inputs_use_reports_and_star_only_unarchived_cells(panel):
     """Standard evaluation inputs: reports where archived, finalized only where nothing was, labels final."""
     names = covariate_names_for('inpatient+kinsa+ilinet')
-    final = {e['context_dates'][-1]: e for e in episodes(panel, 12, 'scheduled_final', names)}
+    final = {e['context_dates'][-1]: e for e in episodes(panel, PROBLEM, PROBLEM.input_names('all'), 12, 'scheduled_final', names)}
     dates = list(panel['dates'].astype(str))
-    reported = episodes(panel, 12, 'reported', names)
+    reported = episodes(panel, PROBLEM, PROBLEM.input_names('all'), 12, 'reported', names)
     assert reported and any(e['filled'].any() for e in reported)
     for e in reported:
         base = final.get(e['context_dates'][-1])

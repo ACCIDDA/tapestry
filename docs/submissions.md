@@ -1,5 +1,7 @@
 # Chromantis submission log
 
+See [Description and hub rules](reference/hub-scoring-2026-2027.md) for the three hubs' targets, submission formats, and scoring rules for 2026–27.
+
 Chromantis records submissions across all pathogens and model recipes. Each dated entry identifies the pathogen, Hub, public model name, exact fitted recipe, training and operational inputs, submitted file, and publication status. Future recipes receive new entries; a change of model does not rename or overwrite the submission history.
 
 The Hub model is **ACCIDDA-Chromantis**. It was submitted as ACCIDDA-EpiLoom for the 10 October 2026 round and renamed on the Hub on 8 October 2026 (PR 3774); the file contents did not change. COVID-19, RSV and other pathogens belong in the same log when submissions are recorded; none has been submitted yet.

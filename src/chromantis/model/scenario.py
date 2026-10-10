@@ -31,6 +31,10 @@ production fits were rewritten to these names and the translation code was remov
 decision): strings with old names now raise "Unknown scenario field". Older experiments
 are history, kept as reports. The model choices A-F are explained in
 docs/reference/model-choices.md.
+
+2026-10-09: targets, model inputs, horizons, folds and evaluation moved to required
+problem/dataset specifications. Scenario now contains only model and training choices.
+Old strings containing task fields intentionally fail instead of taking a legacy path.
 """
 from dataclasses import dataclass, fields
 import hashlib
@@ -41,10 +45,9 @@ CODES = {
     'reporting_method': {'local_log', 'calendar_log', 'local_additive', 'synchronous_log', 'phase_log', 'synchronous_phase_log'},
     'input_normalization': {'none', 'b0'},
     'validation_calendar': {'season', 'b0'},
-    'evaluation_seasons': {'all', 'recent_two', 'production'},
     'count_transform': {'raw', 'rate', 'sqrt', 'fourth_root', 'log1p'},
     'ed_transform': {'linear', 'logit', 'fourth_root'},
-    'loss_weights': {'influenza_first', 'balanced_admissions', 'flu_only', 'flu_ed', 'flu_hosp_ed', 'objective'},
+    'loss_weights': {'objective', 'admissions_only', 'ed_only'},
     'signal_features': {'none', 'multiscale', 'smooth_multiscale'},
     'covariate_encoder': {'raw', 'smooth', 'summary', 'shared', 'growth'},
     'encoder': {'mlp', 'conv', 'multiscale_conv', 'series_mlp', 'series_mixer'},
@@ -54,13 +57,10 @@ CODES = {
     'error_signals': {'all', 'admissions', 'targets'},
     'corrector_examples': {'synthetic', 'real', 'synthetic_then_real'},
     'corrector_model': {'tree', 'mlp'},
-    'evaluation_inputs': {'reported', 'prescribed'},
     'ili_training': {'none', 'pretrain', 'joint'},
     'error_seasons': {'latest', 'all'},
     'training_window': {'all', 'recent2', 'last2'},
     'ili_units': {'own', 'flu_scaled'},
-    'forecast_targets': {'all', 'flu'},
-    'pathogen_inputs': {'all', 'flu', 'flu_hosp', 'flu_ed', 'flu_covid', 'flu_rsv'},
     'spatial': {'neighbors', 'distance', 'gravity', 'none', 'pooled', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target', 'national_broadcast', 'gated_pool'},
     'heads': {'shared', 'state_us'},
     'decoder': {'legacy', 'residual2', 'quantile', 'quantile_small'},
@@ -88,10 +88,7 @@ MEANING = {
                           'final values (synthetic), real archived reports paired with their mature values (real), or '
                           'synthetic pretraining then real (synthetic_then_real, MLP only). Was pilot_nowcaster.',
     'corrector_model': 'Correction model: gradient-boosted trees (tree) or a residual MLP (mlp). Was pilot_nowcaster.',
-    'evaluation_inputs': 'Choice E: evaluate on real archived Wednesday reports (reported) or on final histories made '
-                         'preliminary by the prescribed error process of error_reference (prescribed). Was evaluation_vintaging.',
-    'forecast_targets': 'All six targets or flu admissions + ED only; exported forecasts and scoring follow this scope.',
-    'pathogen_inputs': 'Allowed admissions/ED input pathogens in both forecaster and nowcaster; excluded values and masks are removed.',
+    'input_set': 'Named target-history input set declared by the dataset specification.',
     'error_seasons': 'Choice B: archived seasons supplying artificial reporting errors and real correction pairs: latest permitted training season, or every archived training season with recency weights 1, 1/2, 1/4.',
     'actual_share': 'Probability a training episode uses the actual archived report (finalized fill where none) instead of an artificial-error draw.',
     'correction_realizations': 'Independent artificial-report-then-correction realizations per training episode; one is drawn per minibatch.',
@@ -99,7 +96,7 @@ MEANING = {
     'correction_noise': 'Scale of sampled out-of-fold correction residuals added to corrected admissions; 0 = point correction. Evaluation uses 16 sampled histories per issuance.',
     'correction_noise_train': 'Also add sampled correction residuals to corrected training histories each minibatch.',
     'reconstruction_weeks': 'joint only: recent context weeks whose final values are reconstruction labels.',
-    'log_loss_weight': 'Weight of an extra weekly flu-admission loss on the log(1 + count) scale, added to the native-scale loss.',
+    'log_loss_weight': 'Weight of an extra weekly admission loss (the trained admission targets) on the log(1 + count) scale, added to the native-scale loss.',
     'covariate_dropout': 'Probability a training episode has all covariates (e.g. Kinsa) hidden.',
     'training_window': 'all = every non-held-out season; recent2 = two preceding seasons; last2 = latest two permitted non-held-out seasons (nested removal of oldest training season).',
     'stress_views': 'Also evaluate delayed-admission and covariate-missing input views of the same fitted model.',
@@ -113,7 +110,6 @@ MEANING = {
     'error_signals': 'Choice C: admissions perturbs counts only; targets also perturbs ED but keeps covariates unchanged; all perturbs both targets and covariates.',
     'error_reference': 'Choice B: prescribed reporting-error season for training errors and prescribed evaluation '
                        'inputs, independent of the held-out epidemic season; empty = the fold\'s own seasons.',
-    'evaluation_draws': 'Independent artificial evaluation histories (1, 3 or 5) when evaluation_inputs=prescribed.',
     'ili_training': 'No historical transfer, forecasting pretraining, or joint forecasting on the pinned pre-2022 ILI archive.',
     'ili_path': 'Historical ILI auxiliary dataset; its hash is pinned by the experiment manager.',
     'ili_weight': 'Historical ILI loss weight for joint training after within-history normalization.',
@@ -127,7 +123,6 @@ MEANING = {
     'joint_weight': 'joint only: weight of the reconstruction loss relative to the forecast loss.',
     'signal_features': 'Optional causal 3/6/12-week level, slope and curvature features for targets and covariates, with optional three-week smoothing.',
     'coordinates': 'Census state internal-point latitude/longitude and non-US indicator.',
-    'evaluation_seasons': 'all three held-out seasons, recent_two (2025-26 and 2024-25), or production (fit on all four seasons 2022-23 to 2025-26; forecast 2026-27 inputs, unscored).',
     'input_normalization': 'none, or B0 per-location transformed target scales fitted on training contexts only.',
     'validation_calendar': 'season-relative blocks, or B0 blocks counted from the first stored week of each season.',
     'lookback': 'Context weeks per episode (the history the network sees).',
@@ -136,8 +131,7 @@ MEANING = {
     'ed_transform': 'ED proportions in model space (`model/network.py`); scores stay in native units.',
     'geography': 'Adds log population and a native-US flag per location as features.',
     'dynamics': 'Recent-dynamics feature block (30 slope/acceleration/age/validity features); see architecture.md.',
-    'loss_weights': 'Training-loss weight per channel (`model/objective.py` `LOSS_WEIGHTS`); `objective` = the '
-                    "score's target weights.",
+    'loss_weights': 'Training target weights: the problem objective, count targets only, or proportion targets only.',
     'encoder': 'Temporal context encoder; see architecture.md.',
     'spatial': 'Cross-location information exchange (none, shared attention, pathogen/target/joint scopes); '
                'see architecture.md.',
@@ -158,12 +152,11 @@ MEANING = {
     'head_sharing': 'Output sharing: shared, three pathogen heads, or six target heads; see architecture.md.',
     'annual_calendar': 'Annual sine/cosine and Christmas-timing features.',
     'location_embedding': 'Dimension of a learned location-ID embedding (0 = none).',
-    'fit_partition': 'One model for all six targets, or separately fitted models per pathogen / target group '
-                     '(each sees all six inputs); see architecture.md.',
+    'fit_partition': 'One model for all targets, or separately fitted models per problem group / target; see architecture.md.',
     'validation_members': 'Members drawn for the early-stopping validation loss.',
     'weight_decay': 'Adam weight decay.',
     'covariate_encoder': 'Raw standardized history, signed-log trailing-three-week smoothing, six summaries, a shared 4-dimensional encoder, or recent growth (level, 1/2-week log growth, acceleration) plus coverage/age.',
-    'covariate_set': "`+`-joined covariate source groups fed to the context encoder; '' = none; see "
+    'covariate_set': "`+`-joined named covariate sets declared by the dataset; `none` = none; see "
                      'workflow.md and experiments/b-2-t0/index.md#protocol.',
     'validation_weeks': 'patience > 0 only: consecutive early-stopping weeks hidden per block (design §4).',
     'validation_spacing': 'patience > 0 only: one validation block every this many weeks of a training season.',
@@ -209,8 +202,7 @@ class Scenario:
     error_signals: str = 'admissions'
     corrector_examples: str = 'synthetic'
     corrector_model: str = 'tree'
-    forecast_targets: str = 'all'
-    pathogen_inputs: str = 'all'
+    input_set: str = 'all'
     ili_units: str = 'own'
     ili_steps: int = 200
     correction_weeks: int = 8
@@ -261,10 +253,9 @@ class Scenario:
     # Covariates and evaluation.
     covariate_encoder: str = 'raw'
     signal_features: str = 'none'
-    covariate_set: str = ''
+    covariate_set: str = 'none'
     input_normalization: str = 'none'
     validation_calendar: str = 'season'
-    evaluation_seasons: str = 'all'
     # Cross-validation early stopping (user decision 2026-09-22: CV settings belong to
     # the scenario). Only used when patience > 0: hide `validation_weeks` consecutive
     # weeks of every `validation_spacing`, from week `validation_offset` of each
@@ -286,32 +277,24 @@ class Scenario:
     stress_views: bool = False
     # A prescribed empirical reporting process, shared by every held-out season.
     error_reference: str = ''
-    evaluation_inputs: str = 'reported'
-    evaluation_draws: int = 1
     forecast_view: str = 'corrected'
 
     def __post_init__(self):
         for key in CODES:
             if getattr(self, key) not in CODES[key]:
                 raise ValueError(f'Invalid {key}: {getattr(self, key)!r}')
-        if self.evaluation_draws not in (1, 3, 5):
-            raise ValueError('evaluation_draws must be 1, 3 or 5')
         if self.error_reference and self.error_reference not in ('2023-2024','2024-2025','2025-2026'):
             raise ValueError('error_reference must name a completed reporting season')
         if self.corrector_examples == 'synthetic_then_real' and self.corrector_model != 'mlp':
             raise ValueError('Synthetic pretraining then real examples needs corrector_model=mlp')
-        if self.evaluation_inputs == 'prescribed' and not self.error_reference:
-            raise ValueError('Artificial evaluation histories require a revision reference')
         if self.decoder_blocks not in (0, 2, 3, 4):
             raise ValueError('decoder_blocks must be 0 (original head), 2, 3 or 4')
         if self.decoder_blocks and (self.encoder != 'mlp' or self.decoder not in ('legacy', 'residual2', 'quantile')):
             raise ValueError('Residual decoder depth requires an MLP sampled or ordered-quantile head')
         if not 0 <= self.sum_wis_weight <= 1:
             raise ValueError('Sum WIS weight must be between zero and one')
-        if self.sum_wis_weight and (self.decoder not in ('legacy', 'residual2') or self.encoder in ('series_mlp', 'series_mixer') or self.forecast_targets != 'flu'):
-            raise ValueError('Sum WIS requires sampled flu forecasting')
-        if self.forecast_targets == 'flu' and self.loss_weights not in ('flu_hosp_ed', 'flu_only', 'flu_ed'):
-            raise ValueError('Flu forecasts require flu admissions, ED, or both loss weights')
+        if self.sum_wis_weight and (self.decoder not in ('legacy', 'residual2') or self.encoder in ('series_mlp', 'series_mixer')):
+            raise ValueError('Sum WIS requires a sampled model')
         if self.ili_units != 'own' and self.ili_training == 'none':
             raise ValueError('Scaled ILI requires ILI training')
         if self.ili_steps < 1 or self.correction_weeks < 1:
@@ -327,8 +310,6 @@ class Scenario:
             raise ValueError('reconstruction_labels is implemented with uncorrected artificial histories only')
         if (self.correction_realizations > 1 or self.uncorrected_share or self.correction_noise_train) and not self.history_correction:
             raise ValueError('Correction realizations, uncorrected share and training noise need corrected training histories')
-        if self.evaluation_seasons == 'production' and self.training_window != 'all':
-            raise ValueError('Production fits use every season')
         if self.correction_noise_train and not self.correction_noise:
             raise ValueError('Training correction noise needs correction_noise > 0')
         if (self.actual_share or self.error_seasons != 'latest') and self.history_source != 'artificial':
@@ -338,9 +319,9 @@ class Scenario:
         if self.decoder in ('quantile', 'quantile_small') and (self.noise != 'global' or self.us_error != 'none'):
             raise ValueError('Direct quantiles cannot add sampled output noise')
         if self.ili_training != 'none' and self.encoder not in ('series_mlp', 'series_mixer') and \
-                (self.encoder != 'mlp' or self.ili_training != 'pretrain' or self.ili_units != 'flu_scaled' or self.forecast_targets != 'flu'):
+                (self.encoder != 'mlp' or self.ili_training != 'pretrain' or self.ili_units != 'flu_scaled'):
             raise ValueError('Historical ILI needs a shared series encoder, or flu-scaled panel pretraining of a flu MLP')
-        if self.encoder in ('series_mlp', 'series_mixer') and (self.fit_partition != 'all' or self.spatial != 'none' or self.covariate_set):
+        if self.encoder in ('series_mlp', 'series_mixer') and (self.fit_partition != 'all' or self.spatial != 'none'):
             raise ValueError('Series models use one shared fit, no spatial messages or covariates')
         if not 0 <= self.reporting_probability <= 1 or self.reporting_recent < 0 or self.joint_weight <= 0:
             raise ValueError('Invalid revision probability, recent window, or joint loss weight')
@@ -370,39 +351,14 @@ class Scenario:
                              'validation_offset + validation_weeks <= validation_spacing')
         if not self.patience and (self.validation_weeks, self.validation_spacing, self.validation_offset) != (3, 16, 4):
             raise ValueError('validation_* settings only apply with patience > 0')
-        from chromantis.dataset.build import COVARIATE_SELECTORS
-        # Canonicalize so equivalent spellings ('a+b' vs 'b+a' vs 'a+a+b') collapse
-        # to one string and one `run_id`, instead of silently training the same
-        # configuration twice under different scenario strings.
-        groups = self.covariate_set.split('+') if self.covariate_set else []
-        unknown = set(groups) - set(COVARIATE_SELECTORS)
-        if unknown:
-            raise ValueError(f'Unknown covariate group(s): {sorted(unknown)}')
-        object.__setattr__(self, 'covariate_set', '+'.join(group for group in COVARIATE_SELECTORS if group in groups))
+        if not self.input_set or not self.covariate_set:
+            raise ValueError('input_set and covariate_set must be named by the dataset specification')
 
     @property
     def input_mode(self):
         """Episode inputs for fitting (`dataset.episodes`): actual Wednesday reports for
         `history_source=reported`, otherwise finalized targets on the documented T-0/T-1 schedule."""
         return 'reported' if self.history_source == 'reported' else 'scheduled_final'
-
-    @property
-    def scored_seasons(self):
-        if self.evaluation_seasons == 'production':
-            return ('2026-2027',)
-        return ('2025-2026', '2024-2025') if self.evaluation_seasons == 'recent_two' else ('2023-2024', '2024-2025', '2025-2026')
-
-    @property
-    def horizons(self):
-        """Model output weeks: 1-4, preceded by `reconstruction_weeks` weeks for `joint`."""
-        if self.reconstruction_labels:
-            return tuple(range(1 - self.reconstruction_weeks, 5))
-        return (1, 2, 3, 4)
-
-    @property
-    def future(self):
-        """Indices of the forecast weeks (horizon > 0) within `horizons`."""
-        return [i for i, h in enumerate(self.horizons) if h > 0]
 
     @property
     def scenario_string(self):
@@ -435,7 +391,7 @@ class Scenario:
         return f'{self.encoder}-{self.fit_partition}-{self.input_mode}-{digest}'
 
     def model_options(self):
-        return dict(pathogen_inputs=self.pathogen_inputs, signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, decoder_blocks=self.decoder_blocks, heads=self.heads,
+        return dict(signal_features=self.signal_features, covariate_encoder=self.covariate_encoder, encoder=self.encoder, spatial=self.spatial, decoder=self.decoder, decoder_blocks=self.decoder_blocks, heads=self.heads,
                     noise=self.noise, head_sharing=self.head_sharing, count_transform=self.count_transform,
                     ed_transform=self.ed_transform, geography=self.geography, coordinates=self.coordinates, dynamics=self.dynamics,
                     annual_calendar=self.annual_calendar, location_embedding=self.location_embedding,

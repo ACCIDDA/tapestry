@@ -5,41 +5,31 @@ Unchanged fair-CRPS loss weighting (docs/architecture.md:
 """
 import numpy as np
 
-from chromantis.dataset.build import CHANNELS
 from chromantis.dataset.cv import season
 
 # Training-loss weights. They equalled the B0 ranking score's weights (admissions 1,
 # ED .5; states/DC 80%, US 20%); that composite score was retired on 2026-10-08
 # (`evaluation/ranking.py`), the loss weights did not change. Channel weights are the
 # scenario option `loss_weights`; the US share is fixed.
-TARGET_WEIGHTS = (1.,) * 3 + (.5,) * 3  # CHANNELS order: 3 admissions, 3 ED
 US_WEIGHT = .2
 SCALE_MIN_WEEKS = 26
-SCALE_FLOORS = (1., 1., 1., .001, .001, .001)
 LOSS_DEFINITION = ('Native-unit fair CRPS / training channel-location Q95; equal seasons by target date; '
                    'within season normalize available channel weights; states/DC 80% equally, US 20%. '
                    'Q95 pools toward channel Q95 below 26 observed weeks; floors 1 admission/.001 ED. '
                    'Absent geography groups are renormalized over available groups. '
                    'Training normalization is a surrogate, not ensemble-relative WIS.')
 
-LOSS_WEIGHTS = {
-    'influenza_first': [1, .1, .1, .1, .1, .1],
-    'balanced_admissions': [1, 1, 1, .1, .1, .1],
-    'flu_only': [1, 0, 0, 0, 0, 0],
-    'flu_ed': [0, 0, 0, 1, 0, 0],
-    'flu_hosp_ed': [1, 0, 0, .5, 0, 0],
-    'objective': list(TARGET_WEIGHTS),
-}
-
-
-def loss_scales(panel):
+def loss_scales(panel, units):
     """[C,L] native Q95 from unique permitted weeks [T,C,value_or_mask,L].
 
     Below 26 observed weeks use alpha*local + (1-alpha)*pooled, alpha=n/26.
     A floor protects constant-zero series. Input transforms are irrelevant here.
     """
-    scales = np.empty((len(CHANNELS), panel.shape[-1]), dtype=float)
-    for c, floor in enumerate(SCALE_FLOORS):
+    if len(units) != panel.shape[1]:
+        raise ValueError('One unit is required per target channel')
+    scales = np.empty((len(units), panel.shape[-1]), dtype=float)
+    for c, unit in enumerate(units):
+        floor = 1. if unit == 'count' else .001
         values, valid = panel[:, c, 0], panel[:, c, 1].astype(bool)
         pooled = float(np.quantile(values[valid], .95)) if valid.any() else floor
         for l in range(panel.shape[-1]):
@@ -50,7 +40,7 @@ def loss_scales(panel):
     return scales.tolist()
 
 
-def loss_cell_weights(episodes, channel_weights=TARGET_WEIGHTS):
+def loss_cell_weights(episodes, channel_weights):
     """Fixed [N,H,C,L] coefficients summing to one over the whole partition.
 
     Group by target-date season, then eligible channels, then geography and
@@ -60,8 +50,8 @@ def loss_cell_weights(episodes, channel_weights=TARGET_WEIGHTS):
     dates = np.array([[season(day) for day in e['target_dates']] for e in episodes])
     locations = np.asarray(episodes[0]['locations'])
     channel_weights = np.asarray(channel_weights, dtype=float)
-    if channel_weights.shape != (len(CHANNELS),) or np.any(channel_weights < 0) or not np.isfinite(channel_weights).all():
-        raise ValueError(f'Need {len(CHANNELS)} finite nonnegative channel weights')
+    if channel_weights.shape != (mask.shape[2],) or np.any(channel_weights < 0) or not np.isfinite(channel_weights).all():
+        raise ValueError(f'Need {mask.shape[2]} finite nonnegative target weights')
     result = np.zeros(mask.shape, dtype=np.float32)
     seasons_used = 0
     for label in np.unique(dates):

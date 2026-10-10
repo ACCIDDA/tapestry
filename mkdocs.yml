@@ -57,7 +57,10 @@ nav:
       - Workflow: workflow.md
       - Setup: setup.md
       - Reusable research workflow: reusable-research-workflow.md
-  - Submissions: submissions.md
+      - Multi-pathogen pipeline: multipathogen-pipeline.md
+  - Submissions:
+      - Description and hub rules: reference/hub-scoring-2026-2027.md
+      - Submission log: submissions.md
   - Experiments:
       - Model runs: experiments/index.md
   - Data:

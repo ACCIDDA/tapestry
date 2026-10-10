@@ -32,6 +32,10 @@ from .standard import hub_relative, raw_wis, pairwise, raw_score_details
 from .distribution import distribution_scores
 
 VIEWS = ('half', 'corrected', 'calibrated', 'sampled', 'delayed', 'nokinsa')
+HUB_RELATIVE_COLUMNS = ['hub', 'target', 'season', 'scale', 'geography', 'ensemble', 'wis_ratio', 'tasks',
+                        'history', 'revision_draw']
+PAIRWISE_COLUMNS = ['hub', 'target', 'season', 'scale', 'model', 'relative_wis', 'rank', 'models', 'tasks', 'hub_tasks',
+                    'qualifies', 'google', 'ours', 'history', 'revision_draw']
 CACHE = ('scores-hub-relative.csv', 'scores-raw.csv', 'scores-pairwise.csv', 'scores-details.csv',
          'scores-distribution.csv')
 # Bump when a cached table gains columns; older caches are then recomputed.
@@ -76,6 +80,17 @@ def views(run):
     return result
 
 
+def headline_pathogen(runs):
+    """Group of the common problem's headline target."""
+    from chromantis.problem import Problem
+    manifests = [json.loads((Path(r['path']) / 'manifest.json').read_text()) for r in runs]
+    hashes = {m['problem_sha256'] for m in manifests}
+    if len(hashes) != 1:
+        raise ValueError('One ranking may contain only one problem definition')
+    problem = Problem.load(manifests[0]['problem'])
+    return problem.dataset.by_name[problem.headline_target].group
+
+
 def deployed_view(run):
     """The view a run is ranked and deployed in: its recipe's `forecast_view`."""
     manifest = json.loads((Path(run) / 'manifest.json').read_text())
@@ -93,21 +108,42 @@ def cache_scores(run, frozen):
         return
     tables = {name: [] for name in CACHE}
     own = deployed_view(run)
+    from chromantis.problem import Problem
+    compared = Problem.load(json.loads((run / 'manifest.json').read_text())['problem']).comparison.get('kind') == 'hub'
     for label, path in views(run).items():
         draw = int(label.split('_')[0][4:]) if label.startswith('draw') else 0
         history = label.split('_', 1)[1] if label.startswith('draw') else label
         tag = dict(history=history, revision_draw=draw)
-        relative = hub_relative(path, frozen)
-        tables['scores-hub-relative.csv'].append(relative[relative.geography != 'all'].assign(**tag))
         tables['scores-raw.csv'].append(raw_wis(path, frozen).assign(**tag))
-        table = pairwise(path, frozen)
-        # Every Hub model's value in this run's pool, for the own view only (the figure's background).
-        tables['scores-pairwise.csv'].append((table if label == own else table[table.ours]).assign(**tag))
+        if compared:
+            relative = hub_relative(path, frozen)
+            tables['scores-hub-relative.csv'].append(relative[relative.geography != 'all'].assign(**tag))
+            table = pairwise(path, frozen)
+            # Every Hub model's value in this run's pool, for the own view only (the figure's background).
+            tables['scores-pairwise.csv'].append((table if label == own else table[table.ours]).assign(**tag))
+        else:  # no comparison declared by the problem: header-only tables keep `rank` uniform
+            tables['scores-hub-relative.csv'].append(pd.DataFrame(columns=HUB_RELATIVE_COLUMNS))
+            tables['scores-pairwise.csv'].append(pd.DataFrame(columns=PAIRWISE_COLUMNS))
         tables['scores-details.csv'].append(raw_score_details(path).assign(**tag))
     tables['scores-distribution.csv'] = [distribution_scores(run)]
     for name, frames in tables.items():
         pd.concat(frames, ignore_index=True).to_csv(run / name, index=False)
     version.write_text(CACHE_VERSION + '\n')
+
+
+
+def hub_tables(relative, pool, config, destination):
+    """Hub-relative WIS ratios and the pairwise pool, averaged over seeds and draws."""
+    relative.groupby([*config, 'hub', 'season', 'target', 'scale', 'geography']).wis_ratio.mean().reset_index() \
+        .to_csv(destination / 'hub-relative-scores.csv', index=False, float_format='%.6g')
+    pool = pool[pool.deployed | pool.ours]
+    ours = pool[pool.ours].groupby([*config, 'hub', 'season', 'target', 'scale']).agg(
+        relative_wis=('relative_wis', 'mean'), rank=('rank', 'mean'), models=('models', 'first')).reset_index()
+    hub = pool[~pool.ours].groupby(['model', 'hub', 'season', 'target', 'scale']).agg(
+        relative_wis=('relative_wis', 'mean'), google=('google', 'first')).reset_index()
+    pd.concat([ours.assign(ours=True), hub.assign(ours=False)], ignore_index=True) \
+        .to_csv(destination / 'hub-pairwise-scores.csv', index=False, float_format='%.6g')
+
 
 
 def rank(runs, frozen, destination):
@@ -162,16 +198,13 @@ def rank(runs, frozen, destination):
     details.groupby([*config, 'season', 'target', 'scale', 'geography', 'dimension', 'value'])[measures + ['tasks']] \
         .mean().reset_index().to_csv(destination / 'score-details.csv', index=False, float_format='%.6g')
     relative = read('scores-hub-relative.csv')
-    relative.groupby([*config, 'hub', 'season', 'target', 'scale', 'geography']).wis_ratio.mean().reset_index() \
-        .to_csv(destination / 'hub-relative-scores.csv', index=False, float_format='%.6g')
-    pool = read('scores-pairwise.csv')
-    pool = pool[pool.deployed | pool.ours]
-    ours = pool[pool.ours].groupby([*config, 'hub', 'season', 'target', 'scale']).agg(
-        relative_wis=('relative_wis', 'mean'), rank=('rank', 'mean'), models=('models', 'first')).reset_index()
-    hub = pool[~pool.ours].groupby(['model', 'hub', 'season', 'target', 'scale']).agg(
-        relative_wis=('relative_wis', 'mean'), google=('google', 'first')).reset_index()
-    pd.concat([ours.assign(ours=True), hub.assign(ours=False)], ignore_index=True) \
-        .to_csv(destination / 'hub-pairwise-scores.csv', index=False, float_format='%.6g')
+    if relative.empty:  # the problem declares no Hub comparison
+        pd.DataFrame(columns=[*config, 'hub', 'season', 'target', 'scale', 'geography', 'wis_ratio']) \
+            .to_csv(destination / 'hub-relative-scores.csv', index=False)
+        pd.DataFrame(columns=[*config, 'hub', 'season', 'target', 'scale', 'relative_wis', 'rank', 'models', 'ours',
+                              'model', 'google']).to_csv(destination / 'hub-pairwise-scores.csv', index=False)
+    else:
+        hub_tables(relative, read('scores-pairwise.csv'), config, destination)
     distribution = read('scores-distribution.csv')
     distribution = distribution[distribution.deployed]
     distribution['geography'] = distribution.location.astype(str).eq('US').map({True: 'US', False: 'states_dc'})
@@ -181,14 +214,21 @@ def rank(runs, frozen, destination):
     large = [p.name for p in destination.glob('*.csv') if p.stat().st_size > 1_000_000]
     if large:
         print(f'Warning: ranking tables over 1 MB are not copied to the report: {large}', flush=True)
+    from chromantis.problem import Problem
+    first_manifest = json.loads((Path(runs[0]['path']) / 'manifest.json').read_text())
+    problem = Problem.load(first_manifest['problem'])
+    headline_signal = problem.dataset.by_name[problem.headline_target]
+    headline_name = headline_signal.hub_target or headline_signal.name
     (destination / 'manifest.json').write_text(json.dumps(dict(
         runs=[str(r['path']) for r in runs], definition=__doc__,
         views={f'{r["name"]} s{r["seed"]}': r['view'] for r in runs},
         support_sha256={'/'.join(k): v for k, v in raw.groupby(['target', 'season', 'scale', 'geography'])
                         .support_sha256.first().items()},
-        selection_metric='states/DC log-admission WIS in each recipe\'s forecast_view (headline-rankings.csv, '
+        problem_id=problem.id, problem_sha256=problem.hash,
+        selection_metric=f'{problem.headline_geography} {problem.headline_scale} {headline_name} WIS in each recipe\'s forecast_view (headline-rankings.csv, '
                          'deployed rows); lower is better'), indent=2) + '\n')
-    print('Headline: October-May, seasons equal; states/DC and US separate; lower WIS is better.', flush=True)
-    print(summary[summary.deployed & (summary.target == 'wk inc flu hosp') & (summary.scale == 'log') & (summary.geography == 'states_dc')]
+    window = 'October-May, seasons equal' if problem.fold_kind == 'leave_one_season_out' else f'whole {problem.fold_kind} folds, folds equal'
+    print(f'Headline: {window}; states/DC and US separate; lower WIS is better.', flush=True)
+    print(summary[summary.deployed & (summary.target == headline_name) & (summary.scale == problem.headline_scale) & (summary.geography == problem.headline_geography)]
           .sort_values('rank')[['name', 'history', 'mean', 'std', 'count', 'rank']].head(20).to_string(index=False), flush=True)
     return summary

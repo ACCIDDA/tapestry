@@ -54,11 +54,14 @@ class Queue:
         self.lanes, self.gpu_count = lanes, gpu_count
         self.seeds = None if seeds is None else {str(seed) for seed in seeds}
         self.jobs = {str(job['task']): job for job in read_jobs(folder)}
+        from chromantis.problem import Problem
+        problem = Problem.load(json.loads((folder / 'experiment.json').read_text())['problem'])
         self.cost = {}
         for task, job in self.jobs.items():
             from chromantis.model.scenario import Scenario
             s = Scenario.from_string(job['scenario'])
-            components = {'all': 1, 'pathogen': 3, 'target': 6}[s.fit_partition]
+            components = (1 if s.fit_partition == 'all' else len(set(problem.target_groups))
+                          if s.fit_partition == 'pathogen' else len(problem.targets))
             encoder = {'mlp': 1., 'conv': 1.5, 'multiscale_conv': 2., 'series_mlp': .5, 'series_mixer': .6}[s.encoder]
             decoder = {'legacy': 1., 'residual2': 2., 'quantile': .5, 'quantile_small': .5}[s.decoder]
             exchange = 1.4 if s.spatial == 'joint_location_target' else 1.

@@ -15,32 +15,32 @@ import numpy as np
 import pandas as pd
 
 from chromantis.data.geography import STATE_FIPS
-from chromantis.dataset.cv import SEASONS, season
 from .quantiles import LEVELS
 
 KEY = ['reference_date', 'target_end_date', 'location', 'horizon']
 QCOLS = [f'q{q:g}' for q in LEVELS]
-CHANNEL = {'wk inc flu hosp': 0, 'wk inc covid hosp': 1, 'wk inc rsv hosp': 2,
-           'wk inc flu prop ed visits': 3, 'wk inc covid prop ed visits': 4, 'wk inc rsv prop ed visits': 5}
-
-
 def export(run):
     """Hub task tables for one saved run: exact mapping context_end+7d -> reference."""
     postal_to_fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
     frames = {}
     manifest = json.loads((Path(run) / 'manifest.json').read_text())
     from chromantis.model.scenario import Scenario
-    scenario=Scenario.from_string(manifest['scenario'])
-    flu_only=scenario.forecast_targets=='flu'
-    from chromantis.model.objective import LOSS_WEIGHTS
+    from chromantis.problem import Problem
+    problem=Problem.load(manifest['problem'])
+    if 'trained_targets' in manifest:
+        trained=set(map(int,manifest['trained_targets']))
+    else:
+        scenario=Scenario.from_string(manifest['scenario'])
+        trained={c for c,w in enumerate(problem.target_weights(scenario.loss_weights)) if w}
     for held in manifest['folds']:
         with np.load(Path(run) / f'eval_{held}' / 'forecasts.npz', allow_pickle=False) as data:
             if not np.array_equal(data['quantile_levels'], LEVELS):  # training.evaluate saves exactly LEVELS
                 raise ValueError(f'{run}/eval_{held}/forecasts.npz holds other quantile levels than LEVELS')
             selected = data['quantiles']
-            for target, c in CHANNEL.items():
-                if flu_only and c not in (0,3):continue
-                if flu_only and not LOSS_WEIGHTS[scenario.loss_weights][c]:continue
+            for c, signal in enumerate(problem.target_signals):
+                target=signal.hub_target
+                if not target or c not in trained:
+                    continue
                 q = selected[:, :, :, c, :]
                 n, h, l = q.shape[1:]
                 reference = [(date.fromisoformat(d) + timedelta(weeks=1)).isoformat() for d in data['context_end']]
@@ -53,6 +53,6 @@ def export(run):
                     'model_original_mask': data['mask'][:, :, c, :].reshape(-1),
                 })
                 frame[QCOLS] = q.reshape(len(LEVELS), -1).T
-                keep = frame.target_end_date.map(lambda d: season(d)) == held
+                keep = problem.fold_labels(frame.target_end_date) == held
                 frames[(held, target)] = frame[keep].copy()
     return frames

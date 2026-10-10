@@ -37,8 +37,9 @@ The wastewater indices are a derived raw snapshot, rebuilt from Delphi NWSS by
 `python -m chromantis.dataset.build check` verifies the stored panel against direct
 `extract.extract(...)` resolution at sampled issuances and at the truth day.
 
-`COVARIATE_GROUPS` is the single source of truth for covariate column order; a
-`Scenario.covariate_set` string expands through `covariate_names_for`.
+The dataset specification is the contract for signal metadata and named input and
+covariate sets. This module remains the source adapter that builds those declared
+columns into the shared panel storage format.
 """
 from __future__ import annotations
 
@@ -54,11 +55,12 @@ import numpy as np
 
 from .extract import (TARGET_SOURCES, DELPHI_COVARIATES, NWSS_INDICES, NATIONAL_ONLY, LOCATIONS,
                       revisions, resolve, resolve_reports, nwss_frame, kinsa_frame, extract, _latest_snapshot)
+from chromantis.problem import Dataset, file_sha256
 
 CALENDAR_START = '2022-05-14'  # Twelve context weeks before the 2022–23 season.
 ASOF_ARRAYS = {'asof_targets': 'targets', 'asof_covariates': 'covariates',
                'asof_covariates_national': 'covariates_national'}  # as-of array -> its truth array
-CHANNELS = tuple(TARGET_SOURCES)  # nhsn_*_admissions, nssp_*_proportion, in that order.
+DEFAULT_DATASET_SPEC = 'datasets/respiratory-us-weekly.json'
 COVARIATE_GROUPS = {
     'inpatient': ('inpatient_flu', 'inpatient_covid'),
     'outpatient': ('outpatient_flu', 'outpatient_covid'),
@@ -69,19 +71,12 @@ COVARIATE_GROUPS = {
     'clinical_lab': ('clinical_lab_flu_pct_positive',),
     'flusurv': ('flusurv_flu_rate',),
 }
-SOURCE_GROUPS = tuple(COVARIATE_GROUPS)
-# Selection aliases do not change the stored panel's covariate column order.
-COVARIATE_SELECTORS = {**COVARIATE_GROUPS,
-    'outpatient_flu': ('outpatient_flu',),
-    'ww_flu': ('nwss_flu_wval_like',),
-    'ww_flu_pct_rank': ('nwss_flu_pct_rank',)}
 COVARIATE_NAMES = tuple(name for group in COVARIATE_GROUPS.values() for name in group)
 STATE_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n not in NATIONAL_ONLY)
 NATIONAL_COVARIATE_NAMES = tuple(n for n in COVARIATE_NAMES if n in NATIONAL_ONLY)
 LAG_ONE_COVARIATES = frozenset({'ilinet_ili', 'clinical_lab_flu_pct_positive', 'flusurv_flu_rate'})
 PANEL_DATASET = 'data/processed/panel.npz'
 HUBS = ('flusight', 'covid', 'rsv')
-CHANNEL_HUBS = ('flusight', 'covid', 'rsv', 'flusight', 'covid', 'rsv')  # Hub of each CHANNELS entry
 # Deadline day per Hub forecast reference date (the Saturday after the Wednesday).
 # FluSight: tasks.json submissions_due end -2 (Thursday) 6da755c7 2024-12-26, reverted
 # b791af8e 2025-01-07; end +3 (Tuesday) 4dbd6833 2025-12-28; +2 (Monday) 2b92e8db
@@ -113,20 +108,15 @@ SNAPSHOT_DATASETS = sorted({d for spec in TARGET_SOURCES.values() for d in spec[
                            {'derived_nwss_state_indices', 'pophive_kinsa_ili'})
 
 
-def covariate_names_for(covariate_set):
-    """Expand a `+`-joined subset of `SOURCE_GROUPS` into its ordered column names.
-
-    `''` means no covariates. Raises on an unknown group name so a scenario
-    string typo fails fast instead of silently training without covariates.
-    """
-    if not covariate_set:
-        return ()
-    groups = covariate_set.split('+')
-    unknown = set(groups) - set(COVARIATE_SELECTORS)
-    if unknown:
-        raise ValueError(f'Unknown covariate group(s): {sorted(unknown)}')
-    selected = {name for group in groups for name in COVARIATE_SELECTORS[group]}
-    return tuple(name for name in COVARIATE_NAMES if name in selected)
+def covariate_names_for(covariate_set, spec=DEFAULT_DATASET_SPEC):
+    """Expand a named covariate selection through the dataset contract."""
+    dataset = Dataset.load(spec)
+    selected = []
+    for part in covariate_set.split('+'):
+        if part not in dataset.covariate_sets:
+            raise ValueError(f'Unknown covariate set {part!r}; choose from {sorted(dataset.covariate_sets)}')
+        selected.extend(dataset.covariate_sets[part])
+    return tuple(dict.fromkeys(selected))
 
 
 def weekly_calendar(start, end):
@@ -205,12 +195,22 @@ def _source(task):
     return name, truth.astype(np.float32), asof, others, time.perf_counter() - started
 
 
-def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=None, sources=None):
+def build(data_root='data', *, spec=DEFAULT_DATASET_SPEC, start=CALENDAR_START, truth_day=None,
+          workers=None, sources=None):
     """The panel as a dict of dense arrays; see the module docstring and the design doc."""
+    dataset = Dataset.load(spec)
+    channels = tuple(signal.name for signal in dataset.signals)
+    unsupported = set(channels) - set(TARGET_SOURCES)
+    if unsupported:
+        raise ValueError(f'Dataset signals need source adapters in extract.TARGET_SOURCES: {sorted(unsupported)}')
+    declared_covariates = {name for values in dataset.covariate_sets.values() for name in values}
+    unknown_covariates = declared_covariates - set(COVARIATE_NAMES)
+    if unknown_covariates:
+        raise ValueError(f'Dataset covariates need source adapters: {sorted(unknown_covariates)}')
     truth_day = truth_day or date.today().isoformat()
     dates = weekly_calendar(start, truth_day)
     issuances = wednesdays(start, truth_day)
-    names = (*CHANNELS, *DELPHI_COVARIATES, 'nwss', 'kinsa_ili')
+    names = (*channels, *DELPHI_COVARIATES, 'nwss', 'kinsa_ili')
     selected = set(names if sources is None else sources)
     if not selected or selected - set(names):
         raise ValueError('Unknown or empty build source selection')
@@ -226,8 +226,8 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
             others[hub] = (rows, asof[rows])
         results[name] = (truth, asof, others, 0.)
     timings = {name: round(seconds, 1) for name, (*_, seconds) in results.items()}
-    targets = np.concatenate([results[n][0] for n in CHANNELS], axis=2)
-    asof_targets = np.concatenate([results[n][1] for n in CHANNELS], axis=3)
+    targets = np.concatenate([results[n][0] for n in channels], axis=2)
+    asof_targets = np.concatenate([results[n][1] for n in channels], axis=3)
     columns = {n: (results[n][0], results[n][1]) for n in DELPHI_COVARIATES}
     columns |= {n: (results['nwss'][0][..., k:k + 1], results['nwss'][1][..., k:k + 1])
                 for k, n in enumerate(NWSS_INDICES)}
@@ -237,9 +237,9 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
     asof_national = results['kinsa_ili'][1][:, :, LOCATIONS.index('US'), :]
     hub_arrays = {}
     for hub in HUBS[1:]:
-        rows = results[CHANNELS[0]][2][hub][0]
+        rows = results[channels[0]][2][hub][0]
         hub_arrays[f'hub_{hub}_issuances'] = rows
-        hub_arrays[f'hub_{hub}_asof_targets'] = np.concatenate([results[n][2][hub][1] for n in CHANNELS], axis=3)
+        hub_arrays[f'hub_{hub}_asof_targets'] = np.concatenate([results[n][2][hub][1] for n in channels], axis=3)
         columns_ = {n: results[n][2][hub][1] for n in DELPHI_COVARIATES}
         columns_ |= {n: results['nwss'][2][hub][1][..., k:k + 1] for k, n in enumerate(NWSS_INDICES)}
         hub_arrays[f'hub_{hub}_asof_covariates'] = np.concatenate([columns_[n] for n in STATE_COVARIATE_NAMES], axis=3)
@@ -254,12 +254,15 @@ def build(data_root='data', *, start=CALENDAR_START, truth_day=None, workers=Non
                          '<name>_values where it differs from the truth panel. hub_<hub>_asof_* hold the '
                          'rows hub_<hub>_issuances at that Hub\'s own deadline (dataset.build.for_hub).',
                     hubs=list(HUBS), holiday_deadlines=HOLIDAY_DEADLINES,
-                    channels=list(CHANNELS), locations=list(LOCATIONS),
+                    dataset_id=dataset.id, dataset_spec=str(dataset.path), dataset_spec_sha256=file_sha256(dataset.path),
+                    signals=[dict(name=s.name, unit=s.unit, group=s.group, hub=s.hub,
+                                  hub_target=s.hub_target, weight=s.weight) for s in dataset.signals],
+                    channels=list(channels), locations=list(LOCATIONS),
                     covariate_groups={k: list(v) for k, v in COVARIATE_GROUPS.items()},
                     snapshots=snapshots, source_seconds=timings,
                     available_sources=sorted(selected), omitted_sources=sorted(set(names)-selected))
     return dict(dates=np.array(dates, dtype='datetime64[D]'), locations=np.array(LOCATIONS),
-                target_names=np.array(CHANNELS), targets=targets,
+                target_names=np.array(channels), targets=targets,
                 covariate_names=np.array(STATE_COVARIATE_NAMES), covariates=covariates,
                 covariate_national_names=np.array(NATIONAL_COVARIATE_NAMES), covariates_national=national,
                 issuance_dates=np.array(issuances, dtype='datetime64[D]'), asof_targets=asof_targets,
@@ -361,9 +364,10 @@ def check(path=PANEL_DATASET, data_root='data', samples=4, seed=0, workers=None)
     locations = list(arrays['locations'])
     tasks = []
     stored = [str(n) for n in arrays['covariate_names']]
-    for name in (*CHANNELS, *DELPHI_COVARIATES, *NWSS_INDICES, 'kinsa_ili'):
-        if name in CHANNELS:
-            k, truth, asof = list(CHANNELS).index(name), arrays['targets'], arrays['asof_targets']
+    channels = tuple(map(str, arrays['target_names']))
+    for name in (*channels, *DELPHI_COVARIATES, *NWSS_INDICES, 'kinsa_ili'):
+        if name in channels:
+            k, truth, asof = channels.index(name), arrays['targets'], arrays['asof_targets']
         elif name in stored:
             k, truth, asof = stored.index(name), arrays['covariates'], arrays['asof_covariates']
         else:  # national: compare on the US column, NaN elsewhere
@@ -388,6 +392,7 @@ def main(argv=None):
     sub = parser.add_subparsers(dest='command', required=True)
     build_parser = sub.add_parser('build', help='Build panel.npz')
     build_parser.add_argument('--data-root', default='data')
+    build_parser.add_argument('--spec', default=DEFAULT_DATASET_SPEC, help='Dataset contract JSON')
     build_parser.add_argument('--start', default=CALENDAR_START)
     build_parser.add_argument('--truth-day', help='Resolve truth at the end of this UTC day (default: today)')
     build_parser.add_argument('--workers', type=int, help='Parallel source processes (default: one per source)')
@@ -413,7 +418,8 @@ def main(argv=None):
                               seconds=round(time.perf_counter() - started, 1))))
     elif args.command == 'build':
         started = time.perf_counter()
-        arrays = build(args.data_root, start=args.start, truth_day=args.truth_day, workers=args.workers, sources=args.sources)
+        arrays = build(args.data_root, spec=args.spec, start=args.start, truth_day=args.truth_day,
+                       workers=args.workers, sources=args.sources)
         save(arrays, args.output)
         print(json.dumps(dict(output=args.output, targets=list(arrays['targets'].shape),
                               issuances=len(arrays['issuance_dates']), seconds=round(time.perf_counter() - started, 1),

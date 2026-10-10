@@ -1,4 +1,6 @@
-"""Marginal coverage, four-week rectangular coverage, and sampled admission totals."""
+"""Marginal coverage, four-week rectangular coverage, and sampled admission totals.
+
+Computed on the first four problem horizons for each trained target."""
 import json
 from pathlib import Path
 import numpy as np
@@ -10,17 +12,22 @@ from .standard import quantile_scores, COVERAGE
 def distribution_scores(run):
     from .ranking import views
     from chromantis.model.scenario import Scenario
-    from chromantis.model.objective import LOSS_WEIGHTS
-    scenario = Scenario.from_string(json.loads((Path(run)/'manifest.json').read_text())['scenario'])
+    from chromantis.problem import Problem
+    manifest=json.loads((Path(run)/'manifest.json').read_text())
+    scenario = Scenario.from_string(manifest['scenario'])
+    problem = Problem.load(manifest['problem'])
+    weights=problem.target_weights(scenario.loss_weights)
     rows = []
     for history, view in views(run).items():
         for season in json.loads((view/'manifest.json').read_text())['folds']:
             with np.load(view/f'eval_{season}'/'forecasts.npz') as f:
-                q, y, mask = f['quantiles'], f['truth'], f['mask'].astype(bool)
-                if y.shape[1] != 4:
-                    raise ValueError('Distribution diagnostics require four future weeks')
-                for channel, target in [(0, 'flu_admissions'), (3, 'flu_ed')]:
-                    if not LOSS_WEIGHTS[scenario.loss_weights][channel]:continue
+                q, y, mask = f['quantiles'][:, :, :4], f['truth'][:, :4], f['mask'][:, :4].astype(bool)
+                if y.shape[1] < 4:
+                    raise ValueError('Distribution diagnostics require at least four future weeks')
+                for channel, signal in enumerate(problem.target_signals):
+                    if not weights[channel]:
+                        continue
+                    target=signal.hub_target or signal.name
                     for li, loc in enumerate(f['locations']):
                         valid = mask[:, :, channel, li].all(1)
                         if not valid.any():
@@ -34,8 +41,8 @@ def distribution_scores(run):
                             inside = (truth >= pred[k]) & (truth <= pred[-1-k])
                             metrics[f'weekly_coverage_{coverage}'] = inside.mean()
                             metrics[f'all_four_weeks_coverage_{coverage}'] = inside.all(1).mean()
-                        if channel == 0 and 'flu_admission_sum_quantiles' in f:
-                            summed = f['flu_admission_sum_quantiles'][:, :, li][:, valid].T
+                        if channel == 0 and 'target_0_sum_quantiles' in f:
+                            summed = f['target_0_sum_quantiles'][:, :, li][:, valid].T
                             scored = quantile_scores(summed, truth.sum(1))
                             metrics['four_week_sum_wis'] = scored.wis.mean()
                             for coverage in COVERAGE:

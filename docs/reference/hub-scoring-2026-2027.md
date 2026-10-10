@@ -1,5 +1,7 @@
 # Hub targets, submission formats, and scoring for 2026–27
 
+See the [submission log](../submissions.md) for the forecasts submitted by Chromantis, their fitted models, and publication status.
+
 Checked 5 October 2026. “This season” means 2026–27. The three hubs are CDC FluSight, CDC COVID-19 Forecast Hub, and CDC RSV Forecast Hub. “Forms” is interpreted as prediction representations and submission file formats. This is a review of published rules and evaluation code, not a model experiment; no training inputs, labels, model parameters, or evaluation inputs were changed.
 
 ## What is established about scoring

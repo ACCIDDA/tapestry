@@ -118,7 +118,7 @@ NHSN measure allowlist size, Delphi/CDC crosswalks, and missing downloads. See
 
 | Command | What it does |
 |---|---|
-| `python -m chromantis.experiment.planner plan -e NAME --study experiments/NAME.json` | Plan a study (or `-s SCENARIO ...`) |
+| `python -m chromantis.experiment.planner plan -e NAME --problem problems/PROBLEM.json --study experiments/NAME.json` | Plan a study (or `-s SCENARIO ...`) |
 | `sbatch --job-name=NAME --array=0-3 scripts/jlessler.sbatch NAME` | Fit on the patron GPUs (shared queue) |
 | `python -m chromantis.experiment.planner run -e NAME` | Fit locally |
 | `python -m chromantis.experiment.planner status -e NAME` | Completion and the exact resubmission command |

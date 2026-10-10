@@ -14,17 +14,24 @@ def quantile_loss(q, y, mask):
 
 class SeriesModel(nn.Module):
     def __init__(self, lookback=12, width=64, horizons=(1,2,3,4), scale=None,
-                 encoder='series_mlp', growth_anchor=False, **options):
+                 encoder='series_mlp', growth_anchor=False, input_names=(), input_units=(), input_groups=(),
+                 target_names=(), target_units=(), target_groups=(), target_input_indices=(), **options):
         super().__init__()
+        inputs, targets = len(input_names), len(target_names)
+        if not inputs or not targets:
+            raise ValueError('SeriesModel needs named inputs and targets')
         self.config = dict(options, lookback=lookback, width=width, horizons=list(horizons),
                            scale=scale, encoder=encoder, growth_anchor=growth_anchor,
+                           input_names=list(input_names), input_units=list(input_units), input_groups=list(input_groups),
+                           target_names=list(target_names), target_units=list(target_units), target_groups=list(target_groups),
+                           target_input_indices=list(target_input_indices),
                            direct_quantiles=True)
-        self.register_buffer('scale', torch.tensor(scale if scale is not None else np.ones((6,52)), dtype=torch.float32))
+        self.register_buffer('scale', torch.tensor(scale if scale is not None else np.ones((targets,52)), dtype=torch.float32))
         self.encoder = nn.Sequential(nn.Linear(lookback*2+3, width), nn.SiLU(), nn.Linear(width,width), nn.SiLU())
         self.time_mix = nn.Sequential(nn.Linear(lookback, lookback), nn.SiLU(), nn.Linear(lookback,lookback)) if encoder=='series_mixer' else None
-        self.identity = nn.Embedding(7,width)
-        self.adapter_down = nn.Embedding(7,width*4)
-        self.adapter_up = nn.Embedding(7,4*width)
+        self.identity = nn.Embedding(inputs + 1,width)
+        self.adapter_down = nn.Embedding(inputs + 1,width*4)
+        self.adapter_up = nn.Embedding(inputs + 1,4*width)
         nn.init.zeros_(self.adapter_up.weight)
         self.context = nn.Linear(width,width,bias=False)
         self.gate = nn.Parameter(torch.tensor(-4.))
@@ -71,12 +78,12 @@ class SeriesModel(nn.Module):
         return q.permute(4,0,1,2,3)
 
     def forward(self, values, available, calendar, **kwargs):
-        channels={'all': range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[self.config.get('pathogen_inputs','all')]
-        keep=values.new_tensor([c in channels for c in range(6)],dtype=torch.bool)[None,None,:,None]
-        available=available & keep
-        values=torch.where(available,values,0)
-        q=self.series(values,available,calendar,list(range(6)))
-        return torch.cat((q[:,:,:,:3],q[:,:,:,3:].clamp(max=1)),3)
+        q=self.series(values,available,calendar,list(range(len(self.config['input_names']))))
+        q=q[:,:,:,self.config['target_input_indices']]
+        proportions=[i for i,unit in enumerate(self.config['target_units']) if unit == 'proportion']
+        if proportions:
+            q[:,:,:,proportions]=q[:,:,:,proportions].clamp(max=1)
+        return q
 
 
 class HistoricalILI:
@@ -107,13 +114,14 @@ class HistoricalILI:
         if self.units == 'flu_scaled':
             # Auxiliary pseudo-task: transfer ILI dynamics into modern flu source heads.
             # Modern scales come only from the current fit partition's permitted truth.
-            source=0 if torch.rand((),device=x.device)<.5 else 3
-            factor=model.scale[source].mean()/max(self.historical_q95,1e-6)
+            target=0 if len(model.config['target_names']) == 1 or torch.rand((),device=x.device)<.5 else 1
+            source=model.config['target_input_indices'][target]
+            factor=model.scale[target].mean()/max(self.historical_q95,1e-6)
             x,y=x*factor,y*factor
-            if source==3:x,y=x.clamp(max=1),y.clamp(max=1)
-            normalizer=model.scale[source].mean().clamp(min=1e-6)
+            if model.config['target_units'][target]=='proportion':x,y=x.clamp(max=1),y.clamp(max=1)
+            normalizer=model.scale[target].mean().clamp(min=1e-6)
         else:
-            source=6;normalizer=x.amax(1).clamp(min=.001)[:,None]
+            source=len(model.config['input_names']);normalizer=x.amax(1).clamp(min=.001)[:,None]
         q=model.series(x,self.mask[ids],self.cal[ids],[source],horizons=[1,2,3,4])
         return (quantile_loss(q,y,torch.ones_like(y))/normalizer).mean()
 

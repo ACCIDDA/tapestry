@@ -20,14 +20,17 @@ For each run this module writes, on identical tasks:
    for admissions only. The CDC report does not state its zero offset; log(x + 1) is
    our assumption. The same method is applied to the COVID and RSV Hubs.
    Google's models are any Hub model named `Google_*`.
-3. **Raw WIS** (`raw_wis`), for all six targets in every scored season, with or
-   without a Hub: mean WIS per task, separately for states/DC and the US, natural
+3. **Raw WIS** (`raw_wis`), for every problem target in every scored season, with or
+   without a Hub, on Hub horizons 0-3 also for longer forecasts
+   (`raw_score_details` has every horizon): mean WIS per task, separately for states/DC and the US, natural
    scale (and log for admissions). Truth is the panel's finalized value saved with the
    forecasts. Window: every Saturday from the first to the last reference date of that
    season's Hub admissions tasks for the pathogen; without such a Hub, CDC epiweeks 40-20.
+   Problems whose folds are not CDC seasons (periods, rolling origins) score every
+   reference date of the fold instead of October-May.
 4. **Input fills** (`input_fills`): share of available context inputs that received a
    finalized value because no report was archived by the Hub deadline: the target's
-   own history (newest week, all weeks) and all six target histories the forecast
+   own history (newest week, all weeks) and every input history the forecast
    read, at that Hub's deadline. Reports star every figure with these shares.
 """
 from datetime import date, timedelta
@@ -38,7 +41,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .hubs import CHANNEL, KEY, QCOLS, export
+from .hubs import KEY, QCOLS, export
 from .quantiles import LEVELS
 
 HUB_OF = {'flu': 'flusight', 'covid': 'covid', 'rsv': 'rsv'}
@@ -299,20 +302,31 @@ def check_raw_tasks(frame, target, where):
         raise ValueError(f'ED values must be proportions: {where}')
 
 
+def scored_window(run):
+    """(description, filter on reference dates): October-May for CDC-season folds, else the whole fold."""
+    from chromantis.problem import Problem
+    problem = Problem.load(json.loads((Path(run) / 'manifest.json').read_text())['problem'])
+    if problem.fold_kind == 'leave_one_season_out':
+        return ('Every October-May reference date, independent of Hub forecast support',
+                lambda r: r.str[5:7].isin(('10','11','12','01','02','03','04','05')))
+    return f'Every reference date of the {problem.fold_kind} fold', lambda r: r.notna()
+
+
 def raw_wis(run, frozen, horizon=None):
     """Mean WIS per task, its three components and interval coverage, for every predicted target;
     states/DC and US, natural (and log for admissions). Coverage is identical on both scales."""
     frames = export(run)
+    source, window = scored_window(run)
     rows = []
     for (season, target), frame in frames.items():
         if horizon is not None:
             if horizon not in range(4):
                 raise ValueError('Expected horizon 0–3')
             frame = frame[frame.horizon.eq(horizon)]
+        else:  # the headline stays on Hub horizons 0-3 for models forecasting further ahead
+            frame = frame[frame.horizon.lt(4)]
         frame = frame[frame.model_original_mask.astype(bool)]
-        source = 'Every October-May reference date, independent of Hub forecast support'
-        keep = frame.reference_date.str[5:7].isin(('10','11','12','01','02','03','04','05'))
-        frame = frame[keep]
+        frame = frame[window(frame.reference_date)]
         if frame.empty:
             raise ValueError(f'No raw-WIS tasks for {target} {season}')
         check_raw_tasks(frame, target, f'{run} {target} {season}')
@@ -333,11 +347,14 @@ def raw_wis(run, frozen, horizon=None):
 
 
 def raw_score_details(run):
-    """October–May WIS/coverage by month, horizon and individual location; no US mixture."""
+    """October–May (or whole-fold, see `scored_window`) WIS/coverage by month, horizon and individual location; no US mixture.
+
+    The horizon breakdown covers every forecast week; month and location use horizons 0-3,
+    as the headline does, so longer forecasts stay comparable with four-week ones."""
     rows=[]
+    _,window=scored_window(run)
     for (season,target),frame in export(run).items():
-        frame=frame[frame.model_original_mask.astype(bool) &
-                    frame.reference_date.str[5:7].isin(('10','11','12','01','02','03','04','05'))].copy()
+        frame=frame[frame.model_original_mask.astype(bool) & window(frame.reference_date)].copy()
         check_raw_tasks(frame,target,str(run))
         for scale in scales_for(target):
             scores=scored(frame[QCOLS].to_numpy(),frame.model_original_truth.to_numpy(),scale).reset_index(drop=True)
@@ -347,7 +364,8 @@ def raw_score_details(run):
             scores['location']=frame.location.to_numpy()
             metrics=[c for c in scores if c=='wis' or c.startswith('covered_')]
             for dimension in ('month','horizon','location'):
-                grouped=scores.groupby(['geography',dimension])
+                part=scores if dimension=='horizon' else scores[scores.horizon<4]
+                grouped=part.groupby(['geography',dimension])
                 table=grouped[metrics].mean().reset_index()
                 table['tasks']=grouped.size().to_numpy()
                 table=table.rename(columns={dimension:'value'})
@@ -361,25 +379,32 @@ def input_fills(run, frozen):
 
     Counted over the forecasts that are scored: origins whose reference date lies in the
     raw-WIS window of the target's pathogen (its Hub dates, else CDC epiweeks 40-20)."""
-    names = list(CHANNEL)
     windows = hub_windows(frozen)
     rows = []
     manifest = json.loads((Path(run) / 'manifest.json').read_text())
+    from chromantis.problem import Problem
+    problem = Problem.load(manifest['problem'])
     for season in manifest['folds']:
         with np.load(Path(run) / f'eval_{season}' / 'forecasts.npz', allow_pickle=False) as data:
             if 'filled' not in data:
                 raise ValueError(f'{run}/eval_{season} was not scored on standard reported inputs; refit it')
-            hubs = {h: (data[f'filled_{h}'], data[f'available_{h}']) for h in HUB_OF.values()}
+            hubs = {h: (data[f'filled_{h}'], data[f'available_{h}'])
+                    for h in set(problem.target_hubs) if h and f'filled_{h}' in data}
             covariates = {k: data[k] for k in data.files if k.startswith('covariates_')}
             references = [(date.fromisoformat(str(d)) + timedelta(days=7)).isoformat() for d in data['context_end']]
+            input_names = list(map(str, data['input_names']))
 
         def scored(pathogen_):
             window = windows.get((pathogen_, season))
             return np.array([r in window if window else epiweek_window(r) for r in references])
 
-        for c, target in enumerate(names):
-            keep = scored(pathogen(target))
-            filled, available = (a[keep] for a in hubs[HUB_OF[pathogen(target)]])
+        for signal in problem.target_signals:
+            target = signal.hub_target
+            if not target or signal.name not in input_names:
+                continue
+            c = input_names.index(signal.name)
+            keep = scored(signal.group)
+            filled, available = (a[keep] for a in hubs[signal.hub])
             newest = available[:, -1, c].sum()
             rows.append(dict(season=season, target=target,
                              newest_week_share=float(filled[:, -1, c].sum() / newest) if newest else np.nan,
@@ -404,7 +429,7 @@ def star_note(fills):
         if row.all_weeks_share > 0 or row.get('all_targets_share', 0) > 0:
             label = target.removeprefix('wk inc ')
             newest = '' if np.isnan(row.newest_week_share) else f'newest week {row.newest_week_share:.0%}, '
-            every = '' if np.isnan(row.get('all_targets_share', np.nan)) else f', all six target histories {row.all_targets_share:.0%}'
+            every = '' if np.isnan(row.get('all_targets_share', np.nan)) else f', all model input histories {row.all_targets_share:.0%}'
             parts.append(f'{season} {label}: {newest}own history {row.all_weeks_share:.0%}{every}')
     if not parts:
         return '★ No input needed a finalized value: every scheduled input was archived by its Hub deadline.'

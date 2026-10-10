@@ -6,15 +6,18 @@ from chromantis.dataset.build import load
 from chromantis.dataset import cv
 from chromantis.dataset.reporting_error import ReportingErrors
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
+
+PROBLEM = Problem.load('problems/us-respiratory-all-short-term.json')
 
 @pytest.fixture(scope='module')
 def experiment():
     panel = load('data/processed/panel.npz')
     # Artificial errors on every signal (the unscoped bootstrap), with early stopping for an inner fold.
     s = Scenario(history_source='artificial', error_signals='all', covariate_set='inpatient+kinsa', epochs=50, patience=10)
-    keep = cv.week_roles(panel['dates'], s, '2025-2026') == 'fit'
-    bank = ReportingErrors(panel, s, '2025-2026', keep)
-    fold = cv.fold(panel, s, '2025-2026', inner=True)
+    keep = cv.week_roles(panel['dates'], PROBLEM, s, '2025-2026') == 'fit'
+    bank = ReportingErrors(panel, PROBLEM, s, '2025-2026', keep)
+    fold = cv.fold(panel, PROBLEM, s, '2025-2026', inner=True)
     return panel, s, keep, bank, fold
 
 
@@ -39,7 +42,7 @@ def test_held_out_and_validation_values_do_not_enter_bank(experiment):
     for key in ('asof_targets','asof_covariates','asof_covariates_national'):
         changed[key] = panel[key].copy()
         changed[key][:, ~keep] = 77777
-    other = ReportingErrors(changed, scenario, '2025-2026', keep)
+    other = ReportingErrors(changed, PROBLEM, scenario, '2025-2026', keep)
     for key in ('features','errors','visible','support','cov_errors','cov_visible','cov_support'):
         np.testing.assert_array_equal(getattr(bank,key),getattr(other,key))
     assert bank.error_dates.isdisjoint(set(panel['dates'][~keep]))
@@ -77,7 +80,7 @@ def test_log_transport_recovers_observed_and_preserves_zero():
 
 def test_value_only_changes_errors_not_native_masks(experiment):
     panel, scenario, keep, original_bank, fold = experiment
-    bank = ReportingErrors(panel, replace(scenario, reporting_missingness=False), '2025-2026', keep)
+    bank = ReportingErrors(panel, PROBLEM, replace(scenario, reporting_missingness=False), '2025-2026', keep)
     np.testing.assert_array_equal(bank.errors, original_bank.errors)
     np.testing.assert_array_equal(bank.features, original_bank.features)
     out = bank.batch(fold.train, np.random.default_rng(42))

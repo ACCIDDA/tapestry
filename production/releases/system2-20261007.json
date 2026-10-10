@@ -2,6 +2,7 @@
   "name": "system2-20261007",
   "model_abbr": "Chromantis",
   "hub": "flusight",
+  "problem": "problems/us-flu-production.json",
   "rule": "mixture",
   "view": "corrected",
   "description": "System2: the on-time submission for reference date 2026-10-10 (pushed 7 October 22:47 EDT, replaced by B7 after the deadline; see docs/submissions.md). Eight-recipe mixture without the FluSurv recipe, ten seeds per recipe (42-51), each retrained on 2022-23 through 2025-26 with its B6 training treatment; equal weight per recipe and per seed; predictive distributions mixed; corrected forecast view.",

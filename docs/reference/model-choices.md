@@ -80,12 +80,13 @@ Code: `model/revision_tree.py`; saved per fold as `nowcaster.pkl`.
 
 ## E. Evaluation inputs: what the fitted model is scored on {#e-evaluation-inputs}
 
-`evaluation_inputs` (was `evaluation_vintaging`):
+The problem's `evaluation.inputs` value (formerly the recipe field
+`evaluation_inputs`, and before that `evaluation_vintaging`):
 
 | Value | Inputs of every held-out forecast |
 |---|---|
-| `reported` (default) | **Real archived Wednesday reports** at each Hub's deadline. Where the documented schedule says a value is available but nothing was archived, the finalized value is used and counted (★ footnote). For FluSight October–May issuances this happens for the newest ED week in every 2023–24 and 2024–25 issuance (ED assumed at T-0), 15–23% of the newest admission weeks, and nearly all Kinsa (its archive starts April 2026). |
-| `prescribed` | **Artificial histories**: final values made preliminary with the `error_reference` process, every season, even where real archives exist; `evaluation_draws` independent draws, shared by every configuration and seed. |
+| `reported` | **Real archived Wednesday reports** at each Hub's deadline. Where the documented schedule says a value is available but nothing was archived, the finalized value is used and counted (★ footnote). For FluSight October–May issuances this happens for the newest ED week in every 2023–24 and 2024–25 issuance (ED assumed at T-0), 15–23% of the newest admission weeks, and nearly all Kinsa (its archive starts April 2026). |
+| `prescribed` | **Artificial histories**: final values made preliminary with the recipe's `error_reference` process, every season, even where real archives exist; the problem's `evaluation.draws` sets the number of independent draws shared by every configuration and seed. |
 
 `planner replay -e NAME --inputs reported` scores already-fitted folds on real reports
 without refitting. Production always uses the real operational reports of the issuance.
@@ -111,12 +112,12 @@ data; a release must now use the view of its recipes (`chromantis.production` ch
 
 ## Labels and folds {#labels-and-folds}
 
-**Labels** are always the latest research-panel values (September 2026 reference) of the
-next four weeks; `joint` adds the reconstruction weeks. **Folds** are leave-one-season-out
-(`evaluation_seasons`): `recent_two` holds out 2024–25 and 2025–26, `all` also 2023–24,
-each fold training on the other permitted seasons among 2022–23 to 2025–26 (`training_window`
-can shorten this). Seasons are treated as exchangeable, so a fold can train on later seasons.
-`production` holds nothing out.
+**Labels and forecast horizons** are the targets and horizons in the required problem file;
+`reconstruction_labels=1` adds the recent reconstruction weeks as an auxiliary objective.
+**Folds** and their permitted training seasons also come from that problem. The current
+respiratory research problems use leave-one-season-out folds for 2023–24 through 2025–26,
+with training seasons among 2022–23 through 2025–26 (`training_window` can shorten this).
+The production problem fits all four completed seasons and emits the 2026–27 fold.
 
 ## Pathways in the code {#pathways}
 

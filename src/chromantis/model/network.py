@@ -282,11 +282,27 @@ class Model(nn.Module):
                  noise='global', us_error='none', input_offset=None, head_sharing='shared',
                  annual_calendar=True, location_embedding=0, location_ids=None,
                  covariate_names=(), covariate_offset=None, covariate_scale=None, covariate_trained=None,
-                 covariate_encoder='raw', coordinates=False, signal_features='none', direct_quantiles=False, pathogen_inputs='all',
-                 growth_anchor=False, decoder_blocks=0):
+                 covariate_encoder='raw', coordinates=False, signal_features='none', direct_quantiles=False,
+                 input_names=(), input_units=(), input_groups=(), target_names=(), target_units=(),
+                 target_groups=(), target_input_indices=(), growth_anchor=False, decoder_blocks=0):
         super().__init__()
+        input_names, input_units, input_groups = map(list, (input_names, input_units, input_groups))
+        target_names, target_units, target_groups = map(list, (target_names, target_units, target_groups))
+        target_input_indices = list(map(int, target_input_indices))
+        if not input_names or not target_names:
+            raise ValueError('Model needs named inputs and targets')
+        if len(input_names) != len(input_units) or len(input_names) != len(input_groups):
+            raise ValueError('Each input needs a unit and group')
+        if len(target_names) != len(target_units) or len(target_names) != len(target_groups):
+            raise ValueError('Each target needs a unit and group')
+        if len(target_input_indices) != len(target_names) or any(i < 0 or i >= len(input_names) for i in target_input_indices):
+            raise ValueError('Each target needs a valid input-history index')
+        inputs, targets = len(input_names), len(target_names)
         self.config = dict(lookback=lookback, horizons=list(horizons), width=width, latent=latent,
-                           pathogen_inputs=pathogen_inputs, growth_anchor=growth_anchor, decoder_blocks=decoder_blocks)
+                           input_names=input_names, input_units=input_units, input_groups=input_groups,
+                           target_names=target_names, target_units=target_units, target_groups=target_groups,
+                           target_input_indices=target_input_indices,
+                           growth_anchor=growth_anchor, decoder_blocks=decoder_blocks)
         if (encoder not in ('mlp', 'conv', 'multiscale_conv') or heads not in ('shared', 'state_us') or decoder not in ('legacy', 'residual2', 'quantile', 'quantile_small')
                 or spatial not in ('neighbors', 'distance', 'gravity', 'none', 'pooled', 'national_broadcast', 'gated_pool', 'attention', 'pathogen_spatial', 'target_spatial', 'joint_location_target') or noise not in ('global', 'local')
                 or us_error not in ('none', 'shared_factor') or head_sharing not in ('shared', 'pathogen', 'target')):
@@ -319,10 +335,10 @@ class Model(nn.Module):
         self.config['signal_features'] = signal_features
         self.config['covariate_encoder'] = covariate_encoder
         self.config['covariate_names'] = covariate_names
-        self.register_buffer('input_scale', self._per_location(input_scale, 1.))
+        self.register_buffer('input_scale', self._per_location(input_scale, inputs, 1.))
         if ed_transform == 'logit':
-            self.register_buffer('input_offset', self._per_location(input_offset, 0.))
-        self.register_buffer('scale', self._per_location(scale, 1.))
+            self.register_buffer('input_offset', self._per_location(input_offset, inputs, 0.))
+        self.register_buffer('scale', self._per_location(scale, targets, 1.))
         if covariate_names:
             self.register_buffer('covariate_offset', self._per_covariate(covariate_offset, len(covariate_names), 0.))
             self.register_buffer('covariate_scale', self._per_covariate(covariate_scale, len(covariate_names), 1.))
@@ -341,29 +357,34 @@ class Model(nn.Module):
         self.config['covariate_trained'] = self.covariate_trained.tolist()
         temporal = MultiscaleEncoder if encoder == 'multiscale_conv' else TemporalEncoder
         fields_per_cell = 2  # value and availability
-        extra_width = 3 * annual_calendar + 2 * geography + 30 * dynamics + location_embedding
+        extra_width = 3 * annual_calendar + 2 * geography + 5 * inputs * dynamics + location_embedding
         if signal_features != 'none':
-            extra_width += 18 * (6 + len(covariate_names))
+            extra_width += 18 * (inputs + len(covariate_names))
         compact_covariates = bool(covariate_names) and covariate_encoder in ('summary', 'shared', 'growth')
         if compact_covariates:
             self.covariate_encoder = CovariateEncoder(lookback, covariate_encoder)
             extra_width += 6 * len(covariate_names)
-        context_fields = 6 * fields_per_cell + (0 if compact_covariates else 2 * len(covariate_names))
+        context_fields = inputs * fields_per_cell + (0 if compact_covariates else 2 * len(covariate_names))
         self.context = nn.Sequential(nn.Linear((lookback * context_fields if encoder == 'mlp' else width) + extra_width, width),
                                      nn.SiLU(), nn.Linear(width, width))
         self.focal = (nn.Sequential(nn.Linear(lookback * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
                       if encoder == 'mlp' else temporal(fields_per_cell, width))
         if encoder != 'mlp':
             self.temporal_context = temporal(context_fields, width)
-        self.source = nn.Embedding(6, width)
+        self.source = nn.Embedding(targets, width)
         self.horizon = nn.Linear(1, width)
         self.norm = nn.LayerNorm(width)
         if location_embedding:
             if not self.config['location_ids']:
                 raise ValueError('Location embeddings require ordered location IDs')
             self.location_id = nn.Embedding(len(self.config['location_ids']), location_embedding)
-        self.output_groups = ([list(range(6))] if head_sharing == 'shared' else
-                              [[0, 3], [1, 4], [2, 5]] if head_sharing == 'pathogen' else [[c] for c in range(6)])
+        if head_sharing == 'shared':
+            self.output_groups = [list(range(targets))]
+        elif head_sharing == 'pathogen':
+            labels = list(dict.fromkeys(target_groups))
+            self.output_groups = [[i for i, group in enumerate(target_groups) if group == label] for label in labels]
+        else:
+            self.output_groups = [[c] for c in range(targets)]
         local = LOCAL_LATENT if noise == 'local' else 0
         self.output_heads = nn.ModuleList([ForecastHead(width, latent, local, decoder, decoder_blocks) for _ in self.output_groups])
         if heads == 'state_us':
@@ -379,10 +400,21 @@ class Model(nn.Module):
         elif spatial not in ('none', 'neighbors', 'distance', 'gravity'):
             self.spatial = SpatialBlock(width)
         if spatial in ('pathogen_spatial', 'target_spatial', 'joint_location_target'):
-            scope_channels = 2 if spatial == 'pathogen_spatial' else 1
+            if spatial == 'pathogen_spatial':
+                labels = list(dict.fromkeys(target_groups))
+                remote_groups = [[i for i, group in enumerate(input_groups) if group == label] for label in labels]
+                target_remote = [labels.index(group) for group in target_groups]
+            else:
+                remote_groups = [[index] for index in target_input_indices]
+                target_remote = list(range(targets))
+            if not remote_groups or len({len(group) for group in remote_groups}) != 1 or not remote_groups[0]:
+                raise ValueError('Spatial target groups need the same nonzero number of input histories')
+            self.config['remote_groups'] = remote_groups
+            self.config['target_remote'] = target_remote
+            scope_channels = len(remote_groups[0])
             self.remote = (nn.Sequential(nn.Linear(lookback * scope_channels * fields_per_cell, width), nn.SiLU(), nn.Linear(width, width))
                            if encoder == 'mlp' else temporal(scope_channels * fields_per_cell, width))
-            self.remote_identity = nn.Embedding(3 if spatial == 'pathogen_spatial' else 6, width)
+            self.remote_identity = nn.Embedding(len(remote_groups), width)
             if covariate_names:
                 covariate_width = len(covariate_names) * (6 if compact_covariates else 2 * lookback)
                 self.remote_covariates = nn.Sequential(nn.Linear(covariate_width, width), nn.SiLU(),
@@ -390,17 +422,17 @@ class Model(nn.Module):
             if geography or location_embedding:
                 self.remote_geo = nn.Linear(2 * geography + location_embedding, width)
         if us_error == 'shared_factor':
-            self.national_scale = nn.Parameter(softplus_inverse(.1).expand(6).clone())
+            self.national_scale = nn.Parameter(softplus_inverse(.1).expand(targets).clone())
 
     @staticmethod
-    def _per_location(value, default):
+    def _per_location(value, count, default):
         if value is None:
-            return torch.full((6, 1), float(default))
+            return torch.full((count, 1), float(default))
         tensor = torch.as_tensor(value).float()
         if tensor.ndim == 1:
             tensor = tensor[:, None]
-        if tensor.ndim != 2 or tensor.shape[0] != 6:
-            raise ValueError(f'Per-location scales must be [6] or [6, locations], got {tuple(tensor.shape)}')
+        if tensor.ndim != 2 or tensor.shape[0] != count:
+            raise ValueError(f'Per-location scales must be [{count}] or [{count}, locations], got {tuple(tensor.shape)}')
         return tensor.contiguous()
 
     @staticmethod
@@ -435,9 +467,9 @@ class Model(nn.Module):
                  covariates=None):
         n, p, c, _, l = x.shape
         config = self.config
-        channels = {'all': range(6), 'flu': [0,3], 'flu_hosp': [0], 'flu_ed': [3], 'flu_covid': [0,1,3,4], 'flu_rsv': [0,2,3,5]}[config.get('pathogen_inputs','all')]
-        keep = x.new_tensor([c in channels for c in range(6)])[None,None,:,None,None]
-        x = x * keep
+        targets = len(config['target_names'])
+        if c != len(config['input_names']):
+            raise ValueError(f'Model expects {len(config["input_names"])} input signals, got {c}')
         if config['heads'] == 'state_us' and (locations is None or len(locations) != l):
             raise ValueError('Separate heads require ordered location IDs')
         mask = x[:, :, :, 1, :]
@@ -452,8 +484,13 @@ class Model(nn.Module):
         offset = getattr(self, 'input_offset', None)
         if input_scale.shape[-1] not in (1, l):
             raise ValueError(f'Input scale holds {input_scale.shape[-1]} locations, not {l}')
-        transformed = torch.cat((transform_counts(raw[:, :, :3], population, config['count_transform']),
-                                 transform_proportions(raw[:, :, 3:], config['ed_transform'])), 2)
+        transformed = torch.zeros_like(raw)
+        count_inputs = [i for i, unit in enumerate(config['input_units']) if unit == 'count']
+        proportion_inputs = [i for i, unit in enumerate(config['input_units']) if unit == 'proportion']
+        if count_inputs:
+            transformed[:, :, count_inputs] = transform_counts(raw[:, :, count_inputs], population, config['count_transform'])
+        if proportion_inputs:
+            transformed[:, :, proportion_inputs] = transform_proportions(raw[:, :, proportion_inputs], config['ed_transform'])
         if offset is not None:
             transformed = transformed - offset[None, None, :, :]
         values = torch.where(valid, transformed / input_scale[None, None, :, :], 0)
@@ -520,10 +557,11 @@ class Model(nn.Module):
         if config['dynamics']:
             extras.append(recent_dynamics(values, mask).permute(0, 2, 1))
         context = self.context(torch.cat([context, *extras], -1))
+        target_fields = fields[:, :, config['target_input_indices']]
         if config['encoder'] == 'mlp':
-            focal = self.focal(fields.permute(0, 3, 2, 1, 4).reshape(n, l, c, p * fpc))
+            focal = self.focal(target_fields.permute(0, 3, 2, 1, 4).reshape(n, l, targets, p * fpc))
         else:
-            focal = self.focal(fields.permute(0, 3, 2, 4, 1).reshape(n * l * c, fpc, p)).reshape(n, l, c, -1)
+            focal = self.focal(target_fields.permute(0, 3, 2, 4, 1).reshape(n * l * targets, fpc, p)).reshape(n, l, targets, -1)
         if config['coordinates']:
             coordinates = context.new_tensor([[*COORDINATES.get(loc, [0., 0.]), float(loc != 'US')] for loc in locations])
             coordinates[:, :2] /= 180
@@ -544,7 +582,7 @@ class Model(nn.Module):
         h = context[:, :, None, :] + focal + self.source.weight[None, None, :, :]
         if config['spatial'] in ('pathogen_spatial', 'target_spatial', 'joint_location_target'):
             scope = config['spatial']
-            groups = ([[0, 3], [1, 4], [2, 5]] if scope == 'pathogen_spatial' else [[i] for i in range(6)])
+            groups = config['remote_groups']
             remote_covariates = None
             if k:
                 cov_input = (cov_summary if cov_summary is not None else
@@ -572,8 +610,7 @@ class Model(nn.Module):
             else:
                 remote = self.spatial(remote.permute(0, 2, 1, 3).reshape(n * len(groups), l, -1),
                                       observed.permute(0, 2, 1).reshape(n * len(groups), l)).reshape(n, len(groups), l, -1).permute(0, 2, 1, 3)
-            mapping = [next(i for i, group in enumerate(groups) if c in group) for c in range(6)]
-            h = h + remote[:, :, mapping]
+            h = h + remote[:, :, config['target_remote']]
         offsets = x.new_tensor(config['horizons']).reshape(-1, 1) / 4
         h = self.norm(h[:, None, :, :, :] + self.horizon(offsets)[None, :, None, None, :])
         if z is None:
@@ -588,7 +625,7 @@ class Model(nn.Module):
             outputs = [head(context[:, :, :, group], z, local_z)
                        for head, group in zip(heads, self.output_groups)]
             order = [channel for group in self.output_groups for channel in group]
-            return torch.cat(outputs, -2)[..., [order.index(c) for c in range(6)], :]
+            return torch.cat(outputs, -2)[..., [order.index(c) for c in range(targets)], :]
         delta = decode(self.output_heads)
         if config['heads'] == 'state_us':
             us = decode(self.us_output_heads)
@@ -596,36 +633,49 @@ class Model(nn.Module):
             delta = torch.where(is_us[None, None, None, :, None, None], us, delta)
         if config['us_error'] == 'shared_factor':
             if national_z is None:
-                national_z = torch.randn(delta.shape[0], n, c, device=x.device, dtype=delta.dtype)
-            if national_z.shape != (delta.shape[0], n, c):
+                national_z = torch.randn(delta.shape[0], n, targets, device=x.device, dtype=delta.dtype)
+            if national_z.shape != (delta.shape[0], n, targets):
                 raise ValueError('National noise must have shape [members, episodes, channels]')
             delta = delta + national_z[:, :, None, None, :, None] * F.softplus(self.national_scale)[None, None, None, None, :, None]
         delta = delta.squeeze(-1).permute(0, 1, 2, 4, 3)
-        idx = (mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
-        anchor = values.gather(1, idx[:, None]).squeeze(1)
-        anchor = torch.where(mask.any(1), anchor, anchor.new_full((), .01))
+        target_values = values[:, :, config['target_input_indices']]
+        target_mask = mask[:, :, config['target_input_indices']]
+        idx = (target_mask * torch.arange(1, p + 1, device=x.device)[None, :, None, None]).argmax(1)
+        anchor = target_values.gather(1, idx[:, None]).squeeze(1)
+        anchor = torch.where(target_mask.any(1), anchor, anchor.new_full((), .01))
         # Per-horizon anchor [N,H,C,L]. Damped growth (2026-10-06): add the latest
         # two-week slope in model space, damped by 1/2 per week ahead (1, 1.5, 1.75, 1.875);
         # only where the newest and two-weeks-earlier context cells are both observed.
         anchor = anchor[:, None].expand(-1, len(config['horizons']), -1, -1)
         if config.get('growth_anchor') and p >= 3:
-            ok = valid[:, -1] & valid[:, -3]
-            slope = torch.where(ok, (values[:, -1] - values[:, -3]) / 2, torch.zeros_like(values[:, -1]))
+            target_valid = valid[:, :, config['target_input_indices']]
+            ok = target_valid[:, -1] & target_valid[:, -3]
+            slope = torch.where(ok, (target_values[:, -1] - target_values[:, -3]) / 2, torch.zeros_like(target_values[:, -1]))
             damping = x.new_tensor([sum(.5 ** i for i in range(max(0, t))) for t in config['horizons']])
             anchor = anchor + slope[:, None] * damping[None, :, None, None]
-        counts = horizon_residual(anchor[:, :, :3], delta[:, :, :, :3]) * input_scale[None, None, None, :3, :]
-        counts = invert_counts(counts, population, config['count_transform'])
-        if config['ed_transform'] == 'fourth_root':
-            root = horizon_residual(anchor[:, :, 3:], delta[:, :, :, 3:]) * input_scale[None, None, None, 3:, :]
-            ed = root.pow(4).clamp(max=1)
-        else:
-            if config['ed_transform'] == 'logit':
-                logit = anchor[:, :, 3:] * input_scale[None, None, 3:, :] + offset[None, None, 3:, :]
+        result = torch.zeros_like(delta)
+        target_scales = input_scale[config['target_input_indices']]
+        target_offsets = offset[config['target_input_indices']] if offset is not None else None
+        count_targets = [i for i, unit in enumerate(config['target_units']) if unit == 'count']
+        proportion_targets = [i for i, unit in enumerate(config['target_units']) if unit == 'proportion']
+        if count_targets:
+            counts = horizon_residual(anchor[:, :, count_targets], delta[:, :, :, count_targets])
+            counts = counts * target_scales[None, None, None, count_targets]
+            result[:, :, :, count_targets] = invert_counts(counts, population, config['count_transform'])
+        if proportion_targets:
+            if config['ed_transform'] == 'fourth_root':
+                root = horizon_residual(anchor[:, :, proportion_targets], delta[:, :, :, proportion_targets])
+                proportions = (root * target_scales[None, None, None, proportion_targets]).pow(4).clamp(max=1)
             else:
-                proportion = (anchor[:, :, 3:] * input_scale[None, None, 3:, :]).clamp(*ED_BOUNDS)
-                logit = torch.logit(proportion)
-            ed = torch.sigmoid(logit[None] + delta[:, :, :, 3:])
-        return torch.cat((counts, ed), dim=3)
+                if config['ed_transform'] == 'logit':
+                    logit = (anchor[:, :, proportion_targets] * target_scales[None, None, proportion_targets]
+                             + target_offsets[None, None, proportion_targets])
+                else:
+                    value = (anchor[:, :, proportion_targets] * target_scales[None, None, proportion_targets]).clamp(*ED_BOUNDS)
+                    logit = torch.logit(value)
+                proportions = torch.sigmoid(logit[None] + delta[:, :, :, proportion_targets])
+            result[:, :, :, proportion_targets] = proportions
+        return result
 
 
 def recent_dynamics(values, mask):
@@ -656,7 +706,8 @@ class IndependentBundle(nn.Module):
                    for model, group in zip(self.models, self.groups)]
         order = [c for group in self.groups for c in group]
         combined = torch.cat(outputs, 3)
-        result = combined.new_zeros((*combined.shape[:3],6,combined.shape[-1]))
+        targets = len(self.config['target_names'])
+        result = combined.new_zeros((*combined.shape[:3], targets, combined.shape[-1]))
         result[:,:,:,order] = combined
         return result
 

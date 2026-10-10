@@ -20,10 +20,10 @@ class TrajectoryNowcaster:
 
     def design(self,e,channel):
         values=e['values'].astype(float); valid=e['available'].copy()
-        channels={'all':range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[getattr(self,'pathogen_inputs','all')]
-        valid[:,[c for c in range(6) if c not in channels]]=False
+        channels=getattr(self,'input_channels',range(values.shape[1]))
+        valid[:,[c for c in range(values.shape[1]) if c not in channels]]=False
         values=np.where(valid,values,0)
-        units=np.array([1.,1.,1.,.0001,.0001,.0001])[:,None]
+        units=np.array([1. if unit == 'count' else .0001 for unit in e['input_units']])[:,None]
         scale=np.maximum(np.max(np.where(valid,values,0),axis=0),units)
         floor=np.maximum(.05*scale,units)
         log=np.log((values+floor)/(scale+floor))
@@ -128,11 +128,12 @@ class TrajectoryNowcaster:
         indices=np.arange(-1,-self.weeks-1,-1)
         for k,pool in zip(getattr(self,'channels',[0,1,2]),self.residual_pools):
             valid=e['available'][:,k]
-            unit=1. if k<3 else .0001
+            unit=1. if e['input_units'][k] == 'count' else .0001
             floor=np.maximum(.05*np.maximum(np.max(np.where(valid,v[:,k],0),axis=0),unit),unit)
             r=np.nan_to_num(pool[rng.integers(len(pool),size=v.shape[-1])]).T  # [weeks, locations]
             v[indices,k]=np.maximum(0,(v[indices,k]+floor)*np.exp(scale*r)-floor)
-        v[:,3:]=np.minimum(1,v[:,3:])
+        proportions=[i for i,unit in enumerate(e['input_units']) if unit == 'proportion']
+        v[:,proportions]=np.minimum(1,v[:,proportions])
         return dict(e,values=np.where(e['available'],v,0).astype(np.float32))
 
     def apply_batch(self,episodes):
@@ -149,7 +150,8 @@ class TrajectoryNowcaster:
                 v[indices,k]=np.maximum(0,(v[indices,k]+floor)*np.exp(correction)-floor)
         out=[]
         for e,v in zip(episodes,values):
-            v[:,3:]=np.minimum(1,v[:,3:])
+            proportions=[i for i,unit in enumerate(e['input_units']) if unit == 'proportion']
+            v[:,proportions]=np.minimum(1,v[:,proportions])
             out.append(dict(e,values=np.where(e['available'],v,0).astype(np.float32),known_final=np.zeros_like(e['available'])))
             if 'filled' in e:
                 out[-1]['filled']=e['filled'].copy()
@@ -161,10 +163,10 @@ class TrajectoryNowcaster:
 
     def record(self):
         return dict(model=('32-wide residual MLP;200 fine-tuning updates' if self.neural else 'Histogram gradient boosting;100trees;7leaves;minleaf100'),pretrained=self.pretrained,weeks=self.weeks,
-            penalty=self.penalty,strength=self.strength,features=self.features,channels=getattr(self,'channels',[0,1,2]),pathogen_inputs=getattr(self,'pathogen_inputs','all'),training_seasons=self.training_seasons,
+            penalty=self.penalty,strength=self.strength,features=self.features,channels=getattr(self,'channels',[]),training_seasons=self.training_seasons,
             observed_donor_pairs_only=getattr(self,'observed_donor_pairs_only',False),training_cells=getattr(self,'training_cells',None),
             training_cells_by_age=getattr(self,'training_cells_by_age',None),
-            features_description='Reported eight-week own trajectory, six-channel multiscale levels, availability, annual phase, location indicators, optional reported covariates; no final predictors')
+            features_description='Reported own trajectory, all selected-input multiscale levels, availability, annual phase, location indicators, optional reported covariates; no final predictors')
 
 
 class NeuralResidual:

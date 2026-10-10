@@ -2,6 +2,7 @@
   "name": "b7-20261007",
   "model_abbr": "Chromantis",
   "hub": "flusight",
+  "problem": "problems/us-flu-production.json",
   "rule": "mixture",
   "view": "corrected",
   "description": "B7 three-recipe mixture, submitted for reference date 2026-10-10 (see docs/submissions.md). A_blocks3: width-96 sampled MLP, three-block decoder, Kinsa; B5_confirmed_candidate_1: width-96 sampled MLP, Kinsa, pre-August-2022 state ILI pretraining; B_width256: width-256 direct-quantile MLP with neighbouring-location exchange, no Kinsa. Each recipe retrained on 2022-23 through 2025-26 (no held-out season), seeds 42-51. Training admission and ED histories artificially revised with the prescribed 2025-26 reporting errors; sampled recipes learn on histories corrected by cross-fitted trees, the quantile recipe on raw artificial histories plus recent-week reconstruction labels. Labels: latest future flu admissions and ED (September 2026 panel). Loss: native loss plus 0.5 x log-admission loss. Operational inputs: reported Wednesday data with the newest two admission/ED weeks corrected by each fit's saved trees. Equal weight per recipe and per seed; predictive distributions mixed.",

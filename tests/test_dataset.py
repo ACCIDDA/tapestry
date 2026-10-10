@@ -8,11 +8,15 @@ torch = pytest.importorskip('torch')
 
 from conftest import LOCATIONS, code, synthetic_panel
 from chromantis.dataset.build import STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, decode, encode
-from chromantis.dataset.cv import SEASONS, fold, season, week_roles
+from chromantis.dataset.cv import fold, season, week_roles
 from chromantis.dataset.episodes import episodes, select_covariates
 from chromantis.experiment.training import model_options, unique_truth
 from chromantis.model.objective import loss_cell_weights, loss_scales
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
+
+PROBLEM = Problem.load('problems/us-respiratory-all-short-term.json')
+SEASONS = PROBLEM.folds
 
 # Training inputs follow `history_source`: finalized scheduled histories, or actual Wednesday reports.
 SCENARIOS = [Scenario(lookback=6, epochs=3, patience=1),
@@ -53,11 +57,11 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
     labels = np.array([season(d) for d in dates])
     hidden = (labels == held_out) | ~np.isin(labels, SEASONS)
     if inner:
-        hidden |= week_roles(dates, scenario, held_out) == 'validation'
+        hidden |= week_roles(dates, PROBLEM, scenario, held_out) == 'validation'
     hidden_weeks = set(dates[hidden])
     hidden_codes = {int(code(d)) for d in hidden_weeks}
-    a = fold(panel, scenario, held_out, inner)
-    b = fold(perturbed(panel, hidden_weeks), scenario, held_out, inner)
+    a = fold(panel, PROBLEM, scenario, held_out, inner)
+    b = fold(perturbed(panel, hidden_weeks), PROBLEM, scenario, held_out, inner)
     # No hidden week reaches a training input or label, directly...
     for e in a.train:
         assert not weeks_of(e['values'], e['available']) & hidden_codes
@@ -71,17 +75,18 @@ def test_training_never_sees_held_out_or_validation_weeks(panel, scenario, held_
         for key in ('values', 'available', 'known_final', 'target_values', 'target_available', 'covariates'):
             if key in x:
                 np.testing.assert_array_equal(x[key], y[key])
-    assert model_options(a.train, scenario, POPULATIONS) == model_options(b.train, scenario, POPULATIONS)
-    assert loss_scales(unique_truth(a.train)) == loss_scales(unique_truth(b.train))
-    np.testing.assert_array_equal(loss_cell_weights(a.train), loss_cell_weights(b.train))
+    assert model_options(a.train, PROBLEM, scenario, POPULATIONS) == model_options(b.train, PROBLEM, scenario, POPULATIONS)
+    assert loss_scales(unique_truth(a.train), PROBLEM.target_units) == loss_scales(unique_truth(b.train), PROBLEM.target_units)
+    weights = PROBLEM.target_weights(scenario.loss_weights)
+    np.testing.assert_array_equal(loss_cell_weights(a.train, weights), loss_cell_weights(b.train, weights))
     if inner:
-        hidden_validation = set(dates[week_roles(dates, scenario, held_out) == 'validation'])
+        hidden_validation = set(dates[week_roles(dates, PROBLEM, scenario, held_out) == 'validation'])
         assert a.validation
         for e in a.validation:
             assert {d for d, m in zip(e['target_dates'], e['target_available'].any(axis=(1, 2))) if m} <= hidden_validation
         # Validation episodes (inputs, labels, availability, covariates) never see held-out or unused weeks.
         outside = set(dates[(labels == held_out) | ~np.isin(labels, SEASONS)])
-        c = fold(perturbed(panel, outside), scenario, held_out, inner)
+        c = fold(perturbed(panel, outside), PROBLEM, scenario, held_out, inner)
         assert len(a.validation) == len(c.validation)
         for x, y in zip(a.validation, c.validation):
             for key in ('values', 'available', 'known_final', 'target_values', 'target_available', 'covariates'):
@@ -99,9 +104,9 @@ def test_vintaged_episodes_take_as_of_values_only_where_the_issuance_saw_them(pa
     lookback, names = 6, ('inpatient_flu', 'kinsa_ili')
     start = str(panel['dates'][0])
     nc, us = LOCATIONS.index('NC'), LOCATIONS.index('US')
-    finalized = {e['context_dates'][-1]: e for e in episodes(panel, lookback, 'scheduled_final', names)}
+    finalized = {e['context_dates'][-1]: e for e in episodes(panel, PROBLEM, PROBLEM.input_names('all'), lookback, 'scheduled_final', names)}
     assert min(finalized) == start  # context before the calendar is padding, not a missing origin
-    vintaged = episodes(panel, lookback, 'vintaged', names, asof_weeks=R)
+    vintaged = episodes(panel, PROBLEM, PROBLEM.input_names('all'), lookback, 'vintaged', names, asof_weeks=R)
     unpublished = 0
     for e in vintaged:
         issuance = date.fromisoformat(e['issuance'])

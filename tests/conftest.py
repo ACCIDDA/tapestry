@@ -5,8 +5,11 @@ import json
 import numpy as np
 import pytest
 
-from chromantis.dataset.build import (CHANNELS, STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
-                                    wednesdays, deadline, utc, HUBS)
+from chromantis.dataset.build import (STATE_COVARIATE_NAMES, NATIONAL_COVARIATE_NAMES, visible_weeks,
+                                      wednesdays, deadline, utc, HUBS)
+from chromantis.problem import Dataset, Problem
+
+CHANNELS = tuple(signal.name for signal in Dataset.load('datasets/respiratory-us-weekly.json').signals)
 
 LOCATIONS = ('NC', 'US')
 
@@ -57,3 +60,8 @@ def synthetic_panel(n_weeks=3 * 52 + 10):
 @pytest.fixture
 def panel():
     return synthetic_panel()
+
+
+@pytest.fixture
+def problem():
+    return Problem.load('problems/us-respiratory-all-short-term.json')

@@ -295,12 +295,15 @@ def _markdown(frame, digits=1):
     return '\n'.join(lines)
 
 
-def analyze(dataset=PANEL_DATASET, output=OUTPUT):
+def analyze(dataset=PANEL_DATASET, output=OUTPUT, problem_path='problems/us-respiratory-all-short-term.json'):
+    from chromantis.problem import Problem
+    problem = Problem.load(problem_path)
     sns.set_theme(style='whitegrid', font_scale=.9)
     panel = load(dataset)
     metadata = json.loads(str(panel['metadata']))
     names = [*map(str, panel['covariate_names']), *map(str, panel['covariate_national_names'])]
-    eps = episodes(panel, WEEKS, 'vintaged', covariate_names=names, asof_weeks=WEEKS)
+    eps = episodes(panel, problem, problem.input_names('all'), WEEKS, 'vintaged',
+                   covariate_names=names, asof_weeks=WEEKS)
     cells = _cells(panel, eps)
     tables = {scope: _share_table(cells, scope) for scope in ('states+US', 'US')}
     overall = (cells[cells.j <= 2].pivot_table(index='target', columns='j', values='unpublished', aggfunc='mean') * 100)
@@ -396,9 +399,10 @@ def analyze(dataset=PANEL_DATASET, output=OUTPUT):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--dataset', default=PANEL_DATASET)
+    parser.add_argument('--problem', default='problems/us-respiratory-all-short-term.json')
     parser.add_argument('--output', default=OUTPUT)
     args = parser.parse_args(argv)
-    print(json.dumps(analyze(args.dataset, args.output), indent=1, default=str))
+    print(json.dumps(analyze(args.dataset, args.output, args.problem), indent=1, default=str))
 
 
 if __name__ == '__main__':

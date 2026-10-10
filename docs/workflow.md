@@ -45,8 +45,8 @@ histories (`history_source`: finalized, actual reports or artificial errors;
 `history_correction`: corrected by cross-fitted trees; `reconstruction_labels`), B where the
 artificial errors come from (`error_seasons`, `error_reference`), C which signals get them
 (`error_signals`), D what the correction model learns from (`corrector_examples`,
-`corrector_model`), E the evaluation inputs (`evaluation_inputs`: real Wednesday reports, or
-`prescribed` artificial histories), and F the forecast view (`forecast_view`, default
+`corrector_model`), E the evaluation inputs (fixed by the problem: real Wednesday reports or
+prescribed artificial histories), and F the forecast view (`forecast_view`, default
 `corrected`): the view a configuration is ranked and deployed in. Every fit is also scored in
 the other views as diagnostics: `raw`, `corrected`, `half` and optional `calibrated`,
 `sampled`, `delayed`, `nokinsa` (`experiment/fit.py`). National Kinsa is broadcast with its reporting mask; state
@@ -57,7 +57,7 @@ covariates retain their native geography.
 A study file lists the candidates and seeds (example: `experiments/b7-folds-20261007.json`):
 
 ```bash
-.venv/bin/python -m chromantis.experiment.planner plan -e my-study --study experiments/my-study.json --device cuda
+.venv/bin/python -m chromantis.experiment.planner plan -e my-study --problem problems/us-flu-short-term.json --study experiments/my-study.json --device cuda
 sbatch --job-name=my-study --array=0-3 scripts/jlessler.sbatch my-study
 .venv/bin/python -m chromantis.experiment.planner status -e my-study
 .venv/bin/python -m chromantis.experiment.planner rank -e my-study
@@ -280,9 +280,9 @@ performance). Fixed:
   `asof_weeks` weeks marked non-final, older weeks final; all other training modes
   marked every available cell final. Only models with `supplied_final=True` read it.
 - *Fill accounting.* A nowcast that replaces a value clears its `filled` mark.
-  Forecast files keep `filled_<hub>`/`available_<hub>` for all six target histories
+  Forecast files keep `filled_<hub>`/`available_<hub>` for every selected input history
   at each Hub's deadline; `input_fills` reports, per target, its own history and all
-  six target histories read at its Hub's deadline (`all_targets_share`).
+  input histories read at its Hub's deadline (`all_targets_share`).
 
 - *Raw-WIS guards.* Raw WIS now rejects duplicate tasks, non-finite, negative or
   decreasing quantiles, invalid truth and ED values above 1, and log scoring rejects
@@ -296,15 +296,17 @@ performance). Fixed:
 and unused reference weeks are masked before constructing fitting inputs, labels,
 scales and covariate statistics. Validation weeks are hidden inside the fitting
 partition; refitting uses all permitted training weeks. Scoring labels stay inside
-the held-out season. The scenario selects evaluation seasons (`evaluation_seasons`) and the pinned panel
-supplies the training calendar; `production` fits every completed season and scores nothing. These retrospective folds can train on seasons
+the held-out season. The problem selects evaluation folds and permitted training seasons;
+the pinned panel supplies the calendar. A production problem fits every completed season and
+emits an unscored future fold. These retrospective folds can train on seasons
 later than the scored season; they are not forward deployment simulations.
 
 ## Protocol of the B7 relaunch (7 October 2026)
 
 On 7 October 2026, the individual-model relaunch adopted a prescribed 2025–26
 reporting process in every held-out season (`error_reference=2025-2026`,
-`evaluation_inputs=prescribed`; then named `revision_reference` and `evaluation_vintaging=1`). Training and evaluation admission and ED histories
+now `evaluation.inputs=prescribed` in `us-flu-short-term-prescribed.json`; at the time this
+was the recipe field `evaluation_inputs`, earlier `evaluation_vintaging`). Training and evaluation admission and ED histories
 are artificially revised throughout their lookback, including histories with
 real archived reports. Future prediction labels remain the September research
 latest values. Kinsa is unchanged, and FluSurv is omitted. The epidemic folds

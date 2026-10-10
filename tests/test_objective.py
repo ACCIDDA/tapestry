@@ -17,7 +17,7 @@ def test_seasons_channels_and_locations_have_explicit_weight_despite_missingness
         if day.endswith('12'):
             y[:, :, 1, 0] = 0  # Fewer observations at the first state.
         episodes.append(dict(Y=y, target_dates=[day], locations=['NC', 'CA', 'US']))
-    w = loss_cell_weights(episodes)
+    w = loss_cell_weights(episodes, [1, 1, 1, .5, .5, .5])
     assert w.sum() == pytest.approx(1)
     assert w[0].sum() == pytest.approx(.5)
     assert w[1:].sum() == pytest.approx(.5)
@@ -41,12 +41,13 @@ def test_loss_scales_use_native_values_unique_weeks_and_sparse_pooling():
     panel = np.ones((30, 6, 2, 3), dtype=np.float32)
     panel[:, :3, 0] = [10, 100, 1000]
     panel[:, 3:, 0] = 0
-    scales = np.array(loss_scales(panel))
+    units = ('count', 'count', 'count', 'proportion', 'proportion', 'proportion')
+    scales = np.array(loss_scales(panel, units))
     np.testing.assert_allclose(scales[:3], [[10, 100, 1000]] * 3)
     np.testing.assert_allclose(scales[3:], .001)
     panel[:, :, 1, 0] = 0
     panel[0, :, 1, 0] = 1
-    sparse = np.array(loss_scales(panel))
+    sparse = np.array(loss_scales(panel, units))
     assert sparse[0, 0] == pytest.approx(10 / 26 + 1000 * 25 / 26)
     panel[1:, :, 0, 0] = float('nan')
-    np.testing.assert_array_equal(loss_scales(panel), sparse)
+    np.testing.assert_array_equal(loss_scales(panel, units), sparse)

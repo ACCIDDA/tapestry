@@ -42,7 +42,6 @@ from pathlib import Path
 
 import numpy as np
 
-from chromantis.model.objective import LOSS_WEIGHTS
 from chromantis.model.scenario import Scenario
 from .quantiles import LEVELS
 
@@ -51,10 +50,10 @@ W = np.stack([np.interp(U, LEVELS, np.eye(len(LEVELS))[k]) for k in range(len(LE
 RULES = ('vincent', 'mixture')
 
 
-def trained_channels(scenario):
-    """Flu admission (0) and ED (3) channels a scenario was trained to predict."""
-    weights = LOSS_WEIGHTS[Scenario.from_string(scenario).loss_weights]
-    return [c for c in (0, 3) if weights[c] > 0]
+def trained_channels(scenario, problem):
+    """Target indices with positive recipe loss weight."""
+    weights = problem.target_weights(Scenario.from_string(scenario).loss_weights)
+    return [c for c, weight in enumerate(weights) if weight > 0]
 
 
 def combine(recipes, channel, rule):
@@ -96,21 +95,25 @@ def build(name, recipes, rule, out, views=None, forecast_view='corrected'):
     if run.exists():
         raise ValueError(f'{run} already exists; scores are cached per folder, so use a fresh --out')
     members = [r for recipe in recipes.values() for r in recipe['runs']]
-    seasons = json.loads((Path(members[0]) / 'manifest.json').read_text())['folds']
+    first_manifest=json.loads((Path(members[0]) / 'manifest.json').read_text())
+    from chromantis.problem import Problem
+    problem=Problem.load(first_manifest['problem'])
+    seasons = first_manifest['folds']
+    if any(json.loads((Path(m) / 'manifest.json').read_text()).get('problem_sha256') != problem.hash for m in members):
+        raise ValueError(f'{name}: members use different problems')
     if any(json.loads((Path(m) / 'manifest.json').read_text())['folds'] != seasons for m in members):
         raise ValueError(f'{name}: members evaluate different seasons')
     views = views or shared_views(members, seasons)
     if forecast_view not in views:
         raise ValueError(f'{name}: the ranked view {forecast_view!r} is not among the built views {views}')
-    channels = sorted({c for recipe in recipes.values() for c in trained_channels(recipe['scenario'])})
-    loss = 'flu_hosp_ed' if channels == [0, 3] else 'flu_only' if channels == [0] else 'flu_ed'
+    channels = sorted({c for recipe in recipes.values() for c in trained_channels(recipe['scenario'], problem)})
     run.mkdir(parents=True)
     for season in seasons:
         for view in views:
             loaded = []
             for recipe in recipes.values():
                 data = [dict(np.load(view_file(m, season, view))) for m in recipe['runs']]
-                loaded.append(dict(channels=trained_channels(recipe['scenario']), data=data))
+                loaded.append(dict(channels=trained_channels(recipe['scenario'], problem), data=data))
             every = [d for r in loaded for d in r['data']]
             # Members can differ by an issuance at the season edge (reconstruction training
             # changes the first usable origin); keep the shared issuances. The scorers still
@@ -127,15 +130,16 @@ def build(name, recipes, rule, out, views=None, forecast_view='corrected'):
                     raise ValueError(f'{name}/{season}/{view}: misaligned {key}')
             for r in loaded:
                 r['values'] = np.stack([d['quantiles'] for d in r.pop('data')])
-            merged = {k: v for k, v in every[0].items() if k != 'flu_admission_sum_quantiles'}
+            merged = {k: v for k, v in every[0].items() if k != 'target_0_sum_quantiles'}
             merged['quantiles'] = np.zeros_like(every[0]['quantiles'], dtype=np.float64)
             for channel in channels:
                 q = combine(loaded, channel, rule)
-                merged['quantiles'][:, :, :, channel, :] = np.floor(q + .5) if channel == 0 else q
+                merged['quantiles'][:, :, :, channel, :] = np.floor(q + .5) if problem.target_units[channel] == 'count' else q
             target = view_file(run, season, view)
             target.parent.mkdir(parents=True, exist_ok=True)
             np.savez_compressed(target, **merged)
-    manifest = dict(scenario=f'forecast_targets=flu,loss_weights={loss}', folds=seasons, rule=rule, views=views,
+    manifest = dict(scenario='', problem=problem.reference, problem_id=problem.id, problem_sha256=problem.hash,
+                    trained_targets=channels, folds=seasons, rule=rule, views=views,
                     forecast_view=forecast_view,
                     ensemble={label: dict(scenario=r['scenario'], runs=[str(m) for m in r['runs']])
                               for label, r in recipes.items()}, definition=__doc__)
@@ -151,7 +155,8 @@ def resolve(recipe):
         return dict(runs=runs, scenario=scenario)
     from chromantis.experiment.planner import seed_state, replay_folder, read_jobs
     folder = Path(recipe.get('root', 'data/experiments')) / recipe['experiment']
-    # Match by settings, not spelling: the experiment may store the string with older field names.
+    # Match by parsed settings rather than token order. Removed fields are intentionally
+    # unsupported here just as they are in the planner; old runs must be rerun.
     wanted = Scenario.from_string(recipe['scenario'])
     stored = [job['scenario'] for job in read_jobs(folder) if Scenario.from_string(job['scenario']) == wanted]
     if len(stored) != 1:

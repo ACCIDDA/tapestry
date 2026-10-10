@@ -1,6 +1,6 @@
 """Interval-width calibration fitted on held-out weeks inside the training seasons.
 
-One spread factor s per flu target and horizon rescales every quantile around the
+One spread factor s per calibrated target (flu admissions and ED, or the trained pathogen's) and horizon rescales every quantile around the
 median in native units: q' = median + s (q - median), then counts are clipped at 0 and
 rounded as in `training.evaluate`, and ED proportions are clipped to [0, 1]. s is chosen on
 a log grid from 0.5 to 4 to minimize native-unit WIS on the calibration forecasts. Each
@@ -12,34 +12,33 @@ from .quantiles import LEVELS
 from .standard import quantile_scores
 
 GRID = np.exp(np.linspace(np.log(.5), np.log(4), 61))
-FLU_CHANNELS = (0, 3)
 
 
-def rescale(q, c, s):
+def rescale(q, unit, s):
     """q [levels, ...] of channel c rescaled about its median by s."""
     k = len(LEVELS) // 2
     x = q[k][None] + s * (q - q[k][None])
-    if c < 3:
+    if unit == 'count':
         return np.floor(np.clip(x, 0, None) + .5)
     return np.clip(x, 0, 1)
 
 
-def apply(q, factors):
+def apply(q, factors, units):
     """q [levels, n, horizon, channel, location]; factors {channel: [s per horizon]}."""
     out = q.copy()
     for c, per_horizon in factors.items():
         for h, s in enumerate(per_horizon):
-            out[:, :, h, int(c)] = rescale(q[:, :, h, int(c)], int(c), s)
+            out[:, :, h, int(c)] = rescale(q[:, :, h, int(c)], units[int(c)], s)
     return out
 
 
-def fit(q, y, mask, locations):
+def fit(q, y, mask, locations, units, channels):
     """Spread factors from calibration forecasts q [levels, n, h, C, L], truth y/mask [n, h, C, L]."""
     locations = [str(v) for v in locations]
     n_states = sum(loc != 'US' for loc in locations)
     weight = np.array([.2 if loc == 'US' else .8 / n_states for loc in locations])
     factors, record = {}, {}
-    for c in FLU_CHANNELS:
+    for c in channels:
         base = np.full(len(locations), np.nan)
         for li in range(len(locations)):
             ok = mask[:, :, c, li].astype(bool)
@@ -58,7 +57,7 @@ def fit(q, y, mask, locations):
                 total = 0.
                 for wi, li in zip(w, usable):
                     ok = mask[:, h, c, li].astype(bool)
-                    pred = rescale(q[:, ok, h, c, li], c, s)
+                    pred = rescale(q[:, ok, h, c, li], units[c], s)
                     total += wi * quantile_scores(pred.T, y[ok, h, c, li]).wis.mean() / base[li]
                 objective.append(total)
             best = int(np.argmin(objective))

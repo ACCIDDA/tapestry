@@ -10,7 +10,8 @@ fold, evaluated seasons and labels, each heading linked to docs/reference/model-
 
 Figures (lower WIS is better throughout):
 1. `model-comparison.png`: mean headline WIS per configuration, with the range over
-   fitting seeds; log admissions, admissions and ED; states/DC and US.
+   fitting seeds; log admissions, admissions and ED of the experiment's pathogen
+   (`ranking.headline_pathogen`: flu for six-target runs); states/DC and US.
 2. `dotplot-<target>.png` (seaborn PairGrid dot plot): every configuration's WIS for states/DC and
    US, WIS components (dispersion, under- and overprediction) and interval coverage, seeds and their mean.
 3. `monthly-log-wis.png`: the best three configurations' states/DC log-admission WIS by
@@ -42,8 +43,8 @@ import pandas as pd
 from chromantis.data.geography import STATE_FIPS
 from chromantis.dataset.cv import season, week_roles
 from chromantis.model.scenario import CODES, MEANING, Scenario
-from .hubs import CHANNEL, export
-from .ranking import views
+from .hubs import export
+from .ranking import views, headline_pathogen
 from .standard import frozen_cases, input_fills, star_note
 
 MAX_TABLE_BYTES = 1_000_000
@@ -54,8 +55,10 @@ ROLE_LABELS = {'fit': 'training (fit)', 'validation': 'early-stopping validation
 MODEL_COLOR, ENSEMBLE_COLOR, GOOGLE_COLOR = '#247b9c', '#555555', '#e69f00'
 FAN_LOCATIONS = ('US', 'NC')
 FAN_EVERY = 4
-HEADLINE = [('wk inc flu hosp', 'log', 'Log-admission WIS'), ('wk inc flu hosp', 'natural', 'Admission WIS'),
-            ('wk inc flu prop ed visits', 'natural', 'ED-proportion WIS')]
+def headline(pathogen):
+    """(target, scale, title) of the headline panels for the experiment's pathogen (`ranking.headline_pathogen`)."""
+    return [(f'wk inc {pathogen} hosp', 'log', 'Log-admission WIS'), (f'wk inc {pathogen} hosp', 'natural', 'Admission WIS'),
+            (f'wk inc {pathogen} prop ed visits', 'natural', 'ED-proportion WIS')]
 VIEW_MEANING = {'raw': 'reports as they are', 'corrected': 'newest weeks corrected by the fitted trees',
                 'half': '50/50 predictive mixture of raw and corrected inputs', 'calibrated': 'corrected, spread recalibrated',
                 'sampled': 'corrected with sampled correction errors', 'delayed': 'newest admission week withheld',
@@ -71,7 +74,7 @@ COLUMNS = [('Training histories (A)', 'a-training-histories'), ('Error source (B
            ('Prediction labels', 'labels-and-folds'), ('Evaluated season ← training seasons', 'labels-and-folds')]
 
 
-def protocol(s, inputs=None, views=None, seasons=None):
+def protocol(s, problem, inputs=None, views=None, seasons=None):
     """The model choices of one configuration, in words (one value per COLUMNS entry)."""
     from chromantis.dataset.cv import training_seasons
     short = lambda season: f'{season[:4]}-{season[7:]}'
@@ -79,33 +82,33 @@ def protocol(s, inputs=None, views=None, seasons=None):
               'artificial': 'final values with artificial reporting errors'}[s.history_source]
     histories = source + ('; corrected by the cross-fitted correction model' if s.history_correction else '') \
         + ('; plus reconstruction labels' if s.reconstruction_labels else '')
-    errors = ('none' if s.history_source != 'artificial' and s.corrector_examples != 'synthetic' and s.evaluation_inputs == 'reported' else
+    errors = ('none' if s.history_source != 'artificial' and s.corrector_examples != 'synthetic' and problem.evaluation_inputs == 'reported' else
               f'prescribed {short(s.error_reference)} process' if s.error_reference else
               'each fold\'s latest training season' if s.error_seasons == 'latest' else 'all training seasons, recency-weighted')
     signals = {'admissions': 'admissions', 'targets': 'admissions and ED', 'all': 'admissions, ED and covariates'}[s.error_signals]
     corrector = (f'{s.corrector_model} on {s.corrector_examples.replace("_", " ")} examples; newest {s.correction_weeks} '
                  f'week(s) of {"admissions and ED" if s.correction_ed else "admissions"}')
-    evaluation = inputs or ('real archived Wednesday reports' if s.evaluation_inputs == 'reported' else
-                            f'artificial: prescribed {short(s.error_reference)} errors, {s.evaluation_draws} draw(s)')
+    evaluation = inputs or ('real archived Wednesday reports' if problem.evaluation_inputs == 'reported' else
+                            f'artificial: prescribed {short(s.error_reference)} errors, {problem.evaluation_draws} draw(s)')
     diagnostics = [v for v in ['raw', 'corrected', 'half'] if v != s.forecast_view]
-    diagnostics += (['calibrated'] if s.patience and s.evaluation_inputs == 'reported' else []) \
-        + (['sampled'] if s.correction_noise else []) + (['delayed'] + (['nokinsa'] if s.covariate_set else []) if s.stress_views else [])
+    diagnostics += (['calibrated'] if s.patience and problem.evaluation_inputs == 'reported' else []) \
+        + (['sampled'] if s.correction_noise else []) + (['delayed'] + (['nokinsa'] if s.covariate_set != 'none' else []) if s.stress_views else [])
     view = views or f'**{s.forecast_view}**; diagnostics: {", ".join(diagnostics)}'
-    labels = 'latest panel values, next 4 weeks' + (f' + last {s.reconstruction_weeks} context weeks' if s.reconstruction_labels else '')
-    held = seasons or (('2026-2027',) if s.evaluation_seasons == 'production' else s.scored_seasons)
+    labels = f'latest panel values, horizons {list(problem.horizons)}' + (f' + last {s.reconstruction_weeks} context weeks' if s.reconstruction_labels else '')
+    held = seasons or problem.folds
     folds = '; '.join((f'none held out ← ' if season == '2026-2027' else f'{short(season)} ← ')
-                      + ', '.join(short(t) for t in training_seasons(s, season)) for season in sorted(held))
+                      + ', '.join(short(t) for t in training_seasons(problem, s, season)) for season in sorted(held))
     return [histories, errors, signals, corrector, evaluation, view, labels, folds]
 
 
-def choices_table(named, link='../../' + CHOICES):
+def choices_table(named, problem, link='../../' + CHOICES):
     """Markdown protocol of every configuration [(name, Scenario, overrides)], grouped when identical.
 
     Each column header links to its explanation; `overrides` may set `inputs`/`views` for a
     report that scored something other than the fit's own evaluation (e.g. a replay)."""
     groups = {}
     for name, scenario, overrides in named:
-        groups.setdefault(tuple(protocol(scenario, **overrides)), []).append(name)
+        groups.setdefault(tuple(protocol(scenario, problem, **overrides)), []).append(name)
     header = lambda: [f'[{title}]({link}#{anchor})' for title, anchor in COLUMNS]
     def who(names):
         return ', '.join(names) if len(names) <= 4 else f'{len(names)} configurations: {", ".join(names[:3])}, …'
@@ -132,7 +135,6 @@ def report_metadata(directory, name):
 
 def write_scenario_key(path):
     """`docs/reference/scenario.md`: every `Scenario` field with type, default, allowed values, meaning."""
-    from chromantis.dataset.build import SOURCE_GROUPS
     lines = ['# Scenario fields', '',
              'Generated from `chromantis.model.scenario.Scenario` (`CODES`, `MEANING`) by '
              '`chromantis.evaluation.report.write_scenario_key`, rewritten by every report; do not edit by hand. '
@@ -143,7 +145,7 @@ def write_scenario_key(path):
     for f in fields(Scenario):
         allowed = (', '.join(f'`{v}`' for v in sorted(CODES[f.name])) if f.name in CODES
                    else '`0`, `1`' if f.type is bool
-                   else '`+`-joined subset of ' + ', '.join(f'`{g}`' for g in SOURCE_GROUPS) if f.name == 'covariate_set'
+                   else 'named by the dataset specification' if f.name in ('covariate_set', 'input_set')
                    else f'any {f.type.__name__} (checked in `Scenario.__post_init__`)')
         default = f"`{f.default!r}`" if isinstance(f.default, str) else f'`{int(f.default) if f.type is bool else f.default}`'
         lines.append(f'| `{f.name}` | {f.type.__name__} | {default} | {allowed} | {MEANING.get(f.name, "")} |')
@@ -159,11 +161,11 @@ def save(fig, path):
     return path
 
 
-def model_comparison(summary, seeds, selected, out):
+def model_comparison(summary, seeds, selected, out, pathogen):
     order = selected.name.tolist()
     y = np.arange(len(order))
     fig, axes = plt.subplots(3, 2, figsize=(16, 3 + .45 * len(order) * 3), constrained_layout=True, squeeze=False)
-    for row, (target, scale, title) in enumerate(HEADLINE):
+    for row, (target, scale, title) in enumerate(headline(pathogen)):
         for col, geography in enumerate(('states_dc', 'US')):
             ax = axes[row, col]
             pick = lambda t: t.merge(selected, on=['name', 'history'])
@@ -193,7 +195,7 @@ DOT_METRICS = [('states_dc', 'mean_wis', 'WIS, states/DC'), ('US', 'mean_wis', '
                *[('US', f'covered_{c}', f'{c}% coverage, US') for c in (50, 95)]]
 
 
-def dotplot(metrics, selected, out):
+def dotplot(metrics, selected, out, pathogen):
     """Seaborn PairGrid dot plot (after the `pairgrid_dotplot` example), one file per target and scale.
 
     Rows: every configuration in its own forecast view, in ranking order. Columns: WIS for
@@ -205,7 +207,7 @@ def dotplot(metrics, selected, out):
     order = selected.name.tolist()
     rows = metrics.merge(selected, on=['name', 'history'])
     paths = []
-    for target, scale, title in HEADLINE:
+    for target, scale, title in headline(pathogen):
         part = rows[(rows.target == target) & (rows.scale == scale)]
         if part.empty:
             continue
@@ -236,10 +238,10 @@ def dotplot(metrics, selected, out):
     return paths
 
 
-def monthly(details, selected, out):
+def monthly(details, selected, out, pathogen):
     top = selected.head(3)
     rows = details.merge(top, on=['name', 'history'])
-    rows = rows[(rows.dimension == 'month') & (rows.target == 'wk inc flu hosp') & (rows.scale == 'log')
+    rows = rows[(rows.dimension == 'month') & (rows.target == f'wk inc {pathogen} hosp') & (rows.scale == 'log')
                 & (rows.geography == 'states_dc')]
     seasons = sorted(rows.season.unique())
     fig, axes = plt.subplots(1, len(seasons), figsize=(5.2 * len(seasons), 4.4), constrained_layout=True, squeeze=False)
@@ -262,7 +264,7 @@ def hub_ranking(pairwise, selected, out):
     paths = []
     ours = pairwise[pairwise.ours.astype(bool)].merge(selected.head(3), on=['name', 'history'])
     for held, part in pairwise.groupby('season'):
-        targets = sorted(part.target.unique(), key=list(CHANNEL).index)
+        targets = sorted(part.target.unique())
         fig, axes = plt.subplots(len(targets), 2, figsize=(11, 3.4 * len(targets)), squeeze=False)
         for i, target in enumerate(targets):
             for j, scale in enumerate(('natural', 'log')):
@@ -290,7 +292,7 @@ def hub_ranking(pairwise, selected, out):
     return paths
 
 
-def fans(panel, runs, selected, frozen, out):
+def fans(panel, problem, runs, selected, frozen, out, pathogen):
     """US and NC fans of the Hub ensemble and the best three configurations (lowest seed, own forecast view)."""
     chosen = {}
     for row in selected.head(3).itertuples():
@@ -298,7 +300,7 @@ def fans(panel, runs, selected, frozen, out):
         chosen[f'{row.name} ({row.history})'] = export(views(run['path'])[row.history])
     first = next(iter(chosen.values()))
     dates = sorted(d for held in dict.fromkeys(k[0] for k in first)
-                   for d in sorted(first[(held, 'wk inc flu hosp')].reference_date.unique())[::FAN_EVERY])
+                   for d in sorted(first[(held, f'wk inc {pathogen} hosp')].reference_date.unique())[::FAN_EVERY])
     ensemble = {}
     for case in frozen_cases(frozen):
         table = pd.read_parquet(Path(frozen) / case['directory'] / 'quantiles.parquet')
@@ -308,7 +310,9 @@ def fans(panel, runs, selected, frozen, out):
     held_seasons = sorted({held for held, _ in first})
     shown = np.isin([season(d) for d in truth_dates.strftime('%Y-%m-%d')], held_seasons)
     fips = {v: k for k, v in STATE_FIPS.items()} | {'US': 'US'}
-    targets = sorted({t for held, t in first}, key=list(CHANNEL).index)
+    target_order = {signal.hub_target: i for i, signal in enumerate(problem.target_signals) if signal.hub_target}
+    panel_names = list(map(str, panel['target_names']))
+    targets = sorted({t for held, t in first}, key=target_order.get)
     paths = []
     for location in FAN_LOCATIONS:
         index = list(panel['locations']).index(location)
@@ -322,7 +326,9 @@ def fans(panel, runs, selected, frozen, out):
                 color = ENSEMBLE_COLOR if source == 'Hub ensemble' else MODEL_COLOR
                 for r, target in enumerate(rows):
                     ax = axes[r, column]
-                    ax.plot(truth_dates[shown], panel['targets'][shown, index, CHANNEL[target]], color='black', lw=1)
+                    signal = problem.target_signals[target_order[target]]
+                    ax.plot(truth_dates[shown], panel['targets'][shown, index, panel_names.index(signal.name)],
+                            color='black', lw=1)
                     for held in held_seasons:
                         if (held, target) not in frames:
                             continue
@@ -338,31 +344,33 @@ def fans(panel, runs, selected, frozen, out):
                     if column == 0:
                         ax.set_ylabel(target.removeprefix('wk inc '), fontsize=9)
                     ax.tick_params(labelsize=7)
-            fig.suptitle(f'{location}: 50%/90% intervals and median (horizons 0-3) every {FAN_EVERY} weeks; '
+            fig.suptitle(f'{location}: 50%/90% intervals and median (every forecast week) every {FAN_EVERY} weeks; '
                          'black = finalized truth; Hub ensemble only where frozen support exists', fontsize=10)
             fig.tight_layout()
             paths.append(save(fig, out / f'fans-{location}-{kind}.png'))
     return paths
 
 
-def cv_layout(panel, scenario, out):
+def cv_layout(panel, problem, scenario, out, pathogen):
     dates = np.array([str(d) for d in panel['dates']])
     x = pd.to_datetime(dates)
     us = list(panel['locations']).index('US')
-    seasons = scenario.scored_seasons
+    seasons = problem.folds
     fig, axes = plt.subplots(len(seasons), 1, figsize=(12, 1.8 * len(seasons) + .6), sharex=True, squeeze=False)
+    signal = next(s for s in problem.target_signals if s.group == pathogen and s.unit == 'count')
+    target_index = list(map(str, panel['target_names'])).index(signal.name)
     for row, held in enumerate(seasons):
-        roles = week_roles(dates, scenario, held)
+        roles = week_roles(dates, problem, scenario, held)
         starts = np.flatnonzero(np.r_[True, roles[1:] != roles[:-1]])
         ax = axes[row, 0]
         for a, b in zip(starts, np.r_[starts[1:], len(roles)] - 1):
             ax.axvspan(x[a] - pd.Timedelta(days=3.5), x[b] + pd.Timedelta(days=3.5), color=ROLE_COLORS[roles[a]], lw=0)
-        ax.plot(x, panel['targets'][:, us, 0], color='black', lw=1)
+        ax.plot(x, panel['targets'][:, us, target_index], color='black', lw=1)
         ax.set_ylabel(f'held out\n{held}', fontsize=8)
     handles = [plt.Rectangle((0, 0), 1, 1, color=c, label=ROLE_LABELS[r]) for r, c in ROLE_COLORS.items()
                if scenario.patience or r != 'validation']
     fig.legend(handles=handles, loc='lower center', ncol=len(handles), fontsize=8, frameon=False)
-    fig.suptitle('Week roles per fold; black = finalized US flu admissions', fontsize=10)
+    fig.suptitle(f'Week roles per fold; black = finalized US {pathogen} admissions', fontsize=10)
     fig.tight_layout(rect=(0, .06, 1, 1))
     return save(fig, out / 'cv-layout.png')
 
@@ -394,25 +402,30 @@ def write_report(folder, ranking, runs, root='docs/experiments'):
     details = pd.read_csv(ranking / 'score-details.csv', dtype={'value': str})
     pairwise = pd.read_csv(ranking / 'hub-pairwise-scores.csv')
     # Each configuration in its recipe's own forecast view (Scenario.forecast_view): no selection on scores.
-    deployed = summary[summary.deployed & (summary.target == 'wk inc flu hosp') & (summary.scale == 'log')
+    pathogen = headline_pathogen(runs)
+    adm, ed = f'wk inc {pathogen} hosp', f'wk inc {pathogen} prop ed visits'
+    deployed = summary[summary.deployed & (summary.target == adm) & (summary.scale == 'log')
                        & (summary.geography == 'states_dc')].sort_values('mean')
     selected = deployed[['name', 'history']].drop_duplicates()
     selected = selected[selected.name.isin({r['name'] for r in runs})]
     selected.to_csv(out / 'forecast-views.csv', index=False)
     settings = json.loads((folder / 'experiment.json').read_text())
+    from chromantis.problem import Problem
+    problem = Problem.load(settings['problem'])
     panel = load(settings['dataset'])
     first = Scenario.from_string(runs[0]['config_id'])  # fold layout figure only
     metrics = pd.read_csv(ranking / 'metric-seed-scores.csv')
-    figures = [model_comparison(summary, seeds, selected, out), *dotplot(metrics, selected, out),
-               monthly(details, selected, out),
-               *hub_ranking(pairwise, selected, out), *fans(panel, runs, selected, settings['frozen'], out),
-               cv_layout(panel, first, out)]
+    figures = [model_comparison(summary, seeds, selected, out, pathogen), *dotplot(metrics, selected, out, pathogen),
+               monthly(details, selected, out, pathogen),
+               *hub_ranking(pairwise, selected, out), *fans(panel, problem, runs, selected, settings['frozen'], out, pathogen),
+               cv_layout(panel, problem, first, out, pathogen)]
     # Finalized fills exist only where actual Wednesday reports were read, per evaluation-input group.
-    notes = []
-    for inputs in dict.fromkeys(Scenario.from_string(r['config_id']).evaluation_inputs for r in runs):
-        member = next(r for r in runs if Scenario.from_string(r['config_id']).evaluation_inputs == inputs)
-        notes.append('Configurations evaluated on artificial histories read no archived report.' if inputs == 'prescribed' else
-                     star_note(input_fills(Path(member['path']), settings['frozen'])))
+    member = runs[0]
+    notes = [('Configurations evaluated on artificial histories read no archived report.'
+              if problem.evaluation_inputs == 'prescribed' else
+              'Configurations evaluated on finalized histories read no archived report.'
+              if problem.evaluation_inputs == 'finalized' else
+              star_note(input_fills(Path(member['path']), settings['frozen'])))]
     study = json.loads((folder / 'study.json').read_text()) if (folder / 'study.json').exists() else {}
     metadata = report_metadata(out, folder.name)
     table = summary.merge(selected, on=['name', 'history'])
@@ -430,16 +443,17 @@ def write_report(folder, ranking, runs, root='docs/experiments'):
              'Mean WIS per task; states/DC and US separate; evaluated seasons averaged equally, then seeds. Lower is better. '
              'Every configuration is ranked in its own forecast view (F); the other views are diagnostics in the tables. '
              'Generated by `planner rank`; the write-up below is kept across regenerations.', '',
-             *notes, '', '## Model choices', '', choices_table(named), '',
+             *notes, '', '## Model choices', '', choices_table(named, problem), '',
              '## Write-up', '', WRITEUP_START, writeup, WRITEUP_END, '',
              '## Ranking', '',
+             f'Headline pathogen: {pathogen}.', '',
              '| Configuration | Seeds | Forecast view | States/DC log adm. | States/DC adm. | States/DC ED | US log adm. | US adm. |',
              '|---|---:|---|---:|---:|---:|---:|---:|']
     for row in selected.itertuples():
         lines.append(f'| {row.name} | {count(row.name)} | {row.history} | '
-                     f'{fmt(get(row.name, "wk inc flu hosp", "log", "states_dc"))} | {fmt(get(row.name, "wk inc flu hosp", "natural", "states_dc"))} | '
-                     f'{fmt(get(row.name, "wk inc flu prop ed visits", "natural", "states_dc"))} | '
-                     f'{fmt(get(row.name, "wk inc flu hosp", "log", "US"))} | {fmt(get(row.name, "wk inc flu hosp", "natural", "US"))} |')
+                     f'{fmt(get(row.name, adm, "log", "states_dc"))} | {fmt(get(row.name, adm, "natural", "states_dc"))} | '
+                     f'{fmt(get(row.name, ed, "natural", "states_dc"))} | '
+                     f'{fmt(get(row.name, adm, "log", "US"))} | {fmt(get(row.name, adm, "natural", "US"))} |')
     lines += ['', 'Input views: ' + '; '.join(f'`{k}` = {v}' for k, v in VIEW_MEANING.items()) + '.', '']
     lines += [f'![{p.stem}]({p.name})\n' for p in figures]
     tables = [('All views', 'headline-rankings.csv'), ('seasons and draws', 'headline-season-scores.csv'),

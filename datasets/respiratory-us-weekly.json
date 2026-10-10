@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "respiratory-us-weekly",
+  "report_vintages": true,
+  "signals": [
+    {"name": "nhsn_flu_admissions", "unit": "count", "group": "flu", "hub": "flusight", "hub_target": "wk inc flu hosp", "weight": 1.0},
+    {"name": "nhsn_covid_admissions", "unit": "count", "group": "covid", "hub": "covid", "hub_target": "wk inc covid hosp", "weight": 1.0},
+    {"name": "nhsn_rsv_admissions", "unit": "count", "group": "rsv", "hub": "rsv", "hub_target": "wk inc rsv hosp", "weight": 1.0},
+    {"name": "nssp_flu_proportion", "unit": "proportion", "group": "flu", "hub": "flusight", "hub_target": "wk inc flu prop ed visits", "weight": 0.5},
+    {"name": "nssp_covid_proportion", "unit": "proportion", "group": "covid", "hub": "covid", "hub_target": "wk inc covid prop ed visits", "weight": 0.5},
+    {"name": "nssp_rsv_proportion", "unit": "proportion", "group": "rsv", "hub": "rsv", "hub_target": "wk inc rsv prop ed visits", "weight": 0.5}
+  ],
+  "input_sets": {
+    "all": ["nhsn_flu_admissions", "nhsn_covid_admissions", "nhsn_rsv_admissions", "nssp_flu_proportion", "nssp_covid_proportion", "nssp_rsv_proportion"],
+    "target": [],
+    "admissions": ["nhsn_flu_admissions", "nhsn_covid_admissions", "nhsn_rsv_admissions"],
+    "flu_covid": ["nhsn_flu_admissions", "nhsn_covid_admissions", "nssp_flu_proportion", "nssp_covid_proportion"],
+    "flu_rsv": ["nhsn_flu_admissions", "nhsn_rsv_admissions", "nssp_flu_proportion", "nssp_rsv_proportion"]
+  },
+  "covariate_sets": {
+    "none": [],
+    "inpatient": ["inpatient_flu", "inpatient_covid"],
+    "outpatient": ["outpatient_flu", "outpatient_covid"],
+    "ww_wval_like": ["nwss_flu_wval_like", "nwss_covid_wval_like", "nwss_rsv_wval_like"],
+    "ww_pct_rank": ["nwss_flu_pct_rank", "nwss_covid_pct_rank", "nwss_rsv_pct_rank"],
+    "kinsa": ["kinsa_ili"],
+    "ilinet": ["ilinet_ili"],
+    "clinical_lab": ["clinical_lab_flu_pct_positive"],
+    "flusurv": ["flusurv_flu_rate"],
+    "outpatient_flu": ["outpatient_flu"],
+    "ww_flu": ["nwss_flu_wval_like"],
+    "ww_flu_pct_rank": ["nwss_flu_pct_rank"]
+  }
+}

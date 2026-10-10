@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "us-rsv-short-term",
+  "dataset": "../datasets/respiratory-us-weekly.json",
+  "targets": ["nhsn_rsv_admissions", "nssp_rsv_proportion"],
+  "forecast": {"horizons": [1, 2, 3, 4]},
+  "folds": {
+    "kind": "leave_one_season_out",
+    "ids": ["2023-2024", "2024-2025", "2025-2026"],
+    "training_ids": ["2022-2023", "2023-2024", "2024-2025", "2025-2026"]
+  },
+  "evaluation": {
+    "kind": "weekly_quantile_wis",
+    "inputs": "reported",
+    "draws": 1,
+    "primary": {"target": "nhsn_rsv_admissions", "scale": "log", "geography": "states_dc"}
+  },
+  "comparison": {"kind": "hub", "hub": "rsv"}
+}

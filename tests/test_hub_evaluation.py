@@ -4,9 +4,12 @@ from chromantis.evaluation.quantiles import LEVELS
 
 
 def test_export_maps_leads_and_channel_order(tmp_path):
-    from chromantis.evaluation.hubs import export, SEASONS
+    from chromantis.evaluation.hubs import export
+    from chromantis.problem import Problem
     from datetime import date, timedelta
-    for i, label in enumerate(SEASONS):
+    problem = Problem.load('problems/us-respiratory-all-short-term.json')
+    seasons = problem.folds
+    for i, label in enumerate(seasons):
         folder = tmp_path / f'eval_{label}'
         folder.mkdir()
         context = [date(2023, 10, 7), date(2024, 10, 5), date(2025, 10, 4)][i]
@@ -16,7 +19,9 @@ def test_export_maps_leads_and_channel_order(tmp_path):
                  context_end=[context.isoformat()], target_dates=[targets], locations=['NC'],
                  truth=np.zeros((1, 4, 6, 1)), mask=np.ones((1, 4, 6, 1), dtype=bool))
     import json
-    (tmp_path / 'manifest.json').write_text(json.dumps(dict(scenario='', folds=list(SEASONS))))
+    (tmp_path / 'manifest.json').write_text(json.dumps(dict(
+        scenario='', folds=list(seasons), problem=problem.reference, problem_sha256=problem.hash,
+        trained_targets=list(range(6)))))
     frame = export(tmp_path)[('2023-2024', 'wk inc flu prop ed visits')]
     assert frame.reference_date.unique().tolist() == ['2023-10-14']
     assert frame.horizon.tolist() == [0, 1, 2, 3]

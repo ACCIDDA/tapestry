@@ -6,14 +6,11 @@ import json
 import numpy as np
 import torch
 
-from chromantis.dataset.build import CHANNELS, covariate_names_for
 from chromantis.dataset.episodes import calendar
 from chromantis.evaluation.quantiles import LEVELS
 from chromantis.model.network import Model, fair_crps_cells, IndependentBundle
-from chromantis.model.objective import LOSS_WEIGHTS, loss_cell_weights, loss_scales
+from chromantis.model.objective import loss_cell_weights, loss_scales
 
-GROUPS = {'all': [list(range(len(CHANNELS)))], 'pathogen': [[0, 3], [1, 4], [2, 5]],
-          'target': [[i] for i in range(len(CHANNELS))]}
 EVAL_CHUNK = 32
 
 
@@ -53,30 +50,37 @@ def covariate_scales(batch):
     return offset.tolist(), scale.tolist(), (support > 0).tolist()
 
 
-def model_options(batch, scenario, pop):
-    covariate_names = covariate_names_for(scenario.covariate_set)
+def model_options(batch, problem, scenario, pop):
+    covariate_names = problem.covariate_names(scenario.covariate_set)
+    first = batch[0]
     options = dict(populations=pop, location_ids=list(batch[0]['locations']), lookback=scenario.lookback,
                    width=scenario.width, latent=scenario.latent, covariate_names=list(covariate_names),
+                   input_names=list(first['input_names']), input_units=list(first['input_units']),
+                   input_groups=list(first['input_groups']), target_names=list(first['target_names']),
+                   target_units=list(first['target_units']), target_groups=list(first['target_groups']),
+                   target_input_indices=list(first['target_input_indices']),
                    **scenario.model_options())
     if scenario.input_normalization == 'b0':
         normalization = [dict(e, X=np.stack((e['values'], e['available']), axis=2)) for e in batch]
-        options.update(input_scales(normalization, scenario.count_transform, scenario.ed_transform, pop))
+        options.update(input_scales(normalization, scenario.count_transform, scenario.ed_transform, pop,
+                                    first['input_units']))
     if covariate_names:
         offset, scale, trained = covariate_scales(batch)
         options.update(covariate_offset=offset, covariate_scale=scale, covariate_trained=trained)
     return options
 
 
-def objective_weights(batch, scenario, channels):
+def objective_weights(batch, problem, scenario, channels):
+    weights = problem.target_weights(scenario.loss_weights)
     if not scenario.reconstruction_labels:
-        return loss_cell_weights(batch, LOSS_WEIGHTS[scenario.loss_weights])[:, :, channels]
+        return loss_cell_weights(batch, weights)[:, :, channels]
     # Normalize the two objectives separately, so adding reconstruction ages does
     # not silently reduce the forecast objective or change its season weights.
     result = np.zeros_like(np.stack([e['target_values'] for e in batch]))
-    h = np.asarray(scenario.horizons)
+    h = np.asarray(problem.model_horizons(scenario))
     for use, factor in ((h > 0, 1.), (h <= 0, scenario.joint_weight)):
         subset = [dict(e, Y=e['Y'][use], target_dates=tuple(np.asarray(e['target_dates'])[use])) for e in batch]
-        result[:, use] = factor * loss_cell_weights(subset, LOSS_WEIGHTS[scenario.loss_weights])
+        result[:, use] = factor * loss_cell_weights(subset, weights)
     return result[:, :, channels]
 
 
@@ -102,7 +106,7 @@ def sum_wis_weights(episodes, horizons):
             valid[:] = False
         total = np.stack((y[:, :, 0].sum(0), valid), axis=1)[None]
         totals.append(dict(e, Y=total, target_dates=(dates[-1],)))
-    return loss_cell_weights(totals, [1, 0, 0, 0, 0, 0])[:, :, :1]
+    return loss_cell_weights(totals, [1, *([0] * (y.shape[1] - 1))])[:, :, :1]
 
 
 def four_week_sum_wis(samples, truth, mask, horizons):
@@ -116,7 +120,7 @@ def four_week_sum_wis(samples, truth, mask, horizons):
     return quantile_loss(q, y, valid)
 
 
-def fit_component(train, validation, channels, component, options, scenario, seed, device, epochs=None, augmenter=None):
+def fit_component(train, validation, channels, component, options, problem, scenario, seed, device, epochs=None, augmenter=None):
     seed = seed + 10000 * component
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
@@ -132,10 +136,11 @@ def fit_component(train, validation, channels, component, options, scenario, see
         from chromantis.model.series import SeriesModel
         factory = SeriesModel
         options = dict(options, growth_anchor=scenario.growth_anchor)
-    model = factory(horizons=scenario.horizons, scale=loss_scales(unique_truth(train)), **options).to(device)
+    horizons = problem.model_horizons(scenario)
+    model = factory(horizons=horizons, scale=loss_scales(unique_truth(train), problem.target_units), **options).to(device)
     ili = None
     if scenario.ili_training != 'none' and scenario.encoder == 'mlp':
-        pretrain_historical_panel(model, train, scenario, channels, seed, device)
+        pretrain_historical_panel(model, train, problem, scenario, channels, seed, device)
         torch.manual_seed(seed)  # Match modern minibatch ordering after transfer initialization.
     elif scenario.ili_training != 'none':
         from chromantis.model.series import HistoricalILI
@@ -144,14 +149,14 @@ def fit_component(train, validation, channels, component, options, scenario, see
             ili.pretrain(model, seed)
             torch.manual_seed(seed)  # Match modern minibatch ordering after transfer initialization.
     values, available, y, y_mask, cal, cov = to_tensors(train, device)
-    weights = torch.as_tensor(objective_weights(train, scenario, channels), device=device)
-    total_weights = torch.as_tensor(sum_wis_weights(train, scenario.horizons), device=device) if scenario.sum_wis_weight and 0 in channels else None
+    weights = torch.as_tensor(objective_weights(train, problem, scenario, channels), device=device)
+    total_weights = torch.as_tensor(sum_wis_weights(train, horizons), device=device) if scenario.sum_wis_weight and 0 in channels else None
     if selecting:
         vvalues, vavailable, vy, vy_mask, vcal, vcov = to_tensors(validation, device)
-        vweights = torch.as_tensor(objective_weights(validation, scenario, channels), device=device)
+        vweights = torch.as_tensor(objective_weights(validation, problem, scenario, channels), device=device)
         if scenario.reconstruction_labels:
             # Select epochs on finalized future labels; reconstruction is auxiliary.
-            vweights[:, np.asarray(scenario.horizons) <= 0] = 0
+            vweights[:, np.asarray(horizons) <= 0] = 0
         if not float(vweights.sum()) > 0:
             raise ValueError(f'Component {component} (channels {channels}) has no weighted validation labels; '
                              'early stopping cannot select an epoch')
@@ -189,7 +194,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
                                 covariates=batch_cov, locations=list(train[0]['locations']), members=scenario.members)
                 score = prediction_loss(model, samples[:, :, :, channels], y[ids][:, :, channels], y_mask[ids][:, :, channels])
                 loss = (weights[ids] * score / model.scale[channels]).sum() * scale
-                admissions = [i for i, c in enumerate(channels) if c < 3]
+                admissions = [i for i, c in enumerate(channels) if problem.target_units[c] == 'count']
                 if scenario.log_loss_weight and admissions:
                     # Weekly admissions on the log(1 + count) scale, the Hub log score's scale.
                     # Log-unit CRPS/pinball is already relative, so it is not divided by a level scale.
@@ -198,7 +203,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
                                                 torch.log1p(y[ids][:, :, chosen].clamp_min(0)), y_mask[ids][:, :, chosen])
                     loss = loss + scenario.log_loss_weight * (weights[ids][:, :, admissions] * log_score).sum() * scale
                 if total_weights is not None:
-                    sum_score = four_week_sum_wis(samples, y[ids], y_mask[ids], scenario.horizons)
+                    sum_score = four_week_sum_wis(samples, y[ids], y_mask[ids], horizons)
                     loss = loss + scenario.sum_wis_weight * (total_weights[ids] * sum_score / (4 * model.scale[:1])).sum() * scale
                 if ili is not None and scenario.ili_training == 'joint' and ids is first:
                     loss = loss + scenario.ili_weight * ili.loss(model)
@@ -221,7 +226,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
                                     locations=list(validation[0]['locations']), members=scenario.validation_members)
                     score = prediction_loss(model, samples[:, :, :, channels], vy[ids][:, :, channels], vy_mask[ids][:, :, channels])
                     val += float((vweights[ids] * score / model.scale[channels]).sum())
-                    admissions = [i for i,c in enumerate(channels) if c < 3]
+                    admissions = [i for i, c in enumerate(channels) if problem.target_units[c] == 'count']
                     if scenario.log_loss_weight and admissions:
                         chosen=[channels[i] for i in admissions]
                         log_score=prediction_loss(model,torch.log1p(samples[:,:,:,chosen].clamp_min(0)),
@@ -244,7 +249,7 @@ def fit_component(train, validation, channels, component, options, scenario, see
     return model.cpu(), record
 
 
-def historical_panel(path, train, scenario):
+def historical_panel(path, train, problem, scenario):
     """Pre-August-2022 state ILI as pseudo flu admission/ED panel episodes (flu MLP pretraining).
 
     Each location's ILI is multiplied by (fit-only modern Q95 of that location's flu
@@ -261,28 +266,32 @@ def historical_panel(path, train, scenario):
     if max(dates) >= '2022-08-01':
         raise ValueError('Historical ILI must end before the modern panel')
     truth = unique_truth(train)  # [dates, C, value/available, L], fit-only truth
-    targets = np.full((len(dates), len(locations), len(CHANNELS)), np.nan, dtype=np.float32)
+    dataset_names = [signal.name for signal in problem.dataset.signals]
+    targets = np.full((len(dates), len(locations), len(dataset_names)), np.nan, dtype=np.float32)
     for li, loc in enumerate(locations):
         if loc not in sources:
             continue
         series = ili[:, sources.index(loc)]
         if not np.isfinite(series).sum() or not np.nanquantile(series, .95) > 0:
             continue
-        for c in (0, 3):
+        for c, signal in enumerate(problem.target_signals):
             observed = truth[:, c, 0, li][truth[:, c, 1, li].astype(bool)]
             if observed.size:
                 pseudo = series * np.quantile(observed, .95) / np.nanquantile(series, .95)
-                targets[:, li, c] = np.clip(pseudo, 0, 1) if c == 3 else pseudo
-    names = covariate_names_for(scenario.covariate_set)
+                panel_channel = dataset_names.index(signal.name)
+                targets[:, li, panel_channel] = np.clip(pseudo, 0, 1) if signal.unit == 'proportion' else pseudo
+    names = problem.covariate_names(scenario.covariate_set)
     with np.load('data/processed/panel.npz') as p:
         state_names, national_names = p['covariate_names'], p['covariate_national_names']
-    panel = dict(dates=dates, locations=np.array(locations), targets=targets,
+    panel = dict(dates=dates, locations=np.array(locations), target_names=np.array(dataset_names), targets=targets,
                  covariates=np.full((len(dates), len(locations), len(state_names)), np.nan, dtype=np.float32),
                  covariates_national=np.full((len(dates), len(national_names)), np.nan, dtype=np.float32),
                  covariate_names=state_names, covariate_national_names=national_names)
     result = []
-    future = np.asarray(scenario.horizons) > 0
-    for e in episodes(panel, scenario.lookback, 'scheduled_final', names, horizons=scenario.horizons):
+    horizons = problem.model_horizons(scenario)
+    future = np.asarray(horizons) > 0
+    for e in episodes(panel, problem, problem.input_names(scenario.input_set), scenario.lookback,
+                      'scheduled_final', names, horizons=horizons):
         e['target_available'] = e['target_available'] & future[:, None, None]
         e['target_values'] = np.where(e['target_available'], e['target_values'], 0).astype(np.float32)
         e['Y'] = np.stack((e['target_values'], e['target_available']), axis=2)
@@ -291,12 +300,12 @@ def historical_panel(path, train, scenario):
     return result
 
 
-def pretrain_historical_panel(model, train, scenario, channels, seed, device):
+def pretrain_historical_panel(model, train, problem, scenario, channels, seed, device):
     """`ili_steps` Adam updates of the modern loss, each on `batch_size` historical pseudo-panel episodes.
 
     Batch size matches modern training (a 64-episode batch exceeded GPU memory at 256 members, 2026-10-06)."""
-    hist = historical_panel(scenario.ili_path, train, scenario)
-    weights = torch.as_tensor(loss_cell_weights(hist, LOSS_WEIGHTS[scenario.loss_weights])[:, :, channels], device=device)
+    hist = historical_panel(scenario.ili_path, train, problem, scenario)
+    weights = torch.as_tensor(loss_cell_weights(hist, problem.target_weights(scenario.loss_weights))[:, :, channels], device=device)
     optimizer = torch.optim.Adam(model.parameters(), lr=scenario.lr, weight_decay=scenario.weight_decay)
     rng = np.random.default_rng(seed + 31000)
     model.train()
@@ -336,36 +345,46 @@ def unique_truth(episodes_):
     for e in episodes_:
         for values, available, day in zip(e['target_values'], e['target_available'], e['target_dates']):
             add(values, available, day)
+        indices = e['target_input_indices']
         for values, available, final, day in zip(e['values'], e['available'], e['known_final'], e['context_dates']):
-            add(values, available & final, day)
-    panel = np.zeros((len(by_date), len(CHANNELS), 2, len(episodes_[0]['locations'])), np.float32)
+            add(values[list(indices)], (available & final)[list(indices)], day)
+    targets = len(episodes_[0]['target_names'])
+    panel = np.zeros((len(by_date), targets, 2, len(episodes_[0]['locations'])), np.float32)
     for i, (values, seen) in enumerate(by_date.values()):
         panel[i, :, 0] = values
         panel[i, :, 1] = seen
     return panel
 
 
-def fit_models(train, validation, full_train, scenario, seed, device, pop, augmenter=None, selection_augmenter=None,
+def fit_models(train, validation, full_train, problem, scenario, seed, device, pop, augmenter=None, selection_augmenter=None,
                keep_selection=False):
     """Select epochs if requested, then fit independent channel groups on full_train.
 
     `keep_selection=True` also returns the early-stopped inner-fit model, which never
     saw the validation weeks' labels (used to calibrate on those weeks)."""
-    groups = [[c for c in group if LOSS_WEIGHTS[scenario.loss_weights][c] > 0] for group in GROUPS[scenario.fit_partition]]
+    weights = problem.target_weights(scenario.loss_weights)
+    if scenario.fit_partition == 'all':
+        base_groups = [list(range(len(problem.targets)))]
+    elif scenario.fit_partition == 'target':
+        base_groups = [[i] for i in range(len(problem.targets))]
+    else:
+        labels = list(dict.fromkeys(problem.target_groups))
+        base_groups = [[i for i, group in enumerate(problem.target_groups) if group == label] for label in labels]
+    groups = [[c for c in group if weights[c] > 0] for group in base_groups]
     groups = [g for g in groups if g]
     models, records, selectors = [], [], []
     for i, channels in enumerate(groups):
         selected = scenario.epochs
         if validation is not None:
             selector, record = fit_component(train, validation, channels, i,
-                                             model_options(train, scenario, pop), scenario, seed, device, augmenter=selection_augmenter)
+                                             model_options(train, problem, scenario, pop), problem, scenario, seed, device, augmenter=selection_augmenter)
             selectors.append(selector)
             records.append(record)
             selected = record['selected_epoch']
         if selected < 1:
             raise ValueError(f'Selected {selected} epochs for component {i}; refusing to refit with no training')
-        model, record = fit_component(full_train, None, channels, i, model_options(full_train, scenario, pop),
-                                      scenario, seed, device, epochs=selected, augmenter=augmenter)
+        model, record = fit_component(full_train, None, channels, i, model_options(full_train, problem, scenario, pop),
+                                      problem, scenario, seed, device, epochs=selected, augmenter=augmenter)
         models.append(model)
         records.append(record)
     bundle = lambda parts: parts[0] if scenario.fit_partition == 'all' else IndependentBundle(parts, groups)
@@ -378,8 +397,7 @@ def fit_models(train, validation, full_train, scenario, seed, device, pop, augme
 def evaluate(model, eps, eval_members, device, output):
     """Held-out quantiles from `eval_members` draws (in chunks of EVAL_CHUNK) per episode.
 
-    Admission quantiles (channels 0-2) are rounded to integers (counts); ED proportions
-    are not rounded."""
+    Count-target quantiles are rounded to integers; proportion targets are not."""
     model.eval()
     quantiles, truths, masks = [], [], []
     sum_quantiles = []
@@ -440,7 +458,8 @@ def evaluate(model, eps, eval_members, device, output):
                     q=np.quantile(samples,LEVELS,axis=0)
         if samples is not None and len(e['target_dates']) == 4:
             sum_quantiles.append(np.quantile(samples[:, :, 0].sum(axis=1), LEVELS, axis=0))
-        q[:, :, :3] = np.floor(q[:, :, :3] + .5)
+        count_channels = [i for i, unit in enumerate(e['target_units']) if unit == 'count']
+        q[:, :, count_channels] = np.floor(q[:, :, count_channels] + .5)
         quantiles.append(q)
         truths.append(e['target_values'])
         masks.append(e['target_available'])
@@ -455,14 +474,16 @@ def evaluate(model, eps, eval_members, device, output):
     if 'forecast_cutoff_utc' in eps[0]:
         inputs['forecast_cutoff_utc'] = np.array([e['forecast_cutoff_utc'] for e in eps])
     if sum_quantiles:
-        inputs['flu_admission_sum_quantiles'] = np.stack(sum_quantiles, axis=1)
+        inputs['target_0_sum_quantiles'] = np.stack(sum_quantiles, axis=1)
     np.savez_compressed(output / 'forecasts.npz', quantiles=q, quantile_levels=LEVELS,
                         truth=y, mask=mask, context_end=[e['context_dates'][-1] for e in eps],
-                        target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'], **inputs)
+                        target_dates=[e['target_dates'] for e in eps], locations=eps[0]['locations'],
+                        input_names=eps[0]['input_names'], input_units=eps[0]['input_units'],
+                        target_names=eps[0]['target_names'], target_units=eps[0]['target_units'], **inputs)
     return [dict(context_end=e['context_dates'][-1]) for e in eps]
 
 
-def input_scales(episodes, transform, ed_transform, populations):
+def input_scales(episodes, transform, ed_transform, populations, units):
     """Training-only scales (and logit centers) in each channel's model space."""
     import torch
     from chromantis.model.network import transform_counts, transform_proportions
@@ -484,18 +505,24 @@ def input_scales(episodes, transform, ed_transform, populations):
     valid = panel[:, :, 1].bool()
     values = torch.where(valid, panel[:, :, 0], 0)
     population = torch.tensor([populations[loc] for loc in locations]) if populations else None
-    transformed = torch.cat((transform_counts(values[:, :3], population, transform),
-                             transform_proportions(values[:, 3:], ed_transform)), 1).numpy()
+    transformed = torch.zeros_like(values)
+    counts = [i for i, unit in enumerate(units) if unit == 'count']
+    proportions = [i for i, unit in enumerate(units) if unit == 'proportion']
+    if counts:
+        transformed[:, counts] = transform_counts(values[:, counts], population, transform)
+    if proportions:
+        transformed[:, proportions] = transform_proportions(values[:, proportions], ed_transform)
+    transformed = transformed.numpy()
     valid = valid.numpy()
     # One scale per channel AND location. Pooling locations set a single scale from
     # state-sized counts, so the US entered the model ~40x too large and its intervals
     # collapsed; each location is now normalized by its own history. Falls back to the
     # pooled value where a location has no observations of a channel.
     scales, offsets = [], []
-    for c in range(6):
+    for c, unit in enumerate(units):
         pooled = transformed[:, c][valid[:, c]]
-        logit_channel = c >= 3 and ed_transform == 'logit'
-        floor = .1 if logit_channel else (1 if c < 3 and transform == 'raw' else .001)
+        logit_channel = unit == 'proportion' and ed_transform == 'logit'
+        floor = .1 if logit_channel else (1 if unit == 'count' and transform == 'raw' else .001)
         if logit_channel:
             fallback = max(float(pooled.std()) if pooled.size else 0, floor)
             pooled_offset = float(pooled.mean()) if pooled.size else 0.
@@ -522,7 +549,7 @@ def input_scales(episodes, transform, ed_transform, populations):
     return result
 
 
-def evaluate_hubs(model, panel, scenario, held_out, seed, eval_members, device, output, prepare=None, first=None):
+def evaluate_hubs(model, panel, problem, scenario, held_out, seed, eval_members, device, output, prepare=None, first=None):
     """Standard forecast evaluation: each pathogen scored on inputs visible at its own Hub's deadline.
 
     Evaluates the held-out season once per Hub (`dataset.build.HUBS`, Wednesday reports
@@ -531,15 +558,18 @@ def evaluate_hubs(model, panel, scenario, held_out, seed, eval_members, device, 
     one `forecasts.npz` whose channel c comes from the evaluation of `CHANNEL_HUBS[c]`.
     `prepare` maps episodes before evaluation (e.g. a correction stage). `filled`/`available`
     hold channel c at its own Hub's deadline; `<name>_<hub>` keep every channel and
-    covariate a Hub's forecasts saw, since a model reads all six target histories."""
+    covariate a Hub's forecasts saw, including every history in the recipe's input set."""
     from pathlib import Path
     import shutil
     from chromantis.dataset import cv
-    from chromantis.dataset.build import HUBS, CHANNEL_HUBS
     output = Path(output)
     parts = {}
-    for hub in HUBS:
-        eps = first if hub == HUBS[0] and first is not None else cv.score_episodes(panel, scenario, held_out, hub)
+    hubs = tuple(dict.fromkeys(hub for hub in problem.target_hubs if hub))
+    if not hubs or not problem.reporting_errors:
+        # Finalized evaluation inputs follow the source schedule, not a Hub deadline: one pass.
+        hubs = hubs[:1] or ('flusight',)
+    for hub in hubs:
+        eps = first if hub == hubs[0] and first is not None else cv.score_episodes(panel, problem, scenario, held_out, hub)
         eps = prepare(eps) if prepare else eps
         folder = output / f'hub-{hub}'
         folder.mkdir(parents=True, exist_ok=True)
@@ -548,16 +578,14 @@ def evaluate_hubs(model, panel, scenario, held_out, seed, eval_members, device, 
         with np.load(folder / 'forecasts.npz', allow_pickle=False) as data:
             parts[hub] = {k: data[k] for k in data.files}
         shutil.rmtree(folder)
-    merged = dict(parts[HUBS[0]])
+    merged = dict(parts[hubs[0]])
     for name in ('context_end', 'target_dates', 'locations', 'truth', 'mask'):
-        if any(not np.array_equal(parts[h][name], merged[name]) for h in HUBS):
+        if any(not np.array_equal(parts[h][name], merged[name]) for h in hubs):
             raise ValueError(f'Hub evaluations differ in {name}; Hub deadlines must only change inputs')
-    for c, hub in enumerate(CHANNEL_HUBS):
+    for c, hub in enumerate(problem.target_hubs):
+        hub = hub if hub in parts else hubs[0]
         merged['quantiles'][:, :, :, c] = parts[hub]['quantiles'][:, :, :, c]
-        for name, axis in (('filled', 2), ('available', 2)):
-            if name in merged:
-                np.moveaxis(merged[name], axis, 0)[c] = np.moveaxis(parts[hub][name], axis, 0)[c]
-    for hub in HUBS:  # every input a Hub's forecasts saw, all channels, at that Hub's deadline
+    for hub in hubs:
         if 'forecast_cutoff_utc' in parts[hub]:
             merged[f'forecast_cutoff_utc_{hub}'] = parts[hub]['forecast_cutoff_utc']
         for name in ('filled', 'available', 'covariates_filled', 'covariates_available'):

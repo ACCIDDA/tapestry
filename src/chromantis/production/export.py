@@ -21,9 +21,9 @@ import pandas as pd
 from chromantis.evaluation.ensembles import combine, trained_channels
 from chromantis.evaluation.quantiles import LEVELS
 from chromantis.experiment.provenance import sha256
+from chromantis.problem import Problem
 
-TARGETS = [(0, 'wk inc flu hosp'), (3, 'wk inc flu prop ed visits')]
-MAX_ED = .25  # Hub validations.yml max_prop_ed_visits
+MAXIMUMS = {'wk inc flu prop ed visits': .25}  # FluSight validations.yml max_prop_ed_visits
 
 
 def export(release, members, hub, out):
@@ -33,6 +33,7 @@ def export(release, members, hub, out):
     if release['rule'] not in ('vincent', 'mixture'):
         raise ValueError('Unknown ensemble rule')
     hub, out = Path(hub), Path(out)
+    problem = Problem.load(release['problem'])
     recipes, sources, first = [], [], None
     panel_hashes, issues = set(), set()
     for name, folders in members.items():
@@ -57,7 +58,7 @@ def export(release, members, hub, out):
                                 forecast_sha256=sha256(folder / 'forecasts.npz')))
         if len(scenarios) != 1 or len(set(seeds)) != len(seeds):
             raise ValueError(f'{name}: inconsistent recipe or duplicate seed')
-        recipes.append(dict(channels=trained_channels(scenarios.pop()), values=np.stack(values)))
+        recipes.append(dict(channels=trained_channels(scenarios.pop(), problem), values=np.stack(values)))
     if len(panel_hashes) != 1 or len(issues) != 1 or not np.array_equal(first['quantile_levels'], LEVELS):
         raise ValueError('Inconsistent operational snapshot, issuance or quantile grid')
     reference = date.fromisoformat(str(first['context_end'][0])) + timedelta(days=7)
@@ -66,7 +67,10 @@ def export(release, members, hub, out):
     mapping = dict(zip(locations.abbreviation, locations.location))
     allowed = lambda spec: (spec.get('required') or []) + (spec.get('optional') or [])
     rows, adjustments = [], []
-    for channel, target in TARGETS:
+    for channel, signal in enumerate(problem.target_signals):
+        target = signal.hub_target
+        if not target or signal.hub != release['hub']:
+            continue
         if not any(channel in r['channels'] for r in recipes):
             continue
         task, = [t for t in tasks if target in allowed(t['task_ids']['target'])]
@@ -75,16 +79,18 @@ def export(release, members, hub, out):
         if not np.array_equal(task['output_type']['quantile']['output_type_id']['required'], LEVELS):
             raise ValueError('Current Hub quantile grid changed')
         q = combine(recipes, channel, release['rule'])[:, 0]
-        if channel == 0:
+        if signal.unit == 'count':
             q = np.floor(q + .5)
-        if not np.isfinite(q).all() or (q < 0).any() or (np.diff(q, axis=0) < 0).any() or (channel == 3 and (q > 1).any()):
+        if not np.isfinite(q).all() or (q < 0).any() or (np.diff(q, axis=0) < 0).any() \
+                or (signal.unit == 'proportion' and (q > 1).any()):
             raise ValueError('Invalid quantile values, units or ordering')
-        if channel == 3:
-            for qi, h, li in np.argwhere(q > MAX_ED):
+        maximum = MAXIMUMS.get(target)
+        if maximum is not None:
+            for qi, h, li in np.argwhere(q > maximum):
                 adjustments.append(dict(target=target, horizon=int(h), location=str(first['locations'][li]),
-                                        quantile=float(LEVELS[qi]), original=float(q[qi, h, li]), exported=MAX_ED,
-                                        reason=f'Hub max_prop_ed_visits={MAX_ED}'))
-            q = np.minimum(q, MAX_ED)
+                                        quantile=float(LEVELS[qi]), original=float(q[qi, h, li]), exported=maximum,
+                                        reason=f'Hub maximum={maximum}'))
+            q = np.minimum(q, maximum)
         for h, day in enumerate(first['target_dates'][0]):
             if str(day) != (reference + timedelta(weeks=h)).isoformat() or h not in allowed(task['task_ids']['horizon']):
                 raise ValueError('Invalid horizon/date alignment')
@@ -95,7 +101,8 @@ def export(release, members, hub, out):
                 for qi, level in enumerate(LEVELS):
                     rows.append(dict(reference_date=reference.isoformat(), target=target, horizon=h,
                                      target_end_date=str(day), location=fips, output_type='quantile',
-                                     output_type_id=level, value=int(q[qi, h, li]) if channel == 0 else float(q[qi, h, li])))
+                                     output_type_id=level,
+                                     value=int(q[qi, h, li]) if signal.unit == 'count' else float(q[qi, h, li])))
     table = pd.DataFrame(rows)
     if table.empty or table.drop(columns='value').duplicated().any():
         raise ValueError('Empty or duplicate Hub tasks')
@@ -104,6 +111,7 @@ def export(release, members, hub, out):
     table.to_csv(path, index=False)
     record = dict(release=release, sources=sources, adjustments=adjustments, rows=len(table), issuance=next(iter(issues)),
                   operational_panel_sha256=next(iter(panel_hashes)), hub_tasks_sha256=sha256(hub / 'hub-config/tasks.json'),
-                  output_sha256=sha256(path), definition=dict(note=release['description']))
+                  output_sha256=sha256(path), problem=problem.reference, problem_sha256=problem.hash,
+                  definition=dict(note=release['description']))
     path.with_suffix('.json').write_text(json.dumps(record, indent=2) + '\n')
     return path

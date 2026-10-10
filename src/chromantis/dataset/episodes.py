@@ -3,17 +3,17 @@
 One builder, one switch (docs/architecture.md):
 
 - `input_mode='scheduled_final'` (training): one episode per Saturday origin t of the
-  calendar, with context weeks t-lookback+1..t and target weeks t+1..t+4 from the truth
-  panel. Origins run from the first calendar week to the last one whose target weeks
-  lie inside the calendar. Context weeks before the calendar are unavailable (padding).
-  All six targets are available through T-0; covariates follow the documented schedule
+  calendar, with context weeks t-lookback+1..t and target weeks t+1..t+H (H = the
+  largest horizon) from the truth panel. Origins run from the first to the last calendar
+  week; context weeks before and target weeks after the calendar are unavailable (padding).
+  All selected input histories are available through T-0; covariates follow the documented schedule
   (`LAG_ONE_COVARIATES` at T-1, Vermont inpatient never). Every visible cell is known-final.
 - `input_mode='synthetic'`: the same final histories, one episode per Wednesday
   issuance, to be vintaged artificially by the evaluation (`experiment/fit.py`).
 - `input_mode='reported'` (2026-10-05, the standard evaluation input): one episode per
   Wednesday, origin = its context end. Every context week of every target and
   covariate takes the value reported by the panel's deadline (`dataset.build.for_hub`
-  selects the Hub). The documented schedule decides what is available: all six
+  selects the Hub). The documented schedule decides what is available: selected
   targets through T-0, covariates through T-0 except `LAG_ONE_COVARIATES` (T-1), and
   Vermont inpatient never. Where the schedule says available but no report was
   archived by the deadline, the finalized value is supplied and marked in `filled` /
@@ -33,8 +33,8 @@ One builder, one switch (docs/architecture.md):
     NaN where nothing was visible (no truth fallback), as the previous builder did.
   `known_final` is not stored in the panel: it follows from position and visibility.
 
-The `horizons` argument controls label offsets from the context end: (1,2,3,4) for
-forecasting, preceded by reconstruction weeks (1-R,...,0) for `reconstruction_labels=1`.
+The `horizons` argument controls problem-defined label offsets from the context end
+for forecasting, preceded by reconstruction weeks (1-R,...,0) for `reconstruction_labels=1`.
 
 By default an episode is kept only if some context cell and some target cell are
 available. Operational inference sets require_labels=False to keep an issuance
@@ -77,19 +77,27 @@ def _channel_first(panel):
     return np.moveaxis(panel, -1, -2)
 
 
-def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, horizons=HORIZONS,
-             *, require_labels=True):
+def episodes(panel, problem, input_names, lookback, input_mode, covariate_names=(), asof_weeks=2,
+             horizons=None, *, require_labels=True):
     """All usable episodes of a (possibly masked) panel; see the module docstring."""
     if input_mode not in ('scheduled_final', 'vintaged', 'reported', 'synthetic'):
         raise ValueError(f'Unknown input_mode: {input_mode}')
+    problem.validate_panel(panel)
+    horizons = tuple(problem.horizons if horizons is None else horizons)
+    panel_names = list(map(str, panel['target_names']))
+    input_names = tuple(input_names)
+    input_indices = [panel_names.index(name) for name in input_names]
+    target_indices = [panel_names.index(name) for name in problem.targets]
+    input_signals = [problem.dataset.by_name[name] for name in input_names]
     vintaged, reported = input_mode == 'vintaged', input_mode == 'reported'
     dated = input_mode != 'scheduled_final'
     dates = [str(d) for d in panel['dates']]
     first, locations = date.fromisoformat(dates[0]), tuple(str(l) for l in panel['locations'])
     pad, tail = lookback - 1, max(0, max(horizons))
-    targets = _channel_first(_pad(panel['targets'], pad, tail))  # padded index = calendar index + pad
+    targets = _channel_first(_pad(panel['targets'][..., input_indices], pad, tail))
+    labels = _channel_first(_pad(panel['targets'][..., target_indices], pad, tail))
     if dated:
-        asof_targets = _channel_first(_pad(panel['asof_targets'], pad, tail, axis=1))
+        asof_targets = _channel_first(_pad(panel['asof_targets'][..., input_indices], pad, tail, axis=1))
     if covariate_names:
         names = (panel['covariate_names'], panel['covariate_national_names'], locations, covariate_names)
         if dated and input_mode != 'synthetic':
@@ -112,7 +120,10 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
         origins = [((date.fromisoformat(context_end(d)) - first).days // 7, w)
                    for w, d in enumerate(panel['issuance_dates'])]
     else:
-        origins = [(t, None) for t in range(len(dates) - tail)]
+        # Every calendar week is an origin; labels past the calendar end are padding (unavailable).
+        # Until 2026-10-09 origins stopped `tail` weeks before the end, which would have dropped
+        # the last half-year of origins of a full-season (~30 horizon) model.
+        origins = [(t, None) for t in range(len(dates))]
     recent = min(asof_weeks, lookback)
     result = []
     for t, w in origins:
@@ -126,15 +137,15 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
             # Nothing visible at the cutoff stays NaN: unavailable, never truth-filled.
             values[-recent:] = asof_targets[w, context][-recent:]
             known_final[-recent:] = False
-        if reported:  # all six targets through T-0; finalized value only where nothing was archived
+        if reported:  # selected histories through T-0; finalized value only where nothing was archived
             asof = asof_targets[w, context]
             filled = np.isnan(asof) & ~np.isnan(values)
             values = np.where(filled, values, asof)
             known_final = ~np.isnan(values)
-        # scheduled_final keeps all six target histories through T-0, including
+        # scheduled_final keeps all selected histories through T-0, including
         # the latest context week. Source-specific covariate lags apply below.
         available = ~np.isnan(values)
-        target_values = targets[future]
+        target_values = labels[future]
         target_available = ~np.isnan(target_values)
         if not available.any() or (require_labels and not target_available.any()):
             continue
@@ -142,7 +153,12 @@ def episodes(panel, lookback, input_mode, covariate_names=(), asof_weeks=2, hori
                        target_values=np.nan_to_num(target_values), target_available=target_available,
                        context_dates=tuple(week(t - pad + i) for i in range(lookback)),
                        target_dates=tuple(week(t + h) for h in horizons), locations=locations,
-                       issuance=None if w is None else str(panel['issuance_dates'][w]))
+                       issuance=None if w is None else str(panel['issuance_dates'][w]),
+                       input_names=input_names, target_names=problem.targets,
+                       input_units=tuple(signal.unit for signal in input_signals),
+                       input_groups=tuple(signal.group for signal in input_signals),
+                       target_units=problem.target_units, target_groups=problem.target_groups,
+                       target_input_indices=tuple(input_names.index(name) for name in problem.targets))
         if reported:
             episode['filled'] = filled
         if input_mode == 'synthetic':

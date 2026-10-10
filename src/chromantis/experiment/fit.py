@@ -11,6 +11,10 @@ mixture of raw and corrected), and optional `calibrated`, `sampled`, `delayed`, 
 The recipe's own view (`forecast_view`) is the one ranked and deployed; the others are
 diagnostics.
 
+A problem evaluated on finalized histories (`Problem.reporting_errors` false, e.g. a dataset
+without archived report vintages) skips the whole reporting-error stage: no artificial errors,
+no correction model (`nowcaster.pkl` holds None), no calibration, and only the `raw` view.
+
 History: this was `experiment/pilot.py` (the B3 pilot). On 2026-10-08 it became the only
 route; the plain, weekend, replay, nowcast, pipeline and finalization routes were deleted.
 `ForecastSlice` and `subset_labels` came from the deleted `weekend.py`.
@@ -21,12 +25,13 @@ import pickle
 import numpy as np
 import torch
 from chromantis.dataset import cv
-from chromantis.dataset.build import load, covariate_names_for
+from chromantis.dataset.build import load
 from chromantis.dataset.episodes import episodes
 from chromantis.dataset.reporting_error import ReportingErrors
 from chromantis.model.revision_tree import TrajectoryNowcaster
 from chromantis.model.network import checkpoint, load_model
 from chromantis.model.scenario import Scenario
+from chromantis.problem import Problem
 from . import training
 from .provenance import save, sha256, environment
 
@@ -52,11 +57,11 @@ class ForecastSlice(torch.nn.Module):
         return self.model(*args, **kwargs)[:, :, self.indices]
 
 
-def real_pairs(panel,scenario,held_out,keep):
+def real_pairs(panel,problem,scenario,held_out,keep):
     """Genuine reported/mature pairs only; no finalized fills supervise revisions."""
     p=cv.masked(panel,keep)
-    names=covariate_names_for(scenario.covariate_set)
-    reported=episodes(p,scenario.lookback,'reported',names)
+    names=problem.covariate_names(scenario.covariate_set)
+    reported=episodes(p,problem,problem.input_names(scenario.input_set),scenario.lookback,'reported',names)
     dates=panel['dates'].astype(str);issues=panel['issuance_dates'].astype(str)
     index={d:i for i,d in enumerate(dates)}
     allowed=set(dates[keep]);donor=max(cv.season(d) for d in allowed)
@@ -74,7 +79,9 @@ def real_pairs(panel,scenario,held_out,keep):
             mature=str(np.datetime64(d)+np.timedelta64(12*7+4,'D'))
             w=np.searchsorted(issues,mature)
             if w>=len(issues) or issues[w]>=cutoff:continue
-            y=p['asof_targets'][w,index[d]].T
+            panel_names=list(map(str,p['target_names']))
+            indices=[panel_names.index(name) for name in e['input_names']]
+            y=p['asof_targets'][w,index[d]][...,indices].T
             v[a]=np.nan_to_num(y)
             ok[a]=np.isfinite(y)&e['available'][a]&~e['filled'][a]
         pairs.append((e,dict(e,values=v,available=ok)))
@@ -82,7 +89,7 @@ def real_pairs(panel,scenario,held_out,keep):
     return pairs
 
 
-def fit_corrector(train,bank,scenario,seed,pairs=None,excluded=None,residuals=False):
+def fit_corrector(train,bank,problem,scenario,seed,pairs=None,excluded=None,residuals=False):
     rng=np.random.default_rng(seed+410000)
     synthetic=[(bank.draw(e,rng),e) for e in train]
     examples=synthetic if scenario.corrector_examples=='synthetic' else pairs
@@ -91,14 +98,9 @@ def fit_corrector(train,bank,scenario,seed,pairs=None,excluded=None,residuals=Fa
             return [(x,dict(y,available=y['available'] & np.array([d not in excluded for d in y['context_dates']])[:,None,None])) for x,y in examples]
         examples=purge(examples);synthetic=purge(synthetic)
     model=TrajectoryNowcaster(min(scenario.correction_weeks,scenario.lookback),scenario.correction_penalty,scenario.correction_strength,'phase')
-    model.pathogen_inputs=scenario.pathogen_inputs
-    model.channels=[0] if scenario.forecast_targets=='flu' else [0,1,2]
-    if scenario.pathogen_inputs == 'flu_ed':
-        model.channels=[]  # No admissions input; do not fit a hidden admissions correction task.
-    if scenario.correction_ed:
-        permitted={'all':range(6),'flu':[0,3],'flu_hosp':[0],'flu_ed':[3],
-                   'flu_covid':[0,1,3,4],'flu_rsv':[0,2,3,5]}[scenario.pathogen_inputs]
-        model.channels += [c for c in ([3] if scenario.forecast_targets=='flu' else [3,4,5]) if c in permitted]
+    model.input_channels=list(range(len(train[0]['input_names'])))
+    model.channels=[c for c,unit in zip(train[0]['target_input_indices'],train[0]['target_units'])
+                    if unit=='count' or scenario.correction_ed]
     model.fit(examples,pretraining=synthetic if scenario.corrector_examples=='synthetic_then_real' else None,
               neural=scenario.corrector_model=='mlp',seed=seed)
     model.observed_donor_pairs_only=scenario.corrector_examples!='synthetic'
@@ -129,7 +131,7 @@ class CorrectedHistories:
         return out
 
 
-def cross_correct(train,bank,scenario,seed,pairs):
+def cross_correct(train,bank,problem,scenario,seed,pairs):
     # Four disjoint origin blocks; exclude their entire context-date union from
     # correction labels, even when those labels occur in other episodes.
     order=sorted({e['context_dates'][-1] for e in train})
@@ -138,7 +140,7 @@ def cross_correct(train,bank,scenario,seed,pairs):
     for g in range(4):
         selected=[e for e in train if groups[e['context_dates'][-1]]==g]
         excluded={d for e in selected for d in e['context_dates']}
-        model=fit_corrector(train,bank,scenario,seed,pairs,excluded)
+        model=fit_corrector(train,bank,problem,scenario,seed,pairs,excluded)
         draws=[]
         for r in range(scenario.correction_realizations):
             # r=0 keeps the original B3/B4 random stream exactly.
@@ -152,20 +154,20 @@ def cross_correct(train,bank,scenario,seed,pairs):
     return result
 
 
-def evaluation_bank(panel,scenario,held_out,keep):
+def evaluation_bank(panel,problem,scenario,held_out,keep):
     """Prescribed artificial evaluation histories (`evaluation_inputs=prescribed`), or None for actual reports.
 
     Identical empirical input process for every architecture, training treatment and seed."""
-    if scenario.evaluation_inputs!='prescribed':return None
+    if problem.evaluation_inputs!='prescribed':return None
     evaluation_scenario=replace(scenario,lookback=max(12,scenario.lookback),reporting_method='synchronous_phase_log',reporting_strength=1.,
         reporting_probability=1.,reporting_random_strength=False,reporting_recent=0,reporting_missingness=False,
         actual_share=0.,error_signals='targets')
-    return ReportingErrors(panel,evaluation_scenario,held_out,keep)
+    return ReportingErrors(panel,problem,evaluation_scenario,held_out,keep)
 
 
-def forecast_labels(scenario,eps):
+def forecast_labels(problem,scenario,eps):
     """Forecast-week labels only (a `joint` model also outputs reconstruction weeks)."""
-    return [subset_labels(e,scenario.future) for e in eps] if scenario.reconstruction_labels else eps
+    return [subset_labels(e,problem.future_indices(scenario)) for e in eps] if scenario.reconstruction_labels else eps
 
 
 def vintage(eps,bank,scenario,draw):
@@ -183,25 +185,27 @@ def vintage(eps,bank,scenario,draw):
     return result
 
 
-def view_names(scenario):
+def view_names(scenario,problem):
+    if not problem.reporting_errors:return ['raw']
     names=['raw','half','corrected']
     if scenario.correction_noise:names.append('sampled')
     if scenario.stress_views:
         names.append('delayed')
-        if scenario.covariate_set:names.append('nokinsa')
+        if scenario.covariate_set!='none':names.append('nokinsa')
     return names
 
 
-def view_inputs(name,eps,corrector,scenario,seed,members,direct):
+def view_inputs(name,eps,corrector,problem,scenario,seed,members,direct):
     """Episodes for one input view; correctors act on episodes already cut at each Hub's own deadline."""
     if name=='raw':return eps
     if name=='delayed':
-        # Stress view: the newest flu-admission week was not reported by the deadline.
+        # Stress view: the newest admission week of the (first) forecast pathogen was not reported by the deadline.
+        k=problem.target_input_indices(scenario.input_set)[0]
         def late(e):
-            available=e['available'].copy();available[-1,0]=False
+            available=e['available'].copy();available[-1,k]=False
             late_e=dict(e,available=available,values=np.where(available,e['values'],0).astype(np.float32))
             if 'filled' in e:
-                filled=e['filled'].copy();filled[-1,0]=False;late_e['filled']=filled
+                filled=e['filled'].copy();filled[-1,k]=False;late_e['filled']=filled
             return late_e
         return corrector.apply_batch([late(e) for e in eps])
     changed=corrector.apply_batch(eps)
@@ -216,13 +220,13 @@ def view_inputs(name,eps,corrector,scenario,seed,members,direct):
     return [dict(e,mixture_episode=c) for e,c in zip(eps,changed)]  # half
 
 
-def evaluate_views(model,corrector,scenario,panel,held_out,seed,members,device,out,bank=None,first=None,resume=False):
+def evaluate_views(model,corrector,problem,scenario,panel,held_out,seed,members,device,out,bank=None,first=None,resume=False):
     """Held-out forecasts of one fitted fold for every input view (and artificial draw), per Hub deadline."""
     model.to(device)
     if scenario.reconstruction_labels:
-        model=ForecastSlice(model,scenario.future)
+        model=ForecastSlice(model,problem.future_indices(scenario))
     direct=bool(model.config.get('direct_quantiles'))
-    for draw,name in ((d,n) for d in range(scenario.evaluation_draws if bank else 1) for n in view_names(scenario)):
+    for draw,name in ((d,n) for d in range(problem.evaluation_draws if bank else 1) for n in view_names(scenario,problem)):
         root=out if draw==0 else out/f'draw-{draw}'
         destination=root if name=='raw' else root/name
         destination.mkdir(parents=True,exist_ok=True)
@@ -233,25 +237,26 @@ def evaluate_views(model,corrector,scenario,panel,held_out,seed,members,device,o
                 continue
             except (OSError, ValueError, EOFError):
                 pass
-        prepare=lambda eps,name=name,draw=draw:view_inputs(name,vintage(forecast_labels(scenario,eps),bank,scenario,draw),
-                                                          corrector,scenario,seed,members,direct)
-        training.evaluate_hubs(model,panel,scenario,held_out,seed,members,device,destination,prepare=prepare,first=first)
+        prepare=lambda eps,name=name,draw=draw:view_inputs(name,vintage(forecast_labels(problem,scenario,eps),bank,scenario,draw),
+                                                          corrector,problem,scenario,seed,members,direct)
+        training.evaluate_hubs(model,panel,problem,scenario,held_out,seed,members,device,destination,prepare=prepare,first=first)
 
 
-def fit(scenario,seed,held_out,members,device,output,dataset,resume=False):
+def fit(problem,scenario,seed,held_out,members,device,output,dataset,resume=False):
     panel=load(dataset);out=Path(output);out.mkdir(parents=True,exist_ok=True)
-    full=cv.fold(panel,scenario,held_out)
-    inner=cv.fold(panel,scenario,held_out,inner=True) if scenario.patience else None
-    roles=cv.week_roles(panel['dates'],scenario,held_out)
+    problem.validate_scenario(scenario);problem.validate_panel(panel)
+    full=cv.fold(panel,problem,scenario,held_out)
+    inner=cv.fold(panel,problem,scenario,held_out,inner=True) if scenario.patience else None
+    roles=cv.week_roles(panel['dates'],problem,scenario,held_out)
     keep=np.isin(roles,['fit','validation'])
     restored=resume and (out/'model.pt').exists() and (out/'nowcaster.pkl').exists() and (out/'manifest.json').exists()
-    if resume and scenario.evaluation_inputs!='prescribed':
+    if resume and problem.evaluation_inputs!='prescribed':
         raise ValueError('Checkpoint resume currently requires prescribed evaluation vintages')
     if restored:
         saved=torch.load(out/'model.pt',map_location='cpu',weights_only=False)
         meta=saved['metadata']
         if (meta['seed'],meta['held_out_season'],meta['eval_members'],meta['dataset_sha256']) != (seed,held_out,members,sha256(dataset)) \
-                or Scenario.from_string(meta['scenario']) != scenario:
+                or Scenario.from_string(meta['scenario']) != scenario or meta['problem_sha256'] != problem.hash:
             raise ValueError('Saved model does not match requested fold, inputs or evaluation members')
         if (out/'nowcast-diagnostics.csv').exists():
             return out/'model.pt'
@@ -261,11 +266,13 @@ def fit(scenario,seed,held_out,members,device,output,dataset,resume=False):
         # Reported values are not finalized observations for native loss scales.
         if scenario.history_source=='reported':
             for e in full.train+(inner.train if inner else []):e['known_final']=e['filled'].copy()
-        bank=ReportingErrors(panel,scenario,held_out,keep)
-        selection=ReportingErrors(panel,scenario,held_out,roles=='fit') if inner else None
-        pairs=real_pairs(panel,scenario,held_out,keep) if scenario.corrector_examples!='synthetic' else None
-        corrector_train=cv.fold(panel,scenario,held_out,inputs='scheduled_final').train
-        corrector=fit_corrector(corrector_train,bank,scenario,seed,pairs,residuals=scenario.correction_noise>0)
+        bank=selection=pairs=corrector=None
+        if problem.reporting_errors:
+            bank=ReportingErrors(panel,problem,scenario,held_out,keep)
+            selection=ReportingErrors(panel,problem,scenario,held_out,roles=='fit') if inner else None
+            pairs=real_pairs(panel,problem,scenario,held_out,keep) if scenario.corrector_examples!='synthetic' else None
+            corrector_train=cv.fold(panel,problem,scenario,held_out,inputs='scheduled_final').train
+            corrector=fit_corrector(corrector_train,bank,problem,scenario,seed,pairs,residuals=scenario.correction_noise>0)
         augmentation=selection_augmentation=None
         validation_corrector=inner_pairs=None
         if scenario.history_source=='artificial' and not scenario.history_correction:
@@ -273,43 +280,48 @@ def fit(scenario,seed,held_out,members,device,output,dataset,resume=False):
             if inner:inner.validation=selection.batch(inner.validation,np.random.default_rng(seed+800000))
         if scenario.history_correction:
             if inner:
-                inner_pairs=real_pairs(panel,scenario,held_out,roles=='fit') if pairs is not None else None
-                validation_corrector=fit_corrector(inner.train,selection,scenario,seed,inner_pairs,residuals=scenario.correction_noise_train)
-                inner.train=cross_correct(inner.train,selection,scenario,seed,inner_pairs)
+                inner_pairs=real_pairs(panel,problem,scenario,held_out,roles=='fit') if pairs is not None else None
+                validation_corrector=fit_corrector(inner.train,selection,problem,scenario,seed,inner_pairs,residuals=scenario.correction_noise_train)
+                inner.train=cross_correct(inner.train,selection,problem,scenario,seed,inner_pairs)
                 inner.validation=validation_corrector.apply_batch(selection.batch(inner.validation,np.random.default_rng(seed+800000)))
-            full.train=cross_correct(full.train,bank,scenario,seed,pairs)
+            full.train=cross_correct(full.train,bank,problem,scenario,seed,pairs)
             if scenario.correction_realizations>1 or scenario.uncorrected_share or scenario.correction_noise_train:
                 augmentation=CorrectedHistories(scenario,corrector)
                 selection_augmentation=CorrectedHistories(scenario,validation_corrector) if inner else None
         pop=training.populations(LOCATIONS,full.train[0]['locations'])
         model,records,selector=training.fit_models(inner.train if inner else full.train,inner.validation if inner else None,
-            full.train,scenario,seed,device,pop,augmenter=augmentation,selection_augmenter=selection_augmentation,keep_selection=True)
-    prescribed=evaluation_bank(panel,scenario,held_out,keep)
+            full.train,problem,scenario,seed,device,pop,augmenter=augmentation,selection_augmenter=selection_augmentation,keep_selection=True)
+    prescribed=evaluation_bank(panel,problem,scenario,held_out,keep)
     if not restored:
-        meta=dict(scenario=scenario.scenario_string,config=asdict(scenario),seed=seed,held_out_season=held_out,
+        meta=dict(scenario=scenario.scenario_string,config=asdict(scenario),problem_id=problem.id,
+            problem=problem.reference,problem_sha256=problem.hash,dataset_spec=problem.dataset.reference,
+            seed=seed,held_out_season=held_out,
             fold=full.info,inner_fold=inner.info if inner else None,records=records,eval_members=members,
             dataset=str(dataset),dataset_sha256=sha256(dataset),ili_sha256=sha256(scenario.ili_path) if scenario.ili_training!='none' else None,
-            reporting_errors=bank.metadata,corrector=corrector.record(),corrector_kind=f'{scenario.corrector_examples}_{scenario.corrector_model}',
+            reporting_errors=bank.metadata if bank else None,corrector=corrector.record() if corrector else None,
+            corrector_kind=f'{scenario.corrector_examples}_{scenario.corrector_model}' if corrector else None,
             evaluation_vintages=prescribed.metadata if prescribed else None,
             parameter_count=sum(p.numel() for p in model.parameters()),
             protocol='prescribed_2025_revision_process' if prescribed else 'b3_pilot_standard_hub_inputs',**environment())
         torch.save(checkpoint(model,meta),out/'model.pt')
         with (out/'nowcaster.pkl').open('wb') as f:pickle.dump(corrector,f)
         save(out/'manifest.json',meta)
-    evaluate_views(model,corrector,scenario,panel,held_out,seed,members,device,out,bank=prescribed,first=full.score,resume=resume)
-    if selector is not None and scenario.evaluation_inputs!='prescribed':
+    evaluate_views(model,corrector,problem,scenario,panel,held_out,seed,members,device,out,bank=prescribed,first=full.score,resume=resume)
+    if not problem.reporting_errors:
+        return out/'model.pt'
+    if selector is not None and problem.evaluation_inputs!='prescribed':
         if validation_corrector is None:
             if inner_pairs is None and pairs is not None:
-                inner_pairs=real_pairs(panel,scenario,held_out,roles=='fit')
-            inner_final=cv.fold(panel,scenario,held_out,inner=True,inputs='scheduled_final').train
-            validation_corrector=fit_corrector(inner_final,selection,scenario,seed,inner_pairs)
-        calibrate(selector,validation_corrector,inner,panel,scenario,held_out,keep,seed,members,device,out)
+                inner_pairs=real_pairs(panel,problem,scenario,held_out,roles=='fit')
+            inner_final=cv.fold(panel,problem,scenario,held_out,inner=True,inputs='scheduled_final').train
+            validation_corrector=fit_corrector(inner_final,selection,problem,scenario,seed,inner_pairs)
+        calibrate(selector,validation_corrector,inner,panel,problem,scenario,held_out,keep,seed,members,device,out)
     if prescribed is not None:
         # Same artificially preliminary inputs as the forecast evaluation; later histories are labels.
         import pandas as pd
-        reference=forecast_labels(scenario,full.score);raw=vintage(reference,prescribed,scenario,0);changed=corrector.apply_batch(raw)
+        reference=forecast_labels(problem,scenario,full.score);raw=vintage(reference,prescribed,scenario,0);changed=corrector.apply_batch(raw)
         diagnostics=[]
-        for k in (0,3):
+        for target,k,unit in zip(problem.targets,problem.target_input_indices(scenario.input_set),problem.target_units):
             for age in range(scenario.lookback):
                 for group in ('states_dc','US'):
                     before=[];after=[]
@@ -318,22 +330,24 @@ def fit(scenario,seed,held_out,members,device,output,dataset,resume=False):
                         ok=t['available'][-1-age,k]&ids
                         before.extend(abs(r['values'][-1-age,k]-t['values'][-1-age,k])[ok])
                         after.extend(abs(c['values'][-1-age,k]-t['values'][-1-age,k])[ok])
-                    diagnostics.append(dict(target='admissions' if k==0 else 'ED',age=age,geography=group,
+                    diagnostics.append(dict(target=target,unit=unit,age=age,geography=group,
                         cells=len(before),raw_mae=float(np.mean(before)),corrected_mae=float(np.mean(after))))
         pd.DataFrame(diagnostics).to_csv(out/'nowcast-diagnostics.csv',index=False)
         return out/'model.pt'
     # Direct history accuracy on the same genuine observed cells, independent of forecast score.
-    evaluation_keep=np.array([cv.season(d)==held_out for d in panel['dates']])
+    evaluation_keep=problem.fold_labels(panel['dates'])==held_out
     # Maturity labels may be observed after forecast issuance; fitting above never uses them.
     try:
-        eval_pairs=real_pairs(panel,scenario,held_out,evaluation_keep)
+        eval_pairs=real_pairs(panel,problem,scenario,held_out,evaluation_keep)
     except ValueError:
         # Production (2026-27): no matured report pairs exist yet, so no direct nowcast diagnostics.
         save(out/'nowcast-diagnostics.json',dict(unavailable='no mature report pairs in the forecast season'))
         return out/'model.pt'
     raw=[e for e,_ in eval_pairs];changed=corrector.apply_batch(raw)
     diagnostics={}
-    for k in range(3):
+    count_inputs=[i for i,unit in enumerate(problem.input_names(scenario.input_set))
+                  if problem.dataset.by_name[unit].unit=='count']
+    for k in count_inputs:
         metrics={name:[] for name in ('newest_week_mae','recent_four_week_level_mae','two_week_log_growth_mae')}
         for (e,t),c in zip(eval_pairs,changed):
             actual=t['values'][:,k];raw_value=e['values'][:,k];corrected_value=c['values'][:,k]
@@ -355,7 +369,7 @@ def fit(scenario,seed,held_out,members,device,output,dataset,resume=False):
 CALIBRATION_SEASONS=('2023-2024','2024-2025','2025-2026')  # 2022-23 has no archived reports
 
 
-def calibrate(selector,corrector,inner,panel,scenario,held_out,keep,seed,members,device,out):
+def calibrate(selector,corrector,inner,panel,problem,scenario,held_out,keep,seed,members,device,out):
     """Fit spread factors on the inner validation weeks, apply them to the corrected view.
 
     The early-stopped inner model never trained on the validation weeks' labels, and the
@@ -369,23 +383,26 @@ def calibrate(selector,corrector,inner,panel,scenario,held_out,keep,seed,members
     from chromantis.evaluation import calibration
     dates=panel['dates'].astype(str);index={d:i for i,d in enumerate(dates)}
     hidden=set(inner.info['validation_weeks'])
-    origins={dates[index[d]-h] for d in hidden for h in scenario.horizons if h>0 and index[d]-h>=0}
+    horizons=problem.model_horizons(scenario)
+    origins={dates[index[d]-h] for d in hidden for h in horizons if h>0 and index[d]-h>=0}
     origins={d for d in origins if cv.season(d) in CALIBRATION_SEASONS and keep[index[d]]}
-    eps=episodes(for_hub(cv.masked(panel,keep),HUBS[0]),scenario.lookback,'reported',
-                 covariate_names_for(scenario.covariate_set),horizons=scenario.horizons)
+    hub=next((value for value in problem.target_hubs if value),HUBS[0])
+    eps=episodes(for_hub(cv.masked(panel,keep),hub),problem,problem.input_names(scenario.input_set),
+                 scenario.lookback,'reported',problem.covariate_names(scenario.covariate_set),horizons=horizons)
     eps=[e for e in eps if e['context_dates'][-1] in origins]
     eps=[e for e in (restrict_labels(e,hidden) for e in eps) if e is not None]
-    eps=corrector.apply_batch(forecast_labels(scenario,eps))
-    model=ForecastSlice(selector,scenario.future) if scenario.reconstruction_labels else selector
+    eps=corrector.apply_batch(forecast_labels(problem,scenario,eps))
+    model=ForecastSlice(selector,problem.future_indices(scenario)) if scenario.reconstruction_labels else selector
     model.to(device)
     folder=out/'calibration';folder.mkdir(exist_ok=True)
     torch.manual_seed(seed+1000)
     training.evaluate(model,eps,members,device,folder)
     with np.load(folder/'forecasts.npz') as f:
-        factors,record=calibration.fit(f['quantiles'],f['truth'],f['mask'],f['locations'])
+        factors,record=calibration.fit(f['quantiles'],f['truth'],f['mask'],f['locations'],problem.target_units,
+            [c for c,w in enumerate(problem.target_weights(scenario.loss_weights)) if w])
     with np.load(out/'corrected'/'forecasts.npz') as f:
-        data={k:f[k] for k in f.files if k!='flu_admission_sum_quantiles'}
-    data['quantiles']=calibration.apply(data['quantiles'],factors)
+        data={k:f[k] for k in f.files if k!='target_0_sum_quantiles'}
+    data['quantiles']=calibration.apply(data['quantiles'],factors,problem.target_units)
     (out/'calibrated').mkdir(exist_ok=True)
     np.savez_compressed(out/'calibrated'/'forecasts.npz',**data)
     save(folder/'calibration.json',dict(definition=calibration.__doc__,factors={str(k):v for k,v in factors.items()},
@@ -407,18 +424,21 @@ def replay(fold, output, inputs, dataset, device='cpu'):
     if sha256(dataset) != meta['dataset_sha256']:
         raise ValueError(f'{dataset} is not the panel {fold} was fitted on')
     scenario = Scenario.from_string(meta['scenario'])
+    problem = Problem.load(meta['problem'])
     if inputs == 'reported':
-        scenario = replace(scenario, evaluation_inputs='reported', evaluation_draws=1)
-    elif inputs != 'synthetic' or scenario.evaluation_inputs != 'prescribed':
+        if problem.evaluation_inputs != 'reported':
+            raise ValueError('This problem does not define reported evaluation inputs')
+    elif inputs != 'synthetic' or problem.evaluation_inputs != 'prescribed':
         raise ValueError('Replay inputs are reported, or synthetic for a prescribed-revision fit')
     panel, held_out = load(dataset), meta['held_out_season']
-    keep = np.isin(cv.week_roles(panel['dates'], scenario, held_out), ['fit', 'validation'])
+    keep = np.isin(cv.week_roles(panel['dates'], problem, scenario, held_out), ['fit', 'validation'])
     model = load_model(torch.load(fold / 'model.pt', map_location='cpu', weights_only=False))
     with (fold / 'nowcaster.pkl').open('rb') as f:
         corrector = pickle.load(f)
     out.mkdir(parents=True, exist_ok=True)
-    evaluate_views(model, corrector, scenario, panel, held_out, meta['seed'], meta['eval_members'], device, out,
-                   bank=evaluation_bank(panel, scenario, held_out, keep))
+    evaluate_views(model, corrector, problem, scenario, panel, held_out, meta['seed'], meta['eval_members'], device, out,
+                   bank=evaluation_bank(panel, problem, scenario, held_out, keep))
     save(out / 'manifest.json', dict(replay_of=str(fold.resolve()), inputs=inputs, refit=False,
-                                     scenario=meta['scenario'], seed=meta['seed'], held_out_season=held_out,
+                                     scenario=meta['scenario'], problem=meta['problem'], problem_id=problem.id,
+                                     problem_sha256=problem.hash, seed=meta['seed'], held_out_season=held_out,
                                      eval_members=meta['eval_members'], dataset_sha256=meta['dataset_sha256']))
