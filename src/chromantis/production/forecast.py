@@ -69,8 +69,9 @@ def forecast_checkpoint(checkpoint, problem, dataset, issuance, output, view='co
             raise ValueError(f'Operational panel omits model inputs: {sorted(missing)}')
     if issuance not in map(str, panel['issuance_dates']):
         raise ValueError('Requested issuance absent from refreshed panel')
+    # Future weeks only: a reconstruction-label model's past-week outputs are sliced off below (ForecastSlice).
     eps = episodes(panel, problem, problem.input_names(scenario.input_set), scenario.lookback, 'reported',
-                   problem.covariate_names(scenario.covariate_set), horizons=problem.model_horizons(scenario),
+                   problem.covariate_names(scenario.covariate_set), horizons=problem.horizons,
                    require_labels=False)
     eps = [e for e in eps if e['issuance'] == issuance]
     if len(eps) != 1 or eps[0]['context_dates'][-1] != context_end(issuance):
